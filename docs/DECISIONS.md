@@ -12,18 +12,21 @@
 **Alternative considered:** PokerRL, custom build.
 **Reason rejected:** PokerRL is less maintained; custom build adds months of infrastructure work that has no research payoff.
 
-## Runtime environment: WSL2 + Ubuntu 22.04
+## Runtime environment: WSL2 + Ubuntu 22.04 (SUPERSEDED in Session 2)
 **Decided:** 2026-05-21
-**Why:** OpenSpiel does not officially support Windows native (pip wheels are Linux/macOS only). The local hardware is a Windows 11 machine. WSL2 provides a real Linux environment inside Windows with CUDA passthrough to the GPU, preserving every other architectural decision while avoiding Windows-native build friction.
+**Superseded:** 2026-05-21 (Session 2) — see "Runtime environment: Contabo VPS" below.
+**Why (at the time):** OpenSpiel does not officially support Windows native (pip wheels are Linux/macOS only). The local hardware is a Windows 11 machine. WSL2 provides a real Linux environment inside Windows with CUDA passthrough to the GPU, preserving every other architectural decision while avoiding Windows-native build friction.
 **Alternative considered:** Dual-boot Linux; Docker Desktop with NVIDIA container toolkit; switch engines to a Windows-native option.
-**Reason rejected:** Dual-boot is disruptive and unnecessary. Docker adds interactive-development friction. Switching engines re-opens the OpenSpiel decision and costs months of infrastructure work.
+**Reason rejected (at the time):** Dual-boot is disruptive and unnecessary. Docker adds interactive-development friction. Switching engines re-opens the OpenSpiel decision and costs months of infrastructure work.
+**Why this was superseded:** WSL2 install failed at the DISM step with error 14098 (Windows component store corruption). DISM /RestoreHealth and sfc /scannow could not repair the store enough to enable VirtualMachinePlatform. The remaining repair path (ISO-source DISM, or in-place Windows reinstall) would cost more time than just using a clean Linux machine that was already available.
 
-## Hardware: RTX 3060 Laptop GPU (6GB VRAM), defer cloud/upgrade decision
+## Hardware: RTX 3060 Laptop GPU (6GB VRAM), defer cloud/upgrade decision (SUPERSEDED in Session 2)
 **Decided:** 2026-05-21
-**Why:** Local hardware confirmed as RTX 3060 Laptop variant with 6GB VRAM (not the 12GB desktop variant originally assumed). Sufficient for Phase 1-3 development without modification. Phase 4+ will require careful batch sizing and network width tuning to fit within VRAM. Iteration cycles are cheaper on owned hardware than rented. Cloud bursting makes sense only for the final blueprint training run at finer abstraction, and only if needed.
+**Superseded:** 2026-05-21 (Session 2) — see "Hardware: Contabo VPS (CPU) + future cloud GPU" below.
+**Why (at the time):** Local hardware confirmed as RTX 3060 Laptop variant with 6GB VRAM (not the 12GB desktop variant originally assumed). Sufficient for Phase 1-3 development without modification. Phase 4+ will require careful batch sizing and network width tuning to fit within VRAM. Iteration cycles are cheaper on owned hardware than rented. Cloud bursting makes sense only for the final blueprint training run at finer abstraction, and only if needed.
 **Alternative considered:** Buy 4090, rent A100 from start.
-**Reason rejected:** Premature optimization. Validate pipeline first, then make compute decisions with real throughput data.
-**Note:** The 6GB VRAM constraint is a real limitation for Phase 4+ and must be accounted for in network architecture choices.
+**Reason rejected (at the time):** Premature optimization. Validate pipeline first, then make compute decisions with real throughput data.
+**Why this was superseded:** The Windows host became unavailable due to the same component store corruption that blocked WSL2. Rather than repair Windows, switched to existing Contabo VPS for development.
 
 ## Training approach: hybrid (self-play CFR + anonymous opponent diversity + league play)
 **Decided:** 2026-05-21
@@ -61,3 +64,31 @@ This is a values-driven decision (robustness and fairness over peak exploitation
 ## Scope: training only, no deployment layer
 **Decided:** 2026-05-21
 **Why:** This is a research/training project. Deliverable is the trained model and the infrastructure that produced it, evaluated offline against benchmarks and in closed environments.
+
+## Runtime environment: Contabo VPS (Ubuntu 24.04)
+**Decided:** 2026-05-21 (Session 2)
+**Supersedes:** "Runtime environment: WSL2 + Ubuntu 22.04" above.
+**Why:** WSL2 install on Windows 11 failed at DISM with error 14098 (component store corruption). Standard repair (StartComponentCleanup, RestoreHealth, sfc /scannow) did not enable the required features. Continuing the Windows repair would have required ISO-source DISM repair or an in-place Windows reinstall — both costly in time for a project that doesn't depend on the Windows host. An existing Contabo VPS (Ubuntu 24.04, 12 vCPU AMD EPYC, 48GB RAM, ~300GB free) was already paid for and available. Switching took ~5 minutes of SSH versus an unknown-length Windows repair.
+**Note on Python version:** Ubuntu 24.04 ships Python 3.12 as system default. OpenSpiel's officially-tested Python range is 3.7–3.10. Installed Python 3.10 via deadsnakes PPA to use as the project's interpreter; system Python 3.12 untouched.
+**Alternative considered:** Continue Windows repair via ISO-source DISM or in-place reinstall; rent a Vultr instance (the user has credit there); use Vast.ai or RunPod from day one.
+**Reason rejected:** Windows repair is open-ended time on a non-project problem. Vultr would have worked but costs credit we'd rather preserve for GPU training later. Vast.ai / RunPod likewise — better saved for when GPU compute actually matters. The Contabo box was already paid for and idle for this project's purposes.
+
+## Hardware: Contabo VPS (CPU) for Phase 1–3, rented cloud GPU for Phase 4+
+**Decided:** 2026-05-21 (Session 2)
+**Supersedes:** "Hardware: RTX 3060 Laptop GPU" above.
+**Why:** Contabo box has no GPU, but Phase 1–3 don't need one. Leduc Deep CFR (Phase 1) is small enough that Python/CFR overhead dominates network compute — CPU is fine. Heads-up NLHE prototype (Phase 2) benefits from GPU but isn't blocked without one. Phase 3 (archetype + bought-bot integration) is CPU-bound on trajectory generation. By the time Phase 4 (full ICM-adjusted blueprint training) starts, we'll have real throughput numbers to size GPU rental correctly, and we'll rent on whichever provider has the best price at that time (Vast.ai, RunPod, Vultr GPU, etc.).
+**Note:** The RTX 3060 Laptop on the Windows host is not gone — it could be brought back into the picture if the Windows component store gets repaired later. Not a priority. Cloud GPU is cleaner anyway and matches the long-term shape of the project.
+**Alternative considered:** Get a GPU instance from day one to "build momentum."
+**Reason rejected:** Pre-Phase-1 throughput is dominated by Python overhead and CPU-bound trajectory generation. Renting a GPU now wastes credit on cycles that won't be used. Rent when measurements show it's needed.
+
+## Phase 1 implementation: OpenSpiel reference Deep CFR, not custom
+**Decided:** 2026-05-21 (Session 2)
+**Why:** Phase 1's goal is pipeline validation — confirm that the train-eval loop works end-to-end on a known game (Leduc) and converges to known Nash. Reimplementing CFR adds risk and time without research payoff at this stage. `open_spiel.python.pytorch.deep_cfr` is a working reference implementation maintained by the OpenSpiel team. We thin-wrap it with logging, checkpointing, and exploitability evaluation rather than reimplementing the algorithm.
+**Alternative considered:** Custom Deep CFR implementation in PyTorch from scratch for learning value.
+**Reason rejected:** Learning value of reimplementation is real but better captured later (Phase 2+) when the deviations from textbook Deep CFR (ICM value function, action abstraction) demand custom code anyway. Phase 1 should de-risk infrastructure, not algorithms.
+
+## Git workflow: two-commit migration
+**Decided:** 2026-05-21 (Session 2)
+**Why:** Session 2's changes are large — runtime, hardware, project location, Python version. Committing them on top of the original Windows-era docs in one merged commit would obscure what changed. Instead: first commit lands the verbatim Session-1 state (all docs as they existed at end of Session 1). Second commit updates STATUS, SESSION_LOG, DECISIONS, ARCHITECTURE to reflect Session 2. Anyone reading the git history can see the two states cleanly.
+**Alternative considered:** Single combined commit; rewrite history later if needed.
+**Reason rejected:** Single commits lose information. History rewrites are error-prone and shouldn't be a planned step.

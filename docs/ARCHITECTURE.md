@@ -97,13 +97,25 @@ The bot improves through training against a diverse pool of anonymous opponents:
 - Verify the no-persistence rule: confirm that no opponent state survives match boundaries
 - Duration: 1-2 weeks
 
-Total estimated calendar time: 2-3 months on RTX 3060 Laptop with serious effort.
+Total estimated calendar time: 2-3 months with serious effort, assuming GPU compute is rented in Phase 4+.
 
 ## Technology stack
+
+### Engine and ML framework
 - **Engine:** OpenSpiel (DeepMind, open source) — has CFR, Deep CFR, PSRO, poker environments built in
+- **Phase 1 algorithm implementation:** `open_spiel.python.pytorch.deep_cfr` (reference implementation, thin-wrapped with logging and checkpointing)
 - **ML framework:** PyTorch
-- **Language:** Python 3.10+
-- **Hardware:** RTX 3060 Laptop GPU (6GB VRAM) local for development and main training — NOTE: this is the 6GB laptop variant, not the 12GB desktop variant. Batch sizes and network widths in Phase 4+ must account for this.
-- **Runtime environment:** WSL2 + Ubuntu 22.04 on Windows host (OpenSpiel does not officially support Windows native)
-- **Optional later:** Cloud GPU burst (Vast.ai / RunPod) for final blueprint at finer abstraction
-- **Optional later:** VPS (12 vCPU) as parallel self-play generator
+- **Language:** Python 3.10 (via deadsnakes PPA on Ubuntu 24.04; system Python 3.12 untouched). Pinned to 3.10 because OpenSpiel's officially-tested Python range is 3.7–3.10.
+
+### Compute, by phase
+
+The project runs on different hardware at different phases. The transition between phases is a hardware decision driven by measured throughput needs, not a project goal in itself. Code stays portable; data and checkpoints transit via git for source and via SCP / object storage for large artifacts.
+
+- **Phases 1–3 (development, validation, prototype):** Contabo VPS running Ubuntu 24.04. 12 vCPU AMD EPYC (oversubscribed — shared with other tenants), 48 GB RAM, ~300 GB free disk, no GPU. Sufficient for Leduc Deep CFR, heads-up NLHE prototype, and archetype integration. Throughput from this box is not a benchmark for Phase 4+ planning.
+- **Phase 4+ (full blueprint training, league play):** Rented cloud GPU. Provider chosen at the time based on price and availability (Vast.ai, RunPod, Vultr GPU, or similar). Likely an A100, A40, or 4090-class GPU. Rented per-session, stopped when not actively training.
+- **Always available as fallback:** Windows 11 host with RTX 3060 Laptop GPU (6 GB VRAM). Currently unusable due to Windows component store corruption blocking WSL2. Could be repaired and brought back in if needed — not a priority since the cloud GPU path is cleaner.
+
+### Project location and version control
+- **Working directory:** `~/pokerbot/` on the Contabo VPS.
+- **Repo:** github.com/guardiancarefl/pokerbot (private). SSH key auth.
+- **Migration model:** when hardware changes (e.g., spinning up a GPU rental for Phase 4), the new instance does `git clone` and a fresh venv install. Large artifacts (model checkpoints, replay buffers) live outside git — either on the persistent disk of the GPU rental or in cheap object storage.
