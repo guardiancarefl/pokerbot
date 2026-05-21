@@ -143,11 +143,24 @@ def main() -> int:
     logger.info(f"game: leduc_poker, players={game.num_players()}, "
                 f"max_length={game.max_game_length()}")
 
-    logger.info(f"starting solve(): {config.iterations} iterations x "
+    logger.info(f"starting training: {config.iterations} iterations x "
                 f"{config.num_traversals} traversals/player")
-    result = train(game, config)
-    logger.info(f"solve() complete in {result.train_seconds/60:.2f} min "
-                f"({result.train_seconds:.1f}s)")
+
+    # Build an eval callback for periodic exploitability during training.
+    # Skipped entirely if --skip-exploitability was set.
+    if config.skip_exploitability:
+        eval_callback = None
+        eval_every = 10**9  # unreachable
+    else:
+        def eval_callback(action_probs_fn):
+            return exploitability_mbb(game, action_probs_fn)
+        eval_every = 10  # every 10 iterations + final
+
+    result = train(game, config, logger=logger,
+                   eval_callback=eval_callback, eval_every=eval_every)
+    logger.info(f"training complete in {result.train_seconds/60:.2f} min "
+                f"({result.train_seconds:.1f}s, "
+                f"avg {result.train_seconds/config.iterations:.2f}s/iter)")
     logger.info(f"final policy loss: {result.policy_loss:.6f}")
 
     # Advantage loss trajectory summary per player.
@@ -171,17 +184,26 @@ def main() -> int:
         "exploitability_mbb_per_game": None,
     }
 
+    # Final exploitability comes from the last entry of
+    # result.intermediate_exploitability (the eval_callback always runs on
+    # the final iteration when enabled).
     if config.skip_exploitability:
         logger.info("skipping exploitability eval (skip_exploitability=true)")
+    elif result.intermediate_exploitability:
+        final_iter, final_expl = result.intermediate_exploitability[-1]
+        metrics["exploitability_mbb_per_game"] = final_expl
+        metrics["exploitability_history"] = [
+            {"iteration": it, "exploitability_mbb": expl}
+            for it, expl in result.intermediate_exploitability
+        ]
+        logger.info(f"final exploitability: {final_expl:.3f} mbb/g "
+                    f"(at iter {final_iter})")
+        if len(result.intermediate_exploitability) > 1:
+            first_iter, first_expl = result.intermediate_exploitability[0]
+            logger.info(f"  trajectory: iter {first_iter}={first_expl:.1f} -> "
+                        f"iter {final_iter}={final_expl:.1f} mbb/g")
     else:
-        logger.info("computing exploitability (full tabular game-tree traversal)...")
-        import time
-        t0 = time.time()
-        expl = exploitability_mbb(game, result.action_probabilities_fn)
-        eval_secs = time.time() - t0
-        metrics["exploitability_mbb_per_game"] = expl
-        metrics["exploitability_seconds"] = eval_secs
-        logger.info(f"exploitability: {expl:.3f} mbb/g (eval took {eval_secs:.1f}s)")
+        logger.info("no exploitability data (eval_callback was disabled)")
 
     # Save checkpoint + config.json + metrics.json (companions written automatically).
     ckpt_path = run_dir / "checkpoints" / "final.pt"

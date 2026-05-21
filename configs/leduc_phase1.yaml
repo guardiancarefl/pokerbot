@@ -1,0 +1,25 @@
+# Phase 1 validation config.
+#
+# Sized to finish in ~10 minutes on Contabo CPU while producing meaningful
+# exploitability data. Reduced from leduc_default.yaml on three axes:
+#  - iterations: 100 -> 40 (still enough to see clear convergence trend)
+#  - advantage_train_steps: 500 -> 200 (biggest per-iter cost reduction)
+#  - policy_train_steps: 1000 -> 400 (final pass, smaller speedup)
+#
+# Network widths kept at 64. Traversals kept at 40 (these are cheap relative
+# to the SGD passes).
+
+iterations: 25
+num_traversals: 40
+learning_rate: 0.001
+memory_capacity: 1000000
+
+advantage_network_layers: [64, 64]
+policy_network_layers: [64, 64]
+advantage_train_steps: 200
+policy_train_steps: 400
+batch_size_advantage: 128
+batch_size_strategy: 1024
+
+seed: 42
+skip_exploitability: false

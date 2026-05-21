@@ -8,7 +8,7 @@ venv/
 # Data & checkpoints (track in git LFS or external storage later if needed)
 data/
 checkpoints/
-runs/
+runs/*
 *.pt
 *.ckpt
 
@@ -22,3 +22,4 @@ Thumbs.db
 
 # Logs
 *.log
+!runs/README.md
