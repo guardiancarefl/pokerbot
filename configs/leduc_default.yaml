@@ -1,0 +1,28 @@
+# Default Leduc Deep CFR training config.
+#
+# These values are reasonable starting points for Leduc — not tuned for
+# minimum exploitability, just for reliable convergence on CPU within a
+# few minutes to an hour. Tune as needed for finer-grained experiments.
+#
+# Override any field via CLI: --iterations 200, --learning-rate 0.0005, etc.
+# Or create a new YAML and pass --config configs/leduc_myrun.yaml.
+
+# --- Algorithm ---
+iterations: 100
+num_traversals: 40
+learning_rate: 0.001
+memory_capacity: 1000000
+
+# --- Networks ---
+advantage_network_layers: [64, 64]
+policy_network_layers: [64, 64]
+advantage_train_steps: 500
+policy_train_steps: 1000
+batch_size_advantage: 128
+batch_size_strategy: 1024
+
+# --- Reproducibility ---
+seed: 42
+
+# --- Evaluation ---
+skip_exploitability: false
