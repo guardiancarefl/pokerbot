@@ -7,44 +7,59 @@ Format: most recent session at the top. Each session block notes date, what was 
 ---
 
 ## Session 2 — 2026-05-21
-**Focus:** Move from planning to execution. Get a working Linux environment with PyTorch + OpenSpiel, write the Phase 1 Leduc Deep CFR scaffold, start a training run.
+**Focus:** Move from planning to execution. Get a working Linux environment with PyTorch + OpenSpiel, write the Phase 1 Leduc Deep CFR scaffold, complete a training run that validates the pipeline.
 
 ### What was done
-- Attempted to install WSL2 + Ubuntu 22.04 on the Windows 11 host per Session 1's queued plan.
-- WSL itself (2.7.3) installed successfully, but DISM failed at `Enabling feature VirtualMachinePlatform` with exit code 14098 ("The component store has been corrupted"). Same failure occurred when DISM tried to enable `Microsoft-Windows-Subsystem-Linux`.
-- Ran `DISM /Online /Cleanup-Image /StartComponentCleanup` — completed successfully, no effect on the 14098 error.
-- Ran `DISM /Online /Cleanup-Image /RestoreHealth` — completed successfully (pulled replacement components from Windows Update), no effect on the 14098 error.
-- Ran `sfc /scannow` — reported finding and repairing corrupt files. No effect on the 14098 error after reboot.
-- Verified post-reboot that both `VirtualMachinePlatform` and `Microsoft-Windows-Subsystem-Linux` were still `State : Disabled` via `Get-WindowsOptionalFeature`. The repair had not enabled them.
-- Considered escalating to an ISO-source DISM repair (downloading the Windows 11 ISO, mounting it, pointing DISM at install.wim as a clean source). Decided against it.
-- Reason for the switch: the project does not require the Windows host. The earlier WSL2 decision was a path of least resistance assuming Windows-side work would be quick. With Windows servicing broken, the path of least resistance reversed direction.
-- Pivoted to an existing Contabo VPS already owned by the user: Ubuntu 24.04 (Noble), 12 vCPU AMD EPYC, 48GB RAM, ~300GB free on /, no GPU. The trade is: lose the local RTX 3060 (6GB VRAM) for now, gain a clean Linux environment immediately. GPU work happens on rented cloud GPU in Phase 4+ regardless.
-- Created GitHub account `guardiancarefl`. Created private repo `pokerbot`. Generated ed25519 SSH key on Contabo, registered with GitHub. Verified `ssh -T git@github.com` returns `Hi guardiancarefl!`.
-- Installed system packages on Contabo: `cmake`, `build-essential`, `software-properties-common`. Added `ppa:deadsnakes/ppa`. Installed `python3.10`, `python3.10-venv`, `python3.10-dev` alongside the system's default 3.12. OpenSpiel's officially-tested Python range is 3.7–3.10, so 3.10 is the safer target.
-- Created `~/pokerbot/` project directory. Initialized git, set remote, created `.gitignore` and `README.md`.
-- Wrote all five foundational docs (PROJECT_OVERVIEW.md, ARCHITECTURE.md, DECISIONS.md, STATUS.md, SESSION_LOG.md) into `~/pokerbot/docs/` verbatim from the Session 1 versions in project knowledge. Committed and pushed as initial commit (`c756764`). That commit captures the pre-Session-2 state — Windows runtime, RTX 3060, WSL2 plan, all intact.
-- Then updated STATUS.md, SESSION_LOG.md (this file), DECISIONS.md, and ARCHITECTURE.md to reflect the migration. Committed and pushed as the Session 2 commit.
-- Created Python 3.10 venv at `~/pokerbot/.venv`. Installed PyTorch CPU build and OpenSpiel via pip. Verified both import cleanly and `pyspiel.load_game("leduc_poker")` returns a valid game.
-- Created project directory structure: `src/`, `tests/`, `scripts/`, `configs/`, `runs/`.
-- Wrote a Leduc Deep CFR training script using `open_spiel.python.pytorch.deep_cfr` as the reference implementation. Added logging, checkpointing, and periodic exploitability evaluation.
-- Started the training run. Verified the script ran past initialization and was producing iteration output before declaring the session done.
+- Attempted WSL2 + Ubuntu 22.04 install on Windows 11 host. WSL itself (2.7.3) installed but DISM failed at `Enabling feature VirtualMachinePlatform` with error 14098 (component store corrupted). Same failure for `Microsoft-Windows-Subsystem-Linux`.
+- Ran `DISM /Online /Cleanup-Image /StartComponentCleanup` (no effect), then `DISM /Online /Cleanup-Image /RestoreHealth` (succeeded but didn't fix the feature install), then `sfc /scannow` (found and repaired corrupt files but features still wouldn't enable). After reboot both features still `State : Disabled`. The remaining repair paths (ISO-source DISM, in-place Windows reinstall) would have cost more time than just using a clean Linux machine that was already available.
+- Pivoted to existing Contabo VPS: Ubuntu 24.04 (Noble), 12 vCPU AMD EPYC (oversubscribed), 48GB RAM, ~300GB free, no GPU.
+- Created GitHub account `guardiancarefl`. Created private repo `pokerbot`. Generated ed25519 SSH key on Contabo, registered with GitHub.
+- Installed system packages: `cmake`, `build-essential`, `software-properties-common`. Added `ppa:deadsnakes/ppa`. Installed `python3.10`, `python3.10-venv`, `python3.10-dev` alongside system Python 3.12. (OpenSpiel's officially-tested Python range is 3.7-3.10, so 3.10 is the safer target.)
+- Created `~/pokerbot/` on the Contabo box. Initialized git, set remote, wrote `.gitignore` and `README.md`. Wrote all five foundational docs verbatim from Session 1 versions. Committed and pushed (`c756764`).
+- Updated STATUS.md, SESSION_LOG.md, DECISIONS.md, ARCHITECTURE.md to reflect the runtime migration. Committed and pushed (`52c3fd5`).
+- Created venv at `~/pokerbot/.venv`. Installed PyTorch CPU build (2.12.0+cpu) and OpenSpiel (1.6.11). Smoke tests confirmed both import and Leduc loads.
+- Built Phase 1 scaffold as a modular structure designed for reuse in Phase 2+: `src/leduc/config.py` (TrainConfig dataclass + YAML loader), `src/leduc/solver.py` (wraps OpenSpiel's DeepCFRSolver), `src/leduc/evaluate.py` (exploitability in mbb/g), `src/leduc/checkpoint.py`, `configs/leduc_default.yaml` + `configs/leduc_smoke.yaml`, `scripts/train_leduc.py` (~180 lines), `tests/test_pipeline.py` with 4 fast tests. Committed and pushed (`4f5c2d8`).
+- Pipeline tests passed but the first real training run with `leduc_default.yaml` (100 iters x 40 traversals x 500 adv steps) ran for 30+ minutes with **no per-iteration visibility** because OpenSpiel's `solve()` loops internally with no callback hooks. Killed it.
+- Tried a smaller config (`leduc_phase1.yaml`, 40 iters x 200 adv steps). First iteration came back at 67 seconds. Estimated total 45+ minutes. Killed it because the lack of visibility was the real problem, not the runtime.
+- Rewrote `src/leduc/solver.py` to drive training one iteration at a time: construct solver with `num_iterations=1`, call `solve()` in a Python loop, accept optional `logger` and `eval_callback`. Cost: one extra policy-network training pass per loop iteration (since OpenSpiel's `solve()` includes policy training as its final step). Benefit: per-iteration progress logging and periodic exploitability eval.
+- Updated `scripts/train_leduc.py` to pass the logger and an exploitability eval_callback (every 10 iterations, plus final iteration).
+- Caught a None-handling bug in the new solver: OpenSpiel's `_learn_strategy_network()` can return None when the strategy reservoir buffer is too small, same way `_learn_advantage_network()` can. Both now coerced to NaN.
+- Patched `runs/` gitignore: switched from `runs/` to `runs/*` so the negation rule `!runs/README.md` could take effect (git can't re-include files under an excluded directory). Wrote `runs/README.md` documenting the run directory format. Wrote `docs/PHASE2_SKETCH.md` as a forward-looking Phase 2 plan to give Session 3 a starting point. Committed and pushed (`d0688f9`).
+- Ran the third training attempt with `leduc_phase1.yaml` cut to 25 iterations. Per-iteration timing was very noisy on the oversubscribed Contabo CPU: individual iterations ranged from 13s to 151s, averaging 91s/iter. Total runtime 38 minutes.
+- **Phase 1 result: exploitability 1187 (uniform random) -> 502 (iter 10) -> 447 (iter 20) -> 434 (iter 25) mbb/g.** Clear downward trend, decelerating as expected. Final checkpoint saved at `runs/leduc_20260521_210552_phase1_take2/checkpoints/final.pt`. metrics.json and config.json saved as companions.
 
 ### What was decided
-- **Runtime moved from WSL2-on-Windows to Contabo VPS.** Recorded as a new entry in DECISIONS.md that supersedes (but does not delete) the original WSL2 entry. The original decision is preserved for historical reference.
-- **GPU work deferred to rented cloud hardware in Phase 4+.** Phases 1–3 don't need a GPU — Deep CFR's bottleneck through Phase 3 is CPU-bound trajectory generation, not network training. The local RTX 3060 was always going to be insufficient for Phase 4 anyway; this just makes the eventual cloud migration explicit instead of optional.
-- **OpenSpiel reference implementation, not custom CFR.** Used `open_spiel.python.pytorch.deep_cfr` as the Phase 1 implementation. The goal of Phase 1 is pipeline validation, not algorithmic research — reimplementing CFR adds risk without research payoff.
-- **Two-commit migration in git.** First commit captures the verbatim pre-Session-2 state (Windows-era plan). Second commit captures Session 2's changes. This keeps the history readable: anyone reading later can see exactly what changed and when, instead of an opaque "everything was Contabo from the start."
+- **Runtime moved from WSL2-on-Windows to Contabo VPS** (recorded in DECISIONS.md, supersedes original WSL2 entry).
+- **GPU work deferred to rented cloud hardware in Phase 4+** (or earlier if Phase 2d needs it — see open questions). The local RTX 3060 isn't part of the plan anymore.
+- **OpenSpiel reference implementation for Phase 1**, wrapped not reimplemented. The goal of Phase 1 is pipeline validation, not algorithmic research.
+- **Per-iteration solver loop** instead of single `solve(num_iterations=N)` call. Trades small compute overhead for the visibility needed to make informed decisions during runs. Acceptable for Leduc; may revisit for Phase 2+ if profiling shows it matters.
+- **Phase 1 config sized for time-on-Contabo, not for Leduc record exploitability.** 25 iterations with 200/400 train steps and 64-unit networks. Result (~434 mbb/g) is well above published Leduc Deep CFR levels (50-250 mbb/g typical) but well below uniform random (1187), demonstrating the pipeline works. Phase 1's job was infrastructure validation, not Leduc benchmarking.
+- **42 bought-bot profiles stay in Phase 3.** Brief discussion this session about skipping ahead to integrate them after Phase 1; the conclusion was that without a working NLHE training environment (Phase 2), there's no integration point for them. Phase 2 is the necessary bridge.
 
 ### What was learned / surprises
-- The Windows component store corruption was the kind of environmental problem that no amount of project-specific planning would have caught. Worth flagging that operating systems can be broken in ways that look like "your install command failed" but are actually "your system needs an in-place repair." Knowing when to bail vs. when to push through is a real skill.
-- The Contabo box being already paid for, already running, and already on Ubuntu turned a multi-hour Windows repair problem into a five-minute SSH session. The pre-existing infrastructure on the user's side was the unsung hero of this session.
-- Initial heredoc paste of `.gitignore` and `README.md` produced visually-mangled terminal echo (mid-line text from one block appearing inside another) but the actual file contents were fine. Lesson: always `cat` and `wc -l` after writing files via heredoc — the terminal echo is unreliable, the file contents are what matter.
+- The Windows component store corruption was the kind of environmental problem that no amount of project-specific planning would have caught. Worth flagging: operating systems can be broken in ways that look like "your install command failed" but are actually "your system needs an in-place repair." Knowing when to bail vs. push through is a real skill.
+- **My time estimates for ML iterations were repeatedly wrong tonight.** Estimated "3-10 minutes," then "30-90 minutes," then "~18s/iter" (actually 67s+). The lesson: benchmark one iteration of the real config before committing to a full run. We should have run a single-iteration timing check before each config change.
+- **A throwaway micro-benchmark gave wildly inconsistent numbers** on Contabo (17.9s vs 42.1s for same workload variants in opposite of the expected direction). Contabo's oversubscribed vCPUs mean per-iteration time varies by ~10x depending on neighbor activity. Adequate for development; useless for benchmarking. Phase 4+ compute planning must be done on dedicated hardware.
+- **OpenSpiel's `solve()` returns None for losses when buffers are too small** for either advantage or strategy training. Came up in two places (advantage net + policy net), both initially crashed our code with `TypeError: float() argument must be a string or a real number, not 'NoneType'`. Now handled by NaN coercion. Worth defensive-coding for in any wrapper around library code.
+- **Three killed training runs in one session.** The first kill was justified (no visibility). The second was justified (no visibility + bad timing estimate). The third would have been the impatience tax — we didn't kill that one and got the result. Pattern noted: kill when the *type* of problem changes (need visibility, need to reconfigure), not when "this is taking longer than I hoped."
+- **Visual mash from heredoc + command echoes** kept making terminal pastes look corrupted. Every time, the actual file contents were correct (proven by verify commands). Lesson: trust `wc -l` / `head` / `tail` / `grep` over visual scan of terminal echo.
+
+### Workflow notes for next time
+- Run a single-iteration timing benchmark on the real config before kicking off a long training run. Saves wall-clock time on misjudgments.
+- The 30-minute "is this hung or running" anxiety is the worst use of time in the project. Per-iteration logging eliminates it; future custom solvers (Phase 2+) need to preserve this.
+- Two SSH sessions to the Contabo box was the productive workflow (one for training, one for editing/committing). Tmux next session would be cleaner than juggling SSH windows.
+- The Session 1 verbatim-not-silent-edit rule held up well. Heredoc-based file writes were the right pattern.
+
+### Phase 1 cleanup deferred to Session 3
+- `train_leduc.py` writes its companion config.json and metrics.json into the `checkpoints/` subdirectory, not at the run-dir root as `runs/README.md` claims. Two options: update the README to match reality, or update the script to write both root and companion copies. Either is fine; not blocking Phase 2.
 
 ### Queued for next session
-1. Check the Leduc training run's progress. Exploitability should be decreasing toward known Nash (Leduc heads-up Nash exploitability is on the order of 0.01 mbb/g; reaching that takes hundreds of CFR iterations).
-2. Document Phase 1 result in SESSION_LOG.md and update STATUS.md.
-3. Plan Phase 2: heads-up NLHE prototype with coarse abstraction. Likely needs a GPU at some point. Decide GPU provider (Vast.ai / RunPod / Vultr GPU) and rough budget.
-4. Identify the 42 bought-bot profile format (text/XML/JSON/binary) — even though Phase 3 is a ways off, knowing the format unblocks parser work that can happen in parallel.
+1. Decide GPU provider for Phase 2d training. Compare current pricing for Vast.ai 4090, RunPod 4090, Vultr A40. Pick a winner.
+2. Phase 2a: load HUNL in OpenSpiel via universal_poker, validate the game representation, confirm action and information state encoding.
+3. Phase 2a: build card abstraction module (`src/nlhe/abstraction.py`) using EMD clustering on equity distributions. Target ~200 buckets per street.
+4. Phase 2a: build action abstraction module (`src/nlhe/actions.py`) with discretized bet sizes {check/fold, call, 0.33pot, 0.66pot, 1pot, 2pot, all-in} and translation of off-tree opponent sizes.
+5. (Small) Fix the Phase 1 cleanup deferred item above.
+6. (Small) Investigate why advantage loss kept climbing through the run. Per the OpenSpiel pattern with `reinitialize_advantage_networks=True`, climbing loss reflects growing-buffer complexity not network failure, but worth a sanity check against a published reference.
 
 ---
 
@@ -59,14 +74,14 @@ Format: most recent session at the top. Each session block notes date, what was 
 - Created the four foundational docs verbatim from contents provided in the planning chat: PROJECT_OVERVIEW.md, ARCHITECTURE.md, DECISIONS.md, STATUS.md.
 
 ### What was decided
-- **Runtime environment: WSL2 + Ubuntu 22.04** on the Windows host, preserving every other architectural decision while avoiding Windows-native build friction. (Superseded in Session 2.)
-- **Opponent anonymity as a core design principle.** No persistent identity for any opponent across matches. No pre-collected real-world hand history data feeds training. The bot's information state mirrors a competent human at an anonymous online table. This is a values-driven decision — robustness and fairness over peak exploitation EV.
-- **Within-match adaptation at Position 2.** Light-to-medium online statistics nudge subgame solver ranges within the current match, anchored to the blueprint as a safety floor. When a match ends, all derived state is wiped. Position 1 (pure GTO) leaves too much EV; Position 3 (full real-time opponent modeling) is fragile and compute-expensive on a 6GB laptop GPU.
-- **The 42 bought-bot profiles stay frozen.** Their role is style diversity in training and stable benchmark targets. Evolving them would lose benchmark stability and waste compute. Strength diversity in the training pool comes from league play (PSRO with archived self), which separates style diversity from strength diversity.
+- **Runtime environment: WSL2 + Ubuntu 22.04** on the Windows host. (Superseded in Session 2.)
+- **Opponent anonymity as a core design principle.** No persistent identity for any opponent across matches. No pre-collected real-world hand history data feeds training. The bot's information state mirrors a competent human at an anonymous online table. Values-driven decision — robustness and fairness over peak exploitation EV.
+- **Within-match adaptation at Position 2.** Light-to-medium online statistics nudge subgame solver ranges within the current match, anchored to the blueprint as a safety floor. When a match ends, all derived state is wiped.
+- **The 42 bought-bot profiles stay frozen.** Style diversity in training and stable benchmark targets. Strength diversity comes from league play (PSRO with archived self).
 
 ### What was learned / surprises
 - The original ARCHITECTURE.md mixed two design goals — anonymous Nash-leaning play and identified-opponent exploitation. Removing the exploitation layer made the project cleaner.
-- Claude Code defaulted to its own judgment when given file contents to write verbatim — it removed a line on its own and announced the edit after the fact. A hard rule for the project was set: when exact contents are given between BEGIN/END markers, write them exactly; concerns must be raised as questions before writing, not as silent edits. Noted in STATUS.md under Known issues.
+- Claude Code defaulted to its own judgment when given file contents to write verbatim — it removed a line on its own and announced the edit after the fact. A hard rule was set: when exact contents are given between BEGIN/END markers, write them exactly; concerns must be raised as questions before writing, not as silent edits. Noted in STATUS.md under Known issues.
 
 ### Workflow notes for next time
 - Always verify Claude Code's output, not just its self-reports. "Done" doesn't always mean done correctly.
