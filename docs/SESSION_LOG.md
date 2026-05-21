@@ -96,3 +96,57 @@ Format: most recent session at the top. Each session block notes date, what was 
 6. Move the project directory from C:\Users\Ngior\pokerbot\ to the WSL2 Linux filesystem (better I/O than the Windows mount)
 7. Install Claude Code inside WSL2 for ongoing project work
 8. Begin Phase 1 scaffold: Leduc Deep CFR training script
+
+---
+
+## Session 3 — 2026-05-21
+**Focus:** Open Phase 2. Decide GPU provider for Phase 2d. Load HUNL in OpenSpiel, validate game representation. Build card abstraction (EMD-based) and action abstraction. End-state goal: Phase 2a closed, foundations in place for Phase 2b training pipeline.
+
+### What was done
+- Researched current pricing for Vast.ai, RunPod, and Vultr GPU options. Recommendation made, committed to project docs, RunPod account created (no pod rented yet — Phase 2a and 2b run on Contabo CPU; first rental triggered at start of Phase 2d). DECISIONS.md entry locks the choice.
+- Validated HUNL game loads in OpenSpiel via `universal_poker` with ACPC-style parameter string. Numbers confirmed: 760-dim information state tensor, max_game_length 218, ~20000-action node before abstraction with dynamic shrinking as effective stack drops. Imperfect-information encoding verified (each player sees only their hole cards).
+- Walked a HUNL game from initial state under uniform-random play, validating that the engine correctly handles chance nodes, decision nodes, terminal returns. Returns are zero-sum chips (`[20000, -20000]`), to be wrapped with ICM in Phase 4.
+- Installed `treys` (Python poker hand evaluator). `pokerkit` would have been preferred for capability but requires Python 3.11+; we're pinned to 3.10 by OpenSpiel's tested range. Treys imported, sanity-checked AA>KK, AA-vs-random equity at 0.847 vs literature 0.85.
+- Built `src/nlhe/equity.py` (191 lines): wraps `treys`, exposes 169-class canonical hole enumeration, string-based card I/O, Monte Carlo `equity_vs_random` and `equity_vs_range`. Smoke-tested at 6 levels: AA at 0.856, 72o at 0.348, paired-board AA at 0.888, wet-board AA at 0.701. All match literature.
+- **Decision: EMD over OCHS for card abstraction.** PHASE2_SKETCH had flagged this as a session decision. After laying out three readings of the question (will-need-eventually vs values-driven vs default-to-harder-on-autopilot), confirmed Reading 2 — values-driven choice for the gold-standard technique. Logged in DECISIONS.md.
+- Built `src/nlhe/abstraction.py` (326 lines): equity-histogram generation via Monte Carlo runouts, pairwise EMD via `scipy.stats.wasserstein_distance`, custom PAM (k-medoids) clustering, `Abstraction` container with `bucket_of`/`save`/`load`. Validated end-to-end on a tiny-scale smoke test (preflop k=5 in ~10 seconds). Numbers checked: AA in different bucket from 72o, d(AA, 72o) = 0.54, kmedoids cost decreases monotonically and converges in <5 iterations.
+- Built `scripts/train_abstraction.py` (158 lines) for the production training run + `scripts/inspect_abstraction.py` (77 lines) for post-hoc analysis. Dry-run on preflop only first; clean. Then full run across all four streets in 6.8 minutes wall-clock. Bucket distributions are sensible (preflop median 6 hands/bucket on k=20, postflop median 7 hands/bucket on k=200, max 19–26 across streets — no degenerate one-giant-bucket clustering).
+- Inspected the trained flop abstraction in detail. EMD is doing real strategic clustering: different surface hands with similar histogram shapes group together. Specific verifications:
+  - "Drawing dead on coordinated board" hands (e.g., `4h2s` on `8s6dTh`, `5h2c` on `Kc3d9h`) cluster despite different surface cards — same equity-histogram shape.
+  - Set on dry board (`3h3d` on `3cKd7h`) at equity 0.96 sits in its own bucket above two-pair-no-improvement clusters.
+  - Pocket pair tiers (99 / JJ / QQ / AA) end up in separate buckets even where mean equities are close — EMD's histogram-shape sensitivity is the value-add over OCHS, and it works.
+- Built `src/nlhe/actions.py` (~230 lines after patches): `DiscreteAction` enum {fold, call, 0.33pot, 0.66pot, 1pot, 2pot, allin}, `policy_to_game_action` (discrete → OpenSpiel integer), `game_to_policy_action` (OpenSpiel integer → distribution over discrete via pseudo-harmonic translation from Ganzfried & Sandholm 2013), `discretize_legal_actions` (filter at decision time). Smoke-tested with mid-pot, small-pot, large-pot views.
+- Caught and patched two bugs in the action module on the first smoke run. First: `policy_to_game_action` was clamping sub-min-bet sizes up to min_bet, causing 0.33pot/0.66pot/1pot to alias to the same chip count on small pots. Fix: return `None` for sub-min-bet sizes, treat them as unavailable in that state. Second: `_legal_discrete_bet_sizes` was deduping at the same chip count by keeping the first (smallest-label) action; it should keep the largest. Fix: use a dict keyed by chip count, so later (larger) actions overwrite earlier ones at the same count. Re-run after both patches: clean.
+- Updated DECISIONS.md (EMD abstraction entry), STATUS.md (Phase 2a closure + Phase 2b queue), SESSION_LOG.md (this entry).
+
+### What was decided
+- **GPU provider for Phase 2d: RunPod Community Cloud RTX 4090** at $0.34/hr. Vast.ai marginally cheaper but more variable; Vultr 5x the cost for unneeded VRAM. $93 Vultr credit held for Phase 4 (multi-day blueprint training where reliability matters) or Phase 3 helper if needed.
+- **Card abstraction: EMD on equity histograms, not OCHS.** Values-driven choice: EMD is the gold-standard technique and implementing it once now means we've done it properly when Phase 4 needs an even harder abstraction. Trade-off acknowledged (2-3x the code of OCHS, no measurable Slumbot-cycle validation against simpler alternative).
+- **EMD sample sizes for Phase 2a:** preflop=169 canonical hands × 400 runouts → k=20. Postflop=1500 sampled (hand, board) combos × 200 runouts → k=200. 50 histogram bins per equity distribution. 6.8 min total training time, well within budget.
+- **Action abstraction: 5 bet sizes** {0.33pot, 0.66pot, 1pot, 2pot, allin} + fold/call. Confirmed as ARCHITECTURE.md's target. Acknowledged that opponent bets between 2pot and 0.9×stack all snap to 2pot — coarse but acceptable for Phase 2; revisit if Slumbot shows overbet-sizing exploits.
+- **Action illegality is signal, not noise.** When a discrete action's intended chip target falls below the legal min_bet, return None rather than aliasing to min_bet. The policy network will softmax only over legal discrete actions in that state.
+
+### What was learned / surprises
+- **Visual mash from heredoc echo continues to mislead, including misleading the assistant.** Twice this session: once after the abstraction.py write where my eye saw the closing `STATUS_EOF` fused to fragments of later content and I worried the file was truncated; once after the STATUS.md write where `tail -3` showed three log entries and I momentarily thought Session 3 had been appended twice. Both times the file on disk was correct, verified by `wc -l` and `grep`. Session 2's lesson holds: trust `wc -l` / `head` / `tail` / `grep` over visual scan of terminal echo.
+- **Pasting large content directly into a bash prompt fails noisily.** Early in the session, the first DECISIONS.md content was pasted without the surrounding `cat << 'EOF'` heredoc wrapper. Bash tried to execute each line as a command, producing a wall of `command not found` errors. No actual file damage, but a real reminder that BEGIN/END markers in the assistant's instructions are *labels* describing where content goes, not shell commands to type. The fix going forward: always wrap content in a heredoc, single-quote the delimiter to prevent variable expansion, give the delimiter a distinctive name (`STATUS_EOF` not `EOF`).
+- **The "trust the test, don't trust my expectation" lesson, again.** On the equity calculator's flop test, AA on `2c7d9s` came back at 0.86, and I'd written "expected 0.88-0.92" — looked like a bug. Higher-precision MC (20k trials) confirmed 0.859. The function was correct; my expected range was wrong. The same instinct would have wasted an hour chasing a non-existent bug if I'd trusted my prior over the measurement.
+- **EMD really does what the literature says it does, and inspection makes it visible.** The flop bucket inspection was the most satisfying moment of the session — seeing different surface hands with the same strategic situation correctly clustered, and seeing pocket pair tiers correctly separated by histogram *shape* not just *mean*. Not abstract theory; visible in the output table.
+- **First-attempt bugs in action translation were the right ones to catch.** Both bugs I caught (sub-min-bet aliasing, dedupe-by-keeping-first) would have produced subtle problems downstream — the policy would have learned weird patterns in small-pot states. Catching them in the smoke test before any training run is cheap; catching them after a multi-hour Phase 2d Slumbot evaluation would have been expensive.
+- **Time estimates were better this session than last.** Predicted 12-15 minutes for abstraction training; actual was 6.8. Predicted ~120s for pairwise EMD per postflop street; actual 107-125s. Predicted ~10s for preflop smoke test; actual ~4s. Session 2's "always benchmark one iteration before committing to a full run" approach (here: dry-run on preflop before full four-street run) is paying off.
+
+### Workflow notes for next time
+- The two-SSH-session pattern was the right shape: one window for the training run, one for editing, one for inspection. Tmux would still be cleaner — defer until it becomes a friction point.
+- Heredoc paste failures continue to be the dominant low-level annoyance. Single-quoted distinctive delimiter is the rule; not optional.
+- When patching existing files, sed-via-python-heredoc with `assert old in src` is safer than raw sed. The assert catches silent failure modes where sed would otherwise no-op on a near-miss.
+- The "kill criterion" from Session 2 (kill when the *type* of problem changes, not when "this is taking longer than hoped") held this session — we never killed a run.
+
+### Phase 2a cleanup that's still open
+- `runs/README.md` vs `train_leduc.py` config/metrics location mismatch (deferred from Session 2). Not blocking Phase 2b.
+- Advantage loss sanity check against published Deep CFR Leduc reference (deferred from Session 2). Also not blocking. Both are good candidates for "warm-up" tasks at start of Session 4.
+
+### Queued for next session
+1. Phase 2b: build NLHE solver wrapper. Should follow the Leduc solver pattern (per-iteration logging, eval callback, NaN-safe loss capture). Information state encoding has to combine card bucket (from `Abstraction.bucket_of`) with betting history features.
+2. Phase 2b: train Deep CFR on tiny HUNL (20bb stacks, coarse abstraction, [64,64] networks) on Contabo CPU. Goal is "the pipeline doesn't explode," not "good HUNL strategy."
+3. Phase 2b: implement resumable training (checkpoint every N iterations, idempotent resume). Hard prerequisite for RunPod Community Cloud in Phase 2d.
+4. Optionally Phase 2c: start the Slumbot harness. Independent of 2b work, could be done in parallel.
+5. Session 2 cleanups (the two open items above) if time permits.
