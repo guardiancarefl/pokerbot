@@ -179,3 +179,31 @@ Format: most recent session at the top. Each session block notes date, what was 
 2. Optional Phase 2b real-run on Contabo (100 iter × 100 trav) before Phase 2d.
 3. Phase 2d: rent RunPod 4090, scale up, get measurable bb/100 vs Slumbot.
 4. Session 2/3 cleanups: `train_leduc.py` config.json/metrics.json location (now also inconsistent with `train_nlhe.py`).
+
+---
+
+## Session 3 (extended extended) — 2026-05-22 (~00:30-01:00)
+**Focus:** After closing Phase 2b, pushed straight into Phase 2c. Built Slumbot HTTP client, action-language parser, eval script, random-policy baseline, validated end-to-end.
+
+### What was done
+- Probed Slumbot's API via curl before writing the client — saw the exact JSON response shape for `new_hand` and `act`. Found out the response includes `baseline_winnings`, `session_baseline_total`, etc. — Slumbot's built-in variance reduction signal we hadn't expected.
+- Built `src/nlhe/slumbot_client.py` (~210 lines): SlumbotClient + SlumbotState dataclass + action-string parser + RandomPolicy baseline.
+- Built `scripts/eval_vs_slumbot.py` (~110 lines): hands loop with running bb/100 summary, raw and baseline-adjusted.
+- Hit and fixed three real bugs in sequence: (1) RandomPolicy tried to bet `b<STARTING_STACK>` ignoring chips committed → "Illegal call" rejection; dropped the option. (2) Slumbot's action language uses `k` for check and `c` strictly for call; client treated them as interchangeable; patched RandomPolicy to emit the right one based on whether facing a bet. (3) On preflop with empty action string, the SB is facing the unposted big blind; client said `facing_bet=False` and the policy sent `k`; patched to special-case preflop.
+- 50-hand validation run: 0 errors, raw=-13 bb/100, baseline-adjusted=-6 bb/100. Both negative as expected; magnitudes smaller than I'd guessed because random-policy HUNL isn't as exploitable as my prior suggested (the legal action set is small and constrained, and Slumbot can't fully exploit randomness without paying off bluffs).
+- Committed Phase 2c as `796868b` (368 insertions, 2 files).
+
+### What was decided
+- **Use `baseline_winnings` as the headline eval metric** rather than raw `winnings`. Slumbot's per-hand baseline difference gives a 10-100x variance reduction in academic literature, so we need fewer hands to detect a small edge.
+- **PolicyAdapter (trained policy → Slumbot action string) deferred to Phase 2d.** No trained policy exists yet (only smoke runs); the adapter needs careful action-translation work that's better done with a real policy in front of us.
+
+### What was learned / surprises
+- **The Slumbot API is more useful than I'd expected.** The variance-reduction signal alone is worth a chapter — it makes evaluation 1-2 orders of magnitude cheaper than naive bb/100.
+- **Action-language pedantry matters.** `c` vs `k` for call vs check, BB-as-implicit-bet preflop — these aren't documented prominently anywhere and only came out via 4 illegal-action rejections. Lesson for next protocol-integration work: probe with curl extensively before writing client code.
+- **My prior on "random policy loses ~200 bb/100" was wrong by an order of magnitude.** Restricted-action-set random play in HUNL is much closer to break-even than I'd modeled. Worth recalibrating expectations for how hard the bot has to play to *not* lose money to Slumbot.
+
+### Queued for Session 4 (next session)
+1. PolicyAdapter: trained Deep CFR policy → Slumbot action string.
+2. Optional Phase 2b real-run on Contabo CPU (100 iter × 100 trav) to get a real baseline policy before Phase 2d.
+3. Phase 2d: rent RunPod 4090, scale up training, eval against Slumbot, get headline bb/100 number.
+4. Session 2 cleanups: train_leduc/train_nlhe config.json location inconsistency.

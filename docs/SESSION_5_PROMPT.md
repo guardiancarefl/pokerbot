@@ -2,21 +2,26 @@
 
 Continuing the pokerbot project. Session 5.
 
-**Status:** Phase 2b closed (Session 3 ran long, into the early morning of 2026-05-22). HUNL game validated, equity calculator + EMD card abstraction + action abstraction built (Phase 2a). Custom Deep CFR solver + info-state encoder + resumable checkpointing + YAML training script built (Phase 2b). **Bit-identical resume correctness verified** (max param diff 0.00e+00). Phase 2b training pipeline is ready; the gate for Phase 2d is no longer the solver — it's the Slumbot evaluation harness.
+**Status:** Phases 2a, 2b, 2c all closed (Session 3 ran *long* into 2026-05-22). Trained card abstraction at `runs/abstraction_20260521_223018/`. Custom Deep CFR solver with bit-identical resumable checkpointing (`src/nlhe/solver.py`). Slumbot client and eval harness validated (`src/nlhe/slumbot_client.py`, `scripts/eval_vs_slumbot.py`). Latest commit `796868b` ("Phase 2c: Slumbot evaluation harness").
 
-**Runtime:** Contabo VPS, Ubuntu 24.04, Python 3.10 venv, latest commit `563793f` ("Phase 2b: HUNL Deep CFR solver with resumable training"). Trained abstraction at `runs/abstraction_20260521_223018/abstraction.pkl`.
+**Runtime:** Contabo VPS, Python 3.10 venv. RunPod account created for Phase 2d (no pod rented yet, $0.34/hr 4090). $93 Vultr credit held for Phase 4.
 
-**GPU decision still standing:** Phase 2d uses RunPod Community Cloud RTX 4090 at $0.34/hr. Account created Session 3, no pod rented yet.
+**Today's session opens Phase 2d.** Three things on the front burner:
 
-**Today's session opens Phase 2c: Slumbot evaluation harness.** Next-up items:
+1. **PolicyAdapter**: write the glue that wraps a trained `DeepCFRSolver` into a `choose_action(SlumbotState) -> str` callable for the eval harness. Translates Slumbot's 200bb chip-action-string state into our `InfosetEncoder` view, runs the strategy network, picks an action via the discrete action space, translates back to Slumbot's action string format. This is the bridge between training and evaluation that didn't get built in Session 3.
 
-1. Phase 2c: build `src/nlhe/slumbot_client.py` — HTTP client against the Slumbot 2017 API, hand-history parsing, bb/100 calculator.
-2. Phase 2c: write an eval script that runs N hands of a policy vs Slumbot and reports win rate. Test with random-policy baseline first to validate the harness before plugging in our trained Deep CFR policy.
-3. (Optional) Phase 2b real-run on Contabo CPU: execute `configs/nlhe_phase2b.yaml` (100 iter × 100 trav, estimated 3-5 hours). Gets a real baseline policy before going to GPU. Could overlap with 2c work in the second SSH session.
-4. Phase 2d: rent RunPod 4090, scale to [256,256] networks, get measurable bb/100 vs Slumbot.
+2. **Phase 2b real run (optional, on Contabo CPU)**: execute `configs/nlhe_phase2b.yaml` (100 iter × 100 trav, estimated 3-5 hours). Gets a real trained policy on the box before Phase 2d, useful for sanity-checking the PolicyAdapter before paying for GPU time.
 
-**Cleanups still open** (originally Session 2 deferred): `train_leduc.py` writes config.json/metrics.json into checkpoints/, `runs/README.md` claims root. `train_nlhe.py` does it correctly. Reconcile.
+3. **Phase 2d (main): rent RunPod 4090, train at 200bb stack with [256, 256] networks, eval against Slumbot.** This is the headline Phase 2 deliverable — a measurable bb/100 against the public benchmark.
 
-Please read STATUS.md (entry point), then SESSION_LOG.md Session 3 extended entry (for context on Phase 2b design decisions), then DECISIONS.md latest entries. Confirm state matches STATUS, then start with Phase 2c.
+**Smaller cleanups still open** (deferred from Session 2): `train_leduc.py` writes config.json/metrics.json into `checkpoints/`, `train_nlhe.py` writes them at run-dir root, `runs/README.md` claims root. Reconcile.
 
-**Workflow rules carrying:** Single-quoted distinctive heredoc delimiters (`SOMETHING_EOF` not `EOF`). Verify file writes with `wc -l`/`head`/`tail`/`grep`. When patching: verify each patch landed before moving to the next step. Benchmark before committing to long runs. Kill criterion: kill when the *type* of problem changes, not when "taking longer than hoped."
+Read STATUS.md (entry point), SESSION_LOG.md Session 3 extended-extended entry, then DECISIONS.md for the EMD-abstraction and RunPod-provider entries. Confirm state, then start with PolicyAdapter.
+
+**Workflow rules carrying over:**
+- Single-quoted distinctive heredoc delimiters (`SOMETHING_EOF`).
+- Verify file writes with `wc -l` / `head` / `tail` / `grep`.
+- When patching: verify each patch landed before the next step.
+- Benchmark before committing to long runs.
+- Kill criterion: kill when the *type* of problem changes, not when "taking longer than hoped."
+- Probe APIs with curl before writing client code (Session 3 lesson).
