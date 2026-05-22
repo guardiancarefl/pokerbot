@@ -8,6 +8,8 @@ A 6-max NLHE SNG poker bot, top-3 equal payout format. Deep CFR blueprint with a
 
 The project is staged in phases. Current state and what's open lives in `docs/STATUS.md`; the chronological "why" lives in `docs/SESSION_LOG.md`. **Read those two files first when picking up work** — they're authoritative over anything you might infer from the code.
 
+**Then cross-check with git.** Run `git log --oneline -10` before designing or coding anything. STATUS.md can lag the last commit, and trusting a stale STATUS will cost a full session of rebuilt work. If STATUS says a track is "next up" but the most recent commits land that track, believe the commits. Session 7.5 (2026-05-22) burned hours on this exact failure mode.
+
 ## Runtime
 
 - **Host:** Contabo VPS, Ubuntu 24.04, 12 vCPU AMD EPYC (oversubscribed — per-iteration timings vary ~10×), 48 GB RAM, no GPU. Project lives at `~/pokerbot/`.
