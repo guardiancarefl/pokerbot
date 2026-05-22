@@ -237,3 +237,17 @@ This means: Phase 2d HUNL training was meaningfully noisy at the bucket-assignme
 A3 cannot meaningfully compare abstractions until the lookup is deterministic — otherwise we are comparing measurement noise, not abstraction quality. Session 8 starts with the deterministic-lookup redesign, not with new abstraction implementations.
 
 Once fixed, an additional small win: retrain the existing k=20 abstraction's *lookup table* (not the medoids) deterministically, rerun Slumbot eval. Expect the result to be slightly better than +31.45 because the bot now sees consistent buckets at decision time. This is a free measurement on whether the deterministic-lookup fix alone moves bb/100, before any new abstraction algorithm is implemented.
+
+## A3 update: preflop deterministic lookup landed (Session 7.5 late close)
+**Date:** 2026-05-22 (Session 7.5, late close)
+**Status of the non-determinism finding above:** fixed for preflop, pending for postflop.
+
+Commits f274c6f (infrastructure) and ae2a1e7 (trainer integration) added an optional `preflop_lookup: dict[str, int]` field on `StreetAbstraction`. `bucket_of()` uses it as a deterministic O(1) fast path when present; old pickles without it fall back to the unchanged MC histogram path. The trainer builds the dict from k-medoids labels during preflop training.
+
+End-to-end verified at k=169: 5 trials × 5 different rng seeds × 50 runouts = same bucket every time for AA, KK, QQ, AKs, 72o. Before the change, the same probes returned 3-4 different buckets each.
+
+Adjacent fix that came out of the same investigation: `_kmeans_plus_plus_init` was sampling with replacement (commit a22af38). The "lossless" k=169 preflop trainer had been silently producing only 168 distinct HoleClass strings, with 87o duplicated and J7o missing. Now provably correct on the lossless case.
+
+**What's next (Session 9):** postflop deterministic lookup. Harder problem — (hero, board) tuples aren't enumerable. Likely path: deterministic rng seeded from `hash(canonical(hero, board))` inside `compute_hand_histogram`, so same query always produces same histogram. This fixes the noise but leaves the lossy-distance-metric question open. Acceptable for A3 to proceed; a deeper exact-equity refit would be a Phase 4 polish.
+
+**Outstanding measurement opportunity:** once postflop determinism lands, retrain the original k=20 abstraction with the new deterministic-lookup machinery (no algorithm change), rerun Slumbot eval. Phase 2d's +31.45 bb/100 was achieved against a noisy lookup; deterministic lookup alone may move bb/100 measurably before any new abstraction algorithm is introduced. This is a free measurement and should be the first datapoint in the A3 comparison harness.

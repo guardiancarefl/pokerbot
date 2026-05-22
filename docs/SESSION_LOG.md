@@ -6,6 +6,42 @@ Format: most recent session at the top. Each session block notes date, what was 
 
 ---
 
+## Session 7.5 — 2026-05-22 (late evening / overnight)
+**Focus:** Open Track A3 — card abstraction comparison harness with KrwEmd as the headline option. Got further than planned, but in an unexpected direction.
+
+### What was done
+- Decision locked: implement Option 4 (KrwEmd, Fu et al. 2025) alongside Option 1 (EMD k=169/500) with a comparison harness, picking the winner by Slumbot bb/100. Documented in docs/A3_PLAN.md (commit 81fbaf4).
+- Started the Option 1 baseline trainer (scripts/train_abstraction_a3_option1.py) on Contabo. Killed it mid-flop after a 30-second probe surfaced that the lookup was non-deterministic at k=169 — AA, KK, QQ, TT all collapsed to wrong / overlapping buckets across calls (commit 034d549).
+- Verified the non-determinism is irreducible at any reasonable runout budget: at 200, 800, 2000, 5000 runouts, KK and QQ still flip buckets across fresh-rng trials. Even k=20 (the production abstraction Phase 2d trained against) shows AKs flipping between buckets 18, 10, 16 at 200 runouts (commit a10c012).
+- Found a separate bug while validating: the "lossless" k=169 preflop trainer was producing only 168 distinct HoleClass strings, with 87o duplicated at buckets 41 and 167 and J7o missing entirely. Root cause: _kmeans_plus_plus_init used rng.choices weighted by squared distances but didn't zero out already-picked indices, allowing duplicate medoid picks. Two-line fix plus a k==n short-circuit (commit a22af38).
+- Shipped deterministic preflop lookup as two clean commits:
+  - f274c6f added infrastructure: hole_class_from_cards() in equity.py, optional preflop_lookup field on StreetAbstraction, bucket_of() fast path using the dict, 9 new tests.
+  - ae2a1e7 modified train_abstraction.py to build the lookup from k-medoids labels during preflop training.
+- End-to-end verified: a freshly-trained k=169 preflop abstraction returns the same bucket for AA, KK, QQ, AKs, 72o across 5 trials with 5 different rng seeds at 50 runouts each. Before the change, same probes returned 3-4 different buckets.
+
+### What was decided
+- **Project sequence stays the same.** User asked why we're not going straight to 6-max NLHE. Answer: HUNL is a debugging environment, not a deliverable. The pieces we're building (A3 card abstraction, B1 subgame solver, C1 within-match adaptation) all transfer. Validate them in 2-player where convergence is faster and the Slumbot benchmark exists, then port to 6-max at Phase 4 once the algorithmic pieces are in place. Recorded as a project-direction consensus, not a written decision (the original ARCHITECTURE.md already had Phase 4 as 6-max).
+- **A3 strategy: deterministic lookup before any new abstraction algorithm.** Comparing abstractions on top of a non-deterministic lookup means comparing measurement noise. Postflop determinism is the next concrete deliverable; KrwEmd and OCHS implementations follow after.
+
+### What was learned / surprises
+- The non-determinism finding kept getting stronger as we probed deeper. First observation: AA collides with TT at k=169 in one trial. After "this might be noise," tried 5000 runouts to wash it out — still noisy. Concluded that the medoid distances are smaller than the irreducible MC noise floor at any reasonable runout budget, which means "more MC" cannot be the fix. The fix had to be deterministic-lookup, not better-MC.
+- Found three foundational bugs in roughly two hours by being willing to keep probing instead of assuming the existing code was correct: (1) bucket_of() non-deterministic at lookup, (2) kmedoids sampling with replacement, (3) (still pending) the histogram-distance metric being too coarse to distinguish adjacent hands at lookup time. The first two are now fixed. Each finding required a 30-second probe that the codebase didn't already have.
+- The patch-with-assertions discipline saved us at least twice tonight. Both Commit A and Commit B's first patch script attempts failed on count==0 because the actual file had blank lines or whitespace my anchor didn't match exactly. The assertions caught it immediately instead of silently writing nothing.
+- Earlier in the session I rebuilt Track A2 because I didn't run `git log --oneline -10` at session start — A2 was already shipped in dbfc7be by an earlier session today. CLAUDE.md updated with a git-log-at-session-start requirement (commit db0cc31). The lesson held throughout the rest of the session.
+
+### Workflow notes for next time
+- The "30-second probe before committing to long training run" pattern is now proven twice (Session 7.5 kmedoids bug, Session 7.5 bucket_of bug). Future abstraction work should always include a 5-hand determinism check on the trained artifact before launching anything multi-hour.
+- Two-commit-pattern (infrastructure first, no behavior change; integration second, behavior change) worked very well for the preflop lookup ship. Commit A is independently revertable. Commit B depends on A but is small. Use this for postflop too.
+- Patch scripts should always use `sed -n ... | cat -A` to see actual bytes (whitespace, blank lines) before writing the `old_str` anchor. Two anchor failures tonight, both from invisible blank lines.
+
+### Queued for Session 9
+1. Postflop deterministic lookup. Likely approach: deterministic rng seeded from `hash(canonical(hero, board))` inside `compute_hand_histogram`. Same conceptual two-commit shape as preflop.
+2. After postflop determinism: retrain k=20 abstraction with deterministic lookup, rerun Slumbot eval. Free measurement on whether deterministic lookup alone moves bb/100.
+3. Then A3 proper resumes: Option 1 (k=169/500 EMD) trained on the deterministic foundation, then Option 4 (KrwEmd) implementation, then comparison harness picks the winner.
+4. Cleanup: STATUS.md's "Next up (Phase 3)" section still says A3 / B1 / C1 as parallel tracks; revisit ordering given A3 has more work than expected.
+
+---
+
 ## Session 7 — 2026-05-22 (evening)
 **Focus:** Phase 3 Track A2 — implement the hand-engineered archetype framework. Five archetypes (NIT, TAG, LAG, STATION, MANIAC) parameterized by tightness × aggression, plugged into the Deep CFR solver as opponent diversity beyond pure self-play.
 
