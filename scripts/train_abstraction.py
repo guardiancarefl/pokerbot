@@ -91,11 +91,31 @@ def train_street(
     log.info(f"  k-medoids (k={effective_k}) converged to cost={cost:.4f} in {time.time()-t0:.1f}s")
     log.info(f"  label distribution: min={np.bincount(labels).min()} max={np.bincount(labels).max()} median={int(np.median(np.bincount(labels)))}")
 
+    # For preflop, build a deterministic canonical-hand -> bucket lookup table.
+    # sample_street_hands returns the 169 HoleClasses in all_hole_classes() order,
+    # so hands[i] corresponds to all_hole_classes()[i] and gets bucket labels[i].
+    # This eliminates the bucket_of() MC non-determinism at query time. See
+    # DECISIONS.md for the finding and tests/test_abstraction.py for verification.
+    preflop_lookup = None
+    if street == "preflop":
+        from src.nlhe.equity import all_hole_classes
+        canonical_classes = list(all_hole_classes())
+        assert len(canonical_classes) == len(hands), (
+            f"preflop sample count mismatch: {len(canonical_classes)} classes vs "
+            f"{len(hands)} sampled hands"
+        )
+        preflop_lookup = {str(canonical_classes[i]): int(labels[i]) for i in range(len(hands))}
+        assert len(preflop_lookup) == 169, (
+            f"preflop_lookup has {len(preflop_lookup)} keys, expected 169"
+        )
+        log.info(f"  built preflop_lookup with {len(preflop_lookup)} canonical-class entries")
+
     return StreetAbstraction(
         street=street,
         bins=bins,
         medoid_histograms=histograms[medoid_idxs],
         medoid_hands=[hands[i] for i in medoid_idxs],
+        preflop_lookup=preflop_lookup,
     )
 
 
