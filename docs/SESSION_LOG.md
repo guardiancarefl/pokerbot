@@ -150,3 +150,32 @@ Format: most recent session at the top. Each session block notes date, what was 
 3. Phase 2b: implement resumable training (checkpoint every N iterations, idempotent resume). Hard prerequisite for RunPod Community Cloud in Phase 2d.
 4. Optionally Phase 2c: start the Slumbot harness. Independent of 2b work, could be done in parallel.
 5. Session 2 cleanups (the two open items above) if time permits.
+
+---
+
+## Session 3 (extended) — 2026-05-22 (late night)
+**Focus:** After closing Phase 2a, pushed through Phase 2b in the same session against my own recommendation to wrap. Built the custom Deep CFR solver, info-state encoder, resumable checkpointing, and YAML-driven training script. Phase 2b closed.
+
+### What was done
+- Decision: **custom Deep CFR loop, not wrapping OpenSpiel's `DeepCFRSolver`.** Reasoning: OpenSpiel's solver is tightly coupled to its game API and would fight our card/action abstractions. The deviation from textbook Deep CFR foreshadowed in DECISIONS.md ("Phase 1 implementation: OpenSpiel reference Deep CFR, not custom") cashed in here.
+- Built `src/nlhe/infoset.py` (229 lines): bucket one-hot + street + position + pot/stack features + betting history features = 214-dim vector. Per-traversal cache for the expensive `bucket_of` calls. Smoke-tested against live HUNL states.
+- Built `src/nlhe/solver.py` (initial 378 lines, ~452 after patches): external-sampling Deep CFR, regret-matching+, two networks per player (advantage + strategy), reservoir buffers, per-iteration logging mirroring the Leduc pattern.
+- Initial smoke run: solver ran but advantage losses were in the millions (4M+). Root cause: regrets are in chip-unit scale (±2000 for our tiny config), MSE on that is millions. Patched in regret normalization (divide by starting_stack). Re-ran: losses now O(0.7-1.0), gradient conditioning sane.
+- Added save/load checkpoint methods (~80 lines): serialize all 4 networks, 4 optimizers, 3 reservoir buffers, all Python and torch RNG states, current iteration. Modified `train()` to take `checkpoint_dir`/`checkpoint_every` args and support resuming from `solver.iteration + 1`.
+- **Resume correctness test:** ran the same 10-iter config two ways — (A) uninterrupted, (B) train 5 iters with checkpoint, fresh solver loads checkpoint, train 5 more. Compared all 4 networks' parameters. Result: **max param diff = 0.00e+00 across all networks.** Bit-identical resume verified.
+- Built `scripts/train_nlhe.py` (~95 lines) as YAML-driven entry point. Mirrors `train_leduc.py` structure. Writes `config.json` and `metrics.json` to run dir, checkpoints to `checkpoints/` subdir.
+- Wrote `configs/nlhe_smoke.yaml` (20 iter × 50 trav) and `configs/nlhe_phase2b.yaml` (100 iter × 100 trav) for varying use cases.
+- Dry-run of full script with a 3-iter micro config: end-to-end pipeline works, checkpoints land, metrics persist.
+- Committed all of Phase 2b as one commit (`563793f`, 830 insertions across 5 files).
+
+### What was learned / surprises
+- **Patching files via inline python heredoc then continuing without confirming the grep is a foot-gun.** First normalization patch failed silently — I sent the patch script *and* the verify grep in the same message, you ran only the grep, the patch never landed, I didn't notice because I was reading "I sent a patch" not "did the patch actually land." The second time, with explicit grep-then-verify-before-proceeding, it landed correctly. Lesson: when patching, do it in a sequence where the verification gates the next step, not bundled-together.
+- **Bit-identical resume is a real correctness criterion** and worth the work. We saved every RNG state explicitly (Python random for solver, three separate Python random for buffers, torch RNG state). The reward: a Phase 2d run on RunPod that gets pre-empted loses only the work since the last checkpoint, not unbounded drift.
+- **Advantage loss scale is a real production concern even at tiny stacks.** A 6-order-of-magnitude loss meant gradient updates were enormous early in training; the network would have trained but slowly and with risk of instability. The fix was one line.
+- **Buffer asymmetry between players** (player 0 ~4x more entries than player 1 at 20bb) is probably structural to short-stack HUNL (SB folds preflop often), not a bug. Confirming or refuting this is a Session 5 item once we have Slumbot evaluation numbers.
+
+### Queued for next session
+1. Phase 2c: Slumbot API harness + bb/100 eval against random-policy baseline.
+2. Optional Phase 2b real-run on Contabo (100 iter × 100 trav) before Phase 2d.
+3. Phase 2d: rent RunPod 4090, scale up, get measurable bb/100 vs Slumbot.
+4. Session 2/3 cleanups: `train_leduc.py` config.json/metrics.json location (now also inconsistent with `train_nlhe.py`).
