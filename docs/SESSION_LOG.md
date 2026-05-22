@@ -210,6 +210,50 @@ Format: most recent session at the top. Each session block notes date, what was 
 
 ---
 
+## Session 5 — 2026-05-22
+**Focus:** GPU validation of Phase 2d. Deploy training to rented GPU, measure throughput, evaluate trained model against Slumbot. Decide whether bigger network + more compute pushes past CPU baseline.
+
+### What was done
+- Patched src/nlhe/solver.py and src/nlhe/policy_adapter.py to support GPU/CUDA: auto-detect device at solver init, move all 4 networks to device, send batch tensors to device in both training methods, bring forward-pass results back to CPU before numpy conversion, use map_location on checkpoint load. Five surgical patches via python sed. Tested on Contabo (where CUDA is unavailable, so device=cpu path) — all 28 unit tests pass. Committed and pushed (34da1e3).
+- Three failed RunPod pod deployments before getting a working one. First two: Community Cloud RTX 4090, both failed with "CUDA unknown error" / error 999 from raw cudaGetDeviceCount even though nvidia-smi worked. Confirmed via direct CUDA C program — not a PyTorch problem, container/driver mismatch. Third deploy on Secure Cloud got RTX PRO 4000 Blackwell (sm_120 architecture) which initial PyTorch couldn't use; upgraded to torch 2.11.0+cu128 which has sm_120 in arch list. Compute verified end-to-end.
+- Set up project on pod: clone via PAT (password auth deprecated), install deps minus torch (kept the working 2.11.0+cu128), scp abstraction artifact from Contabo to pod, sanity-check imports. treys was missing from requirements.txt (manually pip install'd, real bug to commit at session end).
+- GPU smoke test (5 iters, [512,512] networks): solver device: cuda confirmed, all 5 iters complete, bimodal per-iter time (1.0s-99s) from deep-trajectory variance. Pipeline validated on GPU.
+- Bumped smoke to 50 iters as Stage 2 benchmark. Strategy loss saturated at ~1.00 around iter 26 when 100K buffer filled. Bigger network alone didn't break the CPU's plateau.
+- Designed v2 config: 5000 iters, 100 traversals/iter (doubled), 500K buffer (5x), checkpoint_every: 100. Launched in tmux on pod for resilience to SSH dropouts. Per-iter time averaged ~95s with high variance (1s-326s depending on traversal depth).
+- Hit two new bugs in policy_adapter.py during ckpt_iter_0100 eval: (1) torch.set_rng_state raised TypeError on cross-version checkpoint load (PyTorch RNG state format issue) — patched with try/except since inference doesn't need RNG continuity, (2) missing .cpu() before .numpy() in choose_action's forward pass — patched. Both fixes mirrored back to Contabo at end of session.
+- Slumbot evaluation of ckpt_iter_0100 (1000 hands, seed 2026, 200bb): **+31.45 baseline-adjusted bb/100** (raw -340.39). For comparison, CPU run (275 iters, [64,64]) was -14.8 baseline-adj bb/100 on 500 hands. GPU improvement: +46 bb/100.
+- Buffer behavior confirms hypothesis: strategy loss plateau dropped from ~0.95 (100K buffer) to ~0.85 (500K buffer). Bigger buffer was the real lever, not bigger network.
+
+### What was decided
+- **Phase 2d closed as a success.** The +31.45 baseline-adj bb/100 at iter 100 validates the GPU pipeline and demonstrates measurable improvement from CPU. Original Phase 2d goal was infrastructure validation; we got that plus a meaningful performance signal.
+- **Phase 3 plan revised to be more ambitious.** Original architecture treated subgame solving as Phase 5-6. Revised plan moves subgame solver engineering into Phase 3 as a parallel track, alongside DCFR and archetype framework. Reasoning: at current compute prices, replicating Pluribus's compute is ~$125, not millions. The hard part is algorithmic correctness, not compute. With AI-assisted engineering, a 6-10 week effort can produce a Pluribus-class bot for our format.
+- **Project goal sharpened:** strongest publicly-known 6-max NLHE SNG bot with correct ICM. Targets include beating Slumbot in HUNL, decisive wins against the 42 bought bots, 70%+ top-3 finish rate in SNG simulations, sub-second decisions via subgame solving, and plausibly beating Pluribus head-to-head in 6-max cash (stretch target).
+- **Within-match adaptation upgraded from Phase 6 to a Phase 3 parallel track.** Continuous archetype representation (tightness × aggression), Bayesian updating from observed actions, population priors by stake level, response as integration over belief. This is genuinely beyond what Pluribus did and could be the differentiator.
+
+### What was learned / surprises
+- **GPU patches that look correct on CPU can have residual bugs.** Two patches landed today (RNG state + missing .cpu()) had to be discovered at eval time despite the unit tests passing on CPU. Tests don't catch device-conversion issues when there's no device to convert from. Future: add a GPU-emulation test mode or just be more careful with patch coverage of every tensor-to-numpy boundary.
+- **Buffer size matters more than network size at this scale.** This is the major Phase 2d finding. Going [64,64] CPU → [512,512] GPU with same 100K buffer plateaus at the same loss. Going [512,512] GPU with 500K buffer breaks past it. We had been treating "bigger network" and "more data" as roughly interchangeable upgrades; the data says no — buffer dominates.
+- **RunPod Community Cloud is unreliable right now.** Two consecutive bad hosts with broken CUDA passthrough (CUDA 13 driver vs containers built for earlier CUDA, evident even at raw libcuda level). Wasted ~45 minutes on Community before bailing to Secure Cloud. Lesson: for first GPU run of a new project, Secure Cloud is worth the $0.35/hr premium. Community Cloud is good only after you have a known-working pod recipe.
+- **RTX PRO 4000 Blackwell (sm_120) requires PyTorch 2.7+.** Older PyTorch wheels were compiled for sm_90 and earlier. PyTorch 2.11.0+cu128 was the first version we found in pip that supported Blackwell. Worth noting for future Blackwell-era pod deployments.
+- **EMD card abstraction is fundamentally limited.** Confirmed earlier in this session via the bucket-runouts probe: AA, QQ, and TT all map to the same preflop bucket regardless of bucket count or query precision. This is a representation limit, not a parameter to tune. OCHS would fix it; that's Phase 3 research work.
+- **The Pluribus compute argument is weaker than I thought.** Pluribus's 8 days × 64 cores = ~700 PFLOPS total. One RTX 4090 today is ~80 TFLOPS sustained. To match Pluribus's compute on one 4090: ~365 days = $125 at $0.34/hr. With 8 GPUs running 5 days: more compute than Pluribus, for ~$1000. The argument "we can't match Pluribus compute" is wrong. The argument "we can't replace 6 expert CFR researchers" is partially countered by AI-assisted engineering.
+
+### Workflow notes for next time
+- Sed-based python patches for surgical multi-line edits work well. Heredocs for new files work well. Both should remain the default for code changes through Phase 3.
+- tmux is required on RunPod pods for any run longer than ~10 minutes. Install with `apt-get update && apt-get install -y tmux` as first step on a fresh pod.
+- One-liner status checks from Contabo (`ssh ... 'tail -5 /tmp/log'`) are much cheaper than attaching SSH for every progress check. Standardize on this.
+- When patches touch device handling, run a quick smoke test of the actual GPU inference path before committing — CPU unit tests don't catch GPU-only issues.
+
+### Queued for next session (Session 6 / Phase 3 kickoff)
+1. SCP and archive any additional checkpoints from the still-running pod training (ckpt_iter_0200, 0300 if available).
+2. Optionally eval ckpt_iter_0200 against Slumbot to chart bb/100 trajectory; decide based on its result whether to keep the pod running or terminate.
+3. Begin Track A: implement DCFR (Linear/Discounted CFR) in src/nlhe/solver.py. Add per-buffer-entry timestamp, weight policy training by iteration index.
+4. Begin Track B: subgame solver design doc. Identify the OpenSpiel subgame extraction APIs, sketch the depth-limited CFR variant.
+5. Begin Track C: design archetype representation (continuous tightness × aggression), and the Bayesian update scheme for within-match opponent modeling.
+6. Investigate OCHS abstraction implementation.
+
+---
+
 ## Session 4 — 2026-05-22 (~02:00-04:35)
 **Focus:** Open Phase 2d. Write the `PolicyAdapter` that bridges trained `DeepCFRSolver` to the Slumbot eval harness. Validate the infoset encoder is stack-parametric so we can use a 20bb-trained checkpoint as a plumbing test against the 200bb Slumbot game. Plumbing-test end-to-end. Set up a 200bb overnight training run.
 

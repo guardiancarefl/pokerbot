@@ -1,0 +1,20 @@
+19:16:34  Evaluating policy=adapter for 1000 hands (seed=2026)
+19:19:22    hand   100/1000  completed=100 errors=0  raw_bb100= -742.91  baseline_adj_bb100= -268.50  [133.3s, 0.7 hands/s]
+19:21:35    hand   200/1000  completed=200 errors=0  raw_bb100= -319.95  baseline_adj_bb100=  -54.25  [266.3s, 0.8 hands/s]
+19:23:59    hand   300/1000  completed=300 errors=0  raw_bb100= -143.47  baseline_adj_bb100=  -51.67  [411.1s, 0.7 hands/s]
+19:26:09    hand   400/1000  completed=400 errors=0  raw_bb100= -229.12  baseline_adj_bb100=  -19.12  [540.7s, 0.7 hands/s]
+19:28:31    hand   500/1000  completed=500 errors=0  raw_bb100= -207.80  baseline_adj_bb100=  +13.00  [682.5s, 0.7 hands/s]
+19:30:54    hand   600/1000  completed=600 errors=0  raw_bb100= -258.14  baseline_adj_bb100=  -16.42  [825.8s, 0.7 hands/s]
+19:33:09    hand   700/1000  completed=700 errors=0  raw_bb100= -239.26  baseline_adj_bb100=  +22.29  [961.2s, 0.7 hands/s]
+19:35:22    hand   800/1000  completed=800 errors=0  raw_bb100= -276.63  baseline_adj_bb100=  +27.25  [1093.6s, 0.7 hands/s]
+19:37:53    hand   900/1000  completed=900 errors=0  raw_bb100= -270.81  baseline_adj_bb100=  +17.56  [1245.0s, 0.7 hands/s]
+19:40:15    hand  1000/1000  completed=1000 errors=0  raw_bb100= -340.39  baseline_adj_bb100=  +31.45  [1386.4s, 0.7 hands/s]
+19:40:15  ============================================================
+19:40:15  Done. 1000 hands completed in 1386.4s (0.7 hands/s)
+19:40:15    errors: 0
+19:40:15    total winnings: -340389 chips
+19:40:15    total baseline: -371839.0 chips
+19:40:15    raw bb/100:                -340.39  (high variance)
+19:40:15    baseline-adjusted bb/100:   +31.45  (headline metric)
+19:40:15  
+Note: skipping torch RNG state restore (TypeError: RNG state must be a torch.ByteTensor)

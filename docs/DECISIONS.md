@@ -120,3 +120,52 @@ This is a values-driven decision (robustness and fairness over peak exploitation
 **Why:** The two conventions are identical preflop (no prior commitment exists) but diverge as soon as any chips have entered the pot on a prior street. Empirically verified by direct OpenSpiel probe: at a flop decision node with both players having committed 300 chips preflop, OpenSpiel's `legal_actions()` minimum-bet action is **int 400** (300 prior + 100 new street min-bet), and `action_to_string(400)` returns `'player=0 move=Bet400'` — i.e., the bet integer is "total chips committed by the actor across the **whole hand**." Slumbot's wire `b<N>` is the per-street total. The translation helpers `slumbot_token_to_openspiel_action` and `openspiel_action_to_slumbot_token` take a `prior_streets_committed_by_actor: int = 0` kwarg and the adapter's replay loop maintains a per-player dict refreshed at each postflop street transition by parsing the `[Money: X Y]` field of `state.information_state_string()`. The default value of 0 keeps preflop callers and existing unit tests unmodified. This is locked-in protocol knowledge that any future bot-vs-protocol-X integration (other ACPC servers, future heads-up poker benchmarks) should reuse — the failure mode (5 of 20 hands rejected with "Bet size too big") was inscrutable without tracing a specific postflop example.
 **Alternative considered:** Treat the two conventions as identity (the original assumption, which survived design review); patch only Slumbot-token decoding by inferring prior commitment from the OpenSpiel state's pot field.
 **Reason rejected:** Identity was empirically false (the plumbing test rejected 5/20 hands). Inferring from pot is unreliable because the pot mixes both players' commitments and doesn't separately track per-player per-street contributions; the `[Money: X Y]` field is the clean per-player source, and refreshing it once per street boundary is both correct and cheap.
+
+## Project goal sharpened: strongest publicly-known SNG bot, Pluribus-class
+**Decided:** 2026-05-22 (Session 5)
+**Why:** Original goal in PROJECT_OVERVIEW.md was broadly "specialized 6-max NLHE SNG bot." Session 5 discussion clarified the actual ambition: not just specialized, but the strongest publicly-known SNG bot. Concrete targets: beat Slumbot in HUNL by 1-5 bb/100, beat each of the 42 bought-bot profiles by 10-30 bb/100 in SNG format, achieve 70%+ top-3 finish rate in SNG simulations, sub-second decisions via subgame solving, withstand 100k-hand test without exploitation. Stretch: plausibly beat Pluribus head-to-head in 6-max cash via architectural improvements + ICM-correct value function + within-match adaptation.
+
+Drivers for the sharpened goal:
+- At today's compute prices, replicating Pluribus's training compute is ~$125, not millions. The hard part is algorithmic correctness, not compute.
+- AI-assisted engineering (this collaboration) partially replaces the 6-researcher team that Pluribus had, especially for translating published papers to working code.
+- SNG format with ICM has no published Pluribus-equivalent. This is genuinely empty territory in the literature — we'd be the first to build a Pluribus-class bot for the SNG-with-ICM problem.
+- Within-match continuous opponent modeling (Bayesian updating, integration over belief distribution) is genuinely beyond what Pluribus did.
+
+**Estimated total project: 6-10 weeks of focused work, $500-2000 in GPU compute.**
+
+**Alternative considered:** keep the goal modest ("specialized SNG bot that beats most humans"). Reasonable, more certain, but less interesting. The math on compute and the AI-assisted engineering capability changed the calculus.
+**Reason rejected:** the gap between "modest" and "ambitious" is actually engineering hours and care, not compute. With the goal sharpened, every implementation decision becomes more careful, which is the right pressure for the project.
+
+## Phase 3 expanded to three parallel tracks (DCFR + subgame solver + archetype modeling)
+**Decided:** 2026-05-22 (Session 5)
+**Supersedes:** original ARCHITECTURE.md Phase 3 (archetype/bought-bot integration only).
+**Why:** The original sequential phase plan was Phase 3 (archetype) → Phase 4 (full ICM blueprint) → Phase 5 (league play) → Phase 6 (within-match adaptation), with subgame solving deferred or implicit. Session 5 reanalysis: subgame solving is not a "polish on top of finished blueprint" — it's a different architectural choice that shapes the blueprint's role. Building it in parallel with Phase 3 means it's ready when the Phase 4 blueprint completes, instead of being 3-4 weeks of additional sequential work after Phase 4.
+
+**Track A (Algorithm + training):**
+1. Implement Linear/Discounted CFR (DCFR) — published improvement, weights later iters more in average-policy. 1.5-3x faster convergence in literature. ~1 day implementation.
+2. Hand-engineered archetype framework (maniac, nit, station, LAG, TAG) parameterized by tightness × aggression, used as training opponents.
+3. Investigate OCHS card abstraction — replaces EMD clustering with opponent-cluster-based equity. Fixes the AA = QQ = TT collapse confirmed in Session 5.
+
+**Track B (Subgame solver engineering):**
+1. Subgame extractor (given OpenSpiel state, define depth-limited subgame).
+2. Fast online CFR variant for sub-second solving at decision time.
+3. Belief state estimation for opponent ranges at subgame root.
+4. Leaf value function integration with blueprint.
+
+**Track C (Within-match adaptation — moves up from Phase 6):**
+1. Continuous archetype representation (2D tightness × aggression, not categorical).
+2. Bayesian updating from observed actions.
+3. Population priors per stake level (no cross-match identification, anonymity preserved).
+4. Policy response as integration over belief distribution.
+
+**Alternative considered:** keep subgame solving and within-match adaptation in their original later phases.
+**Reason rejected:** subgame solving in particular has long ramp-up time and benefits from being designed alongside the blueprint that feeds it. Sequential ordering means more total weeks. Parallel ordering compresses timeline by 2-3 weeks.
+
+## Bigger buffer is the lever, not bigger network
+**Decided:** 2026-05-22 (Session 5)
+**Why:** Phase 2d GPU validation confirmed that the [64,64] CPU and [512,512] GPU runs both plateau at similar loss when buffer is fixed at 100K. When buffer expanded to 500K, the [512,512] run pushed past to a meaningfully lower plateau (strategy loss ~0.85 vs ~1.00). Final Slumbot evaluation: +31.45 baseline-adj bb/100 (vs CPU's -14.8 = +46 improvement). Bigger network alone produced no measurable gain; bigger network + bigger buffer was the actual upgrade.
+
+This finding propagates forward: Phase 4's ICM blueprint training should use 1M+ buffer with the network sized to fit it (probably [1024, 1024]), not the other way around. Compute budget allocation should favor more traversals/iter and larger buffers over deeper networks.
+
+**Alternative considered:** continue testing deeper / wider networks at current 100K buffer.
+**Reason rejected:** empirical evidence in this session showed buffer is the binding constraint. No reason to spend GPU hours on a hypothesis that's been disconfirmed.

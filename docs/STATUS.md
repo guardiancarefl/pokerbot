@@ -1,52 +1,79 @@
 # Project Status
 
-**Last updated:** 2026-05-22 (Session 4 close)
-**Current phase:** Phase 2d step 1 closed. 200bb overnight CPU training running unattended; Session 5 will evaluate.
+**Last updated:** 2026-05-22 (Session 5 close)
+**Current phase:** Phase 2d closed. Phase 3 (DCFR + archetype + subgame solver design in parallel) is next.
 
 ## Done
-- Architecture, format target, engine, opponent anonymity, within-match adaptation, league play, 42 frozen profiles — all Session 1
-- Runtime: Contabo VPS, GitHub repo, Python 3.10 venv with PyTorch CPU + OpenSpiel
-- **Phase 1 closed:** Leduc Deep CFR pipeline validated (1187 → 434 mbb/g across 25 iters)
-- GPU provider for Phase 2d: RunPod Community Cloud RTX 4090 at $0.34/hr, account created
-- **Phase 2a closed:** HUNL game validated in OpenSpiel; `src/nlhe/equity.py` (191 lines), `src/nlhe/abstraction.py` (326 lines, EMD-based card abstraction), `src/nlhe/actions.py` (~230 lines, discrete action space + pseudo-harmonic translation). Trained abstraction at `runs/abstraction_20260521_223018/`: preflop k=20, postflop k=200, 6.8 min training. Inspection confirmed strategic coherence.
-- **Phase 2b closed:** `src/nlhe/infoset.py` (229 lines, 214-dim feature vector), `src/nlhe/solver.py` (452 lines, custom External Sampling Deep CFR), regret normalization, resumable checkpointing **bit-identical** verified, YAML-driven `scripts/train_nlhe.py`.
-- **Phase 2c closed:** `src/nlhe/slumbot_client.py` (~210 lines, HTTP client + action-language parser + RandomPolicy baseline), `scripts/eval_vs_slumbot.py` (~110 lines, raw and baseline-adjusted bb/100 reporter). 50-hand validation run: 0 errors, raw=-13 bb/100, baseline-adjusted=-6 bb/100. Slumbot's `baseline_winnings` field used for variance reduction (the headline eval metric).
-- **Phase 2d step 1 closed:** `src/nlhe/policy_adapter.py` (454 lines, `PolicyAdapter` glue between trained `DeepCFRSolver` and the Slumbot client) + `tests/test_policy_adapter.py` (28 unit tests) + `scripts/eval_vs_slumbot.py` refactor for `--policy {random,adapter}`. Validated end-to-end against Slumbot: 20/20 plumbing-test hands clean. Wire-format bet-translation bug (Slumbot `b<N>` per-street vs OpenSpiel int per-hand) caught by the plumbing test and fixed. Latest commit `c07fd9c`.
-- **Session 4 cleanup:** `CLAUDE.md` written via `/init`, `scripts/verify_abstraction_stack_invariance.py` committed (confirms `Abstraction.bucket_of()` takes no stack args), `configs/nlhe_smoke_iter1.yaml` deleted. Cleanup commit `9e7be8b`.
-- **200bb training pipeline validated at iter-1 timing benchmark** on Contabo CPU: 48.9s/iter at `[64,64]` / 50 trav / 100 steps. Scaled-up `[128,128]` / 100 trav / 200 steps variant hung at 100% CPU single-threaded; killed at 4+ min. Reverted to bench config for the overnight run.
+- Architecture designed (four-layer stack with opponent anonymity as core principle)
+- Format target chosen (6-max NLHE SNG, top-3 equal payout)
+- Engine selected (OpenSpiel)
+- Scope, non-goals, opponent anonymity, within-match adaptation approach defined
+- Runtime: Contabo VPS (Ubuntu 24.04, 12 vCPU AMD EPYC, 48GB RAM); GitHub repo at github.com/guardiancarefl/pokerbot
+- Phase 1 closed: Leduc Deep CFR pipeline validated (exploitability 1187 -> 434 mbb/g across 25 iters)
+- Phase 2a closed: HUNL game representation, card abstraction (EMD clustering, k=20 preflop/k=200 postflop), action abstraction
+- Phase 2b closed: custom Deep CFR solver in src/nlhe/solver.py with reservoir buffers, traversal-driven training, GameStateView abstraction layer
+- Phase 2c closed: Slumbot client with full b<N> action token translation (bet-translation bug fixed for per-street vs per-hand semantics)
+- Phase 2d closed: GPU validation completed. Headline result: **+31.45 baseline-adjusted bb/100 vs Slumbot at iter 100** (1000 hands, seed 2026, 200bb stack). +46 bb/100 improvement over CPU's -14.8 baseline-adj result.
+- GPU device support patches in solver.py and policy_adapter.py (auto-detect CUDA, networks to device, .cpu() before numpy conversion, map_location on checkpoint load, RNG state try/except for cross-version compatibility)
+- requirements.txt completed (treys added — was missing, surfaced during pod setup)
+- RunPod RTX PRO 4000 Blackwell pod (Secure Cloud, $0.57/hr) provisioned and validated with PyTorch 2.11.0+cu128 + sm_120 support
+
+## Key findings from Phase 2d
+1. **Buffer size matters more than network size at this scale.** 100K buffer + [64,64] CPU vs 500K buffer + [512,512] GPU: the +46 bb/100 improvement is driven primarily by the bigger buffer, not the bigger network. Strategy loss plateau dropped from ~0.95 (100K buffer) to ~0.85 (500K buffer).
+2. **EMD card abstraction loses real information.** Premium pairs (AA, QQ, TT) deterministically map to the same preflop bucket regardless of bucket count (k=20 vs k=169 both collide). This is a representation limitation; OCHS would resolve it. Not a query-noise issue (confirmed by multiple bucket_runouts tests).
+3. **Per-iter time at 200bb is dominated by deep-trajectory variance.** 100 traversals/iter at 200bb stack produces iter times from 1.0s to 326s depending on randomly-drawn trajectory depth. Average ~95s/iter on RTX PRO 4000 Blackwell with [512,512] and 500K buffer.
+4. **Loss plateau != policy plateau.** Loss flattens around iter 80-100, but the deployed (average) strategy can keep improving past that as buffer churns.
 
 ## In progress
-- **Overnight 200bb training run** launched in separate SSH session (PID 730653, log `/tmp/200bb_overnight.log`, run dir `runs/nlhe_20260522_043341_phase2d_200bb_overnight/`, 300 iters at `[64,64]`/50/100, ETA ~07:15 Contabo). Independent of this Claude Code session.
+- Phase 2d GPU training continuing on RunPod pod (will run overnight). Latest checkpoint ckpt_iter_0100.pt evaluated; later checkpoints may be evaluated tomorrow to chart bb/100 trajectory.
+- Session 5 wrap-up commits
 
-## Next up (Phase 2d)
-1. **Review overnight training artifacts** at start of Session 5: final iter losses, full loss trajectory across 300 iters, all 12 checkpoints saved, buffer behavior.
-2. **Plumbing-test the latest checkpoint against Slumbot at matched 200bb stack depth** (e.g., `ckpt_iter_0300.pt`). This is the actual Phase 2d headline test — the earlier 20-hand plumbing run used the 20bb checkpoint and was stack-mismatched by design.
-3. **Decide on RunPod rental for `[256,256]` scale-up training.** Decision is conditional on overnight result: if 300-iter CPU run produces measurable positive learning signal in Slumbot eval, GPU rental becomes a "make it stronger" task rather than a "make it work at all" task. If overnight produces garbage or hangs, GPU rental is the next debugging move with concrete data.
+## Next up (Phase 3 — revised, more ambitious than original architecture)
+The original plan treated subgame solving as Phase 5-6. Revised plan moves subgame solver engineering into Phase 3 as a parallel track, alongside DCFR and archetype framework. This is the path to a Pluribus-class SNG bot in 6-10 weeks.
+
+**Track A: Algorithm + training improvements (Contabo CPU + occasional GPU bursts)**
+1. Implement Linear / Discounted CFR (DCFR) in src/nlhe/solver.py — published improvement, ~1 day. Standard CFR weights all iters equally when averaging policy; DCFR weights later iters more, which empirically gives 1.5-3x faster convergence.
+2. Build hand-engineered archetype framework: maniac, nit, station, LAG, TAG behavioral profiles parameterized by tightness × aggression. Use as training opponents alongside self-play.
+3. Investigate OCHS card abstraction (Opponent Cluster Hand Strength) — replacement for EMD that distinguishes AA from QQ properly. Real research-flavored work, 1-2 weeks.
+
+**Track B: Subgame solver engineering (Contabo CPU is fine for design + testing)**
+1. Subgame extractor: given an OpenSpiel game state, define the depth-limited subgame to solve.
+2. Fast online solver: CFR variant that converges sub-second. Different optimization target than blueprint solver.
+3. Belief state estimation: opponent range at subgame root, given observation history.
+4. Leaf value function: blueprint policy used to terminate subgame tree at depth limit.
+
+**Track C: Within-match opponent modeling design (Phase 6 originally, moves up too)**
+1. Continuous archetype representation (2D: tightness × aggression, not categorical).
+2. Bayesian updating from observed actions within current match.
+3. Population priors per stake level (compatible with anonymity — no cross-match identity).
+4. Response policy as integration over belief distribution.
+
+## Project goal (revised)
+**Strongest publicly-known 6-max NLHE SNG bot with correct ICM**, evaluated to:
+- Beat Slumbot in HUNL by 1-5 bb/100 (architectural sanity check)
+- Beat each of the 42 bought-bot profiles by 10-30 bb/100 in SNG format
+- Finish top-3 in SNG simulations against archetype opponents at 70%+ rate
+- Sub-second decision latency via subgame solving
+- Withstand 100k-hand test without exploitation pattern emerging
+- Plausibly beat Pluribus head-to-head in 6-max cash (architectural improvements + ICM-correct value function + within-match adaptation), though this is a stretch target
+
+Estimated total time: 6-10 weeks. Estimated total compute cost: $500-2000.
 
 ## Known issues / open questions
-- 200bb training with `hidden_dim: [128, 128]` + `traversals_per_iter: 100` + `train_steps_per_iter: 200` hung at 100% CPU single-threaded during iter-1 timing test. Mechanism unknown — torch thread starvation, GIL contention on deeper trees, or interaction effect. Reverted to bench-proven `[64,64]`/50/100 for overnight. Worth diagnosing before any GPU run where we'll definitely want bigger networks.
-- Preflop abstraction k=20 groups some adjacent premium hands (e.g., AA and KK in same bucket). Cheap to revisit if Slumbot eval reveals preflop weakness — retraining preflop to k=169 (lossless) costs ~1 min and only changes preflop bucket count, not postflop.
-- Buffer asymmetry from Session 3 (4:1 at 20bb) **did not reproduce** — Session 4 smoke run measured 1.13:1 at iter 20, well within sampling noise. The 4:1 was probably a small-sample artifact from the earlier short Phase 2b dry-run, not a structural property of short-stack HUNL. **Closed.**
-- Three-way `--run-name` CLI inconsistency: `train_leduc.py` accepts `--run-name`, `train_nlhe.py` only uses YAML `tag:`. Not a bug — different scripts, different conventions — but worth either unifying or documenting at end of Phase 2.
-- `train_leduc.py` config.json/metrics.json location inconsistency (Session 2 carryover) is still open. `train_nlhe.py` writes them at run-dir root (correct per `runs/README.md`). Only `train_leduc.py` is wrong (writes into `checkpoints/`).
-- `_build_game_state_view` in `src/nlhe/solver.py` is module-private by underscore convention but now imported by `src/nlhe/policy_adapter.py`. Either rename to drop the underscore (it's now public-by-usage) or wrap in a thin public function. Code hygiene, not blocking anything.
-- 42 bought-bot profile format still unknown — defer until Phase 3.
-- Contabo per-iter time variance (3-160s on Phase 2b smoke, 30-49s on 200bb) due to oversubscribed vCPUs. Adequate for dev; meaningless for compute planning.
-- $93 Vultr credit: expiry date unchecked.
-- Pairwise EMD abstraction training single-threaded; embarrassingly parallelizable.
-- Action abstraction: opponent bets between 2pot and 0.9×stack snap to 2pot. Coarse but acceptable for now.
-- Slumbot eval: 20-50 hands far too few for statistically meaningful bb/100; need 500-5000+ for stable estimates of small edges.
+- 42 bought-bot profile format still unidentified (text/XML/JSON/binary) — defer until Phase 3 archetype work begins
+- train_leduc.py writes config.json and metrics.json into checkpoints/ subdirectory, not run-dir root (Session 2 carryover, minor)
+- _build_game_state_view in src/nlhe/solver.py has private-by-convention underscore but is imported by src/nlhe/policy_adapter.py (Session 4 carryover, cosmetic)
+- DCFR implementation needs to handle the buffer's per-entry timestamp tracking — design before implementing
+- Subgame solver requires careful handling of belief states — well-trodden but easy to get wrong
 
 ## Decisions deferred
-- Card abstraction granularity refinement (decide Phase 2d if Slumbot says abstraction is the bottleneck)
-- League play schedule (decide post Phase 4)
-- VPS as parallel self-play worker (decide if throughput bound)
-- Training opponent pool mix percentages (Phase 4-5)
+- OCHS vs simpler abstraction extensions (decide during Phase 3 after literature review)
+- Exact mix percentages for training opponent pool (self-play vs archetypes vs bought-bots vs league archives) — tune empirically during Phase 4-5
+- Whether to use multiple GPU pods in parallel during Phase 4 — depends on Phase 3 throughput findings
 
 ## Session log
-- **2026-05-21 (Session 1):** Project bootstrapped, foundational docs created.
-- **2026-05-21 (Session 2):** WSL2 blocked, migrated to Contabo. Phase 1 Leduc Deep CFR validated.
-- **2026-05-21 (Session 3):** Phase 2a — HUNL validated in OpenSpiel, equity + EMD abstraction + action abstraction shipped.
-- **2026-05-22 (Session 3 extended, early hours):** Phase 2b — custom Deep CFR solver, resumable checkpointing with bit-identical correctness, YAML training script. Closed.
-- **2026-05-22 (Session 3 extended extended, ~00:50):** Phase 2c — Slumbot API client built, action-language parser, baseline-winnings variance reduction wired, 50-hand random-policy validation run clean. Closed.
-- **2026-05-22 (Session 4, ~02:00-04:35):** Phase 2d step 1 — PolicyAdapter shipped; bet-translation bug caught by plumbing test and fixed; 20/20 plumbing hands clean; 200bb iter-1 timing benchmark; overnight 300-iter run launched in separate SSH and left running.
+- **2026-05-21 (Session 1):** Project bootstrapped on Windows. Foundational docs created. Major design decisions: opponent anonymity, Position 2 within-match adaptation, league play for strength diversity, 42 profiles frozen.
+- **2026-05-21 (Session 2):** WSL2 install blocked by Windows component store corruption. Switched runtime to Contabo VPS. Built Phase 1 scaffold. Completed Phase 1 run: exploitability 1187 -> 434 mbb/g across 25 iterations.
+- **2026-05-22 morning (Session 3):** Phase 2a HUNL game representation, EMD card abstraction, action abstraction. Phase 2b custom Deep CFR solver. Phase 2c Slumbot client foundations.
+- **2026-05-22 early (Session 4):** Phase 2c closure (bet-translation bug fix), PolicyAdapter built with 28 unit tests, CPU overnight training (275 iters at 200bb), Slumbot evaluation showing -14.8 baseline-adj bb/100 (45 bb/100 better than random's -60).
+- **2026-05-22 afternoon/evening (Session 5):** GPU device support patches landed and tested on CPU. Multiple failed RunPod deployments (CUDA driver/container incompatibility on Community Cloud pool). Eventually working pod on Secure Cloud RTX PRO 4000 Blackwell. GPU smoke + 50-iter benchmark + 119+ iter v2 run with 500K buffer. ckpt_iter_0100 evaluated against Slumbot: +31.45 baseline-adj bb/100, +46 over CPU. Architecture plan revised to be more ambitious based on Pluribus compute math (we have more compute than they did, plus AI-assisted engineering). Phase 3 redefined to start subgame solver + DCFR + archetype work in parallel. Target: best publicly-known SNG bot in 6-10 weeks.

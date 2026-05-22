@@ -351,6 +351,7 @@ class PolicyAdapter:
                 self.solver.strat_nets[hero_seat](
                     torch.from_numpy(feat).float().unsqueeze(0).to(self.solver.device)
                 )
+                .cpu()
                 .numpy()[0]
             )
         logits = logits - logits.max()

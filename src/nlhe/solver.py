@@ -392,7 +392,12 @@ class DeepCFRSolver:
         self.strat_buffer.n_seen = sb["n_seen"]
         self.strat_buffer.rng.setstate(sb["rng_state"])
         self.rng.setstate(ckpt["rng_state"])
-        torch.set_rng_state(ckpt["torch_rng_state"])
+        try:
+            torch.set_rng_state(ckpt["torch_rng_state"])
+        except (TypeError, RuntimeError) as e:
+            # PyTorch RNG state format may differ across versions / map_location.
+            # Inference doesn't need RNG continuity, so skip restoration.
+            print(f"Note: skipping torch RNG state restore ({type(e).__name__}: {e})")
 
     def train(self, checkpoint_dir: str | Path | None = None, checkpoint_every: int = 5) -> dict:
         """Run the full CFR training loop. Returns a dict of per-iteration metrics.
