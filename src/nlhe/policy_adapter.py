@@ -225,7 +225,7 @@ class PolicyAdapter:
         self.game_str = game_str
 
         # Load checkpoint to discover its train-time starting_stack.
-        ckpt = torch.load(checkpoint_path, weights_only=False)
+        ckpt = torch.load(checkpoint_path, weights_only=False, map_location='cpu')
         if "config_dict" not in ckpt:
             raise ValueError(
                 f"checkpoint {checkpoint_path} missing config_dict; cannot "
@@ -349,7 +349,7 @@ class PolicyAdapter:
         with torch.no_grad():
             logits = (
                 self.solver.strat_nets[hero_seat](
-                    torch.from_numpy(feat).float().unsqueeze(0)
+                    torch.from_numpy(feat).float().unsqueeze(0).to(self.solver.device)
                 )
                 .numpy()[0]
             )

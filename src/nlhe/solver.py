@@ -207,6 +207,11 @@ class DeepCFRSolver:
             capacity=config.buffer_capacity, rng=random.Random(config.seed + 100)
         )
 
+        # GPU support: move networks to CUDA if available, else CPU.
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        for net in self.adv_nets + self.strat_nets:
+            net.to(self.device)
+        self.log(f"solver device: {self.device}")
         self.iteration = 0
 
     def _current_strategy(self, state: Any, traverser: int, t: int) -> tuple[np.ndarray, np.ndarray, dict]:
@@ -228,7 +233,7 @@ class DeepCFRSolver:
         # Advantage net prediction at this infoset.
         self.adv_nets[player].eval()
         with torch.no_grad():
-            adv = self.adv_nets[player](torch.from_numpy(feat).float().unsqueeze(0)).numpy()[0]
+            adv = self.adv_nets[player](torch.from_numpy(feat).float().unsqueeze(0).to(self.device)).cpu().numpy()[0]
         # Apply regret matching+.
         strat = _strategy_from_advantages(adv, legal_mask)
         return strat, legal_mask, discrete_to_chip
@@ -294,6 +299,7 @@ class DeepCFRSolver:
         total_loss = 0.0
         for _ in range(self.cfg.train_steps_per_iter):
             feats, targets, masks = buf.sample_batch(self.cfg.batch_size)
+            feats = feats.to(self.device); targets = targets.to(self.device); masks = masks.to(self.device)
             preds = net(feats)
             # MSE on the legal subset only.
             loss = ((preds - targets) ** 2 * masks).sum(dim=1).mean()
@@ -314,6 +320,7 @@ class DeepCFRSolver:
         total_loss = 0.0
         for _ in range(self.cfg.train_steps_per_iter):
             feats, targets, masks = buf.sample_batch(self.cfg.batch_size)
+            feats = feats.to(self.device); targets = targets.to(self.device); masks = masks.to(self.device)
             # Predict softmax over actions; train via KL between target and softmax(pred).
             logits = net(feats)
             logits = logits - logits.max(dim=1, keepdim=True).values  # numerical stability
@@ -362,7 +369,7 @@ class DeepCFRSolver:
 
     def load_checkpoint(self, path: str | Path) -> None:
         """Restore solver state from a checkpoint file."""
-        ckpt = torch.load(str(path), weights_only=False)
+        ckpt = torch.load(str(path), weights_only=False, map_location=self.device)
         self.iteration = ckpt["iteration"]
         for i, sd in enumerate(ckpt["adv_nets"]):
             self.adv_nets[i].load_state_dict(sd)
