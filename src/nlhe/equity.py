@@ -77,6 +77,25 @@ def hole_class_to_cards(cls: HoleClass) -> tuple[int, int]:
 
 # ----- Card I/O -----
 
+def hole_class_from_cards(hero: list[int]) -> HoleClass:
+    """Inverse of hole_class_to_cards: given 2 treys ints, return the HoleClass.
+
+    Two literal hands may map to the same HoleClass (AsAh and AcAd both -> AA).
+    Used by Abstraction.bucket_of() for deterministic preflop lookup.
+    """
+    if len(hero) != 2:
+        raise ValueError(f"hero must be 2 cards, got {len(hero)}")
+    cs = [Card.int_to_str(c) for c in hero]
+    r1, s1 = cs[0][0], cs[0][1]
+    r2, s2 = cs[1][0], cs[1][1]
+    # Order by rank descending (high first).
+    if _RANK_INDEX[r1] < _RANK_INDEX[r2]:
+        r1, r2 = r2, r1
+        s1, s2 = s2, s1
+    suited = (s1 == s2)
+    return HoleClass(high=r1, low=r2, suited=suited)
+
+
 def cards_from_str(s: str) -> list[int]:
     """Parse a string like 'AsKh' or 'AsKh7c' into treys integer cards."""
     if len(s) % 2 != 0:

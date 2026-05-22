@@ -280,6 +280,12 @@ class StreetAbstraction:
     bins: int                           # histogram bin count
     medoid_histograms: np.ndarray       # (k, bins)
     medoid_hands: list[tuple[list[int], list[int]]]  # (hero, board) pairs for each medoid
+    # Optional deterministic lookup table. Currently populated only for preflop.
+    # Maps canonical HoleClass string (e.g. "AA", "AKs", "72o") to bucket id.
+    # If None (older pickles, postflop), bucket_of() falls back to the
+    # histogram-distance Monte Carlo path. See DECISIONS.md for the
+    # bucket_of() non-determinism finding that motivated this.
+    preflop_lookup: dict[str, int] | None = None
 
     @property
     def k(self) -> int:
@@ -298,9 +304,22 @@ class Abstraction:
         runouts: int = 200,
         rng: random.Random | None = None,
     ) -> int:
-        """Assign a bucket index to a (hero, board) pair on its street."""
+        """Assign a bucket index to a (hero, board) pair on its street.
+
+        Preflop uses the deterministic preflop_lookup table when present
+        (canonical HoleClass -> bucket id). Postflop and old-format
+        abstractions without a lookup table fall back to the histogram-
+        distance Monte Carlo path. The MC path is non-deterministic across
+        calls (see DECISIONS.md); fixing that for postflop is deferred.
+        """
         street = {0: "preflop", 3: "flop", 4: "turn", 5: "river"}[len(board)]
         sa = self.streets[street]
+        # Fast deterministic path for preflop when lookup is populated.
+        if street == "preflop" and sa.preflop_lookup is not None:
+            # Import here to avoid a circular import at module load.
+            from src.nlhe.equity import hole_class_from_cards
+            cls = str(hole_class_from_cards(hero))
+            return sa.preflop_lookup[cls]
         h = compute_hand_histogram(hero, board, runouts=runouts, bins=sa.bins, rng=rng)
         # Distance to each medoid, pick the min.
         best = 0
