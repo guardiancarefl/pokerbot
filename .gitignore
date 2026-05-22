@@ -23,3 +23,5 @@ Thumbs.db
 # Logs
 *.log
 !runs/README.md
+!runs/archetype_design/
+!runs/archetype_design/*.json

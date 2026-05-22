@@ -34,6 +34,11 @@ from src.nlhe.actions import (
     discretize_legal_actions,
     policy_to_game_action,
 )
+from src.nlhe.archetypes import (
+    ArchetypeProfile,
+    OpponentPool,
+    derive_in_position,
+)
 from src.nlhe.infoset import InfosetEncoder, _parse_universal_poker_state
 
 
@@ -171,6 +176,14 @@ class TrainConfig:
     # Weights are normalized per-batch to sum to batch_size, preserving gradient scale.
     cfr_variant: str = "vanilla"
     dcfr_exponent: float = 1.0
+    # Archetype-opponent training mix. 0.0 = pure self-play (current behavior).
+    # 1.0 = every opponent in every trajectory is an archetype. Requires
+    # opponent_pool to be passed to DeepCFRSolver, else this is ignored.
+    # NOTE: at archetype_mix=1.0 the strategy buffer never fills (archetype
+    # decisions don't get written to it -- see _traverse opponent branch),
+    # so the strategy net can't train. Recommended range: 0.2-0.7.
+    # archetype_mix=0.5 is the working default.
+    archetype_mix: float = 0.0
 
 
 class DeepCFRSolver:
@@ -180,11 +193,20 @@ class DeepCFRSolver:
         abstraction: Abstraction,
         config: TrainConfig,
         logger: Optional[Callable[[str], None]] = None,
+        opponent_pool: Optional[OpponentPool] = None,
     ):
         self.game = game
         self.abstraction = abstraction
         self.cfg = config
         self.log = logger or print
+        # Archetype-opponent training. If pool is provided AND config.archetype_mix > 0,
+        # each traversal samples an opponent archetype (or None for self-play).
+        # Set per-traversal in train(); read in _traverse at opponent nodes.
+        self.opponent_pool = opponent_pool
+        if self.opponent_pool is not None:
+            # Override the pool's own mix with the config value -- single source of truth.
+            self.opponent_pool.archetype_mix = config.archetype_mix
+        self._current_archetype: Optional[ArchetypeProfile] = None
 
         self.rng = random.Random(config.seed)
         torch.manual_seed(config.seed)
@@ -286,10 +308,20 @@ class DeepCFRSolver:
         else:
             # Opponent node: sample one action and recurse.
             feat = self.encoder.encode(state, rng=self.rng)
-            # Add the current strategy to the strategy buffer (it's what we want to train toward).
-            self.strat_buffer.add(feat, strat.copy(), legal_mask.copy(), self.iteration)
-            # Sample an action proportional to current strategy, restricted to legal.
-            probs = strat / max(strat.sum(), 1e-8)
+
+            # If an archetype is assigned to this trajectory, use its policy
+            # instead of the bot's current policy. The archetype's actions are
+            # NOT written to the strategy buffer -- those would corrupt training
+            # by teaching the bot to imitate the archetype.
+            if self._current_archetype is not None:
+                arch_strat = self._archetype_strategy(state, current_player, legal_mask)
+                probs = arch_strat / max(arch_strat.sum(), 1e-8)
+            else:
+                # Self-play opponent: write current policy to strategy buffer for
+                # the strategy net to learn from.
+                self.strat_buffer.add(feat, strat.copy(), legal_mask.copy(), self.iteration)
+                probs = strat / max(strat.sum(), 1e-8)
+
             chosen = self.rng.choices(range(N_DISCRETE_ACTIONS), weights=probs.tolist(), k=1)[0]
             # Map discrete action to chip action.
             da = DiscreteAction(chosen)
@@ -300,6 +332,61 @@ class DeepCFRSolver:
                 da, chip_action = self.rng.choice(legal_items)
             child = state.child(int(chip_action))
             return self._traverse(child, traverser, depth + 1)
+
+    def _archetype_strategy(
+        self,
+        state: Any,
+        current_player: int,
+        legal_mask: np.ndarray,
+    ) -> np.ndarray:
+        """Build the archetype's action distribution at an opponent node.
+
+        Reads bucket equity from the encoder cache (via Abstraction), derives
+        position from the OpenSpiel HU convention, and computes pot odds and
+        stack/pot ratio from the GameStateView. Returns a 7-element float32
+        array summing to 1.0 over legal actions.
+        """
+        assert self._current_archetype is not None, "called without an archetype set"
+        assert self.opponent_pool is not None, "archetype set but no pool"
+
+        # Bucket lookup goes through the encoder so we benefit from its
+        # per-traversal cache. The encoder's `encode` method computes this
+        # internally; we replicate the bucket lookup here for direct access.
+        parsed = _parse_universal_poker_state(state)
+        street_idx = parsed["street_idx"]
+        hero_str = parsed["private"]
+        board_str = parsed["public"]
+        from src.nlhe.equity import cards_from_str
+        hero_cards = cards_from_str(hero_str)
+        board_cards = cards_from_str(board_str) if board_str else []
+        expected_board_len = {0: 0, 1: 3, 2: 4, 3: 5}[street_idx]
+        if len(board_cards) != expected_board_len:
+            # Defensive fallback matching encoder behavior.
+            bucket_id = 0
+        else:
+            bucket_id = self.abstraction.bucket_of(
+                hero_cards, board_cards,
+                runouts=self.cfg.bucket_runouts, rng=self.rng,
+            )
+
+        view = _build_game_state_view(state, self.cfg.starting_stack)
+        in_position = derive_in_position(street_idx, current_player)
+        facing_bet = view.to_call > 0
+        denom = max(view.pot + view.to_call, 1)
+        pot_odds = view.to_call / denom
+        stack_to_pot = view.effective_stack / max(view.pot, 1)
+
+        return self.opponent_pool.policy(
+            archetype=self._current_archetype,
+            street_idx=street_idx,
+            bucket_id=bucket_id,
+            in_position=in_position,
+            pot_odds=pot_odds,
+            stack_to_pot=stack_to_pot,
+            legal_mask=legal_mask,
+            facing_bet=facing_bet,
+            rng=self.rng,
+        )
 
     def _dcfr_weights(self, iters: torch.Tensor) -> torch.Tensor | None:
         """Per-sample DCFR weights for a batch.
@@ -494,8 +581,15 @@ class DeepCFRSolver:
             # Traversals.
             self.encoder.reset_cache()
             for _ in range(self.cfg.traversals_per_iter):
+                # Per-trajectory archetype assignment (None = self-play).
+                if self.opponent_pool is not None and self.cfg.archetype_mix > 0:
+                    self._current_archetype = self.opponent_pool.sample_opponent(self.rng)
+                else:
+                    self._current_archetype = None
                 state = self.game.new_initial_state()
                 self._traverse(state, traverser=traverser, depth=0)
+            # Clear after the iteration's traversals are done.
+            self._current_archetype = None
 
             # Train both nets after each traversal batch.
             adv_loss = [float("nan"), float("nan")]

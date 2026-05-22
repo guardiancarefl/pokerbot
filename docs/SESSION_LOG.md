@@ -6,6 +6,86 @@ Format: most recent session at the top. Each session block notes date, what was 
 
 ---
 
+## Session 7 — 2026-05-22 (evening)
+**Focus:** Phase 3 Track A2 — implement the hand-engineered archetype framework. Five archetypes (NIT, TAG, LAG, STATION, MANIAC) parameterized by tightness × aggression, plugged into the Deep CFR solver as opponent diversity beyond pure self-play.
+
+### What was done
+- Reviewed src/nlhe/solver.py and src/nlhe/actions.py to understand the existing infrastructure. Found that _build_game_state_view already exposes pot, to_call, effective_stack, min_bet, max_bet, and legal flags; archetypes can be pure consumers without new feature extraction. Also discovered that src/nlhe/config.py doesn't exist as a separate module — TrainConfig is defined inline in solver.py.
+- Investigated whether the EMD card abstraction's bucket IDs have any hand-strength ordering. They don't — confirmed by spot-check: AA at bucket 12, KK at bucket 5, QQ at bucket 16, 56s at bucket 13, 72o at bucket 2. Bucket IDs are categorical cluster labels with no inherent ordering.
+- Examined StreetAbstraction and found `medoid_histograms` (shape k × bins) already stored — equity histograms per bucket. Wrote a one-line derivation for mean equity per bucket: `(normalized_histogram * bin_midpoints).sum(axis=1)`. No Monte Carlo needed.
+- Verified the bucket-equity gradient is smooth (range 0.33 to 0.84 preflop, span widens through streets) but mid-range ordering is unreliable: KK reads 0.79 while AA reads 0.76; AKs at 0.56 sits below TT at 0.76. Endpoints are roughly calibrated to ground truth but the middle of the distribution has ordering errors. STATUS line 22 already documented this; today's investigation confirmed it generalizes from "AA/QQ/TT collide" to "no monotonic equity-bucket mapping."
+- Initially proposed archetype thresholds as hand-picked constants ("nit folds below 0.78"). User pushed back: "is this the best, are we still letting data shape and decide the thresholds of profiles?" — caught a real bug. The made-up threshold of 0.78 would have caused the nit archetype to fold AA (bucket equity 0.76) preflop, because AA's bucket equity is below the made-up threshold. Pivoted to data-derived design before any code was written.
+- Wrote scripts/empirical_buckets.py (initially /tmp): sampled 5000 random preflop hands and 2000 per postflop street through the abstraction, computed population-equity quantiles per street, saved as JSON. 3-minute run on Contabo CPU. Output saved to runs/archetype_design/bucket_equity_analysis.json with bucket_equity tables and quantile tables.
+- Designed archetype thresholds as quantile parameters per street (e.g., NIT plays "top 15% preflop, top 25% flop, top 30% turn, top 40% river"). Each archetype gets a 4-tuple of quantiles plus a single aggression scalar. Five archetypes locked: NIT (0.85,0.75,0.70,0.60) aggression 0.25, TAG (0.70,0.55,0.50,0.45) aggression 0.65, LAG (0.40,0.30,0.35,0.40) aggression 0.85, STATION (0.25,0.15,0.10,0.05) aggression 0.20, MANIAC (0.05,0.10,0.20,0.30) aggression 0.95.
+- Built src/nlhe/archetypes.py (~350 lines): ArchetypeProfile dataclass, NAMED_ARCHETYPES tuple, EquityCalibration loader with linear quantile interpolation, archetype_policy decision function with stack-depth and position modifiers, OpponentPool class holding the pool + sampling logic, derive_in_position helper for HU position derivation.
+- Caught two bugs after first write via action-enum inspection: the policy code used `BET_33POT`/`BET_POT`/`ALL_IN` style names but the real enum is `BET_33`/`BET_100`/`ALLIN`. Also discovered that "check when free" is the `CALL` slot, not `FOLD` — the policy function had check probabilities written into the wrong slot in three places. Five-edit patch fixed all of it, plus the in-position nudge that depended on the same wrong assumption.
+- Built tests/test_archetypes.py with 9 behavioral tests against the real calibration: distribution validity, nit-folds-trash, nit-plays-premium, maniac-plays-trash, nit-strictly-tighter-than-maniac-across-buckets, aggression-drives-bet-vs-call-split, legal-mask-honored, position-helper, opponent-pool-sampling. All green on first run.
+- Moved /tmp/empirical_buckets.py to scripts/analyze_bucket_equity.py with proper argparse CLI (`--abstraction`, `--out`, sample-count overrides, seed). 163 lines. --help works. Reproducibility pipeline now in repo.
+- Integrated archetype framework into the solver via a 6-edit patch in src/nlhe/solver.py: imports, TrainConfig.archetype_mix field (default 0.0 for backward compat), DeepCFRSolver.__init__ accepts optional opponent_pool, new _archetype_strategy method that builds the archetype's distribution from bucket equity + position + pot odds + stack/pot, _traverse opponent branch dispatches to archetype if assigned, train() samples archetype per trajectory. 41 tests green after integration (32 pre-existing + 9 new).
+- Wrote /tmp/smoke_arch.py to exercise the integration with real training. Two configs: archetype_mix=0.0 (vanilla regression) and archetype_mix=1.0 (every opponent is an archetype). Instrumented _archetype_strategy and strat_buffer.add to count invocations. 4188 archetype calls across 20 trajectories, all 5 archetypes sampled, zero strategy buffer pollution. Smoke passed all 4 gates.
+- Side finding from smoke: at archetype_mix=1.0 the strategy buffer never fills (no path to populate it from archetype trajectories — those write zeros to it by design). The strategy net therefore can't train at full archetype mix. Documented as a warning on the config field with recommended range 0.2-0.7.
+- Pod-status check at session start showed the Phase 2d RunPod pod was already terminated (Session 6 closed it). No new GPU activity needed.
+
+### What was decided
+- **Data-derived archetype thresholds, not hand-picked.** Tightness is read from empirical bucket-equity quantiles; aggression remains a designed parameter (no labeled-action dataset under opponent anonymity, and the project's values say there never should be one). DECISIONS.md updated.
+- **Archetype decisions do NOT write to the strategy buffer.** Otherwise the bot would learn to imitate maniacs. Strategy buffer writes are now gated on `self._current_archetype is None`. Verified by smoke. DECISIONS.md updated.
+- **archetype_mix is config-knob exposed, default 0.0.** Backward compatible — no existing code path changes behavior unless the user explicitly passes an opponent_pool AND sets archetype_mix > 0. Recommended production value 0.5.
+- **Single exponent simplification holds.** Track A2 doesn't change DCFR's single-exponent design from A1 (that's a separate algorithm). The two tracks coexist cleanly.
+- **Pre-existing GPU checkpoint compat unaffected.** Archetypes integration touches `_traverse` opponent-node behavior but not the saved checkpoint format. Session 5 GPU artifacts remain loadable under any cfr_variant.
+- **Real humans for evaluation, never for training.** Established the boundary explicitly: bb/100 from human play is evaluation data, observed hands never flow back to training, archetype recalibration never reads human play. Aligned with the opponent anonymity principle from Session 1.
+
+### What was learned / surprises
+- **Data-first design caught a silent bug that would have shipped.** The made-up "nit folds below 0.78" threshold would have caused nit to fold AA preflop, because the EMD bucket-equity for AA reads 0.76. Three minutes of empirical sampling saved hours of "why is the nit folding pocket aces" debugging later. The lesson generalizes: anywhere a threshold meets a learned representation, the threshold needs to be derived from the representation's actual distribution, not from intuition about what the representation should look like.
+- **Grep lies.** Searching for "BET_" missed `ALLIN` because the action name has no underscore prefix. The bug nearly shipped to archetypes.py until a direct `len(DiscreteAction)` and enumeration via Python caught it. Lesson: when correctness depends on enum exhaustiveness, verify by iteration, not by pattern.
+- **The 6-edit patch-with-assertions discipline scales.** Same pattern as DCFR's 3-patch sequence: each `old.count(...) == 1` assertion forces unique-match precision, the patch either applies all edits or none, and grep-based verification afterward is cheap. This held across both algorithmic work (DCFR) and module-creation work (archetypes). Worth keeping as the default for any multi-edit refactor.
+- **OpenSpiel HU position convention is `firstPlayer="2 1 1 1"`.** Player 1 (SB/button) acts first preflop, player 0 (BB) acts first postflop. The `derive_in_position(street_idx, current_player)` helper encodes this once so archetype callers don't have to think about it. Worth being explicit: if we ever change firstPlayer in the game string, the helper breaks silently.
+- **The strategy-buffer-empty-at-mix-1.0 finding is non-obvious.** The smoke caught it because we instrumented both the buffer writes AND the iteration losses. Without the loss column we'd have seen "smoke passed" and shipped a config that silently couldn't train the strategy net. Worth carrying: integration smokes need to surface both correctness invariants AND training signals.
+
+### Workflow notes for next time
+- Build the empirical-analysis artifact before designing the thing that consumes it. The bucket-equity analysis took 3 minutes and prevented a silent design bug. Cheap insurance.
+- Inspect the actual enum / dataclass surface before writing code that references it. `len(DiscreteAction)` + `for a in DiscreteAction: print(a)` is the cheapest possible bug-prevention step.
+- The `cat > /tmp/patch.py <<'EOF' ... EOF` pattern with file write + size check + run is the workflow that's stuck. Heredoc paste artifacts in terminal echo are decorative — verify with `wc -l` and `tail`, never with visual scan.
+- When integration smoke shows "all gates passed" but a number is NaN or zero, treat the NaN as a finding, not a footnote. The strategy-buffer-empty case is worth its own line in the commit notes and a docstring warning.
+
+### Queued for next session (Session 8)
+1. Track-selection decision: A3 (OCHS card abstraction), B1 (subgame extractor design), or C1 (continuous archetype-belief design). Recommendation: B1 — subgame solving is the Pluribus delta and the highest-leverage single piece of work remaining. But A3 has a clean self-contained scope (~1-2 weeks) and an immediate benefit (better abstraction propagates to archetypes via the JSON regen). C1 needs A2 (now done) and benefits from B1 (which doesn't exist yet).
+2. (Cleanup carry-over from earlier sessions): train_leduc.py config.json/metrics.json location reconciliation; _build_game_state_view underscore prefix even though it's imported by policy_adapter.py. Both still deferred, both still cosmetic.
+3. (Possible carry-over): the 42 bought-bot profile format identification. Not strictly blocking anything but it'll need to be done before Phase 3 archetype integration can include them as additional anonymous training opponents.
+
+---
+
+## Session 6 — 2026-05-22 (afternoon)
+**Focus:** Phase 3 Track A1 — implement DCFR (Linear / Discounted CFR) in the Deep CFR solver. Per-sample iteration weighting in advantage and strategy net training, simplified single-exponent form (Brown & Sandholm 2019 fidelity simplified).
+
+### What was done
+- Read src/nlhe/solver.py end-to-end. ReservoirBuffer has no per-entry iteration tracking; sample_batch returns 3-tuple (feats, targets, masks); _traverse adds samples without an iteration arg. All the integration points are in one file.
+- Three sequential patches: (1) TrainConfig adds cfr_variant + dcfr_exponent fields with sensible defaults. (2) ReservoirBuffer gains an `iters` field, add() takes iteration arg, sample_batch returns 4-tuple, checkpoint save/load handles new field with backward-compat refusal of non-vanilla resume from pre-DCFR checkpoints. (3) Per-sample weighting wired into _train_advantage_net and _train_strategy_net via new _dcfr_weights helper, vanilla path is a no-op.
+- Standalone math verification: stubbed solver state and called _dcfr_weights directly with hand-calculated test cases. Vanilla returns None. Linear with T=10, iters=[1,5,10] gives normalized weights summing to 3.0 with expected pattern. Discounted^2 with same setup gives weights matching `(iters/T)^2` normalized to N. discounted(exponent=1) ≡ linear exactly.
+- Real-loop smoke: 2 iterations of HUNL with each variant, same seed. Iter 1 losses identical across all three variants (T=1 collapses all weights to uniform). Iter 2 losses diverge across variants (weighting actually applied). discounted(exponent=1.0) matches linear bit-exact at iter 2. All 32 pre-existing tests green at every patch step.
+- Committed as 41e2fa3 with full attribution to the patches. STATUS.md updated to close A1; DECISIONS.md gained two entries (single-exponent rationale, refuse-non-vanilla-resume rationale).
+- End-of-session check on Phase 2d RunPod pod: iter 137/5000, loss flat around 0.83 (same plateau as iter 100). Only ckpt_iter_0100 on disk because v2 config used checkpoint_every=100. Cost-discipline decision: terminate. Pulled ckpt_iter_0100 + config + log to runs/gpu_phase2d_artifacts/ before terminating via RunPod dashboard. Connection refused after termination — billing closed cleanly.
+
+### What was decided
+- **Single-exponent DCFR, not full three-exponent Brown & Sandholm.** Full DCFR has α (positive regrets), β (negative regrets), γ (strategy average). Simplified form uses one exponent that governs both nets equally. Linear = exponent 1. Discounted = configurable. Tradeoff: less faithful to paper, but less surface area for the implementation to be subtly wrong. Revisit if measurements show the simplification leaves convergence speed on the table.
+- **Refuse non-vanilla resume from pre-DCFR checkpoints.** Old checkpoints don't have per-entry iteration tags. Any default for the missing iters silently corrupts weighting math. The load path raises a clear error pointing to either resume-vanilla or start-fresh.
+- **Phase 2d pod terminated.** Phase 3 work is on Contabo CPU; ckpt_iter_0100's +31.45 bb/100 is the locked Phase 2d headline result. Extending the GPU run would have cost dollars for marginal-or-no improvement on a flat loss curve. Optionality preserved by keeping the checkpoint artifact locally.
+
+### What was learned / surprises
+- **Loss-plateau pod was already plateaued at iter 100.** The Session 6 check found iter 137 with the same loss as iter 100. The "let the GPU run overnight" intuition from Session 5 was wrong — we got 37 more iterations of effectively the same thing. Worth carrying: pod monitoring needs explicit "is this still improving" criteria, not "is it still going."
+- **Patch-by-patch verification with assertions caught a real benefit.** The 3-patch sequence let the regression test (32 tests green) run between each patch. If any patch had broken vanilla behavior, the next patch wouldn't have built on a broken base. Worth keeping as the default discipline for multi-edit solver work.
+- **STATUS.md edits accumulated across two commits.** Edit 1 closed A1 in the Done section. Edit 2 (separate commit) handled the In progress and Track A renumbering. Either commit alone would have left STATUS in an inconsistent state. Worth carrying: STATUS edits should be batched into one logical change per session, not split across commits.
+
+### Workflow notes for next time
+- Single-quoted heredoc delimiters (`<<'PATCH_EOF'`) prevent shell interpretation of $variables in the patch body. Used consistently this session.
+- Verify file writes with `wc -l` + `head` + `tail` before running the patch. Terminal-echo artifacts (especially after long heredocs) are decorative, not diagnostic.
+- One-liner remote checks via SSH are cheaper than attaching to a pod. `ssh ... 'tail -5 /tmp/log'` returns in seconds and tells you what you need.
+
+### Queued for next session (Session 7)
+1. Track-selection decision: A2 (archetype framework), B1 (subgame extractor design), or C1 (continuous archetype-belief design). Recommendation: A2 — most concrete, unblocks C1, shippable in 1-2 sessions.
+2. (Cleanup carry-over): train_leduc.py config.json/metrics.json location, _build_game_state_view underscore prefix. Both deferred again.
+
+---
+
 ## Session 2 — 2026-05-21
 **Focus:** Move from planning to execution. Get a working Linux environment with PyTorch + OpenSpiel, write the Phase 1 Leduc Deep CFR scaffold, complete a training run that validates the pipeline.
 
