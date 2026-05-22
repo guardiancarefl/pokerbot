@@ -226,9 +226,14 @@ This means: (1) more buckets without fixing the lookup gives more granular noise
 **Alternatives considered:** ignore it and accept the noise; treat the noise as an implicit regularizer.
 **Reason rejected:** silent non-determinism in a foundational primitive is the wrong place to "let it ride." Two identical infosets producing different bucket assignments mean the network sees two different infosets and tries to learn two different policies for the same actual situation. Hard to bound how badly this corrupts training; easier to just fix the lookup.
 
-**Fix (deferred to Session 8):** make bucket_of() deterministic. Likely path:
+**Fix (deferred to Session 8):** make bucket_of() deterministic. Verified path:
 - Preflop: precompute the bucket for all 169 isomorphism classes once, store in a dict keyed by canonical hand representation. Lookup is O(1) and exact.
-- Postflop: use exact equity (treys can compute on full boards; for partial boards enumerate remaining cards). Replace MC with deterministic equity.
-- Alternative: increase MC runouts at lookup time to a level where variance is negligible. Slow but minimal code change. Quantify the runouts needed first.
+- Postflop: same idea — abstraction stores a canonical-hand -> bucket lookup table built at training time using exact equity. Query-time lookup is a dict, not a distance comparison.
 
-A3 work cannot proceed past design phase until this is fixed. Option 0 (current k=20) keeps working for now because the noise is below the medoid separation.
+**Crucial follow-up finding (same session, stronger than originally documented):** verified the noise empirically at runouts=200, 800, 2000, and 5000. At every level, multiple pocket pairs and high-card hands flip buckets across trials with fresh rng. Even 5000 runouts (25x production) does not stabilize KK or QQ on the k=169 abstraction. The medoid distances between adjacent buckets are smaller than the irreducible MC noise floor at any reasonable runout budget. "More runouts" does not solve this. The previous claim that "k=20 noise was below medoid separation" was also disproven: at runouts=200 on the original k=20 abstraction, AKs flipped between buckets 18, 10, 16 across three trials. The noise is foundational, not granularity-dependent.
+
+This means: Phase 2d HUNL training was meaningfully noisy at the bucket-assignment layer. The +31.45 bb/100 result is genuine but achieved despite this. Algorithm robustness is higher than I would have estimated.
+
+A3 cannot meaningfully compare abstractions until the lookup is deterministic — otherwise we are comparing measurement noise, not abstraction quality. Session 8 starts with the deterministic-lookup redesign, not with new abstraction implementations.
+
+Once fixed, an additional small win: retrain the existing k=20 abstraction's *lookup table* (not the medoids) deterministically, rerun Slumbot eval. Expect the result to be slightly better than +31.45 because the bot now sees consistent buckets at decision time. This is a free measurement on whether the deterministic-lookup fix alone moves bb/100, before any new abstraction algorithm is implemented.
