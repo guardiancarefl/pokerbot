@@ -128,3 +128,47 @@ def test_bucket_of_lookup_deterministic_across_calls():
             rng = random.Random(trial * 31337)
             buckets.add(a.bucket_of(cards, [], runouts=50, rng=rng))
         assert len(buckets) == 1, f"{label}: got multiple buckets {buckets} across trials"
+
+
+# ---- Abstraction.bucket_of postflop deterministic-MC path ----
+
+def test_bucket_of_postflop_deterministic_across_calls():
+    """The MC fallback path is now deterministic: same (hero, board) -> same
+    bucket across calls regardless of what rng the caller passes.
+
+    Uses a small synthetic flop abstraction with real (non-zero) histograms so
+    the MC distance computation has well-defined v_weights.
+    """
+    # Build a tiny realistic flop abstraction with 3 medoids.
+    bins = 50
+    # Generate three real histograms with different MC seeds so they differ.
+    from src.nlhe.abstraction import compute_hand_histogram
+    rng_a = random.Random(1)
+    h1 = compute_hand_histogram(cards_from_str("AsAh"), cards_from_str("2c3d4h"), runouts=50, bins=bins, rng=rng_a)
+    h2 = compute_hand_histogram(cards_from_str("KsKh"), cards_from_str("2c3d4h"), runouts=50, bins=bins, rng=random.Random(2))
+    h3 = compute_hand_histogram(cards_from_str("7s2h"), cards_from_str("2c3d4h"), runouts=50, bins=bins, rng=random.Random(3))
+    medoid_histograms = np.stack([h1, h2, h3])
+    sa_flop = StreetAbstraction(
+        street="flop",
+        bins=bins,
+        medoid_histograms=medoid_histograms,
+        medoid_hands=[
+            (cards_from_str("AsAh"), cards_from_str("2c3d4h")),
+            (cards_from_str("KsKh"), cards_from_str("2c3d4h")),
+            (cards_from_str("7s2h"), cards_from_str("2c3d4h")),
+        ],
+    )
+    a = Abstraction(streets={"flop": sa_flop})
+
+    # Same query across 5 trials with 5 different caller-supplied rngs:
+    # should give the same bucket every time (caller rng is ignored).
+    hero = cards_from_str("QsJh")
+    board = cards_from_str("2c3d4h")  # different board cards from any medoid
+    buckets = set()
+    for t in range(5):
+        rng = random.Random(t * 31337)
+        buckets.add(a.bucket_of(hero, board, runouts=50, rng=rng))
+    assert len(buckets) == 1, f"got multiple buckets {buckets}, expected deterministic"
+    # And with rng=None too -- should match.
+    buckets.add(a.bucket_of(hero, board, runouts=50, rng=None))
+    assert len(buckets) == 1, f"rng=None produced different bucket: {buckets}"

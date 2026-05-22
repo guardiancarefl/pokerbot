@@ -307,10 +307,15 @@ class Abstraction:
         """Assign a bucket index to a (hero, board) pair on its street.
 
         Preflop uses the deterministic preflop_lookup table when present
-        (canonical HoleClass -> bucket id). Postflop and old-format
-        abstractions without a lookup table fall back to the histogram-
-        distance Monte Carlo path. The MC path is non-deterministic across
-        calls (see DECISIONS.md); fixing that for postflop is deferred.
+        (canonical HoleClass -> bucket id). Postflop uses the MC histogram
+        path but seeds the rng deterministically from the (hero, board)
+        canonical representation -- same query always produces the same
+        histogram and therefore the same bucket. The caller's `rng` parameter
+        is ignored on the MC path because passing a "reproducible" master rng
+        does not actually produce reproducible buckets: the master rng's
+        state advances between calls, so the same hand seen at different
+        points in training produced different histograms before this fix.
+        See DECISIONS.md for the full finding.
         """
         street = {0: "preflop", 3: "flop", 4: "turn", 5: "river"}[len(board)]
         sa = self.streets[street]
@@ -320,7 +325,16 @@ class Abstraction:
             from src.nlhe.equity import hole_class_from_cards
             cls = str(hole_class_from_cards(hero))
             return sa.preflop_lookup[cls]
-        h = compute_hand_histogram(hero, board, runouts=runouts, bins=sa.bins, rng=rng)
+        # Deterministic MC path: seed from a hash of the canonical (hero, board).
+        # This makes same-query -> same-bucket across all callers regardless of
+        # what (if any) rng they passed in. `rng` parameter intentionally unused.
+        import hashlib
+        del rng  # explicitly discard
+        key = (tuple(sorted(hero)), tuple(sorted(board)))
+        digest = hashlib.sha256(repr(key).encode()).hexdigest()
+        seed = int(digest[:16], 16)
+        local_rng = random.Random(seed)
+        h = compute_hand_histogram(hero, board, runouts=runouts, bins=sa.bins, rng=local_rng)
         # Distance to each medoid, pick the min.
         best = 0
         best_d = float("inf")
