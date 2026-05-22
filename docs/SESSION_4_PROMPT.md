@@ -1,34 +1,28 @@
-# Prompt for Session 4 (paste this verbatim at the start of the next conversation)
-
----
+# Prompt for Session 4 (paste verbatim at start of next conversation)
 
 Continuing the pokerbot project. Session 4.
 
-**Status:** Phase 2a closed in Session 3. HUNL game representation validated in OpenSpiel; equity calculator (`src/nlhe/equity.py`), EMD card abstraction (`src/nlhe/abstraction.py`), and action abstraction (`src/nlhe/actions.py`) all built, validated, and committed. Trained abstraction artifact lives at `runs/abstraction_20260521_223018/abstraction.pkl` (preflop k=20, flop/turn/river k=200, 6.8 min training time, inspection confirmed strategically coherent clustering — different surface hands with similar equity-histogram shapes correctly group together).
+**Status:** Phases 2a, 2b, 2c all closed in one very long Session 3 that ran into 2026-05-22. Trained card abstraction at `runs/abstraction_20260521_223018/`. Custom Deep CFR solver with bit-identical resumable checkpointing (`src/nlhe/solver.py`). Slumbot client and eval harness validated (`src/nlhe/slumbot_client.py`, `scripts/eval_vs_slumbot.py`). Latest commit `796868b` ("Phase 2c: Slumbot evaluation harness").
 
-**Runtime:** Contabo VPS, Ubuntu 24.04, 12 vCPU AMD EPYC, 48GB RAM, no GPU. Project at `~/pokerbot/` on the Contabo box. Repo at github.com/guardiancarefl/pokerbot (private). Latest commit `5e8aef9` ("Phase 2a: HUNL abstraction"). Working in Python 3.10 venv with PyTorch 2.12 CPU + OpenSpiel 1.6.11 + scipy + treys.
+**Runtime:** Contabo VPS, Python 3.10 venv. RunPod account created for Phase 2d (no pod rented yet, $0.34/hr 4090). $93 Vultr credit held for Phase 4.
 
-**GPU decision locked:** Phase 2d will use RunPod Community Cloud RTX 4090 at $0.34/hr. RunPod account created in Session 3; no pod rented yet. $93 Vultr credit held for Phase 4 (or Phase 3 helper if needed).
+**Today's session opens Phase 2d.** Three things on the front burner:
 
-**Today's session opens Phase 2b: tiny-HUNL solver smoke test.** The next-up items from STATUS.md:
+1. **PolicyAdapter** (deliberately deferred at end of Session 3, time to pick up): write the glue that wraps a trained `DeepCFRSolver` into a `choose_action(SlumbotState) -> str` callable for the eval harness. Translates Slumbot's chip-action-string state into our `InfosetEncoder` view, runs the strategy network, picks an action via the discrete action space, translates back to Slumbot's action string format.
 
-1. Phase 2b: build NLHE solver wrapper following the Leduc solver pattern (per-iteration logging, eval callback, NaN-safe loss capture). Information state encoding must combine card bucket (from `Abstraction.bucket_of`) with betting history features. The solver wraps OpenSpiel's `DeepCFRSolver` thinly, same approach as Phase 1.
-2. Phase 2b: train Deep CFR on tiny HUNL (20bb stacks, coarse abstraction, [64,64] networks) on Contabo CPU. Goal is "the pipeline doesn't explode," not "good HUNL strategy." Sensible loss curves, no NaN/inf, sensible bucket assignments at decision nodes.
-3. Phase 2b: implement resumable training (checkpoint every N iterations, idempotent resume). Hard prerequisite for using RunPod Community Cloud in Phase 2d without interrupt-cost panic.
-4. Optional Phase 2c: Slumbot API harness (`src/nlhe/slumbot_client.py`) with random-policy baseline. Independent of 2b — could be done in parallel.
+2. **Phase 2b real run at 200bb (mandatory before eval, not optional)**: our Phase 2b smoke runs were all at 20bb stacks. Slumbot is 200bb. Going to 200bb is a *different training regime*, not a "scale up" — different action-relative-to-stack situations, longer betting trees, different equity distributions in postflop spots. Plan: verify the existing abstraction works at 200bb (EMD on equity histograms should be stack-agnostic, but spot-check the bucket assignments first), make a `configs/nlhe_200bb.yaml`, run an initial CPU training pass on Contabo to validate the pipeline at the new stack depth, then move to GPU.
 
-**Two small Session 2 cleanups still open:**
-- `runs/README.md` claims `train_leduc.py` writes config.json and metrics.json at run-dir root; the script actually writes them into `checkpoints/`. Reconcile.
-- Sanity-check the climbing advantage loss across the Phase 1 run against a published Deep CFR Leduc reference, to confirm it's the expected reinitialize-from-scratch pattern.
+3. **Phase 2d (main): rent RunPod 4090, train at 200bb with [256, 256] networks, eval against Slumbot.** Headline Phase 2 deliverable — a measurable bb/100 against the public benchmark.
 
-Please read the project knowledge docs in this order: STATUS.md (entry point, has the full state), SESSION_LOG.md Session 3 entry (for context on Phase 2a build), PHASE2_SKETCH.md (forward plan, may need a refresh now that 2a is done), DECISIONS.md (latest two entries: GPU provider, EMD abstraction). Confirm state matches what STATUS says, then we'll start with Phase 2b solver wrapper.
+**Smaller cleanups still open** (deferred from Session 2): `train_leduc.py` writes config.json/metrics.json into `checkpoints/`, `train_nlhe.py` writes them at run-dir root, `runs/README.md` claims root. Three-way inconsistency. Reconcile.
 
-**Workflow rules carrying over from previous sessions:**
-- When exact file contents are given between BEGIN/END markers, those markers are *labels* describing where content goes, not shell commands to paste. Always wrap content in a heredoc (`cat > path << 'DISTINCTIVE_EOF'` ... `DISTINCTIVE_EOF`), single-quoted delimiter to prevent variable expansion.
-- Verify file writes with `wc -l` / `head` / `tail` / `grep`. Terminal echo sometimes visually mangles heredoc pastes; the file on disk is usually fine.
-- Two-SSH-session workflow on the Contabo box: one for long-running training, one for editing/committing. (Tmux would be cleaner but isn't worth the setup time.)
-- Benchmark one iteration (or dry-run on a small config) before committing to any long training run. Don't guess wall-clock times.
-- Kill criterion: kill a run when the *type* of problem changes (need visibility, need to reconfigure, broken assumption), not when "this is taking longer than I hoped."
-- When patching existing files, prefer `sed`/`python heredoc with assert` over manual editing. The assert catches silent failure modes.
+Read STATUS.md (entry point), SESSION_LOG.md latest entry, then DECISIONS.md for the EMD-abstraction and RunPod-provider entries. Confirm state, then start with the abstraction-validation-at-200bb spot check (cheap; informs whether we need to retrain abstraction before training the solver), then PolicyAdapter, then `configs/nlhe_200bb.yaml`.
 
-**Phase 2b will probably need 1-2 sessions.** The solver wrapper is the equivalent work to Session 2's Leduc solver wrapper (a few hundred lines), plus the new piece of wiring up `Abstraction.bucket_of` into the OpenSpiel information state pipeline. The training run itself, on Contabo CPU at tiny scale, will probably take ~30-60 minutes — long enough to need the per-iteration logging we learned to add in Session 2. Then resumable checkpointing is a separate chunk on top of that.
+**Workflow rules carrying over:**
+- Single-quoted distinctive heredoc delimiters (`SOMETHING_EOF`).
+- Verify file writes with `wc -l` / `head` / `tail` / `grep`.
+- When patching: verify each patch landed before the next step.
+- Benchmark before committing to long runs.
+- Kill criterion: kill when the *type* of problem changes, not when "taking longer than hoped."
+- Probe APIs with curl before writing client code (Session 3 lesson).
+- Project files in /mnt/project/ may be stale; trust the live repo on Contabo as ground truth.
