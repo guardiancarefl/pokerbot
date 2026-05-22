@@ -214,3 +214,21 @@ Verified by smoke test: at archetype_mix=1.0 with 4188 opponent decisions across
 **Reason rejected:** Adds complexity and a weighting knob with no clear answer on what the weight should be. The clean separation (archetype decisions are not training data for the strategy net) is conceptually correct and easier to reason about.
 
 **Known consequence:** at archetype_mix=1.0 the strategy buffer never fills, so the strategy net can't train. Recommended range for production: 0.2-0.7. Documented on TrainConfig.archetype_mix.
+
+## A3 finding: Abstraction.bucket_of() is non-deterministic (lookup-side, not training-side)
+**Discovered:** 2026-05-22 (Session 7.5)
+**Why this matters:** Same (hero, board) call to bucket_of() returns different bucket IDs across calls. The function does ~30 Monte Carlo equity-rollout simulations on every call to compute a query histogram, then snaps to the nearest medoid. The sampling variance in those rollouts is enough to flip the nearest-medoid answer when medoids are close together in EMD space. At k=20 (the current abstraction) most hands stably hit "their" bucket because medoids are spread far apart. At k=169 (Option 1's lossless preflop) the medoids are tightly packed and the noise flips the answer.
+
+Concrete evidence: at k=169 preflop, AA mapped to bucket 12 in one call. JJ also mapped to bucket 12. On a second pass through the same probe set: AA still 12 but KK became 4, QQ also 4, with the same reported equity 0.8443 for both. Two distinct hands collapsing to the same bucket with the same equity reading is impossible if the lookup is deterministic and the abstraction is genuinely lossless.
+
+This means: (1) more buckets without fixing the lookup gives more granular noise, not better play. Option 1 as originally designed cannot deliver. (2) Phase 2d's HUNL training run was silently subject to bucket noise, though at k=20 the noise was small enough not to dominate. (3) KrwEmd (Option 4) would inherit the same bug — it also uses Monte Carlo at lookup time.
+
+**Alternatives considered:** ignore it and accept the noise; treat the noise as an implicit regularizer.
+**Reason rejected:** silent non-determinism in a foundational primitive is the wrong place to "let it ride." Two identical infosets producing different bucket assignments mean the network sees two different infosets and tries to learn two different policies for the same actual situation. Hard to bound how badly this corrupts training; easier to just fix the lookup.
+
+**Fix (deferred to Session 8):** make bucket_of() deterministic. Likely path:
+- Preflop: precompute the bucket for all 169 isomorphism classes once, store in a dict keyed by canonical hand representation. Lookup is O(1) and exact.
+- Postflop: use exact equity (treys can compute on full boards; for partial boards enumerate remaining cards). Replace MC with deterministic equity.
+- Alternative: increase MC runouts at lookup time to a level where variance is negligible. Slow but minimal code change. Quantify the runouts needed first.
+
+A3 work cannot proceed past design phase until this is fixed. Option 0 (current k=20) keeps working for now because the noise is below the medoid separation.

@@ -27,9 +27,9 @@
 4. **Loss plateau != policy plateau.** Loss flattens around iter 80-100, but the deployed (average) strategy can keep improving past that as buffer churns.
 
 ## In progress
-- Track A3 (card abstraction comparison harness) started Session 7.5 — see docs/A3_PLAN.md for the multi-session plan.
-- Option 1 baseline trainer running on Contabo: scripts/train_abstraction_a3_option1.py with k=169 preflop lossless + k=500 postflop, same EMD-histogram metric as current abstraction. Expected ~1-2 hours total. Output to runs/abstraction_a3_option1_<timestamp>/.
-- Plan: implement KrwEmd (Fu et al. 2025) as Option 4 alongside Option 1 baseline; comparison harness trains HUNL Deep CFR on each at matched compute and picks the winner via Slumbot bb/100. Option 2 (river OCHS overlay per Johanson 2013) deferred unless Option 1 alone proves insufficient.
+- Track A3 (card abstraction comparison harness) — design phase. See docs/A3_PLAN.md.
+- Option 1 trainer was started this session but killed mid-flop after discovering a deeper issue: Abstraction.bucket_of() is non-deterministic. Same (hero, board) call returns different bucket IDs across calls due to Monte Carlo sampling variance inside the lookup. At k=20 this was tolerable; at k=169 it flips answers (AA mapped to bucket 12 in one call, JJ also bucket 12; second pass put KK and QQ both at bucket 4 with identical 0.8443 equity). This is a lookup-side bug, not a training-side issue. More buckets without fixing the lookup gives more granular noise, not better play. KrwEmd would have the same issue baked in.
+- Next session opens with: redesign bucket_of() to be deterministic before any further abstraction training. Options under consideration are (a) precompute and cache bucket assignments for all possible (hero, board) tuples, (b) increase runouts dramatically (slow at lookup time), (c) use exact equity at training time. Recommended: (a) for preflop (only 169 classes), (c) for postflop. See DECISIONS.md for the full finding.
 
 ## Next up (Phase 3 — revised, more ambitious than original architecture)
 The original plan treated subgame solving as Phase 5-6. Revised plan moves subgame solver engineering into Phase 3 as a parallel track, alongside DCFR and archetype framework. This is the path to a Pluribus-class SNG bot in 6-10 weeks.
