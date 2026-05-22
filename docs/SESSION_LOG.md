@@ -207,3 +207,39 @@ Format: most recent session at the top. Each session block notes date, what was 
 2. Optional Phase 2b real-run on Contabo CPU (100 iter × 100 trav) to get a real baseline policy before Phase 2d.
 3. Phase 2d: rent RunPod 4090, scale up training, eval against Slumbot, get headline bb/100 number.
 4. Session 2 cleanups: train_leduc/train_nlhe config.json location inconsistency.
+
+---
+
+## Session 4 — 2026-05-22 (~02:00-04:35)
+**Focus:** Open Phase 2d. Write the `PolicyAdapter` that bridges trained `DeepCFRSolver` to the Slumbot eval harness. Validate the infoset encoder is stack-parametric so we can use a 20bb-trained checkpoint as a plumbing test against the 200bb Slumbot game. Plumbing-test end-to-end. Set up a 200bb overnight training run.
+
+### What was done
+- **Two SSH dropouts mid-session, recovered both times** — no work lost because all design state was in a planning chat with another Claude instance and all code was on disk. tmux would have been cleaner; the recovery worked.
+- **First Claude Code session:** `/init` wrote `CLAUDE.md`; diagnostic check confirmed `infoset.py` normalization is parametric on `starting_stack` (no bug); wrote `scripts/verify_abstraction_stack_invariance.py` confirming `Abstraction.bucket_of()` takes no stack-related args (EMD-on-equity-histograms is stack-agnostic by construction); ran a 20-iter NLHE smoke train at 20bb to produce a checkpoint for the plumbing test. Checkpoint `ckpt_iter_0020.pt` at `runs/nlhe_20260522_030612_smoke/`. 15.5 min wall, final losses adv=1.63 strat0=0.81 strat1=0.83, buffers symmetric 1.13:1 (refuting Session 3's 4:1 observation as small-sample noise).
+- **Second Claude Code session (after first dropout):** wrote `src/nlhe/policy_adapter.py` (454 lines), `tests/test_policy_adapter.py` (24 tests initially), refactored `scripts/eval_vs_slumbot.py` for `--policy {random,adapter}`. First plumbing test against Slumbot at 200bb-vs-20bb-checkpoint mismatch surfaced a real protocol bug.
+- **Bet-translation bug:** Slumbot `b<N>` means "total chips committed by actor on the **current street**"; OpenSpiel `universal_poker` bet int N means "total chips committed by actor across the **whole hand**." Identical preflop, divergent the moment any chips have been committed before the current street. Failure mode was a flop `b300` from Slumbot translating to OpenSpiel int 300 when the legal floor at that flop node was 400 (300 prior + 100 new street min-bet). 5 of 20 plumbing-test hands errored.
+- **Empirically confirmed the per-hand semantics** by probing OpenSpiel directly: at a flop decision node with 300 chips committed by each player preflop, `legal_actions()` started at int 400 and `action_to_string(400)` returned `'player=0 move=Bet400'` — i.e., the bet int includes prior-street commitment.
+- **Fixed** by adding a `prior_streets_committed_by_actor: int = 0` kwarg to both `slumbot_token_to_openspiel_action` and `openspiel_action_to_slumbot_token`. Replay loop maintains a per-player dict; refreshes it at each postflop street boundary by parsing `[Money: X Y]` from `state.information_state_string(0)`. Default 0 keeps preflop callers and tests unchanged. Added 2 new tests for the postflop translation path (28/28 green).
+- **Second plumbing-test run: 20/20 hands clean, 0 errors.** Single commit `c07fd9c` covering adapter + tests + eval refactor + fix.
+- **Cleanup commit `9e7be8b`:** `CLAUDE.md` added to repo, `scripts/verify_abstraction_stack_invariance.py` added, `configs/nlhe_smoke_iter1.yaml` dropped.
+- **Wrote `configs/nlhe_200bb.yaml`** and ran iter-1 timing benchmark on Contabo CPU. **48.9s/iter at `[64,64]` / 50 trav / 100 steps, 5.5x CPU parallelism.** Decided to push for an overnight run.
+- **Tried to upsize** (`[128,128]` / 100 trav / 200 steps / 300 iters / ckpt every 25) but iter 1 hung at 100% CPU **single-threaded** (process alive, not parallelizing). Killed at 4+ min, root cause undiagnosed.
+- **Reverted to bench-proven config** + `n_iterations: 300` + `checkpoint_every: 25`. Iter 1 completed in 37.9s, iter 2 in 29.0s, CPU back to 411%. Confirmed healthy and left running in a separate SSH session (PID 730653, logging to `/tmp/200bb_overnight.log`, run dir `runs/nlhe_20260522_043341_phase2d_200bb_overnight/`, ETA ~07:15 Contabo).
+
+### What was decided
+- **`PolicyAdapter` is the bridge between trained policies and the Slumbot eval harness.** Lives at `src/nlhe/policy_adapter.py`. Eager init (fail-fast on bad config / checkpoint mismatch), loud assertions on state-reconstruction failures (no graceful degradation), and explicit warning when training-stack ≠ eval-stack so plumbing-test runs don't get confused for production eval.
+- **Plumbing-test pattern:** train a small smoke model at the cheap stack, build the adapter against it, run a 20-hand eval to surface protocol bugs *before* paying for serious compute. Paid off immediately by catching the bet-translation bug.
+- **200bb overnight CPU training uses the bench-proven `[64,64]`/50/100 config** for predictability. Larger configs deferred until we understand the `[128,128]` hang.
+- **GPU rental decision is now data-conditional:** overnight result determines whether GPU is "make it stronger" or "make it work at all."
+
+### What was learned / surprises
+- **The Session 3 lesson restated and applied:** "always benchmark the actual config before kicking off a long run." Tried to triple-bump (network + traversals + train steps) on top of a single-knob bench and the result hung. The right move is one knob at a time.
+- **ACPC `b<N>` semantics aren't universally per-hand or per-street.** Slumbot and OpenSpiel `universal_poker` happen to disagree. Identity-mapping was an assumption that survived design review because nobody actually traced a postflop example. The plumbing test caught it; without it, GPU training would have produced inscrutable bb/100 numbers.
+- **SSH dropouts are recoverable when all work is on disk.** Two dropouts this session; lost zero code. tmux would have been cleaner up front.
+- **Buffer asymmetry from Session 3 (4:1) was small-sample noise, not structural.** The Session 4 smoke run at the same stack depth produced 1.13:1. Closes that "known issue."
+
+### Queued for next session
+1. Review overnight 200bb training artifacts (final losses, full 300-iter trajectory, all 12 checkpoints, buffer behavior).
+2. Plumbing-test the latest checkpoint against Slumbot at matched 200bb stack depth — this is the actual Phase 2d headline test.
+3. Decide on RunPod rental for `[256,256]` scale-up — data-conditional on overnight result.
+4. Doc/code-hygiene carryovers: `train_leduc.py` config.json/metrics.json location, `_build_game_state_view` underscore prefix, three-way `--run-name` CLI inconsistency, possibly diagnose the `[128,128]` hang.
