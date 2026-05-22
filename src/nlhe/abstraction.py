@@ -142,14 +142,28 @@ def pairwise_emd(histograms: np.ndarray) -> np.ndarray:
 def _kmeans_plus_plus_init(
     dist: np.ndarray, k: int, rng: random.Random
 ) -> list[int]:
-    """k-means++ style spread initialization using precomputed distance matrix."""
+    """k-means++ style spread initialization using precomputed distance matrix.
+
+    Each returned medoid index is guaranteed unique. When k == n, returns
+    list(range(n)) directly (every point is its own medoid -- the trivially
+    lossless case). Otherwise iteratively picks points with probability
+    proportional to squared distance from the nearest existing medoid,
+    EXCLUDING points already picked.
+    """
     n = dist.shape[0]
     if k > n:
         raise ValueError(f"k={k} > n={n}")
+    # Trivial lossless case: every point is its own medoid.
+    if k == n:
+        return list(range(n))
     medoids = [rng.randrange(n)]
     for _ in range(k - 1):
         # For each point, its squared distance to the nearest existing medoid.
         d_to_nearest = np.min(dist[medoids, :], axis=0) ** 2
+        # CRITICAL: exclude already-picked medoids so we never sample with replacement.
+        # Without this, rng.choices(weights=probs) can land on an already-picked
+        # index, producing duplicate medoids and leaving some points unrepresented.
+        d_to_nearest[medoids] = 0.0
         total = d_to_nearest.sum()
         if total == 0.0:
             # All remaining points are duplicates of existing medoids; pick any unused.
