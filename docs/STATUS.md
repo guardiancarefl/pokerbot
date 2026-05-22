@@ -1,7 +1,7 @@
 # Project Status
 
 **Last updated:** 2026-05-22 (Session 5 close)
-**Current phase:** Phase 2d closed. Phase 3 (DCFR + archetype + subgame solver design in parallel) is next.
+**Current phase:** Phase 3 in progress. Track A1 (DCFR) closed; A2 / B1 / C1 next.
 
 ## Done
 - Architecture designed (four-layer stack with opponent anonymity as core principle)
@@ -26,7 +26,7 @@
 4. **Loss plateau != policy plateau.** Loss flattens around iter 80-100, but the deployed (average) strategy can keep improving past that as buffer churns.
 
 ## In progress
-- Session 6 wrap-up: DCFR shipped (commit 41e2fa3). Next track to develop: A2 archetype framework, B1 subgame extractor design, or C1 archetype-belief design — pick at start of Session 7.
+- Nothing active. Session 6 closed: DCFR shipped (commit 41e2fa3), Phase 2d RunPod pod terminated, ckpt_iter_0100 + config + log preserved at runs/gpu_phase2d_artifacts/. Session 7 opens with track-selection decision: A2 archetype framework, B1 subgame extractor design, or C1 archetype-belief design.
 
 ## Next up (Phase 3 — revised, more ambitious than original architecture)
 The original plan treated subgame solving as Phase 5-6. Revised plan moves subgame solver engineering into Phase 3 as a parallel track, alongside DCFR and archetype framework. This is the path to a Pluribus-class SNG bot in 6-10 weeks.
@@ -77,4 +77,4 @@ Estimated total time: 6-10 weeks. Estimated total compute cost: $500-2000.
 - **2026-05-22 morning (Session 3):** Phase 2a HUNL game representation, EMD card abstraction, action abstraction. Phase 2b custom Deep CFR solver. Phase 2c Slumbot client foundations.
 - **2026-05-22 early (Session 4):** Phase 2c closure (bet-translation bug fix), PolicyAdapter built with 28 unit tests, CPU overnight training (275 iters at 200bb), Slumbot evaluation showing -14.8 baseline-adj bb/100 (45 bb/100 better than random's -60).
 - **2026-05-22 afternoon/evening (Session 5):** GPU device support patches landed and tested on CPU. Multiple failed RunPod deployments (CUDA driver/container incompatibility on Community Cloud pool). Eventually working pod on Secure Cloud RTX PRO 4000 Blackwell. GPU smoke + 50-iter benchmark + 119+ iter v2 run with 500K buffer. ckpt_iter_0100 evaluated against Slumbot: +31.45 baseline-adj bb/100, +46 over CPU. Architecture plan revised to be more ambitious based on Pluribus compute math (we have more compute than they did, plus AI-assisted engineering). Phase 3 redefined to start subgame solver + DCFR + archetype work in parallel. Target: best publicly-known SNG bot in 6-10 weeks.
-- **2026-05-22 (Session 6):** Phase 3 Track A1 (DCFR) implemented and shipped. Three sequential patches in src/nlhe/solver.py: TrainConfig fields, ReservoirBuffer iteration tagging + checkpoint format, weighted training loss with simplified single-exponent form. Vanilla regression gate held at every step (32/32 tests green). Standalone math verification matched hand-calculated weights exactly. Real-loop smoke confirmed wiring (iter-1 variants converge to same loss, iter-2 variants diverge as expected, discounted(exponent=1.0) ≡ linear exactly). Commit 41e2fa3. DECISIONS.md updated with two new entries: simplified single-exponent rationale and refuse-non-vanilla-resume backward-compat rationale.
+- **2026-05-22 (Session 6):** Phase 3 Track A1 (DCFR) implemented and shipped. Three sequential patches in src/nlhe/solver.py: TrainConfig fields, ReservoirBuffer iteration tagging + checkpoint format, weighted training loss with simplified single-exponent form. Vanilla regression gate held at every step (32/32 tests green). Standalone math verification matched hand-calculated weights exactly. Real-loop smoke confirmed wiring (iter-1 variants converge to same loss, iter-2 variants diverge as expected, discounted(exponent=1.0) ≡ linear exactly). Commit 41e2fa3. DECISIONS.md updated with two new entries: simplified single-exponent rationale and refuse-non-vanilla-resume backward-compat rationale. Phase 2d RunPod pod checked at end of session — reached iter 137/5000 with loss flat around 0.83 (same plateau seen at iter 100); checkpoint_every=100 in v2 config meant only ckpt_iter_0100 existed on disk. Cost-discipline call: terminated pod, locked in +31.45 bb/100 result, preserved ckpt_iter_0100 + config_v2.json + v2_run.log at runs/gpu_phase2d_artifacts/. Recommendation for Session 7: Track A2 (archetype framework) first — most concrete, unblocks C1, shippable in 1-2 sessions.
