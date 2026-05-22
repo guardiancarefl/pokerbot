@@ -66,34 +66,39 @@ class ReservoirBuffer:
     features: list[np.ndarray] = field(default_factory=list)
     targets: list[np.ndarray] = field(default_factory=list)
     legal_masks: list[np.ndarray] = field(default_factory=list)
+    iters: list[int] = field(default_factory=list)
     n_seen: int = 0
 
-    def add(self, feature: np.ndarray, target: np.ndarray, legal_mask: np.ndarray) -> None:
+    def add(self, feature: np.ndarray, target: np.ndarray, legal_mask: np.ndarray, iteration: int) -> None:
         self.n_seen += 1
         if len(self.features) < self.capacity:
             self.features.append(feature)
             self.targets.append(target)
             self.legal_masks.append(legal_mask)
+            self.iters.append(iteration)
         else:
             j = self.rng.randrange(self.n_seen)
             if j < self.capacity:
                 self.features[j] = feature
                 self.targets[j] = target
                 self.legal_masks[j] = legal_mask
+                self.iters[j] = iteration
 
     def __len__(self) -> int:
         return len(self.features)
 
-    def sample_batch(self, batch_size: int) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    def sample_batch(self, batch_size: int) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         n = len(self.features)
         idxs = [self.rng.randrange(n) for _ in range(min(batch_size, n))]
         feats = np.stack([self.features[i] for i in idxs])
         targs = np.stack([self.targets[i] for i in idxs])
         masks = np.stack([self.legal_masks[i] for i in idxs])
+        its = np.array([self.iters[i] for i in idxs], dtype=np.int64)
         return (
             torch.from_numpy(feats).float(),
             torch.from_numpy(targs).float(),
             torch.from_numpy(masks).float(),
+            torch.from_numpy(its),
         )
 
 
@@ -158,6 +163,14 @@ class TrainConfig:
     bucket_runouts: int = 50
     max_traversal_depth: int = 200  # safety cap
     seed: int = 2026
+    # DCFR variants - see Brown & Sandholm 2019, simplified single-exponent form.
+    # "vanilla":    all training samples weighted equally (current behavior)
+    # "linear":     sample weight = t_i / T  (equivalent to dcfr_exponent=1.0)
+    # "discounted": sample weight = (t_i / T) ** dcfr_exponent
+    # t_i = iteration at which the sample was added; T = current iter.
+    # Weights are normalized per-batch to sum to batch_size, preserving gradient scale.
+    cfr_variant: str = "vanilla"
+    dcfr_exponent: float = 1.0
 
 
 class DeepCFRSolver:
@@ -268,13 +281,13 @@ class DeepCFRSolver:
             # Normalize by starting_stack to keep MSE loss on O(1) scale instead
             # of O(stack^2) scale; this improves gradient conditioning.
             regrets = (values_per_action - ev) * legal_mask / max(self.cfg.starting_stack, 1)
-            self.adv_buffers[traverser].add(feat, regrets.copy(), legal_mask.copy())
+            self.adv_buffers[traverser].add(feat, regrets.copy(), legal_mask.copy(), self.iteration)
             return ev
         else:
             # Opponent node: sample one action and recurse.
             feat = self.encoder.encode(state, rng=self.rng)
             # Add the current strategy to the strategy buffer (it's what we want to train toward).
-            self.strat_buffer.add(feat, strat.copy(), legal_mask.copy())
+            self.strat_buffer.add(feat, strat.copy(), legal_mask.copy(), self.iteration)
             # Sample an action proportional to current strategy, restricted to legal.
             probs = strat / max(strat.sum(), 1e-8)
             chosen = self.rng.choices(range(N_DISCRETE_ACTIONS), weights=probs.tolist(), k=1)[0]
@@ -288,6 +301,34 @@ class DeepCFRSolver:
             child = state.child(int(chip_action))
             return self._traverse(child, traverser, depth + 1)
 
+    def _dcfr_weights(self, iters: torch.Tensor) -> torch.Tensor | None:
+        """Per-sample DCFR weights for a batch.
+
+        Vanilla -> None (caller falls back to unweighted mean).
+        Linear  -> w_i = t_i / T
+        Discounted -> w_i = (t_i / T) ** dcfr_exponent
+
+        Weights normalized so they sum to batch_size, preserving gradient scale
+        relative to the unweighted case. T defaults to max(1, current iter) to
+        keep weights bounded in [0, 1] during the very first iteration.
+        """
+        variant = self.cfg.cfr_variant
+        if variant == "vanilla":
+            return None
+        if variant not in ("linear", "discounted"):
+            raise ValueError(
+                f"unknown cfr_variant={variant!r}; expected vanilla|linear|discounted"
+            )
+        T = max(1, self.iteration)
+        ratio = iters.float() / T
+        if variant == "linear":
+            w = ratio
+        else:
+            w = ratio ** self.cfg.dcfr_exponent
+        # Normalize to sum to batch size, preserving gradient scale.
+        s = w.sum().clamp(min=1e-8)
+        return w * (w.shape[0] / s)
+
     def _train_advantage_net(self, player: int) -> float:
         """One training pass on the advantage network. Returns mean loss or NaN if buffer too small."""
         buf = self.adv_buffers[player]
@@ -298,11 +339,14 @@ class DeepCFRSolver:
         net.train()
         total_loss = 0.0
         for _ in range(self.cfg.train_steps_per_iter):
-            feats, targets, masks = buf.sample_batch(self.cfg.batch_size)
+            feats, targets, masks, iters = buf.sample_batch(self.cfg.batch_size)
             feats = feats.to(self.device); targets = targets.to(self.device); masks = masks.to(self.device)
+            iters = iters.to(self.device)
             preds = net(feats)
-            # MSE on the legal subset only.
-            loss = ((preds - targets) ** 2 * masks).sum(dim=1).mean()
+            # MSE on the legal subset only, per-sample then weighted.
+            per_sample = ((preds - targets) ** 2 * masks).sum(dim=1)
+            weights = self._dcfr_weights(iters)
+            loss = (weights * per_sample).mean() if weights is not None else per_sample.mean()
             opt.zero_grad()
             loss.backward()
             opt.step()
@@ -319,16 +363,19 @@ class DeepCFRSolver:
         net.train()
         total_loss = 0.0
         for _ in range(self.cfg.train_steps_per_iter):
-            feats, targets, masks = buf.sample_batch(self.cfg.batch_size)
+            feats, targets, masks, iters = buf.sample_batch(self.cfg.batch_size)
             feats = feats.to(self.device); targets = targets.to(self.device); masks = masks.to(self.device)
+            iters = iters.to(self.device)
             # Predict softmax over actions; train via KL between target and softmax(pred).
             logits = net(feats)
             logits = logits - logits.max(dim=1, keepdim=True).values  # numerical stability
             exp_l = torch.exp(logits) * masks
             denom = exp_l.sum(dim=1, keepdim=True).clamp(min=1e-8)
             probs = exp_l / denom
-            # KL(target || probs) approximated as -sum(target * log(probs+eps))
-            loss = -(targets * torch.log(probs + 1e-8) * masks).sum(dim=1).mean()
+            # KL(target || probs) approximated as -sum(target * log(probs+eps)), per-sample then weighted.
+            per_sample = -(targets * torch.log(probs + 1e-8) * masks).sum(dim=1)
+            weights = self._dcfr_weights(iters)
+            loss = (weights * per_sample).mean() if weights is not None else per_sample.mean()
             opt.zero_grad()
             loss.backward()
             opt.step()
@@ -351,14 +398,15 @@ class DeepCFRSolver:
             "strat_opts": [o.state_dict() for o in self.strat_opts],
             "adv_buffers": [
                 {"features": b.features, "targets": b.targets,
-                 "legal_masks": b.legal_masks, "n_seen": b.n_seen,
-                 "rng_state": b.rng.getstate()}
+                 "legal_masks": b.legal_masks, "iters": b.iters,
+                 "n_seen": b.n_seen, "rng_state": b.rng.getstate()}
                 for b in self.adv_buffers
             ],
             "strat_buffer": {
                 "features": self.strat_buffer.features,
                 "targets": self.strat_buffer.targets,
                 "legal_masks": self.strat_buffer.legal_masks,
+                "iters": self.strat_buffer.iters,
                 "n_seen": self.strat_buffer.n_seen,
                 "rng_state": self.strat_buffer.rng.getstate(),
             },
@@ -385,12 +433,33 @@ class DeepCFRSolver:
             self.adv_buffers[i].legal_masks = b_data["legal_masks"]
             self.adv_buffers[i].n_seen = b_data["n_seen"]
             self.adv_buffers[i].rng.setstate(b_data["rng_state"])
+            if "iters" in b_data:
+                self.adv_buffers[i].iters = b_data["iters"]
+            else:
+                # Pre-DCFR checkpoint. Refuse to resume non-vanilla; permit vanilla.
+                if self.cfg.cfr_variant != "vanilla":
+                    raise RuntimeError(
+                        f"Checkpoint predates DCFR support (no per-sample iter tracking) "
+                        f"but cfr_variant={self.cfg.cfr_variant!r}. Either resume with "
+                        f"cfr_variant='vanilla' or start fresh."
+                    )
+                self.adv_buffers[i].iters = [1] * len(b_data["features"])
         sb = ckpt["strat_buffer"]
         self.strat_buffer.features = sb["features"]
         self.strat_buffer.targets = sb["targets"]
         self.strat_buffer.legal_masks = sb["legal_masks"]
         self.strat_buffer.n_seen = sb["n_seen"]
         self.strat_buffer.rng.setstate(sb["rng_state"])
+        if "iters" in sb:
+            self.strat_buffer.iters = sb["iters"]
+        else:
+            if self.cfg.cfr_variant != "vanilla":
+                raise RuntimeError(
+                    f"Checkpoint predates DCFR support (no per-sample iter tracking) "
+                    f"but cfr_variant={self.cfg.cfr_variant!r}. Either resume with "
+                    f"cfr_variant='vanilla' or start fresh."
+                )
+            self.strat_buffer.iters = [1] * len(sb["features"])
         self.rng.setstate(ckpt["rng_state"])
         try:
             torch.set_rng_state(ckpt["torch_rng_state"])

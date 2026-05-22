@@ -169,3 +169,20 @@ This finding propagates forward: Phase 4's ICM blueprint training should use 1M+
 
 **Alternative considered:** continue testing deeper / wider networks at current 100K buffer.
 **Reason rejected:** empirical evidence in this session showed buffer is the binding constraint. No reason to spend GPU hours on a hypothesis that's been disconfirmed.
+
+## DCFR: simplified single-exponent form (Track A1)
+**Decided:** 2026-05-22 (Session 6)
+**Why:** Brown & Sandholm 2019 (Discounted CFR) defines three separate exponents — α discounts positive regrets, β discounts negative regrets, γ discounts the strategy average. Implementing all three faithfully in Deep CFR means treating advantage-net and strategy-net training differently *and* splitting advantage-net targets by sign. That's three knobs to tune and three places for the implementation to be subtly wrong, in service of a Phase 3 capability whose role for us is convergence speed-up — not research-grade DCFR reproduction.
+
+The simplified form: one exponent governs both nets. `cfr_variant="linear"` is exponent=1 (every sample weighted by iteration of origin, divided by current iter). `cfr_variant="discounted"` exposes the exponent as a configurable knob. Vanilla CFR remains the default and the regression baseline.
+
+Single exponent captures the main mechanism — late-iteration samples contribute more than early-iteration samples — and that mechanism is what produces the convergence speedup in the published results. Splitting α from β from γ adds tuning surface without changing the core dynamic.
+
+**Alternative considered:** Full three-exponent DCFR per the paper, with per-sample positive/negative regret split on the advantage net.
+**Reason rejected:** Three times the implementation surface, three times the tuning surface, and the final SNG bot doesn't need paper-grade DCFR — it needs faster blueprint convergence. Revisit if measurements show single-exponent DCFR is leaving meaningful convergence speed on the table.
+
+## DCFR backward compatibility: refuse non-vanilla resume from pre-DCFR checkpoints
+**Decided:** 2026-05-22 (Session 6)
+**Why:** Old checkpoints (the Session 5 GPU run included) don't carry per-sample iteration tags in their buffers. Resuming `cfr_variant="linear"` from one would have to invent iter values for every existing buffer entry — and any default is wrong (all-old underweights real training; all-current overweights stale samples). The error path is clean: refuse the load, point the user at either resume-vanilla or start-fresh. The Session 5 checkpoint isn't worth approximating around — Phase 3 starts a new training run anyway.
+**Alternative considered:** Default missing iters to 1 (treat as oldest) with a warning; default missing iters to current iter (treat as newest) with a warning.
+**Reason rejected:** Both options silently corrupt the weighting math in ways the loss curves wouldn't necessarily flag. A loud refusal at load time is cheaper than a quiet degradation across training.
