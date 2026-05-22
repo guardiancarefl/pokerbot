@@ -1,7 +1,7 @@
 # Project Status
 
-**Last updated:** 2026-05-22 (Session 7 close)
-**Current phase:** Phase 3 in progress. Tracks A1 (DCFR) and A2 (archetypes) closed; A3 / B1 / C1 next.
+**Last updated:** 2026-05-22 (Session 7.5)
+**Current phase:** Phase 3 in progress. Tracks A1 (DCFR) and A2 (archetypes) closed. A3 (card abstraction comparison harness) in design + Option 1 baseline training. B1 / C1 still unstarted.
 
 ## Done
 - Architecture designed (four-layer stack with opponent anonymity as core principle)
@@ -27,7 +27,9 @@
 4. **Loss plateau != policy plateau.** Loss flattens around iter 80-100, but the deployed (average) strategy can keep improving past that as buffer churns.
 
 ## In progress
-- Nothing active. Session 7 closed: A2 shipped. Track A is two-thirds done (A1 + A2 in, A3 OCHS remaining). Tracks B and C unstarted. Session 8 opens with the track-selection decision: A3 (OCHS card abstraction), B1 (subgame extractor design), or C1 (continuous archetype-belief design).
+- Track A3 (card abstraction comparison harness) started Session 7.5 — see docs/A3_PLAN.md for the multi-session plan.
+- Option 1 baseline trainer running on Contabo: scripts/train_abstraction_a3_option1.py with k=169 preflop lossless + k=500 postflop, same EMD-histogram metric as current abstraction. Expected ~1-2 hours total. Output to runs/abstraction_a3_option1_<timestamp>/.
+- Plan: implement KrwEmd (Fu et al. 2025) as Option 4 alongside Option 1 baseline; comparison harness trains HUNL Deep CFR on each at matched compute and picks the winner via Slumbot bb/100. Option 2 (river OCHS overlay per Johanson 2013) deferred unless Option 1 alone proves insufficient.
 
 ## Next up (Phase 3 — revised, more ambitious than original architecture)
 The original plan treated subgame solving as Phase 5-6. Revised plan moves subgame solver engineering into Phase 3 as a parallel track, alongside DCFR and archetype framework. This is the path to a Pluribus-class SNG bot in 6-10 weeks.
