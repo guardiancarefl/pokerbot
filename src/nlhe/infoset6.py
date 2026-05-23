@@ -424,17 +424,14 @@ def parse_state_repeated_6max(state):
     m = _RE_POT.search(obs)
     out["pot"] = int(m.group(1)) if m else 0
 
-    m = _RE_MONEY.search(obs)
-    if m:
-        out["money"] = [int(x) for x in m.group(1).split()]
+    # money: use state.stacks() directly (length 6, original seat indexing).
+    # Don't parse [Money: ...] from observation_string because that field
+    # CONTRACTS to alive-only players after busts, breaking our 6-slot model.
+    if hasattr(state, "stacks"):
+        out["money"] = list(state.stacks())
     else:
-        out["money"] = [0] * 6
-
-    m = _RE_CONTRIBUTION.search(obs)
-    if m:
-        out["contribution"] = [int(x) for x in m.group(1).split()]
-    else:
-        out["contribution"] = [0] * 6
+        m = _RE_MONEY.search(obs)
+        out["money"] = [int(x) for x in m.group(1).split()] if m else [0] * 6
 
     m = _RE_PRIVATE.search(obs)
     out["private_cards"] = m.group(1) if m else ""
@@ -448,9 +445,36 @@ def parse_state_repeated_6max(state):
             inner = inner_str
         out["public_cards"] = inner.get("board_cards", "")
         out["sequences"] = inner.get("betting_history", "")
+
+        # contribution: inner.player_contributions is CONTRACTED-indexed
+        # (length = alive count, ordered by contracted seat 0,1,...,N-1).
+        # We need length-6 in ORIGINAL seat indexing. Use seat_to_player()
+        # to remap.
+        contracted_contribs = inner.get("player_contributions", [])
+        if hasattr(state, "seat_to_player") and contracted_contribs:
+            contrib_full = [0] * 6
+            for contracted_seat, contrib in enumerate(contracted_contribs):
+                try:
+                    original_player = state.seat_to_player(contracted_seat)
+                    if 0 <= original_player < 6:
+                        contrib_full[original_player] = contrib
+                except Exception:
+                    # Out-of-range contracted_seat raises; skip.
+                    pass
+            out["contribution"] = contrib_full
+        else:
+            # Fall back to parsing observation_string [PlayerContribution: ...]
+            m = _RE_CONTRIBUTION.search(obs)
+            out["contribution"] = (
+                [int(x) for x in m.group(1).split()] if m else [0] * 6
+            )
+            # Pad to length 6 if needed
+            while len(out["contribution"]) < 6:
+                out["contribution"].append(0)
     else:
         out["public_cards"] = ""
         out["sequences"] = ""
+        out["contribution"] = [0] * 6
 
     out["dealer_seat"] = state.dealer_seat()
     out["hand_number"] = state_dict.get("hand_number", 0)
