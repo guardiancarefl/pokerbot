@@ -3,7 +3,12 @@
 # [512, 512] networks, 10000 iters target, staged gates as documented in chat.
 tag: phase2d_gpu_validation
 abstraction_path: runs/abstraction_20260521_223018/abstraction.pkl
-game_str: "universal_poker(betting=nolimit,numPlayers=2,numRounds=4,blind=100 50,firstPlayer=2 1 1 1,numSuits=4,numRanks=13,numHoleCards=2,numBoardCards=0 3 1 1,stack=20000 20000,bettingAbstraction=fullgame)"
+# Structured game params (preferred over legacy game_str).
+# starting_stack below is shared between the game (per-player chip count)
+# and the solver (TrainConfig.starting_stack).
+num_players: 2
+big_blind: 100
+small_blind: 50
 hidden_dim: [512, 512]
 n_iterations: 10000
 traversals_per_iter: 50
