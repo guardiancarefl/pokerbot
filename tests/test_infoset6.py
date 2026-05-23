@@ -406,3 +406,117 @@ def test_position_with_dealer_rejects_invalid_dealer():
         position_for_seat_with_dealer(seat=0, dealer_seat=-1)
     with pytest.raises(ValueError):
         position_for_seat_with_dealer(seat=0, dealer_seat=6)
+
+
+# ---- encode_from_parsed integration tests (Phase 4f) ----
+
+import numpy as _np_for_tests
+
+
+def test_encode_from_parsed_universal_poker_matches_legacy_encode(abstraction):
+    """The new encode_from_parsed should produce identical output to encode()
+    when given a state parsed via the legacy parse_state_6max."""
+    import pyspiel
+    import random as _r
+    from src.nlhe.infoset6 import parse_state_6max
+
+    encoder = InfosetEncoder6Max(abstraction=abstraction, starting_stack=1500)
+
+    gs = (
+        "universal_poker(betting=nolimit,numPlayers=6,numRounds=4,"
+        "blind=15 55 0 0 0 0,firstPlayer=3 1 1 1,numSuits=4,numRanks=13,"
+        "numHoleCards=2,numBoardCards=0 3 1 1,"
+        "stack=1500 1500 1500 1500 1500 1500,bettingAbstraction=fullgame)"
+    )
+    game = pyspiel.load_game(gs)
+    state = game.new_initial_state()
+    rng = _r.Random(11)
+    while state.is_chance_node():
+        outcomes = state.chance_outcomes()
+        a = rng.choices([o[0] for o in outcomes], weights=[o[1] for o in outcomes])[0]
+        state.apply_action(a)
+
+    feat_legacy = encoder.encode(state, rng=_r.Random(0))
+    encoder.reset_cache()
+    parsed = parse_state_6max(state)
+    feat_new = encoder.encode_from_parsed(parsed, rng=_r.Random(0))
+
+    _np_for_tests.testing.assert_array_equal(feat_legacy, feat_new)
+
+
+def test_encode_from_parsed_repeated_poker_produces_valid_features(abstraction):
+    """encode_from_parsed should accept a RepeatedPokerState-derived dict
+    and produce a valid feature vector of the correct shape."""
+    import random as _r
+
+    encoder = InfosetEncoder6Max(abstraction=abstraction, starting_stack=1500)
+    state = _make_repeated_poker_state_at_first_decision(seed=11)
+    parsed = parse_state_repeated_6max(state)
+    feat = encoder.encode_from_parsed(parsed, rng=_r.Random(0))
+
+    assert feat.shape == (encoder.feature_dim,)
+    assert feat.dtype == _np_for_tests.float32
+
+    # Position one-hot at offset 204 (200 bucket + 4 street)
+    position_slice = feat[204:210]
+    assert position_slice.sum() == 1.0, f"position one-hot has {position_slice.sum()} bits set"
+
+
+def test_encode_from_parsed_position_aware_of_dealer(abstraction):
+    """When the dealer rotates, encode_from_parsed should report a different
+    position one-hot for the same seat compared to seat-5-fixed."""
+    import random as _r
+
+    encoder = InfosetEncoder6Max(abstraction=abstraction, starting_stack=1500)
+
+    base = {
+        "num_players": 6,
+        "street_idx": 0,
+        "current_player": 2,
+        "pot": 100,
+        "money": [1500, 1500, 1500, 1500, 1500, 1500],
+        "contribution": [15, 55, 0, 0, 0, 0],
+        "private_cards": "AsKs",
+        "public_cards": "",
+        "sequences": "",
+    }
+
+    parsed_dealer5 = {**base, "dealer_seat": 5}
+    feat_dealer5 = encoder.encode_from_parsed(parsed_dealer5, rng=_r.Random(0))
+    encoder.reset_cache()
+
+    parsed_dealer2 = {**base, "dealer_seat": 2}
+    feat_dealer2 = encoder.encode_from_parsed(parsed_dealer2, rng=_r.Random(0))
+
+    pos5 = feat_dealer5[204:210]
+    pos2 = feat_dealer2[204:210]
+
+    # dealer=5: seat 2 -> UTG (idx 0)
+    assert pos5[0] == 1.0, f"expected UTG bit set for dealer=5, got {pos5}"
+    # dealer=2: seat 2 -> BTN (idx 3)
+    assert pos2[3] == 1.0, f"expected BTN bit set for dealer=2, got {pos2}"
+
+
+def test_encode_from_parsed_falls_back_to_legacy_when_no_dealer_seat(abstraction):
+    """If parsed dict lacks dealer_seat, position uses the original
+    seat-5-fixed mapping (universal_poker backward-compat path)."""
+    import random as _r
+
+    encoder = InfosetEncoder6Max(abstraction=abstraction, starting_stack=1500)
+    parsed = {
+        "num_players": 6,
+        "street_idx": 0,
+        "current_player": 2,
+        "pot": 100,
+        "money": [1500, 1500, 1500, 1500, 1500, 1500],
+        "contribution": [15, 55, 0, 0, 0, 0],
+        "private_cards": "AsKs",
+        "public_cards": "",
+        "sequences": "",
+    }
+    feat = encoder.encode_from_parsed(parsed, rng=_r.Random(0))
+
+    # No dealer_seat -> falls back to seat-5-fixed mapping
+    # Seat 2 with dealer at 5 -> UTG (idx 0)
+    pos = feat[204:210]
+    assert pos[0] == 1.0, f"expected UTG bit set in legacy fallback, got {pos}"

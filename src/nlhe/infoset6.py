@@ -190,16 +190,43 @@ class InfosetEncoder6Max:
     def encode(self, state: Any, rng: random.Random | None = None) -> np.ndarray:
         """Encode an OpenSpiel state into a feature vector for the network.
 
+        Backward-compatible wrapper: parses the OpenSpiel state and delegates
+        to encode_from_parsed. Existing callers using single-hand
+        universal_poker states keep working unchanged.
+
+        For repeated_poker (multi-hand tournament) states, callers should
+        parse with parse_state_repeated_6max and pass the result to
+        encode_from_parsed directly. That path uses dealer-aware position
+        encoding rather than the seat-5-fixed-dealer assumption.
+
         Args:
             state: OpenSpiel universal_poker state object.
-            rng: optional random.Random for non-deterministic MC fallback
-                (postflop bucket_of can accept None for deterministic
-                hash-seeded sampling; preflop uses the lookup dict).
+            rng: optional random.Random for non-deterministic MC fallback.
 
         Returns:
             np.ndarray of shape (feature_dim,), dtype float32.
         """
         parsed = parse_state_6max(state)
+        return self.encode_from_parsed(parsed, rng)
+
+    def encode_from_parsed(
+        self, parsed: dict, rng: random.Random | None = None
+    ) -> np.ndarray:
+        """Encode a pre-parsed state dict into a feature vector.
+
+        Same feature vector shape as encode(). Branches on whether the
+        parsed dict has a 'dealer_seat' field: if present (repeated_poker),
+        uses position_for_seat_with_dealer to compute button-rotation-aware
+        position; if absent (universal_poker), uses the original
+        position_for_seat with the fixed dealer=seat-5 assumption.
+
+        Args:
+            parsed: a dict from parse_state_6max or parse_state_repeated_6max.
+            rng: optional random.Random for non-deterministic MC fallback.
+
+        Returns:
+            np.ndarray of shape (feature_dim,), dtype float32.
+        """
         feat = np.zeros(self.feature_dim, dtype=np.float32)
         offset = 0
 
@@ -216,7 +243,17 @@ class InfosetEncoder6Max:
         offset += 4
 
         # Position one-hot for the current player.
-        pos_idx = position_for_seat(parsed["current_player"], num_players=6)
+        # Repeated_poker path: dealer rotates each hand, so position depends
+        # on current button location. Single-hand path: dealer is fixed at
+        # seat 5 by OpenSpiel's universal_poker convention.
+        if "dealer_seat" in parsed:
+            pos_idx = position_for_seat_with_dealer(
+                parsed["current_player"],
+                dealer_seat=parsed["dealer_seat"],
+                num_players=6,
+            )
+        else:
+            pos_idx = position_for_seat(parsed["current_player"], num_players=6)
         if 0 <= pos_idx < 6:
             feat[offset + pos_idx] = 1.0
         offset += 6
@@ -229,11 +266,7 @@ class InfosetEncoder6Max:
 
         # Active mask: a player is active if they have non-zero money OR
         # they've contributed something this hand (haven't busted).
-        # A folded player has 0 money but their contribution is still recorded.
         for i in range(6):
-            # Active = stack > 0 (not busted). Folded-in-current-hand vs
-            # active-in-current-hand is approximated; refine in 4e once we
-            # observe how the solver actually needs this.
             feat[offset + i] = 1.0 if parsed["money"][i] > 0 else 0.0
         offset += 6
 
@@ -246,7 +279,7 @@ class InfosetEncoder6Max:
         feat[offset] = parsed["pot"] / ss if ss > 0 else 0.0
         offset += 1
 
-        # To-call / starting_stack. Derived: max(contribution) - current_player's contribution.
+        # To-call / starting_stack.
         cp = parsed["current_player"]
         max_contrib = max(parsed["contribution"]) if parsed["contribution"] else 0
         my_contrib = parsed["contribution"][cp] if cp < len(parsed["contribution"]) else 0
