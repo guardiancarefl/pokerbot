@@ -74,7 +74,7 @@ from src.nlhe.actions import (
     discretize_legal_actions,
 )
 from src.nlhe.icm_returns import icm_adjust_returns
-from src.nlhe.infoset6 import InfosetEncoder6Max, parse_state_6max
+from src.nlhe.infoset6 import InfosetEncoder6Max, parse_state_6max, parse_state_repeated_6max
 from src.nlhe.networks6 import PlayerNetworks6Max, N_DISCRETE_ACTIONS, NUM_SEATS_6MAX
 from src.nlhe.solver import _strategy_from_advantages
 
@@ -108,6 +108,7 @@ class CFR6MaxContext:
     payouts: Sequence[float]
     iteration: int = 0
     max_depth: int = 500
+    num_paid: int = 3
 
     def __post_init__(self) -> None:
         if len(self.starting_stacks) != NUM_SEATS_6MAX:
@@ -117,6 +118,10 @@ class CFR6MaxContext:
             )
         if not self.payouts:
             raise ValueError("payouts must be non-empty")
+        if self.num_paid < 1 or self.num_paid > NUM_SEATS_6MAX:
+            raise ValueError(
+                f"num_paid must be in [1, {NUM_SEATS_6MAX}], got {self.num_paid}"
+            )
 
 
 def _build_view_6max(state: Any, parsed: dict) -> GameStateView:
@@ -171,6 +176,34 @@ def _build_view_6max(state: Any, parsed: dict) -> GameStateView:
     )
 
 
+
+def is_tournament_terminal(state, num_paid=3):
+    """Check whether the tournament is terminal for top-N-equal-pay format.
+
+    For Double Up 6-max (top-3-equal-pay), the tournament effectively ends
+    when player #4 busts. OpenSpiel's repeated_poker only marks the state
+    terminal when 1 player has all chips. This helper checks whether the
+    number of players with nonzero stacks is at-or-below num_paid.
+    """
+    if not hasattr(state, "stacks"):
+        return False
+    stacks = state.stacks()
+    alive = sum(1 for s in stacks if s > 0)
+    return alive <= num_paid
+
+
+def compute_icm_payouts(stacks, num_paid=3, payout_per_seat=2.0, buy_in_units=1.0):
+    """Compute per-seat payouts in normalized units at tournament terminal.
+
+    For top-N-equal-pay (Double Up), each cashing player receives an equal
+    share. Payouts are normalized to buy-in units: a cashing player
+    receives +1.0, a busted player receives -1.0.
+    """
+    profit_per_cash = payout_per_seat - buy_in_units
+    loss_per_bust = -buy_in_units
+    return [profit_per_cash if s > 0 else loss_per_bust for s in stacks]
+
+
 def traverse_6max(
     state: Any,
     traversing_player: int,
@@ -215,6 +248,22 @@ def traverse_6max(
             f"[0, {NUM_SEATS_6MAX})"
         )
 
+    # ---- Tournament terminal: bubble has burst (alive players <= num_paid).
+    # For multi-hand tournaments, the game continues past the bubble; for
+    # top-N-equal-pay formats we stop earlier and compute ICM payouts on
+    # current stacks. Single-hand games do not have stacks(); the helper
+    # returns False in that case and we fall through to state.is_terminal().
+    if is_tournament_terminal(state, num_paid=ctx.num_paid):
+        stacks = state.stacks()
+        payout_per_seat = float(ctx.payouts[0]) if ctx.payouts else 2.0
+        icm_payouts = compute_icm_payouts(
+            stacks=stacks,
+            num_paid=ctx.num_paid,
+            payout_per_seat=payout_per_seat,
+            buy_in_units=1.0,
+        )
+        return float(icm_payouts[traversing_player])
+
     # ---- Terminal: ICM-adjust the chip-EV returns and pick the traverser's slice.
     if state.is_terminal():
         chip_returns = list(state.returns())
@@ -244,7 +293,11 @@ def traverse_6max(
 
     # ---- Decision node.
     cp = state.current_player()
-    parsed = parse_state_6max(state)
+    # Repeated_poker states expose dealer_seat(); single-hand states don't.
+    if hasattr(state, "dealer_seat"):
+        parsed = parse_state_repeated_6max(state)
+    else:
+        parsed = parse_state_6max(state)
     view = _build_view_6max(state, parsed)
 
     legal_chip = list(state.legal_actions())
@@ -260,7 +313,7 @@ def traverse_6max(
         # if it ever does (e.g. an unexpected universal_poker state shape).
         return 0.0
 
-    feat = ctx.encoder.encode(state, rng=rng)
+    feat = ctx.encoder.encode_from_parsed(parsed, rng=rng)
 
     # Current strategy at the acting player: regret-matched (RM+) from
     # their advantage net's output, masked to legal actions.
