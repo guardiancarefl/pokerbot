@@ -339,6 +339,109 @@ class TournamentStructure:
             f"bettingAbstraction=fullgame)"
         )
 
+    def to_inner_game_string_for_state(
+        self,
+        blind_level,
+        stacks,
+        dealer_seat,
+    ):
+        """Build a single-hand universal_poker game string for a sampled state.
+
+        Used by stack_sampler integration: rotates blinds, firstPlayer, and
+        stacks to put the dealer at a specific seat with specific chip counts.
+
+        Args:
+            blind_level: BlindLevel for blinds/antes (ante absorbed via
+                inflation, same as to_inner_game_string).
+            stacks: per-seat chip counts, length num_players. Busted seats
+                must be 0; alive seats must be >= bb_inflated.
+            dealer_seat: 0-indexed seat that holds the button. Small blind
+                is at (dealer+1) % n, big blind at (dealer+2) % n.
+
+        Returns:
+            A universal_poker(...) game string with the dealer at dealer_seat.
+
+        Caveats:
+            universal_poker does not support eliminated seats; if a "busted"
+            seat's stack is 0 we'd hit the same assertion failure that broke
+            repeated_poker integration. This method REQUIRES stacks[i] >= 1
+            for all seats. Stack_sampler guarantees this since it always
+            allocates at least bb_inflated to alive seats.
+
+            For busted seats this method passes stack=1 as a placeholder
+            (the player will fold/auto-busts on first action; CFR ignores
+            them via the active mask).
+        """
+        n = self.num_players
+        if len(stacks) != n:
+            raise ValueError(f"stacks length {len(stacks)} != num_players {n}")
+        if not (0 <= dealer_seat < n):
+            raise ValueError(f"dealer_seat {dealer_seat} out of range [0,{n})")
+
+        sb = blind_level.small_blind
+        bb = blind_level.inflated_big_blind(n)
+
+        # Identify alive seats (stack > 0). At a contracted table, blinds
+        # and firstPlayer must rotate over ALIVE seats only; (dealer+1) % n
+        # may land on a busted seat in real tournament states.
+        alive_seats = [i for i, s in enumerate(stacks) if s > 0]
+        if dealer_seat not in alive_seats:
+            raise ValueError(
+                f"dealer_seat {dealer_seat} is busted (stack=0); "
+                f"alive seats are {alive_seats}"
+            )
+        n_alive = len(alive_seats)
+        if n_alive < 2:
+            raise ValueError(f"need >= 2 alive seats, got {n_alive}")
+
+        # Position of dealer within the alive-seats list.
+        dealer_pos = alive_seats.index(dealer_seat)
+
+        # SB and BB are the next 2 alive seats clockwise from dealer.
+        sb_seat_alive_pos = (dealer_pos + 1) % n_alive
+        bb_seat_alive_pos = (dealer_pos + 2) % n_alive
+        sb_seat = alive_seats[sb_seat_alive_pos]
+        bb_seat = alive_seats[bb_seat_alive_pos]
+
+        # Assign blinds in original 6-seat indexing.
+        blind_array = [0] * n
+        blind_array[sb_seat] = sb
+        blind_array[bb_seat] = bb
+        blind_str = " ".join(str(b) for b in blind_array)
+
+        # firstPlayer (1-indexed): preflop = UTG (3 alive-positions past
+        # dealer for full table; in HU it's the BB), postflop = SB.
+        if n_alive == 2:
+            # Heads-up: BB acts first preflop, SB first postflop.
+            preflop_actor = bb_seat + 1
+            postflop_actor = sb_seat + 1
+        else:
+            utg_alive_pos = (dealer_pos + 3) % n_alive
+            utg_seat = alive_seats[utg_alive_pos]
+            preflop_actor = utg_seat + 1
+            postflop_actor = sb_seat + 1
+        first_player = f"{preflop_actor} {postflop_actor} {postflop_actor} {postflop_actor}"
+
+        # Stacks: busted seats need a placeholder (universal_poker requires
+        # stack > 0). Use 1 chip. They never act because they're not in
+        # firstPlayer rotation; the placeholder is just to satisfy the parser.
+        stack_safe = [max(1, s) for s in stacks]
+        stack_str = " ".join(str(s) for s in stack_safe)
+
+        return (
+            f"universal_poker(betting=nolimit,"
+            f"numPlayers={n},"
+            f"numRounds=4,"
+            f"blind={blind_str},"
+            f"firstPlayer={first_player},"
+            f"numSuits=4,"
+            f"numRanks=13,"
+            f"numHoleCards=2,"
+            f"numBoardCards=0 3 1 1,"
+            f"stack={stack_str},"
+            f"bettingAbstraction=fullgame)"
+        )
+
     def to_blind_schedule_string(self, hands_per_level: int = 10) -> str:
         """Build the repeated_poker `blind_schedule` parameter string.
 
