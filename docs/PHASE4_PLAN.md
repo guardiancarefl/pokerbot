@@ -20,21 +20,29 @@ HUNL training has converged-to-deployed pipelines that work today. 6-max with SN
 
 ## Subphase structure
 
-### Phase 4a — Game representation and action abstraction (Sessions 9-10)
+### Phase 4a — Game representation and action abstraction
 
-Port the universal_poker game string from HUNL to 6-max. OpenSpiel supports this with mostly the same string format — change `numPlayers=2` to `numPlayers=6`, adjust `firstPlayer`, `numBoardCards`, `stack`, blind structure. Start with chip-EV training to validate the game representation independently of ICM (ICM goes in 4b).
+**COMPLETE** (commits accaf14, 2b80578, f1c393c).
 
-Action abstraction stays roughly the same (7 discrete actions: fold, call, 0.33pot, 0.66pot, pot, 2pot, allin). The translation layer for opponent off-tree sizings carries over directly from `src/nlhe/actions.py`.
+src/nlhe/game_strings.py builds OpenSpiel universal_poker game strings parametrically. PokerGameConfig dataclass accepts num_players (2-10), starting_stack, big_blind, small_blind. Convenience constructors: hunl_200bb, hunl_20bb, six_max_200bb, six_max_sng. Action abstraction (src/nlhe/actions.py) unchanged from HUNL: 7 discrete actions (fold, call, 0.33pot, 0.66pot, pot, 2pot, allin) plus the action-translation layer for opponent off-tree sizings.
 
-Validation: load the 6-max game, walk a hand to completion via random actions, confirm state encoding produces sensible legal action sets at every decision.
+All 5 HUNL configs migrated from hardcoded game_str to structured fields. Backward compat: legacy game_str still works as fallback.
 
-### Phase 4b — ICM value function (Session 11)
+End-to-end verified: 6-max games load in OpenSpiel (num_players=6, observation_tensor_shape=[116], max_utility scales with N*starting_stack), a random-action 6-max game completes in 25 steps with zero-sum returns. 15 dedicated tests in tests/test_game_strings.py, 83 → 112 total tests passing after Phase 4b also landed.
 
-Add ICM-adjusted terminal utility. Standard ICM calculation: given a vector of remaining stack sizes and a payout vector, compute each remaining player's expected payout via the Malmuth-Harville formula. For 6-max top-3-paid SNG, the payout vector is [0.333, 0.333, 0.333, 0, 0, 0] across finish positions.
+**Important finding:** observation_tensor_shape changes from [108] (HUNL) to [116] (6-max). +8 features for +4 players. This is the next concrete refactor target — Phase 4d (InfosetEncoder for 6-player state).
 
-The terminal utility in CFR becomes the ICM-equity differential between the start state and the end state for each player. Below ~15bb effective, push/fold is analytically solvable and we switch to precomputed Nash ICM lookup tables. At 3 players with equal payouts, all remaining chips have zero marginal EV — switch to "fold non-premium" mode.
+### Phase 4b — ICM value function
 
-New module: `src/nlhe/icm.py`. Test against published ICM values for standard stack configurations.
+**Math module: COMPLETE** (commit 02663e3). src/nlhe/icm.py + 29 passing tests.
+
+The bot targets two Ignition 6-max formats:
+  - **Double Up**: top-3 each get 2x buy-in (equal payouts to ITM). Bubble at 4 active.
+  - **Standard**: top-2 paid 65/35 of prize pool. Bubble at 3 active. No degenerate ITM phase.
+
+Per ARCHITECTURE.md the value function takes the payout vector as input and computes per-player equity via Malmuth-Harville. Below ~15bb effective, push/fold is analytically solvable and we switch to precomputed Nash ICM lookup tables. For Double Up specifically, at 3 players with equal payouts, all remaining chips have zero marginal EV — switch to "fold non-premium" mode. Standard mode doesn't have this degenerate ITM phase.
+
+**Solver integration: PENDING.** The math module returns per-player equity given stacks and payouts. The integration step rewires the solver's terminal utility from chip-EV to ICM-EV. That requires the 6-max solver refactor (4d/4e) to be in place first, since the existing HUNL solver assumes 2-player and chip-EV — there's nothing to integrate ICM into yet at the multi-player level.
 
 ### Phase 4c — Card abstraction for 6-max (Session 12)
 

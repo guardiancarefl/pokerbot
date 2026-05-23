@@ -278,3 +278,21 @@ Same bot, same abstraction medoids, only the *lookup path* changed:
 - **Future training runs benefit automatically** because ae2a1e7 has the trainer populate preflop_lookup from labels.
 - **Track A3 KrwEmd / Option 4 / comparison harness work is now DE-PRIORITIZED.** The current k=20 abstraction with retrofit produces +78.35 bb/100; further A3 algorithm work has diminishing returns vs. the bigger pieces missing (B1, C1, 6-max port, ICM).
 - **For 6-max SNG: the next priority should be either B1 implementation or 6-max port** — both of which add capability the current bot lacks, vs A3 further work which polishes a layer that's already working.
+
+## Target payout structures: Ignition 6-max Double Up + Standard
+**Date:** 2026-05-23 (Session 8)
+**Why:** Original PROJECT_OVERVIEW.md described the project as "6-max SNG with top-3 of 6 finishers each receiving 33% of the prize pool" — implicitly equal-split top-3. Session 8 clarified the actual target rooms (Ignition specifically) and found that Ignition's 6-max formats are:
+
+1. **Double Up** (top-3 paid, each gets 2x buy-in). Equal in-the-money payouts. Matches what was originally called "triple-up" in older docs but Ignition reserves "Triple Up" for a 9-handed format where 3 of 9 get 3x buy-in.
+
+2. **Standard** (top-2 paid, ~65/35 split of prize pool). 3rd through 6th get nothing. Default at most rooms for traditional 6-max SNGs.
+
+The bot trains/plays both. The mode is configurable; the same trained network can in principle play either if it's been trained on both, or we train two specialists if cross-mode transfer turns out to be weak (likely — the strategic shapes differ).
+
+Strategic differences:
+- **Double Up**: bubble at 4 active. Degenerate ITM phase at 3 active (equal payouts → all marginal chip EV is zero → fold non-premium). Below-15bb push/fold tables differ from Standard because the ITM ceiling is fixed.
+- **Standard**: bubble at 3 active. No degenerate ITM phase (strict 1st > 2nd payout ordering). Late-game pressure concentrates on 3rd-place avoider/seeker.
+
+**Alternative considered:** Top-3 paid 50/30/20 of total pool (PokerStars-style). This was assumed in earlier docs but is not actually a structure Ignition offers in 6-max. Kept as a function (`sng_payouts_6max`) for backward compat with a DeprecationWarning.
+
+**Reason rejected:** The bot's target rooms include Ignition; the bot has to play the structures those rooms actually offer. Training on a hypothetical 50/30/20 structure would produce a bot whose ICM-aware play is wrong for the real games.

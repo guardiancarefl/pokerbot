@@ -1,7 +1,7 @@
 # Project Status
 
-**Last updated:** 2026-05-23 (Session 7.5/8 late close, post-eval)
-**Current phase:** Phase 3 in progress. Tracks A1 (DCFR) and A2 (archetypes) closed. A3 (card abstraction) — preflop AND postflop deterministic lookup landed; retrofit on Phase 2d abstraction measured +78.35 bb/100 vs Slumbot (vs +15.05 noisy and +31.45 historical). B1 (subgame solver) has plan + B1a leaf-strategies module + tests on main. C1 (within-match adaptation) has plan.
+**Last updated:** 2026-05-23 (Session 8, Phase 4a complete + 4b math)
+**Current phase:** Phase 4 starting. Phase 3 wound down with retrofit win (+78.35 bb/100 vs Slumbot). Phase 4a complete: parametric game-string builder + 6-max smoke verified + all 5 HUNL configs migrated. Phase 4b math module shipped: ICM via Malmuth-Harville with 29 tests, supports both Ignition payout modes (Double Up top-3 equal + Standard top-2 65/35). 4c-4h pending: 6-max card abstraction, 6-max InfosetEncoder refactor, 6-max training loop, GPU training run, 6-max eval harness.
 
 ## Done
 - Architecture designed (four-layer stack with opponent anonymity as core principle)
@@ -27,11 +27,10 @@
 4. **Loss plateau != policy plateau.** Loss flattens around iter 80-100, but the deployed (average) strategy can keep improving past that as buffer churns.
 
 ## In progress
-- Track A3 deterministic-lookup work COMPLETE end-to-end (commits f274c6f, ae2a1e7, 5333a4a, 129dda7). Both preflop (canonical-class dict) and postflop (hash-seeded MC) are now deterministic. The retrofit script (129dda7) lets pre-ae2a1e7 abstractions get a populated preflop_lookup without retraining.
-- **Headline result: Phase 2d bot with retrofit abstraction measures +78.35 bb/100 vs Slumbot** (1000 hands, baseline-adjusted) — vs +15.05 with the original noisy abstraction in the same session and +31.45 historically. Determinism alone is worth ~+50 bb/100 to this trained bot.
-- Tracks B1 (subgame solver) and C1 (within-match adaptation) both have committed design plans (docs/B1_PLAN.md, docs/C1_PLAN.md). B1a (leaf-strategy biasing) shipped tonight with 17-test suite (commit 5d6ff3a). No further B1/C1 code written.
-- KrwEmd / Option 4 / abstraction comparison harness work in docs/A3_PLAN.md is now DE-PRIORITIZED. The current k=20 abstraction with retrofit produces +78.35 bb/100, suggesting the abstraction layer is "good enough" for now. Future work focuses on B1/C1 + 6-max port + ICM, not on better card abstraction algorithms.
-- Next session opens with the prioritization conversation: continue with B1 implementation (B1b: subgame tree construction) or pivot to the 6-max port. The "actual goal is 6-max SNG tournament top-3 finish" framing argues for 6-max port sooner rather than later, with B1 implemented in 6-max from the start rather than HUNL-then-port.
+- **Phase 4a complete** (commits accaf14, 2b80578, f1c393c). src/nlhe/game_strings.py builds OpenSpiel universal_poker game strings parametrically. All 5 HUNL configs migrated from hardcoded game_str to structured num_players/big_blind/small_blind/starting_stack fields. 6-max games load and walk to terminal in OpenSpiel with zero-sum returns. observation_tensor_shape changes from [108] (HUNL) to [116] (6-max) — the next concrete refactor target for Phase 4d.
+- **Phase 4b math module shipped** (commit 02663e3). src/nlhe/icm.py implements Malmuth-Harville ICM equity calculation, validated against published test cases (29 tests pass). Supports both Ignition 6-max payout modes: Double Up (top-3 each get 2x buy-in, equal split) and Standard (top-2 paid at 65/35). Pure math module — no solver integration yet (that's a multi-session arc, requires Phase 4d/e first).
+- **Ignition payout structures clarified.** Original docs assumed "top-3 paid 50/30/20" but Ignition's 6-max formats are actually Double Up (top-3 equal) and Standard (top-2 65/35). Strategic implications: Double Up has degenerate ITM phase (3-handed with equal payouts), Standard has strict 1st/2nd ordering with no ITM degenerate. Bubble pressure peaks at 4-left for Double Up and 3-left for Standard.
+- **Next Phase 4 piece: 4d (6-max InfosetEncoder refactor).** The HUNL encoder produces [108]-dim features for 2 stacks + position bits + betting state; 6-max needs [116]-dim with 6 stack slots, who's-folded mask, multi-player betting state. Major refactor touching the trajectory generator, advantage net inputs, and policy net inputs. Multi-session work.
 
 ## Next up (Phase 3 — revised, more ambitious than original architecture)
 The original plan treated subgame solving as Phase 5-6. Revised plan moves subgame solver engineering into Phase 3 as a parallel track, alongside DCFR and archetype framework. This is the path to a Pluribus-class SNG bot in 6-10 weeks.
