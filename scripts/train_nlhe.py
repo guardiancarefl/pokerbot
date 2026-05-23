@@ -40,9 +40,37 @@ def load_yaml_config(path: str) -> dict:
         return yaml.safe_load(f)
 
 
-def build_game(game_str: str | None) -> "pyspiel.Game":
-    """Load HUNL game. Default to standard 200bb stacks; smoke configs override."""
-    if game_str is None:
+def build_game(
+    game_str: str | None,
+    num_players: int | None = None,
+    starting_stack: int | None = None,
+    big_blind: int | None = None,
+    small_blind: int | None = None,
+) -> "pyspiel.Game":
+    """Load a universal_poker game.
+
+    Two ways to specify the game:
+      1. Structured params (num_players + starting_stack + big_blind + small_blind):
+         preferred path. Uses PokerGameConfig from src.nlhe.game_strings.
+      2. Legacy game_str: a raw OpenSpiel game string. Backward compat for
+         configs that pre-date the structured fields.
+
+    If both are provided, structured params win and game_str is ignored.
+    If neither is provided, defaults to HUNL 200bb (Phase 2d shape).
+
+    Note: starting_stack here is the GAME's per-player starting chip count
+    (same numeric value as TrainConfig.starting_stack used by the solver).
+    """
+    if num_players is not None:
+        from src.nlhe.game_strings import PokerGameConfig
+        cfg = PokerGameConfig(
+            num_players=num_players,
+            starting_stack=starting_stack if starting_stack is not None else 20000,
+            big_blind=big_blind if big_blind is not None else 100,
+            small_blind=small_blind if small_blind is not None else 50,
+        )
+        game_str = cfg.to_universal_poker_string()
+    elif game_str is None:
         game_str = (
             "universal_poker(betting=nolimit,numPlayers=2,numRounds=4,blind=100 50,"
             "firstPlayer=2 1 1 1,numSuits=4,numRanks=13,numHoleCards=2,"
@@ -79,6 +107,7 @@ def main() -> None:
 
     # Save effective config alongside the run.
     save_cfg = {**tc.__dict__, "abstraction_path": abstraction_path, "game_str": game_str,
+                "num_players": num_players, "big_blind": big_blind, "small_blind": small_blind,
                 "checkpoint_every": checkpoint_every, "tag": tag}
     with open(run_dir / "config.json", "w") as f:
         json.dump(save_cfg, f, indent=2)
@@ -89,7 +118,8 @@ def main() -> None:
         log.info(f"  {street}: k={sa.k}, bins={sa.bins}")
 
     log.info("loading game...")
-    game = build_game(game_str)
+    game = build_game(game_str, num_players=num_players, starting_stack=starting_stack_game,
+                      big_blind=big_blind, small_blind=small_blind)
     log.info(f"  max_game_length={game.max_game_length()}")
 
     solver = DeepCFRSolver(game=game, abstraction=abst, config=tc, logger=log.info)
