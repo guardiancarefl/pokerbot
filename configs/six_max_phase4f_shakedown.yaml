@@ -1,0 +1,30 @@
+# Phase 4f shakedown: shorter version of the overnight config to verify
+# loss trajectory looks healthy before committing to the full 6000-iter run.
+# Targets ~25-40 min on RTX PRO 4000 Blackwell.
+
+tag: phase4f_shakedown
+abstraction_path: runs/abstraction_20260521_223018_retrofit/abstraction.pkl
+
+starting_stack: 1500
+big_blind: 100
+small_blind: 50
+payout_mode: double_up
+buy_in: 1.0
+first_share: 0.65
+
+tournament_structure_path: configs/ignition_double_up_6max_turbo.yaml
+num_paid: 3
+
+hidden_dim: [256, 256]
+n_iterations: 500
+traversals_per_iter: 150
+train_steps_per_iter: 200
+batch_size: 64
+learning_rate: 0.001
+buffer_capacity: 500000
+
+bucket_runouts: 30
+max_traversal_depth: 200
+seed: 2026
+
+checkpoint_every: 100
