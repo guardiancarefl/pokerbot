@@ -35,7 +35,7 @@ num_paid: 3
 # Larger buffer to accumulate diverse state samples across the run.
 # More gradient steps per iter to actually train the larger networks.
 hidden_dim: [256, 256]
-n_iterations: 6000
+n_iterations: 3400
 traversals_per_iter: 150
 train_steps_per_iter: 200
 batch_size: 64
