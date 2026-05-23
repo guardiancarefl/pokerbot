@@ -44,15 +44,30 @@ Per ARCHITECTURE.md the value function takes the payout vector as input and comp
 
 **Solver integration: PENDING.** The math module returns per-player equity given stacks and payouts. The integration step rewires the solver's terminal utility from chip-EV to ICM-EV. That requires the 6-max solver refactor (4d/4e) to be in place first, since the existing HUNL solver assumes 2-player and chip-EV — there's nothing to integrate ICM into yet at the multi-player level.
 
-### Phase 4c — Card abstraction for 6-max (Session 12)
+### Phase 4c — Card abstraction for 6-max
 
-The HUNL EMD-on-equity-histograms approach uses 2-player equity calculations. 6-max needs range-vs-range-vs-range, which is computationally heavier and produces different histogram shapes. Options:
+**DECISION COMMITTED + VERIFIED.** Reuse the HUNL retrofit abstraction
+(`runs/abstraction_20260521_223018_retrofit/abstraction.pkl`) for 6-max
+training. Per Pluribus precedent (which used a 2-player abstraction
+for 6-max). Verified end-to-end in Session 8:
+- Preflop bucket lookup on a 6-max state returns the same deterministic
+  bucket as in HUNL contexts (preflop_lookup dict path is player-count
+  agnostic).
+- Postflop bucket lookup on a 6-max flop (Js8d4s with hero 8h3h)
+  returns a valid bucket id (137).
+- All four streets load correctly when invoked from 6-max state context.
 
-1. **Reuse HUNL abstraction.** Treat range-vs-one-opponent equity as the histogram even in 6-max. Loses some information but no new code. Pluribus actually used a 2-player abstraction for 6-max.
-2. **Range-vs-2-random-opponents.** Computationally tractable, more representative.
-3. **Range-vs-N-1-random-opponents.** Most representative, slowest.
+**Strategic caveat (accepted):** the abstraction's equity histograms
+were computed against 1 random opponent. 6-max equity-vs-5-opponents
+has different shape. The bot will still play sensibly with these
+buckets but may be suboptimal at multi-way pots. This is an information
+quality issue, not a correctness issue. If eval shows it's the weak
+link, revisit with a 6-max-native abstraction in a future iteration.
 
-Recommendation: start with (1) per Pluribus precedent. The 6-max blueprint trains on top of whatever abstraction we ship; if eval shows it's the weak link, revisit.
+**No new code required for 4c.** The encoder built in 4d
+(src/nlhe/infoset6.py) passes the retrofit abstraction through to
+postflop bucket lookups directly. Phase 4e training will use this
+combination as-is.
 
 ### Phase 4d — 6-max infoset encoder (Session 13)
 
