@@ -554,3 +554,79 @@ def test_from_yaml_training_weights_sum_to_one():
     ts = TournamentStructure.from_yaml('configs/ignition_double_up_6max_turbo.yaml')
     total = sum(w for _, w in ts.training_weights)
     assert 0.99 <= total <= 1.01, f"weights sum to {total}, not ~1.0"
+
+
+
+# ---- to_inner_game_string_for_state tests (Phase 4f) ----
+
+import pyspiel as _pyspiel_state
+
+
+def test_for_state_full_table_blinds_correct():
+    """All 6 alive, dealer=0: SB seat=1, BB seat=2, UTG seat=3."""
+    ts = TournamentStructure.from_yaml(
+        "configs/ignition_double_up_6max_turbo.yaml"
+    )
+    stacks = [1500] * 6
+    gs = ts.to_inner_game_string_for_state(
+        blind_level=ts.level(1), stacks=stacks, dealer_seat=0,
+    )
+    # SB=15 on seat 1, BB=55 (inflated) on seat 2
+    assert "blind=0 15 55 0 0 0" in gs
+    # firstPlayer: UTG=4 (1-indexed=4), postflop=SB=2 (1-indexed=2)
+    assert "firstPlayer=4 2 2 2" in gs
+
+
+def test_for_state_busted_seats_get_placeholder():
+    """Busted seats get stack=1 in the produced game string."""
+    ts = TournamentStructure.from_yaml(
+        "configs/ignition_double_up_6max_turbo.yaml"
+    )
+    stacks = [0, 1500, 1500, 0, 1500, 4500]  # seats 0,3 busted
+    gs = ts.to_inner_game_string_for_state(
+        blind_level=ts.level(1), stacks=stacks, dealer_seat=1,
+    )
+    # busted seats get stack=1, alive seats keep their values
+    assert "stack=1 1500 1500 1 1500 4500" in gs
+
+
+def test_for_state_sb_bb_rotate_over_alive_seats():
+    """With dealer=2 and seat 3 busted: SB should be seat 4 (next alive),
+    not seat 3 (would be standard +1 but is busted)."""
+    ts = TournamentStructure.from_yaml(
+        "configs/ignition_double_up_6max_turbo.yaml"
+    )
+    stacks = [1500, 1500, 1500, 0, 1500, 4500]  # seat 3 busted
+    gs = ts.to_inner_game_string_for_state(
+        blind_level=ts.level(1), stacks=stacks, dealer_seat=2,
+    )
+    # SB should land on seat 4 (next alive after dealer 2, skipping busted seat 3)
+    # BB on seat 5 (next alive after seat 4)
+    assert "blind=0 0 0 0 15 55" in gs
+
+
+def test_for_state_dealer_must_be_alive():
+    """dealer_seat with stack=0 should raise ValueError."""
+    ts = TournamentStructure.from_yaml(
+        "configs/ignition_double_up_6max_turbo.yaml"
+    )
+    stacks = [0, 1500, 1500, 1500, 1500, 3500]  # seat 0 busted
+    with pytest.raises(ValueError):
+        ts.to_inner_game_string_for_state(
+            blind_level=ts.level(1), stacks=stacks, dealer_seat=0,
+        )
+
+
+def test_for_state_produces_loadable_game():
+    """The game string must be loadable by pyspiel."""
+    ts = TournamentStructure.from_yaml(
+        "configs/ignition_double_up_6max_turbo.yaml"
+    )
+    stacks = [1500] * 6
+    gs = ts.to_inner_game_string_for_state(
+        blind_level=ts.level(1), stacks=stacks, dealer_seat=2,
+    )
+    game = _pyspiel_state.load_game(gs)
+    assert game.num_players() == 6
+    state = game.new_initial_state()
+    assert state.is_chance_node()
