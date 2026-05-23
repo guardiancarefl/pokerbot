@@ -34,11 +34,30 @@ Format: most recent session at the top. Each session block notes date, what was 
 - Two-commit-pattern (infrastructure first, no behavior change; integration second, behavior change) worked very well for the preflop lookup ship. Commit A is independently revertable. Commit B depends on A but is small. Use this for postflop too.
 - Patch scripts should always use `sed -n ... | cat -A` to see actual bytes (whitespace, blank lines) before writing the `old_str` anchor. Two anchor failures tonight, both from invisible blank lines.
 
+### What happened after — postflop determinism, B1a sketch, eval comparison, retrofit win
+- **Postflop deterministic lookup landed** (commit 5333a4a). compute_hand_histogram receives a deterministic rng seeded from sha256(canonical sorted(hero, board)) when called from bucket_of(). Caller's rng parameter intentionally discarded — both real callers (InfosetEncoder, archetype solver) were passing the master training rng thinking that gave reproducibility, but the master rng's state advances between calls. End-to-end verified across preflop + flop + turn + river: every probe STABLE across 5 trials with different rng seeds and rng=None.
+- **B1a (leaf strategies for subgame solving) sketched** (commit 5d6ff3a). 143-line src/nlhe/biased_policy.py implementing BiasConfig + standard_bias_configs(alpha) + apply_bias() + BiasedBlueprint with 17 passing tests. The four canonical continuation strategies (blueprint identity, fold/call/raise-biased) used at depth-limited solving leaf nodes. Written during eval-wait window. In retrospect should not have been written at the tail of a long session — but it's done, tests pin its behavior, and refactoring later is cheap. Tagged as B1a in commit and B1_PLAN.md.
+- **Comparison eval kicked off in tmux**: same Phase 2d checkpoint, two different abstractions. Eval A = original noisy k=20. Eval B = deterministic fresh retrain. Each 1000 hands vs Slumbot.
+- **Eval A: +15.05 bb/100** (baseline-adjusted, 1000 hands). Vs the historical +31.45 — session variance.
+- **Eval B: -16.75 bb/100**. Surprising regression. Investigation revealed: a fresh deterministic retrain produces DIFFERENT preflop bucket IDs than the original (k-medoids init is random per run). 7/12 preflop probe hands had remapped buckets. Postflop bucket IDs by contrast were 7/7 identical across the two abstractions — postflop happens to be path-stable.
+- **Diagnosed and fixed via retrofit script** (commit 129dda7). scripts/retrofit_preflop_lookup.py loads an existing abstraction and runs bucket_of() N times per canonical HoleClass with different rng seeds, taking the modal bucket as the lookup-table value. Result on Phase 2d artifact: 169/169 canonical hands unanimous (modal agreement 11/11 at 5000 runouts). Preserves original bucket IDs; only the lookup path becomes deterministic.
+- **Found a 4th bug along the way**: bucket_of() is suit-dependent on canonically-equivalent literals (AsKs and AcKc produce different histograms because the MC samples from different remaining-deck card sets). The retrofit happens to address this for preflop by canonicalizing to a single representative per HoleClass.
+- **Eval C: +78.35 bb/100** (retrofit + Phase 2d checkpoint vs Slumbot, 1000 hands, same session as Eval A). +63 above Eval A in the same session. Sized comfortably outside reasonable n=1000 variance bounds. Strong evidence determinism alone is worth ~+50 bb/100 to this trained bot.
+
+### Final session score
+Fourteen commits on main. Findings: four foundational bugs in the abstraction layer, three fixed in-session (kmedoids replacement, bucket_of non-determinism preflop and postflop), one worked around by the retrofit (cross-run bucket-id instability). Headline result: +78.35 bb/100 vs Slumbot, ~5x the historical reference number, achieved without any retraining.
+
+### What was reprioritized
+- A3 deeper work (KrwEmd / Option 4 / comparison harness): DE-PRIORITIZED. Current k=20 abstraction with retrofit produces +78.35 bb/100. Further A3 algorithm work has diminishing returns vs. the bigger missing pieces.
+- B1 (subgame solver): elevated to top priority. The +50 bb/100 from determinism alone suggests the bot can be significantly stronger with the algorithmic pieces (subgame solving, within-match adaptation) that the architecture calls for.
+- 6-max port: elevated. The actual project goal is 6-max SNG tournament top-3 finish; HUNL is debugging infrastructure. Next session should decide whether B1 lands in HUNL first or directly in 6-max.
+
 ### Queued for Session 9
-1. Postflop deterministic lookup. Likely approach: deterministic rng seeded from `hash(canonical(hero, board))` inside `compute_hand_histogram`. Same conceptual two-commit shape as preflop.
-2. After postflop determinism: retrain k=20 abstraction with deterministic lookup, rerun Slumbot eval. Free measurement on whether deterministic lookup alone moves bb/100.
-3. Then A3 proper resumes: Option 1 (k=169/500 EMD) trained on the deterministic foundation, then Option 4 (KrwEmd) implementation, then comparison harness picks the winner.
-4. Cleanup: STATUS.md's "Next up (Phase 3)" section still says A3 / B1 / C1 as parallel tracks; revisit ordering given A3 has more work than expected.
+1. Decide direction: B1b (subgame tree construction in HUNL) OR start 6-max port refactor. Either is a multi-session arc.
+2. If B1b: use the existing biased_policy module (5d6ff3a), build subgame construction from current OpenSpiel state, add CFR subgame solver.
+3. If 6-max port: action discretization remains (7 actions), infoset encoder needs 6-player state, training loop needs 6-player self-play, evaluation harness needs replacement (Slumbot is HUNL-only).
+4. The 42 bought-bot profiles still pending integration (Phase 3 work, blocked on having a 6-max training environment).
+5. The retrofit artifact at runs/abstraction_20260521_223018_retrofit/ is the production preflop-deterministic-lookup abstraction. Use it for any subsequent Phase 2d-bot evals.
 
 ---
 

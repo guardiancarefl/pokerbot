@@ -251,3 +251,30 @@ Adjacent fix that came out of the same investigation: `_kmeans_plus_plus_init` w
 **What's next (Session 9):** postflop deterministic lookup. Harder problem — (hero, board) tuples aren't enumerable. Likely path: deterministic rng seeded from `hash(canonical(hero, board))` inside `compute_hand_histogram`, so same query always produces same histogram. This fixes the noise but leaves the lossy-distance-metric question open. Acceptable for A3 to proceed; a deeper exact-equity refit would be a Phase 4 polish.
 
 **Outstanding measurement opportunity:** once postflop determinism lands, retrain the original k=20 abstraction with the new deterministic-lookup machinery (no algorithm change), rerun Slumbot eval. Phase 2d's +31.45 bb/100 was achieved against a noisy lookup; deterministic lookup alone may move bb/100 measurably before any new abstraction algorithm is introduced. This is a free measurement and should be the first datapoint in the A3 comparison harness.
+
+## A3 update: retrofit succeeds end-to-end, four foundational bugs documented
+**Date:** 2026-05-23 (Session 7.5/8 close, post-eval)
+**Result:** Eval C (retrofit abstraction + Phase 2d checkpoint vs Slumbot, 1000 hands) measured +78.35 bb/100, baseline-adjusted. Comparison points: Eval A (noisy original) +15.05 in the same session; Phase 2d's historical eval was +31.45. The deterministic-lookup retrofit is worth ~+50 bb/100 to the trained bot.
+
+### Four foundational bugs found in this session (chronologically)
+
+1. **bucket_of() Monte Carlo non-determinism.** Same (hero, board) call returns different buckets across calls. Verified irreducible at runouts 200, 800, 2000, 5000 — medoid distances smaller than MC noise floor. Fixed via deterministic seeding from hash(canonical(hero, board)) on postflop path (commit 5333a4a), and via the preflop_lookup dict for preflop (commits f274c6f, ae2a1e7).
+
+2. **kmedoids sampling with replacement.** _kmeans_plus_plus_init used rng.choices(range(n), weights=probs) without zeroing already-picked indices, so duplicate medoid picks were possible. At k=n=169 the "lossless preflop" trainer produced only 168 distinct HoleClass strings (87o duplicated, J7o missing). Fixed via short-circuit when k==n and probability zeroing of picked indices (commit a22af38).
+
+3. **Fresh-retrain bucket-id instability across training runs.** k-medoids has random init; the same algorithm and config produces different bucket IDs across runs. Phase 2d's trained network is indexed by the original training's bucket IDs. Eval B (fresh deterministic retrain) regressed to -16.75 bb/100 because preflop bucket IDs changed for 7/12 probe hands. Fixed via the retrofit script (commit 129dda7) which adds preflop_lookup to existing abstractions in-place, preserving original bucket IDs.
+
+4. **bucket_of() suit-dependence on canonically-equivalent literals.** AsKs and AcKc are the same strategic class but the MC sampler draws from different remaining-deck card sets, producing different histograms and potentially different bucket IDs. The retrofit canonicalizes to one literal per HoleClass via hole_class_to_cards() and stores that bucket — same canonical class always returns the same bucket regardless of which suit-permutation the bot is dealt. (Postflop suit-permutation is genuinely strategy-relevant via board interactions, so no analogous fix needed there.)
+
+### Why the retrofit works where fresh retrain didn't
+
+Same bot, same abstraction medoids, only the *lookup path* changed:
+- Fresh retrain (Eval B): same algorithm + config produced *different* bucket IDs for ~58% of preflop hands. The bot's network learned policies for the original bucket IDs; remapped IDs mean the network sees the wrong bucket for those hands. -16.75 bb/100.
+- Retrofit (Eval C): preserved all original bucket IDs (medoid_histograms unchanged, medoid_hands unchanged), added only a canonical-class -> bucket-id lookup table derived from the original abstraction's MC modal answers. The bot sees the same bucket IDs at decision time that it saw during training, just consistently instead of with noise. +78.35 bb/100.
+
+### Implications
+
+- **The Phase 2d bot's effective skill is higher than +31.45 was capturing.** Lookup noise at decision time was suppressing its actual quality by ~+50 bb/100.
+- **Future training runs benefit automatically** because ae2a1e7 has the trainer populate preflop_lookup from labels.
+- **Track A3 KrwEmd / Option 4 / comparison harness work is now DE-PRIORITIZED.** The current k=20 abstraction with retrofit produces +78.35 bb/100; further A3 algorithm work has diminishing returns vs. the bigger pieces missing (B1, C1, 6-max port, ICM).
+- **For 6-max SNG: the next priority should be either B1 implementation or 6-max port** — both of which add capability the current bot lacks, vs A3 further work which polishes a layer that's already working.

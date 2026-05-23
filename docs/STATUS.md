@@ -1,7 +1,7 @@
 # Project Status
 
-**Last updated:** 2026-05-22 (Session 7.5, late close)
-**Current phase:** Phase 3 in progress. Tracks A1 (DCFR) and A2 (archetypes) closed. A3 (card abstraction comparison harness) in active development — preflop deterministic lookup landed; postflop deterministic lookup is next. B1 / C1 still unstarted.
+**Last updated:** 2026-05-23 (Session 7.5/8 late close, post-eval)
+**Current phase:** Phase 3 in progress. Tracks A1 (DCFR) and A2 (archetypes) closed. A3 (card abstraction) — preflop AND postflop deterministic lookup landed; retrofit on Phase 2d abstraction measured +78.35 bb/100 vs Slumbot (vs +15.05 noisy and +31.45 historical). B1 (subgame solver) has plan + B1a leaf-strategies module + tests on main. C1 (within-match adaptation) has plan.
 
 ## Done
 - Architecture designed (four-layer stack with opponent anonymity as core principle)
@@ -27,11 +27,11 @@
 4. **Loss plateau != policy plateau.** Loss flattens around iter 80-100, but the deployed (average) strategy can keep improving past that as buffer churns.
 
 ## In progress
-- Track A3 (card abstraction comparison harness) — preflop deterministic lookup landed, postflop next. See docs/A3_PLAN.md.
-- **Preflop deterministic bucket lookup shipped** (commits f274c6f + ae2a1e7). StreetAbstraction now carries an optional canonical-HoleClass -> bucket-id dict; bucket_of() uses it as a fast O(1) path; the trainer populates it from k-medoids labels. End-to-end verified: 5 trials with 5 different rng seeds and 50 runouts each all produced the same bucket for AA, KK, QQ, AKs, 72o. Before this change, those probes returned 3-4 different buckets each at k=169.
-- **kmedoids sampling-with-replacement bug fixed** (commit a22af38). The "lossless" k=169 preflop trainer was actually producing 168 distinct HoleClass strings, with 87o duplicated at two buckets and J7o missing entirely. Root cause: _kmeans_plus_plus_init used rng.choices with weighted probs but didn't zero out already-picked indices, allowing duplicate medoids when k approaches n. Fix is two lines plus a k==n short-circuit. Now provably correct on the lossless case.
-- **Next session opens with postflop deterministic lookup.** Harder than preflop because (hero, board) tuples are not enumerable. Two viable approaches: (a) seed the MC rng deterministically from a hash of (canonical hero, canonical board) so same query always produces the same histogram and bucket — fixes noise but leaves the "lossy distance metric" question open; (b) precompute exact equity histograms at training time + use a canonical-board lookup with sampled-hand caching. Approach (a) is one small patch and probably enough for A3 to start producing meaningful comparisons.
-- After postflop determinism: free measurement opportunity — retrain the existing k=20 abstraction with the new deterministic-lookup machinery and rerun Slumbot eval. Phase 2d's +31.45 bb/100 was achieved against a noisy lookup; deterministic lookup alone may move that number measurably before any new abstraction algorithm is implemented.
+- Track A3 deterministic-lookup work COMPLETE end-to-end (commits f274c6f, ae2a1e7, 5333a4a, 129dda7). Both preflop (canonical-class dict) and postflop (hash-seeded MC) are now deterministic. The retrofit script (129dda7) lets pre-ae2a1e7 abstractions get a populated preflop_lookup without retraining.
+- **Headline result: Phase 2d bot with retrofit abstraction measures +78.35 bb/100 vs Slumbot** (1000 hands, baseline-adjusted) — vs +15.05 with the original noisy abstraction in the same session and +31.45 historically. Determinism alone is worth ~+50 bb/100 to this trained bot.
+- Tracks B1 (subgame solver) and C1 (within-match adaptation) both have committed design plans (docs/B1_PLAN.md, docs/C1_PLAN.md). B1a (leaf-strategy biasing) shipped tonight with 17-test suite (commit 5d6ff3a). No further B1/C1 code written.
+- KrwEmd / Option 4 / abstraction comparison harness work in docs/A3_PLAN.md is now DE-PRIORITIZED. The current k=20 abstraction with retrofit produces +78.35 bb/100, suggesting the abstraction layer is "good enough" for now. Future work focuses on B1/C1 + 6-max port + ICM, not on better card abstraction algorithms.
+- Next session opens with the prioritization conversation: continue with B1 implementation (B1b: subgame tree construction) or pivot to the 6-max port. The "actual goal is 6-max SNG tournament top-3 finish" framing argues for 6-max port sooner rather than later, with B1 implemented in 6-max from the start rather than HUNL-then-port.
 
 ## Next up (Phase 3 — revised, more ambitious than original architecture)
 The original plan treated subgame solving as Phase 5-6. Revised plan moves subgame solver engineering into Phase 3 as a parallel track, alongside DCFR and archetype framework. This is the path to a Pluribus-class SNG bot in 6-10 weeks.
