@@ -1,0 +1,67 @@
+# Ignition Poker — Double Up 6-max Turbo SNG tournament structure.
+#
+# Captured from in-client Tourney Info screen for tournament #80840020
+# (NL Hold'em, Buy-In $5 + $0.25, 2026-05-23).
+#
+# Format characteristics:
+#   - 6 players sit, 3 survivors each receive 2x buy-in ($10 from $5)
+#   - Game ends at bubble (when player #4 busts)
+#   - 5-minute blind levels (Turbo)
+#   - Antes from level 1 (unusual for SNG; meaningful for early-game ranges)
+#   - No re-buys, no add-ons (freezeout)
+#
+# Total chips in play: 6 * 1500 = 9,000
+# By level 10 (BB=1200, ante=180) per-hand dead money = 1,200 + 6*180 = 2,280
+#   That's 25% of all chips per hand. Game effectively cannot reach level 11
+#   in practice. Levels 12-17 are vestigial; included for schema completeness.
+
+format_name: "ignition_double_up_6max_turbo"
+buy_in_dollars: 5.00
+rake_dollars: 0.25
+prize_pool_dollars: 30.00
+payouts_dollars: [10.00, 10.00, 10.00]  # equal split to top 3
+payout_mode: double_up
+num_players: 6
+
+starting_chips: 1500
+level_duration_minutes: 5
+no_rebuys: true
+no_addons: true
+
+# Each level: small_blind, big_blind, ante (per-player ante).
+# Source: in-client Tourney Info, tournament #80840020.
+blind_schedule:
+  - { level: 1,  small_blind: 15,    big_blind: 25,    ante: 5 }
+  - { level: 2,  small_blind: 25,    big_blind: 50,    ante: 10 }
+  - { level: 3,  small_blind: 50,    big_blind: 100,   ante: 15 }
+  - { level: 4,  small_blind: 75,    big_blind: 150,   ante: 25 }
+  - { level: 5,  small_blind: 100,   big_blind: 200,   ante: 30 }
+  - { level: 6,  small_blind: 150,   big_blind: 300,   ante: 45 }
+  - { level: 7,  small_blind: 200,   big_blind: 400,   ante: 60 }
+  - { level: 8,  small_blind: 300,   big_blind: 600,   ante: 90 }
+  - { level: 9,  small_blind: 400,   big_blind: 800,   ante: 120 }
+  - { level: 10, small_blind: 600,   big_blind: 1200,  ante: 180 }
+  - { level: 11, small_blind: 800,   big_blind: 1600,  ante: 240 }
+  - { level: 12, small_blind: 1000,  big_blind: 2000,  ante: 300 }
+  - { level: 13, small_blind: 1500,  big_blind: 3000,  ante: 450 }
+  - { level: 14, small_blind: 2000,  big_blind: 4000,  ante: 600 }
+  - { level: 15, small_blind: 3000,  big_blind: 6000,  ante: 900 }
+  - { level: 16, small_blind: 4000,  big_blind: 8000,  ante: 1200 }
+  - { level: 17, small_blind: 6000,  big_blind: 12000, ante: 1800 }
+
+# Training-data weight per level. Sums to 1.0.
+# Heavily over-weights early-to-mid levels where most real games are decided.
+# Levels 11+ get token weight (still need exposure for edge cases).
+training_weights:
+  level_1:  0.18
+  level_2:  0.18
+  level_3:  0.15
+  level_4:  0.12
+  level_5:  0.10
+  level_6:  0.10
+  level_7:  0.08
+  level_8:  0.05
+  level_9:  0.02
+  level_10: 0.01
+  level_11: 0.005
+  level_12: 0.005

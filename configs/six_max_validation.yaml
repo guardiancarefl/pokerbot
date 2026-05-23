@@ -1,0 +1,32 @@
+# Phase 4f validation run: scaled 6-max NLHE training to confirm loss
+# trajectory before committing to a multi-day blueprint run.
+# Targets ~10-30 min on RTX PRO 4000 Blackwell.
+tag: six_max_validation
+abstraction_path: runs/abstraction_20260521_223018_retrofit/abstraction.pkl
+
+# Game shape — same as smoke (top-3 equal-payout, 15bb starting stack).
+starting_stack: 1500
+big_blind: 100
+small_blind: 50
+payout_mode: double_up
+buy_in: 1.0
+first_share: 0.65
+
+# Training hyperparameters.
+# traversals_per_iter=150 + batch_size=64: all seats clear batch threshold by iter 1.
+# avoiding the buffer-too-small NaN sentinel documented in solver6.py.
+hidden_dim: [256, 256]
+n_iterations: 500
+traversals_per_iter: 150
+train_steps_per_iter: 200
+batch_size: 64
+learning_rate: 0.001
+buffer_capacity: 200000
+
+# Encoder + solver behavior.
+bucket_runouts: 30
+max_traversal_depth: 200
+seed: 2026
+
+# Checkpoint every 10 iters (10 checkpoints over the run).
+checkpoint_every: 10
