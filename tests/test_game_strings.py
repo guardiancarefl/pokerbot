@@ -216,3 +216,170 @@ def test_blind_level_is_frozen():
     bl = BlindLevel(level=1, small_blind=15, big_blind=25, ante=5)
     with pytest.raises(Exception):  # FrozenInstanceError in 3.10
         bl.level = 2
+
+
+# ---- TournamentStructure validation (Phase 4f) ----
+
+from src.nlhe.game_strings import TournamentStructure
+
+
+def _basic_schedule():
+    return (
+        BlindLevel(level=1, small_blind=15, big_blind=25, ante=5),
+        BlindLevel(level=2, small_blind=25, big_blind=50, ante=10),
+        BlindLevel(level=3, small_blind=50, big_blind=100, ante=15),
+    )
+
+
+def _basic_tournament(**overrides):
+    """Helper to construct a valid TournamentStructure with optional overrides."""
+    defaults = dict(
+        format_name='test_format',
+        num_players=6,
+        starting_chips=1500,
+        payout_mode='double_up',
+        payouts_dollars=(10.0, 10.0, 10.0),
+        buy_in_dollars=5.0,
+        level_duration_minutes=5,
+        blind_schedule=_basic_schedule(),
+        training_weights=((1, 0.5), (2, 0.3), (3, 0.2)),
+    )
+    defaults.update(overrides)
+    return TournamentStructure(**defaults)
+
+
+def test_tournament_structure_basic_construction():
+    ts = _basic_tournament()
+    assert ts.format_name == 'test_format'
+    assert ts.num_players == 6
+    assert ts.starting_chips == 1500
+    assert ts.num_paid() == 3
+    assert ts.total_chips_in_play() == 9000
+    assert ts.buy_in_chips() == 1500
+
+
+def test_tournament_structure_level_lookup():
+    ts = _basic_tournament()
+    bl = ts.level(2)
+    assert bl.level == 2
+    assert bl.small_blind == 25
+    assert bl.big_blind == 50
+    assert bl.ante == 10
+
+
+def test_tournament_structure_level_lookup_raises_on_missing():
+    ts = _basic_tournament()
+    with pytest.raises(KeyError):
+        ts.level(99)
+
+
+def test_tournament_structure_rejects_empty_format_name():
+    with pytest.raises(ValueError):
+        _basic_tournament(format_name='')
+
+
+def test_tournament_structure_rejects_too_few_players():
+    with pytest.raises(ValueError):
+        _basic_tournament(num_players=1)
+
+
+def test_tournament_structure_rejects_too_many_players():
+    with pytest.raises(ValueError):
+        _basic_tournament(num_players=11)
+
+
+def test_tournament_structure_rejects_zero_starting_chips():
+    with pytest.raises(ValueError):
+        _basic_tournament(starting_chips=0)
+
+
+def test_tournament_structure_rejects_unknown_payout_mode():
+    with pytest.raises(ValueError):
+        _basic_tournament(payout_mode='knockout')
+
+
+def test_tournament_structure_rejects_empty_payouts():
+    with pytest.raises(ValueError):
+        _basic_tournament(payouts_dollars=())
+
+
+def test_tournament_structure_rejects_nonpositive_payouts():
+    with pytest.raises(ValueError):
+        _basic_tournament(payouts_dollars=(10.0, 0.0, 10.0))
+
+
+def test_tournament_structure_double_up_requires_equal_payouts():
+    with pytest.raises(ValueError):
+        _basic_tournament(payouts_dollars=(10.0, 5.0, 10.0))
+
+
+def test_tournament_structure_rejects_zero_buy_in():
+    with pytest.raises(ValueError):
+        _basic_tournament(buy_in_dollars=0)
+
+
+def test_tournament_structure_rejects_zero_level_duration():
+    with pytest.raises(ValueError):
+        _basic_tournament(level_duration_minutes=0)
+
+
+def test_tournament_structure_rejects_empty_schedule():
+    with pytest.raises(ValueError):
+        _basic_tournament(blind_schedule=())
+
+
+def test_tournament_structure_rejects_non_blind_level_entries():
+    with pytest.raises(ValueError):
+        _basic_tournament(blind_schedule=(1, 2, 3))  # ints, not BlindLevels
+
+
+def test_tournament_structure_rejects_non_ascending_schedule():
+    bad = (
+        BlindLevel(level=1, small_blind=15, big_blind=25),
+        BlindLevel(level=3, small_blind=50, big_blind=100),
+        BlindLevel(level=2, small_blind=25, big_blind=50),  # out of order
+    )
+    with pytest.raises(ValueError):
+        _basic_tournament(blind_schedule=bad)
+
+
+def test_tournament_structure_rejects_duplicate_levels():
+    bad = (
+        BlindLevel(level=1, small_blind=15, big_blind=25),
+        BlindLevel(level=1, small_blind=25, big_blind=50),  # duplicate
+    )
+    with pytest.raises(ValueError):
+        _basic_tournament(blind_schedule=bad)
+
+
+def test_tournament_structure_rejects_weights_referencing_missing_level():
+    # training_weights references level 99 which isn't in the schedule
+    with pytest.raises(ValueError):
+        _basic_tournament(training_weights=((1, 0.5), (99, 0.5)))
+
+
+def test_tournament_structure_rejects_weights_summing_below_1():
+    with pytest.raises(ValueError):
+        _basic_tournament(training_weights=((1, 0.5), (2, 0.3)))  # sums to 0.8
+
+
+def test_tournament_structure_rejects_weights_summing_above_1():
+    with pytest.raises(ValueError):
+        _basic_tournament(training_weights=((1, 0.6), (2, 0.6)))  # sums to 1.2
+
+
+def test_tournament_structure_rejects_negative_weights():
+    with pytest.raises(ValueError):
+        _basic_tournament(training_weights=((1, 1.5), (2, -0.5)))  # sums to 1.0 but negative
+
+
+def test_tournament_structure_accepts_empty_weights():
+    # No training_weights is fine — sampler will fall back to uniform
+    ts = _basic_tournament(training_weights=())
+    assert ts.training_weights == ()
+
+
+def test_tournament_structure_is_frozen():
+    ts = _basic_tournament()
+    with pytest.raises(Exception):  # FrozenInstanceError
+        ts.format_name = 'something_else'

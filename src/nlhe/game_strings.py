@@ -182,3 +182,112 @@ class BlindLevel:
                 f"num_players must be >= 2 for inflated_big_blind, got {num_players}"
             )
         return self.big_blind + num_players * self.ante
+
+
+@dataclass(frozen=True)
+class TournamentStructure:
+    """Full tournament definition: schedule, payouts, sizing.
+
+    Loaded from a YAML config (see configs/ignition_double_up_6max_turbo.yaml).
+    This is the single source of truth for any specific tournament format.
+    Training configs reference a TournamentStructure by path rather than
+    duplicating blind/payout data.
+
+    Args:
+        format_name: human-readable identifier, e.g. "ignition_double_up_6max_turbo".
+        num_players: number of seats at the table.
+        starting_chips: per-seat chip count at tournament start.
+        payout_mode: "double_up" for top-N-equal-pay (used by ICM math).
+        payouts_dollars: tuple of dollar payouts per finishing position.
+        buy_in_dollars: cost to enter (entry fee excluded).
+        level_duration_minutes: fallback for levels without explicit duration.
+        blind_schedule: ordered tuple of BlindLevels. Levels unique, ascending.
+        training_weights: tuple of (level_int, weight_float). Sum to ~1.0.
+    """
+    format_name: str
+    num_players: int
+    starting_chips: int
+    payout_mode: str
+    payouts_dollars: tuple
+    buy_in_dollars: float
+    level_duration_minutes: int
+    blind_schedule: tuple
+    training_weights: tuple
+
+    def __post_init__(self) -> None:
+        if not self.format_name:
+            raise ValueError("format_name must be non-empty")
+        if self.num_players < 2:
+            raise ValueError(f"num_players must be >= 2, got {self.num_players}")
+        if self.num_players > 10:
+            raise ValueError(
+                f"num_players must be <= 10 (universal_poker limit), got {self.num_players}"
+            )
+        if self.starting_chips <= 0:
+            raise ValueError(f"starting_chips must be > 0, got {self.starting_chips}")
+        if self.payout_mode not in ("double_up",):
+            raise ValueError(
+                f"unknown payout_mode {self.payout_mode!r}; supported: double_up"
+            )
+        if not self.payouts_dollars:
+            raise ValueError("payouts_dollars must be non-empty")
+        if any(p <= 0 for p in self.payouts_dollars):
+            raise ValueError("all payouts_dollars must be > 0")
+        if self.payout_mode == "double_up":
+            first = self.payouts_dollars[0]
+            if not all(abs(p - first) < 1e-9 for p in self.payouts_dollars):
+                raise ValueError(
+                    f"double_up requires equal payouts, got {self.payouts_dollars}"
+                )
+        if self.buy_in_dollars <= 0:
+            raise ValueError(f"buy_in_dollars must be > 0, got {self.buy_in_dollars}")
+        if self.level_duration_minutes <= 0:
+            raise ValueError(
+                f"level_duration_minutes must be > 0, got {self.level_duration_minutes}"
+            )
+        if not self.blind_schedule:
+            raise ValueError("blind_schedule must be non-empty")
+        for entry in self.blind_schedule:
+            if not isinstance(entry, BlindLevel):
+                raise ValueError(
+                    f"blind_schedule entries must be BlindLevel, got {type(entry).__name__}"
+                )
+        levels = [bl.level for bl in self.blind_schedule]
+        if levels != sorted(set(levels)):
+            raise ValueError(
+                f"blind_schedule levels must be unique and ascending, got {levels}"
+            )
+        scheduled_levels = set(levels)
+        for level_n, _weight in self.training_weights:
+            if level_n not in scheduled_levels:
+                raise ValueError(
+                    f"training_weights references level {level_n} not in blind_schedule"
+                )
+        if self.training_weights:
+            total = sum(w for _, w in self.training_weights)
+            if not (0.99 <= total <= 1.01):
+                raise ValueError(f"training_weights must sum to ~1.0, got {total:.4f}")
+            if any(w < 0 for _, w in self.training_weights):
+                raise ValueError("training_weights values must be >= 0")
+
+    def level(self, n: int) -> BlindLevel:
+        """Look up a blind level by 1-indexed level number."""
+        for bl in self.blind_schedule:
+            if bl.level == n:
+                return bl
+        raise KeyError(
+            f"level {n} not in blind_schedule "
+            f"(available: {[bl.level for bl in self.blind_schedule]})"
+        )
+
+    def total_chips_in_play(self) -> int:
+        """Total chips across all seats at tournament start."""
+        return self.starting_chips * self.num_players
+
+    def num_paid(self) -> int:
+        """Number of finishing positions that receive a payout."""
+        return len(self.payouts_dollars)
+
+    def buy_in_chips(self) -> int:
+        """Equivalent of one buy-in in chips. Used to normalize ICM returns."""
+        return self.starting_chips
