@@ -121,3 +121,98 @@ def test_three_handed_game_loads():
     cfg = PokerGameConfig(num_players=3)
     game = pyspiel.load_game(cfg.to_universal_poker_string())
     assert game.num_players() == 3
+
+
+# ---- BlindLevel validation (Phase 4f) ----
+
+from src.nlhe.game_strings import BlindLevel
+
+
+def test_blind_level_basic_construction():
+    bl = BlindLevel(level=1, small_blind=15, big_blind=25, ante=5)
+    assert bl.level == 1
+    assert bl.small_blind == 15
+    assert bl.big_blind == 25
+    assert bl.ante == 5
+    assert bl.duration_minutes == 5  # default
+
+
+def test_blind_level_no_ante_default():
+    bl = BlindLevel(level=1, small_blind=50, big_blind=100)
+    assert bl.ante == 0
+
+
+def test_blind_level_rejects_zero_level():
+    with pytest.raises(ValueError):
+        BlindLevel(level=0, small_blind=15, big_blind=25)
+
+
+def test_blind_level_rejects_negative_level():
+    with pytest.raises(ValueError):
+        BlindLevel(level=-1, small_blind=15, big_blind=25)
+
+
+def test_blind_level_rejects_zero_small_blind():
+    with pytest.raises(ValueError):
+        BlindLevel(level=1, small_blind=0, big_blind=25)
+
+
+def test_blind_level_rejects_zero_big_blind():
+    with pytest.raises(ValueError):
+        BlindLevel(level=1, small_blind=15, big_blind=0)
+
+
+def test_blind_level_rejects_sb_equals_bb():
+    with pytest.raises(ValueError):
+        BlindLevel(level=1, small_blind=25, big_blind=25)
+
+
+def test_blind_level_rejects_sb_greater_than_bb():
+    with pytest.raises(ValueError):
+        BlindLevel(level=1, small_blind=30, big_blind=25)
+
+
+def test_blind_level_rejects_negative_ante():
+    with pytest.raises(ValueError):
+        BlindLevel(level=1, small_blind=15, big_blind=25, ante=-1)
+
+
+def test_blind_level_rejects_zero_duration():
+    with pytest.raises(ValueError):
+        BlindLevel(level=1, small_blind=15, big_blind=25, duration_minutes=0)
+
+
+def test_blind_level_inflated_big_blind_no_ante():
+    bl = BlindLevel(level=1, small_blind=50, big_blind=100, ante=0)
+    assert bl.inflated_big_blind(6) == 100  # no inflation
+
+
+def test_blind_level_inflated_big_blind_with_ante():
+    # Ignition Double Up Turbo level 1: SB=15, BB=25, ante=5
+    bl = BlindLevel(level=1, small_blind=15, big_blind=25, ante=5)
+    assert bl.inflated_big_blind(6) == 55  # 25 + 6*5
+    assert bl.inflated_big_blind(2) == 35  # 25 + 2*5
+
+
+def test_blind_level_inflated_big_blind_preserves_total_dead_money():
+    # The inflated BB should equal what would actually go in the pot pre-action
+    # from blinds + antes if the BB were the only contributor.
+    bl = BlindLevel(level=3, small_blind=50, big_blind=100, ante=15)
+    n = 6
+    # Real Ignition: SB=50, BB=100, 6 antes of 15 each
+    real_pot = bl.small_blind + bl.big_blind + n * bl.ante  # 50 + 100 + 90 = 240
+    # Inflated approximation: SB=50, BB=190, no antes
+    inflated_pot = bl.small_blind + bl.inflated_big_blind(n)  # 50 + 190 = 240
+    assert real_pot == inflated_pot
+
+
+def test_blind_level_inflated_big_blind_rejects_solo_player():
+    bl = BlindLevel(level=1, small_blind=15, big_blind=25, ante=5)
+    with pytest.raises(ValueError):
+        bl.inflated_big_blind(1)
+
+
+def test_blind_level_is_frozen():
+    bl = BlindLevel(level=1, small_blind=15, big_blind=25, ante=5)
+    with pytest.raises(Exception):  # FrozenInstanceError in 3.10
+        bl.level = 2

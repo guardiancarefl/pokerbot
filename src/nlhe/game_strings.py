@@ -107,3 +107,78 @@ def six_max_sng(starting_stack: int = 1500) -> str:
     """
     return PokerGameConfig(num_players=6, starting_stack=starting_stack,
                            big_blind=100, small_blind=50).to_universal_poker_string()
+
+
+# ===== Tournament structures (Phase 4f) =====
+#
+# repeated_poker integration. The existing PokerGameConfig builds single-hand
+# universal_poker game strings. For SNG training we need multi-hand
+# tournaments with escalating blinds, button rotation, and chip carryover.
+# OpenSpiel's repeated_poker (1.6.11+) wraps universal_poker for that purpose.
+#
+# Antes: universal_poker does not support an `ante` parameter (see
+# tests/test_game_strings.py for the probe that confirms this). We approximate antes
+# by inflating the big blind: total dead money per hand = blinds + N*ante;
+# we encode that as a single big blind of `bb + N*ante` and post no ante.
+# This preserves the pre-action pot size exactly but misattributes who paid
+# what (only the BB has skin-in-the-game pre-action). Expected EV leak:
+# 1-3 bb/100 of BB-defense range distortion. Documented in DECISIONS.md.
+
+
+@dataclass(frozen=True)
+class BlindLevel:
+    """One row of a tournament's blind schedule.
+
+    Fields match Ignition's in-client Tourney Info display.
+
+    Args:
+        level: 1-indexed level number.
+        small_blind: small-blind amount in chips.
+        big_blind: big-blind amount in chips. Must exceed small_blind.
+        ante: per-player ante in chips. 0 if no antes at this level.
+        duration_minutes: minutes spent at this level before escalating.
+            Used only for documentation; OpenSpiel's blind_schedule
+            string measures level lengths in HANDS, not minutes.
+    """
+    level: int
+    small_blind: int
+    big_blind: int
+    ante: int = 0
+    duration_minutes: int = 5
+
+    def __post_init__(self) -> None:
+        if self.level < 1:
+            raise ValueError(f"level must be >= 1, got {self.level}")
+        if self.small_blind <= 0:
+            raise ValueError(f"small_blind must be > 0, got {self.small_blind}")
+        if self.big_blind <= 0:
+            raise ValueError(f"big_blind must be > 0, got {self.big_blind}")
+        if self.small_blind >= self.big_blind:
+            raise ValueError(
+                f"small_blind {self.small_blind} must be < big_blind {self.big_blind}"
+            )
+        if self.ante < 0:
+            raise ValueError(f"ante must be >= 0, got {self.ante}")
+        if self.duration_minutes <= 0:
+            raise ValueError(
+                f"duration_minutes must be > 0, got {self.duration_minutes}"
+            )
+
+    def inflated_big_blind(self, num_players: int) -> int:
+        """Approximate antes by inflating the big blind.
+
+        Returns big_blind + num_players * ante, which preserves the
+        total pre-action pot size for any num_players >= 2.
+
+        Args:
+            num_players: number of players at the table this hand.
+
+        Returns:
+            Inflated big-blind value (chips). Equal to big_blind when
+            ante=0 (no inflation needed).
+        """
+        if num_players < 2:
+            raise ValueError(
+                f"num_players must be >= 2 for inflated_big_blind, got {num_players}"
+            )
+        return self.big_blind + num_players * self.ante
