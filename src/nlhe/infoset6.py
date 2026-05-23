@@ -348,3 +348,138 @@ def _betting_features(sequences: str, pot: int, starting_stack: int) -> dict:
         "n_actions_street": float(actions_this_street),
         "is_facing_bet": is_facing_bet,
     }
+
+
+# ===== RepeatedPokerState parser (Phase 4f) =====
+#
+# RepeatedPokerState wraps multiple universal_poker hands in one game episode,
+# with dealer rotation and blind escalation between hands. Its API differs
+# from UniversalPokerState in important ways:
+#
+#   - information_state_string() raises "not implemented"
+#   - observation_string() works and includes Round/Player/Pot/Money/Private/
+#     PlayerContribution (everything parse_state_6max needs except sequences
+#     and public cards)
+#   - to_dict() exposes the underlying universal_poker hand as a JSON string
+#     under "current_universal_poker_json", which contains board_cards and
+#     betting_history
+#   - outer state exposes dealer_seat(), big_blind(), small_blind() directly
+#
+# This parser combines both data sources to produce the same output shape as
+# parse_state_6max, with four additional fields specific to repeated_poker:
+# dealer_seat, hand_number, current_big_blind, current_small_blind.
+
+
+def parse_state_repeated_6max(state):
+    """Parse an OpenSpiel RepeatedPokerState for 6-max NLHE tournament play.
+
+    Returns the same fields as parse_state_6max plus tournament-level fields
+    (dealer_seat, hand_number, current_big_blind, current_small_blind)
+    needed for position-relative-to-button feature encoding.
+    """
+    import json as _json
+
+    obs = state.observation_string(state.current_player())
+    out = {"num_players": 6}
+
+    m = _RE_ROUND.search(obs)
+    out["street_idx"] = int(m.group(1)) if m else 0
+
+    m = _RE_PLAYER.search(obs)
+    out["current_player"] = int(m.group(1)) if m else 0
+
+    m = _RE_POT.search(obs)
+    out["pot"] = int(m.group(1)) if m else 0
+
+    m = _RE_MONEY.search(obs)
+    if m:
+        out["money"] = [int(x) for x in m.group(1).split()]
+    else:
+        out["money"] = [0] * 6
+
+    m = _RE_CONTRIBUTION.search(obs)
+    if m:
+        out["contribution"] = [int(x) for x in m.group(1).split()]
+    else:
+        out["contribution"] = [0] * 6
+
+    m = _RE_PRIVATE.search(obs)
+    out["private_cards"] = m.group(1) if m else ""
+
+    state_dict = state.to_dict()
+    inner_str = state_dict.get("current_universal_poker_json", "")
+    if inner_str:
+        if isinstance(inner_str, str):
+            inner = _json.loads(inner_str)
+        else:
+            inner = inner_str
+        out["public_cards"] = inner.get("board_cards", "")
+        out["sequences"] = inner.get("betting_history", "")
+    else:
+        out["public_cards"] = ""
+        out["sequences"] = ""
+
+    out["dealer_seat"] = state.dealer_seat()
+    out["hand_number"] = state_dict.get("hand_number", 0)
+    out["current_big_blind"] = state.big_blind()
+    out["current_small_blind"] = state.small_blind()
+
+    return out
+
+
+def position_for_seat_with_dealer(seat, dealer_seat, num_players=6):
+    """Return position-index (0=UTG, 1=MP, ..., 5=BTN, etc.) for a seat,
+    given the current dealer's seat number.
+
+    This is the multi-hand-aware version of position_for_seat. With
+    rotating dealer (as in repeated_poker), the position of any given
+    seat depends on where the button is. For example, seat 0 is the
+    SB (position index 4) only when the dealer is at seat 5 (the
+    original layout). When the dealer rotates to seat 0, then seat 1
+    becomes the SB, seat 2 becomes the BB, etc.
+
+    Args:
+        seat: 0-indexed seat number whose position we want.
+        dealer_seat: 0-indexed seat number of the dealer (button).
+        num_players: total active players at the table. Default 6.
+
+    Returns:
+        Position index in POSITIONS_6MAX: 0=UTG, 1=MP, 2=CO, 3=BTN,
+        4=SB, 5=BB.
+
+    Position layout for 6-max (clockwise from dealer):
+        dealer_offset 0 -> BTN (idx 3)
+        dealer_offset 1 -> SB  (idx 4)
+        dealer_offset 2 -> BB  (idx 5)
+        dealer_offset 3 -> UTG (idx 0)
+        dealer_offset 4 -> MP  (idx 1)
+        dealer_offset 5 -> CO  (idx 2)
+    """
+    if not (0 <= seat < num_players):
+        raise ValueError(
+            f"seat {seat} out of range for {num_players}-handed"
+        )
+    if not (0 <= dealer_seat < num_players):
+        raise ValueError(
+            f"dealer_seat {dealer_seat} out of range for {num_players}-handed"
+        )
+
+    # Seats are arranged around the table; dealer is at dealer_seat.
+    # The seat "after" the dealer (clockwise +1) is SB, then BB, etc.
+    offset = (seat - dealer_seat) % num_players
+
+    if num_players == 6:
+        # 6-max position layout indexed by offset from button.
+        offset_to_position = {
+            0: 3,  # BTN (dealer itself)
+            1: 4,  # SB
+            2: 5,  # BB
+            3: 0,  # UTG
+            4: 1,  # MP
+            5: 2,  # CO
+        }
+        return offset_to_position[offset]
+    else:
+        # For non-6max games, return offset as a position proxy.
+        # (Caller's responsibility to handle this case properly.)
+        return offset

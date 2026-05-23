@@ -233,3 +233,176 @@ def test_encoder_reset_cache(abstraction):
     assert len(enc._bucket_cache) > 0
     enc.reset_cache()
     assert len(enc._bucket_cache) == 0
+
+
+
+# ---- parse_state_repeated_6max tests (Phase 4f) ----
+
+import pyspiel
+import random as _random_for_tests
+from src.nlhe.infoset6 import (
+    parse_state_repeated_6max,
+    position_for_seat_with_dealer,
+    POSITIONS_6MAX,
+)
+
+
+def _make_repeated_poker_state_at_first_decision(seed=7):
+    """Helper: build a 6-max repeated_poker game, walk past chance nodes,
+    return state at the first player decision (preflop)."""
+    rng = _random_for_tests.Random(seed)
+    gs = (
+        "repeated_poker(max_num_hands=10,reset_stacks=False,rotate_dealer=True,"
+        "blind_schedule=5:15/55;5:25/110;,"
+        "universal_poker_game_string=universal_poker(betting=nolimit,numPlayers=6,"
+        "numRounds=4,blind=15 55 0 0 0 0,firstPlayer=3 1 1 1,numSuits=4,numRanks=13,"
+        "numHoleCards=2,numBoardCards=0 3 1 1,"
+        "stack=1500 1500 1500 1500 1500 1500,bettingAbstraction=fullgame))"
+    )
+    game = pyspiel.load_game(gs)
+    state = game.new_initial_state()
+    while state.is_chance_node():
+        outcomes = state.chance_outcomes()
+        a = rng.choices(
+            [o[0] for o in outcomes], weights=[o[1] for o in outcomes]
+        )[0]
+        state.apply_action(a)
+    return state
+
+
+def _make_repeated_poker_state_postflop(seed=7):
+    """Helper: walk through cooperative play to reach a postflop state."""
+    state = _make_repeated_poker_state_at_first_decision(seed)
+    rng = _random_for_tests.Random(seed + 100)
+    for _ in range(80):
+        if state.is_terminal():
+            break
+        if state.is_chance_node():
+            outcomes = state.chance_outcomes()
+            a = rng.choices(
+                [o[0] for o in outcomes], weights=[o[1] for o in outcomes]
+            )[0]
+            state.apply_action(a)
+        else:
+            obs = state.observation_string(state.current_player())
+            if "[Round 1]" in obs:
+                return state
+            legal = state.legal_actions()
+            a = 1 if 1 in legal else legal[0]
+            state.apply_action(a)
+    return state
+
+
+def test_parse_repeated_6max_preflop_basic_fields():
+    state = _make_repeated_poker_state_at_first_decision()
+    parsed = parse_state_repeated_6max(state)
+    assert parsed["num_players"] == 6
+    assert parsed["street_idx"] == 0  # preflop
+    assert 0 <= parsed["current_player"] <= 5
+    assert parsed["pot"] > 0
+    assert len(parsed["money"]) == 6
+    assert len(parsed["contribution"]) == 6
+    assert len(parsed["private_cards"]) == 4  # "XYxy" hole cards
+
+
+def test_parse_repeated_6max_preflop_no_board_no_sequences():
+    state = _make_repeated_poker_state_at_first_decision()
+    parsed = parse_state_repeated_6max(state)
+    assert parsed["public_cards"] == ""
+    assert parsed["sequences"] == ""
+
+
+def test_parse_repeated_6max_postflop_has_board_and_sequences():
+    state = _make_repeated_poker_state_postflop()
+    parsed = parse_state_repeated_6max(state)
+    assert parsed["street_idx"] == 1  # flop
+    assert len(parsed["public_cards"]) == 6  # "XYxyAB" three flop cards
+    assert "/" in parsed["sequences"]  # at least one street boundary
+
+
+def test_parse_repeated_6max_blinds_inflated_in_contribution():
+    state = _make_repeated_poker_state_at_first_decision()
+    parsed = parse_state_repeated_6max(state)
+    # First two contributions are SB and BB-inflated (15 and 55 for L1)
+    assert parsed["contribution"][0] == 15
+    assert parsed["contribution"][1] == 55
+
+
+def test_parse_repeated_6max_tournament_fields_present():
+    state = _make_repeated_poker_state_at_first_decision()
+    parsed = parse_state_repeated_6max(state)
+    assert "dealer_seat" in parsed
+    assert "hand_number" in parsed
+    assert "current_big_blind" in parsed
+    assert "current_small_blind" in parsed
+    assert parsed["hand_number"] == 0  # first hand
+    assert parsed["current_big_blind"] == 55  # L1 inflated BB
+    assert parsed["current_small_blind"] == 15  # L1 SB
+    assert 0 <= parsed["dealer_seat"] <= 5
+
+
+# ---- position_for_seat_with_dealer tests (Phase 4f) ----
+
+
+def test_position_with_dealer_5_matches_original():
+    """With dealer at seat 5, new function matches the original layout."""
+    from src.nlhe.infoset6 import position_for_seat
+    for seat in range(6):
+        assert position_for_seat_with_dealer(seat, dealer_seat=5) == position_for_seat(seat)
+
+
+def test_position_with_dealer_button_is_dealer_seat():
+    """The dealer's seat is always BTN regardless of which seat is dealer."""
+    btn_idx = POSITIONS_6MAX.index("BTN")
+    for dealer in range(6):
+        assert position_for_seat_with_dealer(dealer, dealer_seat=dealer) == btn_idx
+
+
+def test_position_with_dealer_sb_is_dealer_plus_1():
+    """The seat immediately clockwise of the dealer is always SB."""
+    sb_idx = POSITIONS_6MAX.index("SB")
+    for dealer in range(6):
+        sb_seat = (dealer + 1) % 6
+        assert position_for_seat_with_dealer(sb_seat, dealer_seat=dealer) == sb_idx
+
+
+def test_position_with_dealer_bb_is_dealer_plus_2():
+    """The seat two clockwise of the dealer is always BB."""
+    bb_idx = POSITIONS_6MAX.index("BB")
+    for dealer in range(6):
+        bb_seat = (dealer + 2) % 6
+        assert position_for_seat_with_dealer(bb_seat, dealer_seat=dealer) == bb_idx
+
+
+def test_position_with_dealer_utg_is_dealer_plus_3():
+    """The seat three clockwise of the dealer is UTG (first to act preflop)."""
+    utg_idx = POSITIONS_6MAX.index("UTG")
+    for dealer in range(6):
+        utg_seat = (dealer + 3) % 6
+        assert position_for_seat_with_dealer(utg_seat, dealer_seat=dealer) == utg_idx
+
+
+def test_position_with_dealer_full_rotation():
+    """All 6 positions should be covered by each dealer seat."""
+    for dealer in range(6):
+        positions = {
+            position_for_seat_with_dealer(seat, dealer_seat=dealer)
+            for seat in range(6)
+        }
+        assert positions == set(range(6))  # all 6 positions present
+
+
+def test_position_with_dealer_rejects_invalid_seat():
+    import pytest
+    with pytest.raises(ValueError):
+        position_for_seat_with_dealer(seat=-1, dealer_seat=0)
+    with pytest.raises(ValueError):
+        position_for_seat_with_dealer(seat=6, dealer_seat=0)
+
+
+def test_position_with_dealer_rejects_invalid_dealer():
+    import pytest
+    with pytest.raises(ValueError):
+        position_for_seat_with_dealer(seat=0, dealer_seat=-1)
+    with pytest.raises(ValueError):
+        position_for_seat_with_dealer(seat=0, dealer_seat=6)
