@@ -53,15 +53,12 @@ blind_schedule:
 # Heavily over-weights early-to-mid levels where most real games are decided.
 # Levels 11+ get token weight (still need exposure for edge cases).
 training_weights:
-  level_1:  0.18
-  level_2:  0.18
-  level_3:  0.15
-  level_4:  0.12
-  level_5:  0.10
-  level_6:  0.10
-  level_7:  0.08
-  level_8:  0.05
-  level_9:  0.02
-  level_10: 0.01
-  level_11: 0.005
-  level_12: 0.005
+  level_1:  0.1837
+  level_2:  0.1837
+  level_3:  0.1531
+  level_4:  0.1224
+  level_5:  0.102
+  level_6:  0.102
+  level_7:  0.0816
+  level_8:  0.051
+  level_9:  0.0204
