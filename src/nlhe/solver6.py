@@ -152,6 +152,13 @@ class TrainConfig6Max:
     bucket_runouts: int = 50
     max_traversal_depth: int = 500
 
+    # Tournament-aware training. When set, each trajectory samples a
+    # starting state via stack_sampler.sample_starting_state and builds
+    # a fresh universal_poker game (rotated dealer, varied stacks, etc.).
+    # When None (default), the legacy fixed-game path runs.
+    tournament_structure_path: Optional[str] = None
+    num_paid: int = 3
+
     seed: int = 2026
 
 
@@ -217,6 +224,19 @@ class DeepCFR6MaxSolver:
 
         # Uniform stacks for every traversal (see module docstring note 5).
         self.starting_stacks = [config.starting_stack] * NUM_SEATS_6MAX
+
+        # Tournament-aware training: load the structure if configured.
+        self.tournament_structure = None
+        if config.tournament_structure_path is not None:
+            from src.nlhe.game_strings import TournamentStructure
+            self.tournament_structure = TournamentStructure.from_yaml(
+                config.tournament_structure_path
+            )
+            self.log(
+                f"  tournament mode: loaded "
+                f"{self.tournament_structure.format_name} "
+                f"({len(self.tournament_structure.blind_schedule)} levels)"
+            )
 
         self.iteration = 0
 
@@ -301,21 +321,57 @@ class DeepCFR6MaxSolver:
             self.encoder.reset_cache()
 
             # Build the per-iteration context once.
-            ctx = CFR6MaxContext(
-                policy_nets=self.policy_nets,
-                encoder=self.encoder,
-                starting_stacks=self.starting_stacks,
-                payouts=self.payouts,
-                iteration=it,
-                max_depth=self.cfg.max_traversal_depth,
-            )
-
-            # External-sampling traversals — all for the same traverser.
-            for _ in range(self.cfg.traversals_per_iter):
-                state = self.game.new_initial_state()
-                traverse_6max(
-                    state, traversing_player=traverser, ctx=ctx, rng=self.rng,
+            if self.tournament_structure is None:
+                # Legacy fixed-game mode.
+                ctx = CFR6MaxContext(
+                    policy_nets=self.policy_nets,
+                    encoder=self.encoder,
+                    starting_stacks=self.starting_stacks,
+                    payouts=self.payouts,
+                    iteration=it,
+                    max_depth=self.cfg.max_traversal_depth,
+                    num_paid=self.cfg.num_paid,
                 )
+                for _ in range(self.cfg.traversals_per_iter):
+                    state = self.game.new_initial_state()
+                    traverse_6max(
+                        state,
+                        traversing_player=traverser,
+                        ctx=ctx,
+                        rng=self.rng,
+                    )
+            else:
+                # Tournament-aware mode: sample state + build game per trajectory.
+                from src.nlhe.stack_sampler import sample_starting_state
+                import pyspiel
+                for _ in range(self.cfg.traversals_per_iter):
+                    sampled = sample_starting_state(
+                        self.tournament_structure,
+                        self.rng,
+                        num_paid=self.cfg.num_paid,
+                    )
+                    gs = self.tournament_structure.to_inner_game_string_for_state(
+                        blind_level=sampled["blind_level"],
+                        stacks=sampled["stacks"],
+                        dealer_seat=sampled["dealer_seat"],
+                    )
+                    game = pyspiel.load_game(gs)
+                    state = game.new_initial_state()
+                    ctx = CFR6MaxContext(
+                        policy_nets=self.policy_nets,
+                        encoder=self.encoder,
+                        starting_stacks=list(sampled["stacks"]),
+                        payouts=self.payouts,
+                        iteration=it,
+                        max_depth=self.cfg.max_traversal_depth,
+                        num_paid=self.cfg.num_paid,
+                    )
+                    traverse_6max(
+                        state,
+                        traversing_player=traverser,
+                        ctx=ctx,
+                        rng=self.rng,
+                    )
 
             # Train the traverser's advantage net.
             adv_loss = self._train_advantage_net(traverser)
