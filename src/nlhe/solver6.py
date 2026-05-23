@@ -396,7 +396,7 @@ class DeepCFR6MaxSolver:
                 it % checkpoint_every == 0 or it == self.cfg.n_iterations
             ):
                 ckpt_path = checkpoint_dir / f"ckpt_iter_{it:04d}.pt"
-                self.save_checkpoint(ckpt_path)
+                self.save_checkpoint(ckpt_path, slim=True)
                 self.log(f"  saved checkpoint: {ckpt_path}")
 
         total = time.time() - t_start
@@ -405,7 +405,7 @@ class DeepCFR6MaxSolver:
 
     # ---- Checkpoint ----
 
-    def save_checkpoint(self, path: str | Path) -> None:
+    def save_checkpoint(self, path: str | Path, slim: bool = False) -> None:
         """Persist solver state for bit-identical resumable training.
 
         Saves:
@@ -419,7 +419,13 @@ class DeepCFR6MaxSolver:
         ckpt = {
             "iteration": self.iteration,
             "policy_nets": self.policy_nets.state_dict(),
-            "buffers": [
+            "rng_state": self.rng.getstate(),
+            "torch_rng_state": torch.get_rng_state(),
+            "config_dict": asdict(self.cfg),
+            "slim": slim,
+        }
+        if not slim:
+            ckpt["buffers"] = [
                 {
                     "features": list(b.features),
                     "targets": list(b.targets),
@@ -429,11 +435,7 @@ class DeepCFR6MaxSolver:
                     "rng_state": b.rng.getstate(),
                 }
                 for b in self.policy_nets.buffers
-            ],
-            "rng_state": self.rng.getstate(),
-            "torch_rng_state": torch.get_rng_state(),
-            "config_dict": asdict(self.cfg),
-        }
+            ]
         torch.save(ckpt, str(path))
 
     def load_checkpoint(self, path: str | Path) -> None:
@@ -447,18 +449,19 @@ class DeepCFR6MaxSolver:
         self.iteration = ckpt["iteration"]
         self.policy_nets.load_state_dict(ckpt["policy_nets"])
 
-        if len(ckpt["buffers"]) != NUM_SEATS_6MAX:
-            raise ValueError(
-                f"checkpoint has {len(ckpt['buffers'])} buffers; expected {NUM_SEATS_6MAX}"
-            )
-        for i, b_data in enumerate(ckpt["buffers"]):
-            buf = self.policy_nets.buffer_for(i)
-            buf.features = list(b_data["features"])
-            buf.targets = list(b_data["targets"])
-            buf.legal_masks = list(b_data["legal_masks"])
-            buf.iters = list(b_data["iters"])
-            buf.n_seen = b_data["n_seen"]
-            buf.rng.setstate(b_data["rng_state"])
+        if "buffers" in ckpt and not ckpt.get("slim", False):
+            if len(ckpt["buffers"]) != NUM_SEATS_6MAX:
+                raise ValueError(
+                    f"checkpoint has {len(ckpt['buffers'])} buffers; expected {NUM_SEATS_6MAX}"
+                )
+            for i, b_data in enumerate(ckpt["buffers"]):
+                buf = self.policy_nets.buffer_for(i)
+                buf.features = list(b_data["features"])
+                buf.targets = list(b_data["targets"])
+                buf.legal_masks = list(b_data["legal_masks"])
+                buf.iters = list(b_data["iters"])
+                buf.n_seen = b_data["n_seen"]
+                buf.rng.setstate(b_data["rng_state"])
 
         self.rng.setstate(ckpt["rng_state"])
         try:
