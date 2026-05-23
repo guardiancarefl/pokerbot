@@ -1,85 +1,32 @@
 # Project Status
 
-**Last updated:** 2026-05-23 (Session 8, Phase 4a complete + 4b math)
-**Current phase:** Phase 4 starting. Phase 3 wound down with retrofit win (+78.35 bb/100 vs Slumbot). Phase 4a complete: parametric game-string builder + 6-max smoke verified + all 5 HUNL configs migrated. Phase 4b math module shipped: ICM via Malmuth-Harville with 29 tests, supports both Ignition payout modes (Double Up top-3 equal + Standard top-2 65/35). 4c-4h pending: 6-max card abstraction, 6-max InfosetEncoder refactor, 6-max training loop, GPU training run, 6-max eval harness.
+**Last updated:** 2026-05-21
+**Current phase:** Pre-Phase-1 setup
 
 ## Done
-- Architecture designed (four-layer stack with opponent anonymity as core principle)
+- Architecture designed (four-layer stack)
 - Format target chosen (6-max NLHE SNG, top-3 equal payout)
 - Engine selected (OpenSpiel)
-- Scope, non-goals, opponent anonymity, within-match adaptation approach defined
-- Runtime: Contabo VPS (Ubuntu 24.04, 12 vCPU AMD EPYC, 48GB RAM); GitHub repo at github.com/guardiancarefl/pokerbot
-- Phase 1 closed: Leduc Deep CFR pipeline validated (exploitability 1187 -> 434 mbb/g across 25 iters)
-- Phase 2a closed: HUNL game representation, card abstraction (EMD clustering, k=20 preflop/k=200 postflop), action abstraction
-- Phase 2b closed: custom Deep CFR solver in src/nlhe/solver.py with reservoir buffers, traversal-driven training, GameStateView abstraction layer
-- Phase 2c closed: Slumbot client with full b<N> action token translation (bet-translation bug fixed for per-street vs per-hand semantics)
-- Phase 2d closed: GPU validation completed. Headline result: **+31.45 baseline-adjusted bb/100 vs Slumbot at iter 100** (1000 hands, seed 2026, 200bb stack). +46 bb/100 improvement over CPU's -14.8 baseline-adj result.
-- GPU device support patches in solver.py and policy_adapter.py (auto-detect CUDA, networks to device, .cpu() before numpy conversion, map_location on checkpoint load, RNG state try/except for cross-version compatibility)
-- requirements.txt completed (treys added — was missing, surfaced during pod setup)
-- RunPod RTX PRO 4000 Blackwell pod (Secure Cloud, $0.57/hr) provisioned and validated with PyTorch 2.11.0+cu128 + sm_120 support
-- Phase 3 Track A1 closed: DCFR (Linear / Discounted CFR) implemented in src/nlhe/solver.py. Per-sample iteration weighting in advantage and strategy net training, single-exponent simplification of Brown & Sandholm 2019. Vanilla path byte-identical to pre-patch behavior at fixed seed; weighting math verified standalone; real-loop smoke (vanilla / linear / discounted on 2-iter HUNL) confirms iter-1 losses match across variants (T=1 weights collapse to uniform) and iter-2 losses diverge (weighting actually applied). Checkpoint format change: buffers now persist per-entry iteration. Pre-DCFR checkpoints (Session 5 GPU artifacts) resume only under cfr_variant="vanilla"; non-vanilla resume raises with a clear message.
-- Phase 3 Track A2 closed: hand-engineered archetype training opponents (NIT, TAG, LAG, STATION, MANIAC) parameterized by tightness × aggression. Tightness is data-derived from empirical bucket-equity quantiles (5000 preflop + 2000/street postflop samples); aggression is a designed parameter. New files: src/nlhe/archetypes.py (decision-table policies + OpponentPool), scripts/analyze_bucket_equity.py (reproducible calibration generator), tests/test_archetypes.py (9 behavioral tests), runs/archetype_design/bucket_equity_analysis.json (calibration artifact). Solver integration via TrainConfig.archetype_mix (default 0.0, backward compatible) and optional opponent_pool arg on DeepCFRSolver. Critical correctness: archetype-driven opponent decisions skip the strategy buffer to prevent the bot from learning to imitate archetypes. Smoke test verified all five archetypes invoked across trajectories with zero buffer pollution.
-
-## Key findings from Phase 2d
-1. **Buffer size matters more than network size at this scale.** 100K buffer + [64,64] CPU vs 500K buffer + [512,512] GPU: the +46 bb/100 improvement is driven primarily by the bigger buffer, not the bigger network. Strategy loss plateau dropped from ~0.95 (100K buffer) to ~0.85 (500K buffer).
-2. **EMD card abstraction loses real information.** Premium pairs (AA, QQ, TT) deterministically map to the same preflop bucket regardless of bucket count (k=20 vs k=169 both collide). This is a representation limitation; OCHS would resolve it. Not a query-noise issue (confirmed by multiple bucket_runouts tests).
-3. **Per-iter time at 200bb is dominated by deep-trajectory variance.** 100 traversals/iter at 200bb stack produces iter times from 1.0s to 326s depending on randomly-drawn trajectory depth. Average ~95s/iter on RTX PRO 4000 Blackwell with [512,512] and 500K buffer.
-4. **Loss plateau != policy plateau.** Loss flattens around iter 80-100, but the deployed (average) strategy can keep improving past that as buffer churns.
+- Hardware confirmed (RTX 3060 local for development; VPS available as parallel worker if needed)
+- Scope and non-goals defined
+- Project structure planned
 
 ## In progress
-- **Phase 4a complete** (commits accaf14, 2b80578, f1c393c). src/nlhe/game_strings.py builds OpenSpiel universal_poker game strings parametrically. All 5 HUNL configs migrated from hardcoded game_str to structured num_players/big_blind/small_blind/starting_stack fields. 6-max games load and walk to terminal in OpenSpiel with zero-sum returns. observation_tensor_shape changes from [108] (HUNL) to [116] (6-max) — the next concrete refactor target for Phase 4d.
-- **Phase 4b math module shipped** (commit 02663e3). src/nlhe/icm.py implements Malmuth-Harville ICM equity calculation, validated against published test cases (29 tests pass). Supports both Ignition 6-max payout modes: Double Up (top-3 each get 2x buy-in, equal split) and Standard (top-2 paid at 65/35). Pure math module — no solver integration yet (that's a multi-session arc, requires Phase 4d/e first).
-- **Ignition payout structures clarified.** Original docs assumed "top-3 paid 50/30/20" but Ignition's 6-max formats are actually Double Up (top-3 equal) and Standard (top-2 65/35). Strategic implications: Double Up has degenerate ITM phase (3-handed with equal payouts), Standard has strict 1st/2nd ordering with no ITM degenerate. Bubble pressure peaks at 4-left for Double Up and 3-left for Standard.
-- **Next Phase 4 piece: 4d (6-max InfosetEncoder refactor).** The HUNL encoder produces [108]-dim features for 2 stacks + position bits + betting state; 6-max needs [116]-dim with 6 stack slots, who's-folded mask, multi-player betting state. Major refactor touching the trajectory generator, advantage net inputs, and policy net inputs. Multi-session work.
+- Project setup (creating files, custom instructions)
+- 42 bought-bot profiles awaiting format identification
+- Local Python/PyTorch/CUDA environment confirmation needed
 
-## Next up (Phase 3 — revised, more ambitious than original architecture)
-The original plan treated subgame solving as Phase 5-6. Revised plan moves subgame solver engineering into Phase 3 as a parallel track, alongside DCFR and archetype framework. This is the path to a Pluribus-class SNG bot in 6-10 weeks.
-
-**Track A: Algorithm + training improvements (Contabo CPU + occasional GPU bursts)**
-1. ~~Implement Linear / Discounted CFR (DCFR)~~ — done in Session 6 (commit 41e2fa3). Capability shipped; actual deployment in a Phase 3 training run is a separate work item.
-2. ~~Build hand-engineered archetype framework~~ — done in Session 7. Five archetypes parameterized by tightness × aggression, data-derived thresholds, plugged into solver via OpponentPool. Actual training runs with archetype_mix > 0 are a separate work item; sensible default is 0.5.
-3. Investigate OCHS card abstraction (Opponent Cluster Hand Strength) — replacement for EMD that distinguishes AA from QQ properly. Real research-flavored work, 1-2 weeks. When OCHS lands, scripts/analyze_bucket_equity.py reruns automatically updates archetype thresholds — no archetype code change needed.
-
-**Track B: Subgame solver engineering (Contabo CPU is fine for design + testing)**
-1. Subgame extractor: given an OpenSpiel game state, define the depth-limited subgame to solve.
-2. Fast online solver: CFR variant that converges sub-second. Different optimization target than blueprint solver.
-3. Belief state estimation: opponent range at subgame root, given observation history.
-4. Leaf value function: blueprint policy used to terminate subgame tree at depth limit.
-
-**Track C: Within-match opponent modeling design (Phase 6 originally, moves up too)**
-1. Continuous archetype representation (2D: tightness × aggression, not categorical).
-2. Bayesian updating from observed actions within current match.
-3. Population priors per stake level (compatible with anonymity — no cross-match identity).
-4. Response policy as integration over belief distribution.
-
-## Project goal (revised)
-**Strongest publicly-known 6-max NLHE SNG bot with correct ICM**, evaluated to:
-- Beat Slumbot in HUNL by 1-5 bb/100 (architectural sanity check)
-- Beat each of the 42 bought-bot profiles by 10-30 bb/100 in SNG format
-- Finish top-3 in SNG simulations against archetype opponents at 70%+ rate
-- Sub-second decision latency via subgame solving
-- Withstand 100k-hand test without exploitation pattern emerging
-- Plausibly beat Pluribus head-to-head in 6-max cash (architectural improvements + ICM-correct value function + within-match adaptation), though this is a stretch target
-
-Estimated total time: 6-10 weeks. Estimated total compute cost: $500-2000.
+## Next up
+1. Confirm Python environment on 3060 box (Python 3.10+, PyTorch with CUDA, OpenSpiel installable)
+2. Identify format of the 42 bought-bot profiles (text/XML/JSON/binary)
+3. Phase 1 scaffold: OpenSpiel install, Leduc Deep CFR training script, project directory structure
+4. Phase 1 validation: confirm convergence to Nash on Leduc
 
 ## Known issues / open questions
-- 42 bought-bot profile format still unidentified (text/XML/JSON/binary) — defer until Phase 3 archetype work begins
-- train_leduc.py writes config.json and metrics.json into checkpoints/ subdirectory, not run-dir root (Session 2 carryover, minor)
-- _build_game_state_view in src/nlhe/solver.py has private-by-convention underscore but is imported by src/nlhe/policy_adapter.py (Session 4 carryover, cosmetic)
-- Subgame solver requires careful handling of belief states — well-trodden but easy to get wrong
-- Pre-DCFR checkpoints (e.g., runs/gpu_phase2d_artifacts/ from Session 5) can only be resumed under cfr_variant="vanilla". Non-vanilla resume raises by design — no silent approximation of missing per-entry iter data.
+- None yet
 
 ## Decisions deferred
-- OCHS vs simpler abstraction extensions (decide during Phase 3 after literature review)
-- Exact mix percentages for training opponent pool (self-play vs archetypes vs bought-bots vs league archives) — tune empirically during Phase 4-5
-- Whether to use multiple GPU pods in parallel during Phase 4 — depends on Phase 3 throughput findings
-
-## Session log
-- **2026-05-21 (Session 1):** Project bootstrapped on Windows. Foundational docs created. Major design decisions: opponent anonymity, Position 2 within-match adaptation, league play for strength diversity, 42 profiles frozen.
-- **2026-05-21 (Session 2):** WSL2 install blocked by Windows component store corruption. Switched runtime to Contabo VPS. Built Phase 1 scaffold. Completed Phase 1 run: exploitability 1187 -> 434 mbb/g across 25 iterations.
-- **2026-05-22 morning (Session 3):** Phase 2a HUNL game representation, EMD card abstraction, action abstraction. Phase 2b custom Deep CFR solver. Phase 2c Slumbot client foundations.
-- **2026-05-22 early (Session 4):** Phase 2c closure (bet-translation bug fix), PolicyAdapter built with 28 unit tests, CPU overnight training (275 iters at 200bb), Slumbot evaluation showing -14.8 baseline-adj bb/100 (45 bb/100 better than random's -60).
-- **2026-05-22 afternoon/evening (Session 5):** GPU device support patches landed and tested on CPU. Multiple failed RunPod deployments (CUDA driver/container incompatibility on Community Cloud pool). Eventually working pod on Secure Cloud RTX PRO 4000 Blackwell. GPU smoke + 50-iter benchmark + 119+ iter v2 run with 500K buffer. ckpt_iter_0100 evaluated against Slumbot: +31.45 baseline-adj bb/100, +46 over CPU. Architecture plan revised to be more ambitious based on Pluribus compute math (we have more compute than they did, plus AI-assisted engineering). Phase 3 redefined to start subgame solver + DCFR + archetype work in parallel. Target: best publicly-known SNG bot in 6-10 weeks.
-- **2026-05-22 (Session 6):** Phase 3 Track A1 (DCFR) implemented and shipped. Three sequential patches in src/nlhe/solver.py: TrainConfig fields, ReservoirBuffer iteration tagging + checkpoint format, weighted training loss with simplified single-exponent form. Vanilla regression gate held at every step (32/32 tests green). Standalone math verification matched hand-calculated weights exactly. Real-loop smoke confirmed wiring (iter-1 variants converge to same loss, iter-2 variants diverge as expected, discounted(exponent=1.0) ≡ linear exactly). Commit 41e2fa3. DECISIONS.md updated with two new entries: simplified single-exponent rationale and refuse-non-vanilla-resume backward-compat rationale. Phase 2d RunPod pod checked at end of session — reached iter 137/5000 with loss flat around 0.83 (same plateau seen at iter 100); checkpoint_every=100 in v2 config meant only ckpt_iter_0100 existed on disk. Cost-discipline call: terminated pod, locked in +31.45 bb/100 result, preserved ckpt_iter_0100 + config_v2.json + v2_run.log at runs/gpu_phase2d_artifacts/. Recommendation for Session 7: Track A2 (archetype framework) first — most concrete, unblocks C1, shippable in 1-2 sessions.
-- **2026-05-22 (Session 7):** Phase 3 Track A2 (archetype framework) implemented and shipped in one focused session. Five archetypes (NIT, TAG, LAG, STATION, MANIAC) parameterized by tightness × aggression. Data-first design: initial threshold sketch used made-up numbers that would have caused nit to fold AA preflop given the actual EMD bucket equities — caught and corrected by deriving thresholds from empirical bucket-equity quantiles (5000 preflop + 2000/street postflop samples). Tightness data-derived; aggression a designed parameter (no labeled-action dataset under opponent anonymity). New files: src/nlhe/archetypes.py (~350 lines, decision-table policies + OpponentPool + EquityCalibration loader), scripts/analyze_bucket_equity.py (reproducible calibration generator, regenerates JSON when abstraction changes — auto-adapts archetypes to A3 OCHS swap), tests/test_archetypes.py (9 behavioral tests on real data), runs/archetype_design/bucket_equity_analysis.json (calibration artifact). Solver integration in src/nlhe/solver.py: TrainConfig.archetype_mix field, optional opponent_pool on DeepCFRSolver, per-trajectory archetype sampling, new _archetype_strategy dispatcher at opponent nodes. Critical correctness invariant: archetype-driven opponent decisions skip the strategy buffer (otherwise the bot would learn to imitate archetypes). Verified by smoke test — 4188 archetype invocations across 20 trajectories, all five archetypes sampled, zero buffer pollution. Side finding from smoke: at archetype_mix=1.0 the strategy buffer never fills (no path to populate it), so strategy net can't train. Recommended range 0.2-0.7 documented on the config. Vanilla path (archetype_mix=0.0) numerically unchanged. 41 tests green (32 pre-existing + 9 new). Three workflow notes worth carrying: (1) "data-first design" caught a silent bug the made-up thresholds would have shipped — the bucket-equity analysis took 3 minutes and saved much more than that in archetype rework. (2) The grep that missed ALLIN earlier in the session was a useful reminder that grep patterns lie — verify enum contents with len() and iteration when correctness depends on it. (3) The DCFR-style patch-with-assertions discipline scaled cleanly to a larger change (6 edits in one patch) when every old block was uniquely identifiable; this pattern is now proven across both algorithmic and module-creation work.
+- Specific card abstraction granularity (decide during Phase 2 based on observed convergence rates)
+- Exact league play schedule (decide after Phase 4 blueprint exists)
+- Whether to burst cloud GPU for final blueprint training (decide late Phase 4)
+- Whether to integrate VPS as parallel self-play worker (decide if 3060 throughput becomes bottleneck)

@@ -6,6 +6,69 @@ Format: most recent session at the top. Each session block notes date, what was 
 
 ---
 
+## Session 9 — 2026-05-23 (early morning)
+**Focus:** Open Phase 4e.3b (external-sampling CFR traversal for 6-max). Stretch goals: 4e.3c (training loop wiring) and 4e.3d (config + script + smoke validation), to clear the path to 4f (GPU rental + first 6-max blueprint training run).
+
+All three phases landed. Three commits on `main`: dc9cad6 (4e.3b), 34eb20b (re-shipped on Contabo with identical content), e0575c3 (4e.3c+d). Three new source files (src/nlhe/cfr6.py, src/nlhe/solver6.py, scripts/train_6max.py), two test files (tests/test_cfr6.py, tests/test_solver6.py), one config (configs/six_max_smoke.yaml). Full NLHE test suite: 167 → 198 passed (+31 net, no regressions, all HUNL paths intact).
+
+### What was done — 4e.3b (cfr6.py)
+
+- Read the full Phase 4 stack to understand the API surface to compose against: src/nlhe/networks6.py (PlayerNetworks6Max from 4e.3a), src/nlhe/infoset6.py (InfosetEncoder6Max from 4d, 236-dim features), src/nlhe/trajectory6.py (walk_game primitive from 4e.1, separate from CFR), src/nlhe/icm_returns.py (icm_adjust_returns from 4e.2), src/nlhe/icm.py (Malmuth-Harville from 4b), and the HUNL src/nlhe/solver.py as the canonical pattern to mirror.
+- Wrote src/nlhe/cfr6.py: `traverse_6max(state, traversing_player, ctx, rng, depth=0)` plus `CFR6MaxContext`. The recursive function handles terminal (ICM-adjusted return), chance node (sample one outcome), traverser decision (enumerate all legal discrete actions, compute counterfactual value and regrets, write to traverser's buffer), opponent decision (sample one action from regret-matched current strategy, recurse). Mirrors HUNL solver.py's `_traverse` method with 6-max-specific generalizations.
+- Wrote tests/test_cfr6.py with 17 tests covering: context construction validation, view extraction, traversing-player range checking, terminal ICM-adjustment correctness under both payout modes, terminal-state no-buffer-write, chance-node handling, buffer-write-restricted-to-traverser, per-seat buffer independence across multiple traversals, sample shape, regrets-zero-on-illegal-actions, iteration tag persistence, determinism under fixed RNG, smoke (100 traversals on six_max_sng), integration with the production abstraction artifact (auto-skip when pickle absent).
+- Stub `_StubAbstraction` class in the test file gives hash-based deterministic bucket lookups — keeps the cfr6 mechanics tests decoupled from the production EMD pickle while a fixture-based real-abstraction test exercises full integration.
+
+### What was done — 4e.3c (solver6.py)
+
+- Wrote src/nlhe/solver6.py: `DeepCFR6MaxSolver` + `TrainConfig6Max`. The training loop:
+  1. For iteration `it`, traverser = `(it - 1) % 6` (cycling through seats; after 6 iters every seat has trained once).
+  2. `encoder.reset_cache()` to bound memory across iterations.
+  3. Build `CFR6MaxContext` once per iteration.
+  4. Call `traverse_6max` `traversals_per_iter` times with the fixed traverser.
+  5. Train the traverser's advantage net for `train_steps_per_iter` batches (MSE-on-legal-actions, batched from the reservoir).
+  6. Log per-iteration line + metrics dict entry.
+  7. Optionally checkpoint every `checkpoint_every` iterations (and at completion).
+- Checkpoint format preserves the HUNL Session-8 bit-identical-resume invariant: `PlayerNetworks6Max.state_dict()` (which already serializes 6 nets + 6 optimizers in one call), per-seat buffer state, Python and torch RNG states, and config dict.
+- Wrote tests/test_solver6.py with 18 tests covering: payout-mode resolution (double_up / standard / invalid), construction (wiring + rejects non-6-player games), one-and-two-iteration smoke runs, traverser cycling across all 6 seats including the wrap to iter 7 → seat 0, per-seat buffer growth invariant (each seat's buffer grows only during its traverser iteration), loss-is-NaN-when-buffer-too-small, traverser-only-net-updates-per-iter (the other 5 seats' params byte-identical before and after the iteration), bit-identical checkpoint roundtrip of both parameters AND buffer contents, resume continues iteration counter correctly, checkpoint directory auto-create, YAML config round-trips into TrainConfig6Max (catches typos / unknown keys at script-start time), script-imports-and-game-builder-helper work.
+
+### What was done — 4e.3d (config + script)
+
+- Wrote configs/six_max_smoke.yaml: 4-iter [32,32] config sized for ~1 minute on Contabo CPU. Uses `runs/abstraction_20260521_223018_retrofit/abstraction.pkl` (the Session 7.5 retrofit production abstraction).
+- Wrote scripts/train_6max.py mirroring scripts/train_nlhe.py: `--config`, `--resume`, `--out` flags; writes `runs/six_max_<ts>_<tag>/{config.json, metrics.json, checkpoints/ckpt_iter_XXXX.pt}`. Module-invocable as `python -m scripts.train_6max --config configs/six_max_smoke.yaml`.
+- End-to-end smoke validated twice. First in the sandbox against a minimally-pickled stub Abstraction (k=2 per street, uniform histograms): 3 iters, then resume from ckpt_iter_0003.pt with n_iterations=5, both runs producing correct traverser cycling and buffer growth. Second on Contabo against the real production abstraction (preflop k=20, postflop k=200): 4 iters in 30 seconds, per-iter times 3.4/4.6/13.6/5.7s (the 13.6s spike consistent with documented Contabo vCPU variance), checkpoints written at iter 2 and iter 4, metrics.json well-formed.
+
+### What was decided
+
+- **CFR6MaxContext API extension over the Session 9 prompt's literal signature.** The prompt sketched `traverse_6max(state, traversing_player, policy_nets, abstraction, encoder, rng)` but the literal form lacks `starting_stacks` / `payouts` (needed for ICM at terminals) and `iteration` (needed for DCFR-compatible sample tagging). Plus `abstraction` is reachable via `encoder.abstraction`. Adopted `traverse_6max(state, traversing_player, ctx, rng, depth=0)` with `CFR6MaxContext` bundling the per-iteration deps. See DECISIONS.md for full rationale.
+- **No regret normalization for 6-max.** HUNL divides regrets by `starting_stack` to keep MSE on O(1) chip scale. For 6-max with ICM-EV, terminal utilities are already bounded by payouts (≤3.9 buy-ins for Standard, ≤2.0 for Double Up); regrets are already O(1) without the divide. Adding it would shrink regrets to ~0.0001 and stall training. See DECISIONS.md.
+- **6-max blueprint first-cut: minimum-viable scope.** Four intentional deferrals from the HUNL pipeline: no strategy net / average-policy net yet (4e.4), no DCFR weighting (vanilla CFR), no archetype mix (HU position derivation needs port), uniform starting stacks per traversal (real SNG stack evolution deferred). Same incremental staging that landed +78.35 bb/100 on HUNL. See DECISIONS.md.
+
+### What was learned / surprises
+
+- **The public repo URL alone was enough.** Initial session was bottlenecked on missing API surface — the project knowledge attached to the conversation was Session 2 vintage (Phase 1 just closing), but the Session 9 prompt referenced Phase 4 modules I had no view of. User dropped the github.com URL and the public repo had everything: 47 commits of history, every module the prompt named, the production tests to grep for established patterns. Saved a full session of "please paste me file X."
+- **Sandbox disk pressure is a real constraint.** Setting up a working venv to actually run pytest in-sandbox took two attempts — first install hit ENOSPC after the partial torch install consumed ~5GB of a 7GB free-disk budget. The clean second attempt with `--no-cache-dir` succeeded. Worth budgeting for in any future code-execution-environment workflow.
+- **Universal_poker's `[Pot: N]` reports something other than committed chips.** At the preflop UTG decision with SB=50/BB=100, actual committed chips = 150 but the parsed pot is 600. The HUNL `_build_game_state_view` uses this same parsed value, and HUNL trained to +78.35 bb/100 with the convention — so it's consistent project-wide, not a bug. Caught my own wrong assumption in a test I'd written; rewrote the test to check the real invariants (to_call, legal_fold, min_bet >= 2, max_bet <= stack) rather than the magic number. Worth flagging for future readers: `view.pot` is whatever universal_poker says it is, not what a poker player thinks of as "the pot."
+- **Bit-identical checkpoint roundtrip is straightforward when PlayerNetworks6Max.state_dict() already does the heavy lifting.** Saved a lot of time vs HUNL's hand-rolled per-net serialization. Worth keeping the container-owns-its-state pattern for any future per-player infrastructure (e.g. the 6-max strategy nets).
+- **The test_cfr6.py integration test that "auto-skips on missing artifact" is the right pattern.** Sandbox didn't have the production abstraction pickle (gitignored, 7-minute training to regenerate). The test gracefully skipped in sandbox and passed on Contabo. Same pattern from test_infoset6.py — established convention worth following for any production-artifact-dependent test.
+
+### Workflow notes for next time
+
+- **30 minutes from "what's the github URL?" to first commit landed.** When the project has good API surface and clear conventions, scope-conservative execution is fast. Half the session was diagnosing what files I needed and reading them carefully; the other half was code + tests + smoke. Worth budgeting at this ratio: read 50%, write 50%, on any new-module work where the API surface isn't yet familiar.
+- **`git log --oneline -15` at session start surfaced the doc-vs-code drift immediately.** STATUS.md last-updated at Session 8 said "Phase 4a/b complete, 4c-h pending" but git log showed Phase 4c/d/e.1/e.2/e.3a all already shipped. The CLAUDE.md rule about trusting commits over STATUS when they disagree held up perfectly. Worth keeping forever.
+- **Two design calls that needed explicit documentation:** CFR6MaxContext signature extension, no-normalize-regrets, minimum-viable first-cut scope. None of them broke the prompt; all three were "the literal prompt doesn't quite specify and there's a defensible choice." Flagged each in commit messages, in docstrings, and now in DECISIONS.md. Future-me / future-Claude reading the code should not have to reconstruct these from scratch.
+
+### Doc inconsistency surfaced this session
+
+SESSION_LOG.md has a gap between Session 8 (close) and Session 9 (this entry): the work that landed Phase 4c (commit 17a86b2), 4d (commit 45912e8), 4e.1 (commit 31355a5), 4e.2 (commit 58523d5), and 4e.3a (commit 6f8b222) isn't documented as session blocks. STATUS.md doesn't reflect those either. The user is intentionally batching doc work and the commits themselves carry the per-change rationale, so this is a deferred-fix, not a session-9 obligation. Flag for whoever runs the next session: either backfill Sessions 8.5 onward or accept that the git log is the authoritative history for that span.
+
+### Queued for Session 10
+
+1. **Phase 4f (or whatever it's called now): GPU rental + first 6-max blueprint training run.** With cfr6 + solver6 + train_6max all green, the path is mechanical: pick a config size, rent a RunPod pod, run for some hours-to-days, get a 6-max checkpoint that's trained against ICM rewards. No new abstraction work needed (production abstraction already supports 6-max because card abstraction is per-street, player-count-independent).
+2. **Eval harness for the 6-max bot.** Slumbot is HUNL-only. Options: (a) self-play tournaments, (b) bot-vs-archetype tournaments (need 6-max archetype port first), (c) head-to-head ICM-comparison against a Nash push/fold ICM solver for the late game. Decide first; build second.
+3. **Average-strategy approximation** (Phase 4e.4 or similar). Either add a strategy net per seat to PlayerNetworks6Max (HUNL-pattern) or implement on-the-fly average via Brown 2019's trick. Required before any deployment-quality eval.
+4. **Small cleanups carried from Session 2 and Session 4** (still pending): train_leduc.py config.json location, _build_game_state_view privacy inconsistency. Neither blocks anything; do whenever convenient.
+
+
 ## Session 7.5 — 2026-05-22 (late evening / overnight)
 **Focus:** Open Track A3 — card abstraction comparison harness with KrwEmd as the headline option. Got further than planned, but in an unexpected direction.
 

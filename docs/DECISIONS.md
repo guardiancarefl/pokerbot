@@ -296,3 +296,49 @@ Strategic differences:
 **Alternative considered:** Top-3 paid 50/30/20 of total pool (PokerStars-style). This was assumed in earlier docs but is not actually a structure Ignition offers in 6-max. Kept as a function (`sng_payouts_6max`) for backward compat with a DeprecationWarning.
 
 **Reason rejected:** The bot's target rooms include Ignition; the bot has to play the structures those rooms actually offer. Training on a hypothetical 50/30/20 structure would produce a bot whose ICM-aware play is wrong for the real games.
+## CFR6MaxContext: API extension over the Session 9 prompt's literal signature
+**Decided:** 2026-05-23 (Session 9, Phase 4e.3b)
+**Why:** The Session 9 prompt sketched `traverse_6max(state, traversing_player, policy_nets, abstraction, encoder, rng)` — a 6-arg positional signature. The literal form is insufficient for what 4e.3b actually has to do:
+
+  - ICM-adjusting terminal returns requires `starting_stacks` and `payouts`. Neither is present in the sketched signature, and neither lives on any of the existing args.
+  - DCFR-future-compatibility requires tagging each regret sample with the current iteration. The training loop in 4e.3c needs to write `ctx.iteration` into reservoir entries; a recursive function that doesn't know its iteration can't do that.
+  - `abstraction` is accessible via `encoder.abstraction`. Keeping it as a separate positional arg has the recursive call lie about its dependencies (the function uses `encoder`, never `abstraction` directly).
+
+Final signature: `traverse_6max(state, traversing_player, ctx, rng, depth=0)` where `ctx` is a `CFR6MaxContext` dataclass bundling `policy_nets`, `encoder`, `starting_stacks`, `payouts`, `iteration`, `max_depth`. This both honors the spirit of the sketch (the dependencies are exactly the same) and keeps the recursion clean for the training loop's hot path.
+
+**Alternative considered:** Honor the prompt's literal 6-arg form with `starting_stacks` / `payouts` / `iteration` added as keyword-only arguments.
+**Reason rejected:** 8+ args between positional and keyword-only get noisy on every recursive call site. The context-bundle pattern is the standard fix for "these deps don't change across a single traversal." Same pattern is used in PyTorch dataloaders, in DeepMind's OpenSpiel solvers, and in most production CFR code.
+
+## 6-max regret normalization: not divided by starting_stack
+**Decided:** 2026-05-23 (Session 9, Phase 4e.3b)
+**Why:** The HUNL solver in `src/nlhe/solver.py` normalizes regrets by `starting_stack` before writing to the buffer: `regrets = (values_per_action - ev) * legal_mask / max(self.cfg.starting_stack, 1)`. This was added because chip-EV regrets at 200bb stacks ran into the thousands; without the divide, MSE losses are O(chip²) = O(10⁶) and gradients are ill-conditioned for [64,64] networks.
+
+For 6-max with ICM-EV, the equivalent quantities are bounded by the payout structure:
+  - Double Up payouts `[2.0, 2.0, 2.0]`: max per-player equity = 2.0 buy-ins.
+  - Standard payouts (65/35): max per-player equity = 3.9 buy-ins.
+
+Counterfactual values inherit this bounded scale through every internal-node backup (weighted sums and differences preserve equity-space interpretation). Regrets are differences between counterfactual values, also bounded — in practice, in the range [-4.0, +4.0] for the worst case under Standard payouts, and typically much tighter. They are already on O(1) scale.
+
+Adding a `/ cfg.starting_stack` divide on top would shrink regrets to ~0.0001 to 0.003 in chip units. MSE losses would be O(10⁻⁶) and gradients vanishingly small. Net effect: training stalls.
+
+So: 6-max regret samples are added to the buffer in their natural equity-space scale, no normalization. Documented in `src/nlhe/cfr6.py`'s module docstring at point 5.
+
+**Alternative considered:** Match HUNL's pattern verbatim and divide by `starting_stack`.
+**Reason rejected:** Wrong scaling problem. If 6-max ICM MSE training actually shows pathology in practice (gradients exploding or vanishing on real runs), re-introduce the divide — but only with measured evidence that it's needed.
+
+## 6-max blueprint training: minimum-viable first cut
+**Decided:** 2026-05-23 (Session 9, Phase 4e.3c)
+**Why:** Four enhancements that exist in the HUNL pipeline are intentionally OUT of the 6-max first cut in `src/nlhe/solver6.py`:
+
+  1. **No strategy net / no average-strategy approximation.** `PlayerNetworks6Max` (Phase 4e.3a) only carries advantage nets. At deployment time, the deployed policy is the regret-matched current strategy from the most recent advantage net — not the average strategy across iterations. Average-strategy approximation is its own subphase (likely Phase 4e.4) and only worth doing once the baseline trains.
+
+  2. **No DCFR weighting yet (vanilla CFR only).** DCFR (Brown & Sandholm 2019) was added to HUNL in Phase 3 Track A1 (commit 41e2fa3). It provides faster convergence by per-sample iteration weighting. For 6-max first-cut, vanilla CFR (uniform weights) is the baseline. Mechanical to add later once the vanilla loss trajectory is established.
+
+  3. **No archetype mix yet.** The archetype framework (`src/nlhe/archetypes.py`) is HUNL-specific — it uses `derive_in_position` (HU position-from-current-player) and decision tables sized for two-player betting trees. Porting to 6-max requires position derivation for all 6 seats and decision tables sized for the multiway 6-max pot. Its own subphase, not a 4e.3c concern.
+
+  4. **Uniform starting stacks per traversal.** Real SNG hands have stacks that evolve across hands (chip leader, short stack, equal stacks, bubble situations). The 4e.3c training loop uses `[cfg.starting_stack] * 6` for every traversal — every hand looks like Hand 1, with all stacks equal. The ICM transformation still operates correctly per terminal (deltas in equity are computed against equal-stack baselines), but the bot doesn't see bubble-pressure asymmetry from a 4-handed game with widely differing stacks. Stack-distribution sampling is its own subphase. Until it's added, the bot trains on a degenerate slice of the SNG state space.
+
+First-cut scope is "the smallest 6-max thing that trains without diverging, in time to evaluate on benchmark before adding complexity." This staging is what landed +78.35 bb/100 on HUNL — vanilla Deep CFR first, then DCFR, then archetypes, then determinism retrofits. Same logic applies to 6-max: ship a baseline that trains, measure it, then add enhancements with each one's contribution measurable.
+
+**Alternative considered:** Ship 6-max with the full Phase 3 enhancement stack (strategy net + DCFR + archetypes + stack sampling) from the start, since the HUNL precedent exists and the code patterns are known.
+**Reason rejected:** Five interacting moving pieces in one ship is uninvestigable when something breaks. The HUNL track added enhancements incrementally across 5+ sessions, with each step's contribution measurable separately. The same incremental approach is the right one for 6-max — even if the individual additions are "easier" the second time around, the joint debugging cost is the same.
