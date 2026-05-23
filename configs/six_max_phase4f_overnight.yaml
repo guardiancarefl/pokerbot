@@ -1,0 +1,53 @@
+# Phase 4f overnight blueprint training: full tournament-aware 6-max NLHE
+# Deep CFR run on Ignition Double Up 6-max Turbo structure.
+#
+# Targets ~8 hours on RTX PRO 4000 Blackwell. Generates ~5000-6000 iterations
+# at ~2.5-5s per iter, producing a checkpoint every 200 iterations (25-30 total).
+#
+# Use:
+#   python -m scripts.train_6max --config configs/six_max_phase4f_overnight.yaml
+#
+# Eval companion (run in parallel SSH session):
+#   python -m scripts.eval_6max_self_play \
+#       --ckpt-a runs/six_max_<ts>_phase4f_overnight/checkpoints/ckpt_iter_XXXX.pt \
+#       --ckpt-b runs/six_max_<ts>_phase4f_overnight/checkpoints/ckpt_iter_0200.pt \
+#       --abstraction runs/abstraction_20260521_223018_retrofit/abstraction.pkl \
+#       --structure configs/ignition_double_up_6max_turbo.yaml \
+#       --hands 500
+
+tag: phase4f_overnight
+abstraction_path: runs/abstraction_20260521_223018_retrofit/abstraction.pkl
+
+# Game shape (ignored in tournament mode but required by dataclass).
+starting_stack: 1500
+big_blind: 100
+small_blind: 50
+payout_mode: double_up
+buy_in: 1.0
+first_share: 0.65
+
+# Tournament-aware training: per-trajectory sampling of state distribution.
+tournament_structure_path: configs/ignition_double_up_6max_turbo.yaml
+num_paid: 3
+
+# Training hyperparameters.
+# Wider networks than validation (more representation capacity).
+# Larger buffer to accumulate diverse state samples across the run.
+# More gradient steps per iter to actually train the larger networks.
+hidden_dim: [256, 256]
+n_iterations: 6000
+traversals_per_iter: 150
+train_steps_per_iter: 200
+batch_size: 64
+learning_rate: 0.001
+buffer_capacity: 500000
+
+# Encoder + solver behavior.
+bucket_runouts: 30
+max_traversal_depth: 200
+seed: 2026
+
+# Checkpoint every 200 iters. Every checkpoint can be self-play eval'd.
+# Over 6000 iters that's ~30 checkpoints — plenty of granularity to
+# track strength trajectory.
+checkpoint_every: 200
