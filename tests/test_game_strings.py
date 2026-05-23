@@ -383,3 +383,174 @@ def test_tournament_structure_is_frozen():
     ts = _basic_tournament()
     with pytest.raises(Exception):  # FrozenInstanceError
         ts.format_name = 'something_else'
+
+
+# ---- TournamentStructure game-string builders (Phase 4f) ----
+
+
+def test_to_inner_game_string_no_ante():
+    """A tournament with no antes should produce a game string with raw blinds."""
+    bls = (BlindLevel(level=1, small_blind=50, big_blind=100, ante=0),)
+    ts = TournamentStructure(
+        format_name='no_ante', num_players=6, starting_chips=1500,
+        payout_mode='double_up', payouts_dollars=(10.0, 10.0, 10.0),
+        buy_in_dollars=5.0, level_duration_minutes=5,
+        blind_schedule=bls, training_weights=(),
+    )
+    gs = ts.to_inner_game_string(level=1)
+    assert "universal_poker" in gs
+    assert "blind=50 100 0 0 0 0" in gs  # raw bb=100, no inflation
+    assert "numPlayers=6" in gs
+
+
+def test_to_inner_game_string_with_ante_inflates_bb():
+    """Antes should be absorbed into the big blind via inflation."""
+    bls = (BlindLevel(level=1, small_blind=15, big_blind=25, ante=5),)
+    ts = TournamentStructure(
+        format_name='with_ante', num_players=6, starting_chips=1500,
+        payout_mode='double_up', payouts_dollars=(10.0, 10.0, 10.0),
+        buy_in_dollars=5.0, level_duration_minutes=5,
+        blind_schedule=bls, training_weights=(),
+    )
+    gs = ts.to_inner_game_string(level=1)
+    assert "blind=15 55 0 0 0 0" in gs  # 25 + 6*5 = 55
+
+
+def test_to_inner_game_string_loads_in_pyspiel():
+    """The produced inner string should be loadable by OpenSpiel."""
+    import pyspiel
+    ts = TournamentStructure.from_yaml('configs/ignition_double_up_6max_turbo.yaml')
+    gs = ts.to_inner_game_string(level=1)
+    game = pyspiel.load_game(gs)
+    assert game.num_players() == 6
+
+
+def test_to_inner_game_string_for_different_levels():
+    """Different levels should produce different game strings."""
+    ts = TournamentStructure.from_yaml('configs/ignition_double_up_6max_turbo.yaml')
+    gs1 = ts.to_inner_game_string(level=1)
+    gs5 = ts.to_inner_game_string(level=5)
+    assert gs1 != gs5
+    assert "15 55" in gs1     # level 1: sb=15, bb=25+30=55
+    assert "100 380" in gs5   # level 5: sb=100, bb=200+180=380
+
+
+def test_to_blind_schedule_string_format():
+    """blind_schedule should be ';'-separated <hands>:<sb>/<bb> with antes inflated."""
+    bls = (
+        BlindLevel(level=1, small_blind=15, big_blind=25, ante=5),
+        BlindLevel(level=2, small_blind=25, big_blind=50, ante=10),
+    )
+    ts = TournamentStructure(
+        format_name='x', num_players=6, starting_chips=1500,
+        payout_mode='double_up', payouts_dollars=(10.0, 10.0, 10.0),
+        buy_in_dollars=5.0, level_duration_minutes=5,
+        blind_schedule=bls, training_weights=(),
+    )
+    sched = ts.to_blind_schedule_string(hands_per_level=10)
+    # Expect: 10:15/55;10:25/110;
+    assert sched == "10:15/55;10:25/110;"
+
+
+def test_to_blind_schedule_string_rejects_zero_hands():
+    ts = TournamentStructure.from_yaml('configs/ignition_double_up_6max_turbo.yaml')
+    with pytest.raises(ValueError):
+        ts.to_blind_schedule_string(hands_per_level=0)
+
+
+def test_to_repeated_poker_string_contains_outer_and_inner():
+    ts = TournamentStructure.from_yaml('configs/ignition_double_up_6max_turbo.yaml')
+    gs = ts.to_repeated_poker_string(max_num_hands=200, hands_per_level=10)
+    assert gs.startswith("repeated_poker(")
+    assert "universal_poker(" in gs
+    assert "max_num_hands=200" in gs
+    assert "rotate_dealer=True" in gs
+    assert "reset_stacks=False" in gs
+
+
+def test_to_repeated_poker_string_loads_in_pyspiel():
+    """The full nested string should be loadable by OpenSpiel as a repeated_poker game."""
+    import pyspiel
+    ts = TournamentStructure.from_yaml('configs/ignition_double_up_6max_turbo.yaml')
+    gs = ts.to_repeated_poker_string(max_num_hands=50, hands_per_level=5)
+    game = pyspiel.load_game(gs)
+    assert game.num_players() == 6
+    state = game.new_initial_state()
+    assert state.is_chance_node()  # game starts with the deal
+
+
+def test_to_repeated_poker_string_rejects_zero_hands():
+    ts = TournamentStructure.from_yaml('configs/ignition_double_up_6max_turbo.yaml')
+    with pytest.raises(ValueError):
+        ts.to_repeated_poker_string(max_num_hands=0)
+
+
+def test_to_repeated_poker_walks_to_terminal():
+    """A random-action playthrough should terminate cleanly with chip conservation."""
+    import pyspiel
+    import random
+    rng = random.Random(2026)
+    ts = TournamentStructure.from_yaml('configs/ignition_double_up_6max_turbo.yaml')
+    gs = ts.to_repeated_poker_string(max_num_hands=30, hands_per_level=5)
+    game = pyspiel.load_game(gs)
+    state = game.new_initial_state()
+
+    steps = 0
+    while not state.is_terminal() and steps < 5000:
+        if state.is_chance_node():
+            outcomes = state.chance_outcomes()
+            a = rng.choices(
+                [o[0] for o in outcomes], weights=[o[1] for o in outcomes]
+            )[0]
+            state.apply_action(a)
+        else:
+            legal = state.legal_actions()
+            a = rng.choice(legal)
+            state.apply_action(a)
+        steps += 1
+
+    assert state.is_terminal(), f"failed to terminate in {steps} steps"
+    # Chip conservation: returns sum to zero
+    returns = state.returns()
+    assert abs(sum(returns)) < 1e-6, f"chip non-conservation: returns sum to {sum(returns)}"
+
+
+# ---- from_yaml loader (Phase 4f) ----
+
+
+def test_from_yaml_loads_ignition_config():
+    ts = TournamentStructure.from_yaml('configs/ignition_double_up_6max_turbo.yaml')
+    assert ts.format_name == "ignition_double_up_6max_turbo"
+    assert ts.num_players == 6
+    assert ts.starting_chips == 1500
+    assert ts.payout_mode == "double_up"
+    assert ts.payouts_dollars == (10.0, 10.0, 10.0)
+    assert ts.buy_in_dollars == 5.0
+    assert len(ts.blind_schedule) == 17
+
+
+def test_from_yaml_blind_schedule_ascending():
+    ts = TournamentStructure.from_yaml('configs/ignition_double_up_6max_turbo.yaml')
+    levels = [bl.level for bl in ts.blind_schedule]
+    assert levels == sorted(levels)
+    assert levels == list(range(1, 18))
+
+
+def test_from_yaml_specific_levels_parsed_correctly():
+    ts = TournamentStructure.from_yaml('configs/ignition_double_up_6max_turbo.yaml')
+    # Level 1: SB=15, BB=25, ante=5
+    l1 = ts.level(1)
+    assert l1.small_blind == 15
+    assert l1.big_blind == 25
+    assert l1.ante == 5
+    # Level 9: SB=400, BB=800, ante=120
+    l9 = ts.level(9)
+    assert l9.small_blind == 400
+    assert l9.big_blind == 800
+    assert l9.ante == 120
+
+
+def test_from_yaml_training_weights_sum_to_one():
+    ts = TournamentStructure.from_yaml('configs/ignition_double_up_6max_turbo.yaml')
+    total = sum(w for _, w in ts.training_weights)
+    assert 0.99 <= total <= 1.01, f"weights sum to {total}, not ~1.0"

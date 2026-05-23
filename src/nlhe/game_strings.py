@@ -291,3 +291,179 @@ class TournamentStructure:
     def buy_in_chips(self) -> int:
         """Equivalent of one buy-in in chips. Used to normalize ICM returns."""
         return self.starting_chips
+
+
+    # ===== Game-string builders =====
+
+    def to_inner_game_string(self, level: int = 1) -> str:
+        """Build the inner universal_poker game string for a specific blind level.
+
+        Args:
+            level: 1-indexed blind level to use for blinds/antes.
+
+        Returns:
+            A universal_poker(...) game string ready to pass to pyspiel.load_game.
+            If the level has ante > 0, the big blind is inflated to
+            big_blind + num_players * ante to absorb the total pre-action
+            ante pot (see module docstring on the antes approximation).
+        """
+        bl = self.level(level)
+        n = self.num_players
+        sb = bl.small_blind
+        bb = bl.inflated_big_blind(n)  # absorbs antes via inflation
+
+        blind_parts = [str(sb), str(bb)]
+        blind_parts.extend(["0"] * (n - 2))
+        blind_str = " ".join(blind_parts)
+
+        # firstPlayer rounds: preflop=UTG (seat 3 for >2 players),
+        # postflop=SB. For 2-player, BB acts first preflop.
+        if n == 2:
+            first_player = "2 1 1 1"
+        else:
+            first_player = "3 1 1 1"
+
+        stack_str = " ".join([str(self.starting_chips)] * n)
+
+        return (
+            f"universal_poker(betting=nolimit,"
+            f"numPlayers={n},"
+            f"numRounds=4,"
+            f"blind={blind_str},"
+            f"firstPlayer={first_player},"
+            f"numSuits=4,"
+            f"numRanks=13,"
+            f"numHoleCards=2,"
+            f"numBoardCards=0 3 1 1,"
+            f"stack={stack_str},"
+            f"bettingAbstraction=fullgame)"
+        )
+
+    def to_blind_schedule_string(self, hands_per_level: int = 10) -> str:
+        """Build the repeated_poker `blind_schedule` parameter string.
+
+        Format expected by OpenSpiel:
+            "<num_hands>:<sb>/<bb>;<num_hands>:<sb>/<bb>;..."
+
+        Args:
+            hands_per_level: number of hands to spend at each level before
+                escalating. 10 is reasonable for training (slightly
+                over-samples each level vs real Ignition's ~3 hands per
+                5-min Turbo level), giving the network enough exposure
+                to each stage.
+
+        Returns:
+            A semicolon-terminated blind-schedule string.
+        """
+        if hands_per_level < 1:
+            raise ValueError(
+                f"hands_per_level must be >= 1, got {hands_per_level}"
+            )
+        parts = []
+        for bl in self.blind_schedule:
+            bb_inflated = bl.inflated_big_blind(self.num_players)
+            parts.append(f"{hands_per_level}:{bl.small_blind}/{bb_inflated}")
+        return ";".join(parts) + ";"
+
+    def to_repeated_poker_string(
+        self,
+        max_num_hands: int = 200,
+        hands_per_level: int = 10,
+        reset_stacks: bool = False,
+        rotate_dealer: bool = True,
+    ) -> str:
+        """Build the full repeated_poker game string with this tournament's structure.
+
+        Args:
+            max_num_hands: safety cap on number of hands. For top-3-equal-pay
+                Double Up at 6-max, the tournament can't last past about
+                level 10 due to chip-math constraints (see structure config
+                docstring), so 200 is a very generous cap. Set conservatively.
+            hands_per_level: passed through to to_blind_schedule_string.
+            reset_stacks: False for tournament (chips carry over hand to hand).
+                True only for cash-game training. Default False.
+            rotate_dealer: True for tournament (button moves clockwise).
+                Default True.
+
+        Returns:
+            A repeated_poker(...) game string ready to pass to pyspiel.load_game.
+            Uses level 1's blinds as the inner universal_poker starting state;
+            the blind_schedule parameter handles escalation across hands.
+        """
+        if max_num_hands < 1:
+            raise ValueError(
+                f"max_num_hands must be >= 1, got {max_num_hands}"
+            )
+        inner = self.to_inner_game_string(level=1)
+        sched = self.to_blind_schedule_string(hands_per_level=hands_per_level)
+        return (
+            f"repeated_poker("
+            f"max_num_hands={max_num_hands},"
+            f"reset_stacks={str(reset_stacks)},"
+            f"rotate_dealer={str(rotate_dealer)},"
+            f"blind_schedule={sched},"
+            f"universal_poker_game_string={inner}"
+            f")"
+        )
+
+    @classmethod
+    def from_yaml(cls, path: str) -> "TournamentStructure":
+        """Load a TournamentStructure from a YAML config file.
+
+        Expected YAML schema (see configs/ignition_double_up_6max_turbo.yaml):
+            format_name: string
+            num_players: int
+            starting_chips: int
+            payout_mode: string
+            payouts_dollars: list of floats
+            buy_in_dollars: float
+            level_duration_minutes: int
+            blind_schedule: list of dicts with level/small_blind/big_blind/ante
+            training_weights: dict of "level_N" -> float
+
+        Args:
+            path: path to the YAML config file.
+
+        Returns:
+            A fully-validated TournamentStructure instance.
+        """
+        import yaml
+        with open(path) as f:
+            data = yaml.safe_load(f)
+
+        # Parse blind_schedule into BlindLevel tuple
+        schedule_data = data.get("blind_schedule", [])
+        bls = tuple(
+            BlindLevel(
+                level=row["level"],
+                small_blind=row["small_blind"],
+                big_blind=row["big_blind"],
+                ante=row.get("ante", 0),
+                duration_minutes=row.get(
+                    "duration_minutes",
+                    data.get("level_duration_minutes", 5),
+                ),
+            )
+            for row in schedule_data
+        )
+
+        # Parse training_weights from "level_N: weight" dict into tuple of (int, float)
+        weights_data = data.get("training_weights", {}) or {}
+        weights = tuple(
+            (int(k.replace("level_", "")), float(v))
+            for k, v in weights_data.items()
+        )
+        # Sort by level for determinism
+        weights = tuple(sorted(weights))
+
+        return cls(
+            format_name=data["format_name"],
+            num_players=data["num_players"],
+            starting_chips=data["starting_chips"],
+            payout_mode=data["payout_mode"],
+            payouts_dollars=tuple(data["payouts_dollars"]),
+            buy_in_dollars=float(data["buy_in_dollars"]),
+            level_duration_minutes=data["level_duration_minutes"],
+            blind_schedule=bls,
+            training_weights=weights,
+        )
