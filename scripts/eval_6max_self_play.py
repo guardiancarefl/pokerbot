@@ -46,6 +46,12 @@ from src.nlhe.infoset6 import (
     parse_state_6max,
     parse_state_repeated_6max,
 )
+from src.nlhe.networks6 import N_DISCRETE_ACTIONS
+from src.nlhe.actions import (
+    DiscreteAction,
+    discretize_legal_actions,
+)
+from src.nlhe.cfr6 import _build_view_6max
 from src.nlhe.icm_returns import icm_adjust_returns
 
 
@@ -103,37 +109,61 @@ def _sample_action_from_policy(
     rng: random.Random,
     mode: str = "sample",
 ):
-    """Use a solver's advantage network for the current seat to choose an action.
+    """Use solver\'s 7-dim advantage network to pick an abstract action,
+    then map it to a concrete chip action.
 
-    Mode 'sample': sample proportionally to advantage (with positive-only
-    rectification + uniform fallback if all-zero).
-    Mode 'argmax': pick the max-advantage legal action.
+    This mirrors the opponent-sampling block in cfr6.py\'s traverse_6max:
+      1. discretize_legal_actions gives us {DiscreteAction: chip_action}
+      2. build a 7-dim legal_mask, query advantages
+      3. RM+ strategy = positive_advantages / sum, masked to legal
+      4. sample or argmax from strategy
+      5. map chosen DiscreteAction back to chip_action via the map
     """
-    cp = parsed["current_player"]
-    encoded = solver.encoder.encode_from_parsed(parsed, rng=rng)
-    # encoded may be numpy or list; predict_advantages expects np.ndarray.
     import numpy as np
+
+    cp = parsed["current_player"]
+    legal_chip = list(state.legal_actions())
+    view = _build_view_6max(state, parsed)
+    discrete_to_chip = discretize_legal_actions(legal_chip, view)
+
+    if not discrete_to_chip:
+        # Defensive: pick any legal chip action
+        return rng.choice(legal_chip)
+
+    legal_mask = np.zeros(N_DISCRETE_ACTIONS, dtype=np.float32)
+    for da in discrete_to_chip:
+        legal_mask[int(da)] = 1.0
+
+    encoded = solver.encoder.encode_from_parsed(parsed, rng=rng)
     features = np.asarray(encoded, dtype=np.float32)
     advantages = solver.policy_nets.predict_advantages(cp, features)
 
-    legal = state.legal_actions()
-    legal_adv = [(a, max(advantages[a], 0.0)) for a in legal if a < len(advantages)]
-    if not legal_adv:
-        return rng.choice(legal)
+    # RM+ strategy: positive part of advantages, masked, normalized.
+    positive_adv = np.maximum(advantages, 0.0) * legal_mask
+    total = float(positive_adv.sum())
 
-    total = sum(adv for _, adv in legal_adv)
-    if total <= 0.0 or mode == "argmax":
-        if mode == "argmax":
-            return max(legal_adv, key=lambda x: x[1])[0]
-        return rng.choice(legal)
+    if mode == "argmax":
+        # Pick the argmax over legal discrete actions
+        masked_adv = np.where(legal_mask > 0, advantages, -np.inf)
+        chosen_da_idx = int(np.argmax(masked_adv))
+    elif total > 0.0:
+        probs = positive_adv / total
+        chosen_da_idx = rng.choices(
+            range(N_DISCRETE_ACTIONS),
+            weights=probs.tolist(),
+            k=1,
+        )[0]
+    else:
+        # All-zero advantages: uniform over legal discrete actions.
+        legal_indices = [int(da) for da in discrete_to_chip]
+        chosen_da_idx = rng.choice(legal_indices)
 
-    r = rng.random() * total
-    acc = 0.0
-    for a, adv in legal_adv:
-        acc += adv
-        if r <= acc:
-            return a
-    return legal_adv[-1][0]
+    da = DiscreteAction(chosen_da_idx)
+    chip_action = discrete_to_chip.get(da)
+    if chip_action is None:
+        # Belt-and-suspenders
+        chip_action = rng.choice(list(discrete_to_chip.values()))
+    return int(chip_action)
 
 
 def play_one_hand(
