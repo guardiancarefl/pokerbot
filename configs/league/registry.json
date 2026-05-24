@@ -261,6 +261,118 @@
         "dcfr",
         "peak"
       ]
+    },
+    {
+      "name": "shanky-gushansenmtt",
+      "path": "data/shanky_profiles/GusHansenMTT__1_.txt",
+      "metadata": {
+        "policy_type": "shanky",
+        "source_file": "GusHansenMTT__1_.txt",
+        "n_rules": 2885,
+        "big_blind_chips": 100
+      },
+      "tags": [
+        "shanky",
+        "archetype"
+      ]
+    },
+    {
+      "name": "shanky-killphilmtt",
+      "path": "data/shanky_profiles/KillPhilMTT.txt",
+      "metadata": {
+        "policy_type": "shanky",
+        "source_file": "KillPhilMTT.txt",
+        "n_rules": 527,
+        "big_blind_chips": 100
+      },
+      "tags": [
+        "shanky",
+        "archetype"
+      ]
+    },
+    {
+      "name": "shanky-millenniummttv_49",
+      "path": "data/shanky_profiles/MillenniumMTTv_49.txt",
+      "metadata": {
+        "policy_type": "shanky",
+        "source_file": "MillenniumMTTv_49.txt",
+        "n_rules": 1888,
+        "big_blind_chips": 100
+      },
+      "tags": [
+        "shanky",
+        "archetype"
+      ]
+    },
+    {
+      "name": "shanky-minestackermttv_7_3",
+      "path": "data/shanky_profiles/MinestackerMTTv_7_3.txt",
+      "metadata": {
+        "policy_type": "shanky",
+        "source_file": "MinestackerMTTv_7_3.txt",
+        "n_rules": 863,
+        "big_blind_chips": 100
+      },
+      "tags": [
+        "shanky",
+        "archetype"
+      ]
+    },
+    {
+      "name": "shanky-thefixersng",
+      "path": "data/shanky_profiles/TheFixerSNG.txt",
+      "metadata": {
+        "policy_type": "shanky",
+        "source_file": "TheFixerSNG.txt",
+        "n_rules": 1212,
+        "big_blind_chips": 100
+      },
+      "tags": [
+        "shanky",
+        "archetype"
+      ]
+    },
+    {
+      "name": "shanky-shapeshifter_v17",
+      "path": "data/shanky_profiles/shapeshifter_v_17.txt",
+      "metadata": {
+        "policy_type": "shanky",
+        "source_file": "shapeshifter_v_17.txt",
+        "n_rules": 320,
+        "big_blind_chips": 100
+      },
+      "tags": [
+        "shanky",
+        "archetype"
+      ]
+    },
+    {
+      "name": "shanky-sng",
+      "path": "data/shanky_profiles/sng.txt",
+      "metadata": {
+        "policy_type": "shanky",
+        "source_file": "sng.txt",
+        "n_rules": 91,
+        "big_blind_chips": 100
+      },
+      "tags": [
+        "shanky",
+        "archetype"
+      ]
+    },
+    {
+      "name": "shanky-ticketmaster",
+      "path": "data/shanky_profiles/ticketmaster.txt",
+      "metadata": {
+        "policy_type": "shanky",
+        "source_file": "ticketmaster.txt",
+        "n_rules": 64,
+        "big_blind_chips": 100
+      },
+      "tags": [
+        "shanky",
+        "archetype"
+      ]
     }
   ]
 }
