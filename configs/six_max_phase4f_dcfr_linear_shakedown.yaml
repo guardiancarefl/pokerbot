@@ -1,0 +1,75 @@
+# Phase 4f DCFR shakedown: 200-iter linear-CFR run for plateau-breaking
+# comparison against vanilla overnight baseline at iter_0200 / iter_0400.
+#
+# Background: vanilla overnight run
+#   configs/six_max_phase4f_overnight.yaml
+#   runs/six_max_20260523_224646_phase4f_overnight/
+# plateaued by iter 200 (iter_0400 vs iter_0200 = -0.01 +/- 0.004,
+# i.e. statistical noise, possibly slight regression).
+#
+# Hypothesis (Brown & Sandholm 2019): per-sample iteration weighting in
+# advantage-net training breaks the plateau by deprioritizing stale early
+# regret samples.
+#
+# All hyperparameters identical to the overnight config except:
+#   tag, n_iterations, cfr_variant, checkpoint_every.
+#
+# Use:
+#   python -m scripts.train_6max --config configs/six_max_phase4f_dcfr_linear_shakedown.yaml
+#
+# Eval companions (after iter 200 lands; run in parallel SSH session):
+#   # (a) DCFR-200 vs vanilla-200: same compute, weighting only.
+#   python -m scripts.eval_6max_self_play \
+#       --ckpt-a runs/six_max_<ts>_phase4f_dcfr_linear_shakedown/checkpoints/ckpt_iter_0200.pt \
+#       --ckpt-b runs/six_max_20260523_224646_phase4f_overnight/checkpoints/ckpt_iter_0200.pt \
+#       --abstraction runs/abstraction_20260521_223018_retrofit/abstraction.pkl \
+#       --structure configs/ignition_double_up_6max_turbo.yaml \
+#       --hands 2000 --seed 2026
+#
+#   # (b) DCFR-200 vs vanilla-400: stretch goal. If positive, plateau broken.
+#   python -m scripts.eval_6max_self_play \
+#       --ckpt-a runs/six_max_<ts>_phase4f_dcfr_linear_shakedown/checkpoints/ckpt_iter_0200.pt \
+#       --ckpt-b runs/six_max_20260523_224646_phase4f_overnight/checkpoints/ckpt_iter_0400.pt \
+#       --abstraction runs/abstraction_20260521_223018_retrofit/abstraction.pkl \
+#       --structure configs/ignition_double_up_6max_turbo.yaml \
+#       --hands 2000 --seed 2026
+
+tag: phase4f_dcfr_linear_shakedown
+abstraction_path: runs/abstraction_20260521_223018_retrofit/abstraction.pkl
+
+# Game shape (ignored in tournament mode but required by dataclass).
+starting_stack: 1500
+big_blind: 100
+small_blind: 50
+payout_mode: double_up
+buy_in: 1.0
+first_share: 0.65
+
+# Tournament-aware training (identical to overnight).
+tournament_structure_path: configs/ignition_double_up_6max_turbo.yaml
+num_paid: 3
+
+# Training hyperparameters (identical to overnight).
+hidden_dim: [256, 256]
+n_iterations: 200
+traversals_per_iter: 150
+train_steps_per_iter: 200
+batch_size: 64
+learning_rate: 0.001
+buffer_capacity: 500000
+
+# DCFR (Brown & Sandholm 2019): per-sample weight = t_i / T.
+# 'linear' is the textbook default; 'discounted' with exponent=2.0 is more
+# aggressive recent-weighting and is the natural next experiment if linear
+# doesn't break the plateau.
+cfr_variant: linear
+dcfr_exponent: 1.0
+
+# Encoder + solver behavior.
+bucket_runouts: 30
+max_traversal_depth: 200
+seed: 2026
+
+# Two checkpoints (iter 100, iter 200) for finer-grained eval than the
+# overnight's iter-200-only cadence.
+checkpoint_every: 100
