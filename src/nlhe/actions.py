@@ -136,6 +136,21 @@ def _legal_discrete_bet_sizes(view: GameStateView) -> list[tuple[DiscreteAction,
     unavailable in this state). For ties at the same chip count from clipping
     at max_bet, keeps only the largest discrete label (e.g., if both BET_200
     and ALLIN would equal max_bet, ALLIN is the meaningful label).
+
+    KNOWN ALIAS (facing all-in, no re-raise room): when no raise is legal
+    (hero faces a shove and lacks chips to re-raise), the state's legal
+    actions are just {fold=0, call=1} and _build_view_6max sets
+    min_bet == max_bet == 0. Every bet fraction then clamps to 0 and ALLIN
+    takes max_bet == 0, so this function returns [(ALLIN, 0)]. Because chip 0
+    is also FOLD, discretize_legal_actions emits {FOLD: 0, CALL: 1, ALLIN: 0}
+    and policy_to_game_action(ALLIN, view) returns 0. CONSEQUENCE: selecting
+    DiscreteAction.ALLIN in this state translates to chip 0, which
+    state.apply_action() executes as a FOLD, not an all-in. The
+    semantically-correct all-in-equivalent here is CALL (1) — calling a shove
+    for one's entire stack IS the all-in. This is a label-only alias (no real
+    all-in action exists in legal_actions); behavior is intentionally left
+    unchanged here. Callers that translate ALLIN back to a game action when
+    facing a shove (e.g. SubgamePolicy, sub-step 5) must account for it.
     """
     out: list[tuple[DiscreteAction, int]] = []
     seen_chips: dict[int, DiscreteAction] = {}
