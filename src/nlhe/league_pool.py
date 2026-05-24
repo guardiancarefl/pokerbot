@@ -140,23 +140,53 @@ class LeaguePool:
         return rng.choices(self._eligible, weights=weights, k=1)[0]
 
     def sample_opponent(self, rng: random.Random):
-        """Sample an entry, lazy-load its policy, return a CheckpointPolicy.
+        """Sample an entry, lazy-load its policy, return a Policy.
 
-        First call for a given entry loads the solver (expensive).
-        Subsequent calls return the cached CheckpointPolicy.
+        First call for a given entry loads the policy (expensive — solver
+        deserialization for checkpoints, profile parsing for Shanky profiles).
+        Subsequent calls return the cached policy.
+
+        Policy type is determined by entry.metadata['policy_type']:
+          - 'checkpoint' (default if absent): loads CheckpointPolicy from a
+            saved DeepCFR6MaxSolver checkpoint (.pt file).
+          - 'shanky': loads ShankyProfilePolicy from a Shanky/WinHoldEm
+            profile (.txt file).
+
+        Both implement the Policy protocol (name + select_action), so the
+        caller (cfr6.traverse_6max) sees them identically.
         """
         entry = self.sample_entry(rng)
         if entry.name in self._policy_cache:
             return self._policy_cache[entry.name]
 
-        # Lazy import to avoid circular import at module load time.
-        from scripts.eval_pool import CheckpointPolicy
-        policy = CheckpointPolicy(
-            name=entry.name,
-            ckpt_path=entry.path,
-            abstraction=self.abstraction,
-            structure=self.structure,
-        )
+        policy_type = entry.metadata.get("policy_type", "checkpoint")
+
+        if policy_type == "checkpoint":
+            # Lazy import to avoid circular import at module load time.
+            from scripts.eval_pool import CheckpointPolicy
+            policy = CheckpointPolicy(
+                name=entry.name,
+                ckpt_path=entry.path,
+                abstraction=self.abstraction,
+                structure=self.structure,
+            )
+        elif policy_type == "shanky":
+            # Shanky profile entry. The path points to a .txt profile file.
+            # Construction is cheap (parse a few thousand rules); the
+            # ShankyProfilePolicy keeps the parsed AST cached internally.
+            from src.nlhe.scripted_bots.policy import ShankyProfilePolicy
+            big_blind_chips = entry.metadata.get("big_blind_chips", 100)
+            policy = ShankyProfilePolicy(
+                name=entry.name,
+                profile_path=entry.path,
+                big_blind_chips=big_blind_chips,
+            )
+        else:
+            raise ValueError(
+                f"unknown policy_type {policy_type!r} for registry entry "
+                f"{entry.name!r}. Expected 'checkpoint' or 'shanky'."
+            )
+
         self._policy_cache[entry.name] = policy
         return policy
 

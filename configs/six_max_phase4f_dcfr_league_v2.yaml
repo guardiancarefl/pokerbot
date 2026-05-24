@@ -1,0 +1,87 @@
+# Phase 4f DCFR + league v2: style + strength diversity overnight.
+#
+# v1 (configs/six_max_phase4f_dcfr_league_overnight.yaml) was a NEGATIVE
+# result — see docs/PHASE4F_LEAGUE_V1_FINDINGS.md. The opponent pool
+# (17 uniformly-sampled DCFR checkpoints at mix=0.30) was too dilutive:
+# league-1400 underperformed DCFR-1400 at matched compute.
+#
+# v2 changes three things:
+#
+#   1. **Lower mix (0.30 -> 0.15)**. Less aggressive opponent replacement.
+#      With archetype style diversity now also in the pool, the bot still
+#      sees variety even at lower mix; the self-play traversals (now 85%
+#      instead of 70%) preserve convergence behavior.
+#
+#   2. **Recency sampling**. Instead of uniform over all checkpoints,
+#      weight by entry recency (halflife=5 entries). Most weight on the
+#      strongest recent DCFR checkpoints, less on early-iter weaklings.
+#      Combined with tag filtering, this means the league pool is
+#      effectively "peak DCFR + selected archetypes" rather than
+#      "everything we ever trained."
+#
+#   3. **Style diversity via Shanky archetypes**. The opponent pool now
+#      includes 3-5 Shanky-typed registry entries (selected based on
+#      tournament eval — see evals/shanky_vs_dcfr-3000_*.json before
+#      finalizing the registry). These are FROZEN scripted bots, not
+#      trained checkpoints; they provide STYLE variety the DCFR pool
+#      lacks.
+#
+# Tag filter `[peak, archetype]` selects:
+#   - DCFR checkpoints tagged 'peak' (currently just dcfr-peak-3000)
+#   - Shanky archetype entries tagged 'archetype'
+#
+# Registry expectations (build before launching):
+#   - dcfr-peak-3000 entry exists with tag 'peak'
+#   - Shanky archetype entries exist with tags ['shanky', 'archetype']
+#     and metadata.policy_type='shanky'
+#   See scripts/update_registry_shanky.py for the registry-update tool.
+#
+# Hypothesis: bot trained with style+strength diversity in opponent pool
+# generalizes better than pure DCFR self-play, measured by win rate vs
+# the standard eval pool (vanilla-200/400 + dcfr-100/200) AND vs
+# dcfr-overnight-3000 (the current strongest checkpoint).
+#
+# Success criterion: league-v2-1400 outperforms DCFR-1400 at matched
+# compute (the v1 negative result was -0.0031 worse at iter 1400).
+# Stretch goal: league-v2-3000 outperforms dcfr-overnight-3000 itself.
+#
+# Shakedown size first: 900 iters. If trajectory beats DCFR-matched-iter
+# at iter 600, extend to overnight; if not, kill and pivot to reinit.
+
+tag: phase4f_dcfr_league_v2
+
+abstraction_path: runs/abstraction_20260521_223018_retrofit/abstraction.pkl
+
+starting_stack: 1500
+big_blind: 100
+small_blind: 50
+payout_mode: double_up
+buy_in: 1.0
+first_share: 0.65
+
+tournament_structure_path: configs/ignition_double_up_6max_turbo.yaml
+num_paid: 3
+
+hidden_dim: [256, 256]
+n_iterations: 900               # SHAKEDOWN size; extend overnight if curve is healthy
+traversals_per_iter: 150
+train_steps_per_iter: 200
+batch_size: 64
+learning_rate: 0.001
+buffer_capacity: 500000
+
+cfr_variant: linear
+dcfr_exponent: 1.0
+
+# League play v2: 15% mix, recency-weighted, peak DCFR + archetypes only.
+league_mix: 0.15
+league_registry_path: configs/league/registry.json
+league_sample_strategy: recency
+league_recency_halflife: 5.0
+league_tag_filter: [peak, archetype]
+
+bucket_runouts: 30
+max_traversal_depth: 200
+seed: 2027                       # different seed from v1 (2026) for run-uniqueness
+
+checkpoint_every: 200
