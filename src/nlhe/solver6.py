@@ -159,6 +159,14 @@ class TrainConfig6Max:
     tournament_structure_path: Optional[str] = None
     num_paid: int = 3
 
+    # DCFR variants (Brown & Sandholm 2019). 'vanilla' preserves
+    # pre-DCFR behavior bit-for-bit. 'linear' weights each sample
+    # by t_i / T; 'discounted' uses (t_i / T) ** dcfr_exponent.
+    # Per-sample iteration tag is recorded by cfr6.traverse_6max
+    # via buf.add(..., iteration=ctx.iteration).
+    cfr_variant: str = "vanilla"
+    dcfr_exponent: float = 1.0
+
     seed: int = 2026
 
 
@@ -248,6 +256,35 @@ class DeepCFR6MaxSolver:
 
     # ---- Network training ----
 
+    def _dcfr_weights(self, iters):
+        """Per-sample DCFR weights for a batch.
+
+        Vanilla    -> None (caller falls back to unweighted mean).
+        Linear     -> w_i = t_i / T
+        Discounted -> w_i = (t_i / T) ** dcfr_exponent
+
+        Weights are normalized to sum to batch_size, preserving gradient
+        scale relative to the unweighted case. T defaults to max(1,
+        current iter) to keep weights bounded in [0, 1] during iter 1.
+
+        Mirrors HUNL src/nlhe/solver.py::_dcfr_weights verbatim.
+        """
+        variant = self.cfg.cfr_variant
+        if variant == "vanilla":
+            return None
+        if variant not in ("linear", "discounted"):
+            raise ValueError(
+                f"unknown cfr_variant={variant!r}; expected vanilla|linear|discounted"
+            )
+        T = max(1, self.iteration)
+        ratio = iters.float() / T
+        if variant == "linear":
+            w = ratio
+        else:
+            w = ratio ** self.cfg.dcfr_exponent
+        s = w.sum().clamp(min=1e-8)
+        return w * (w.shape[0] / s)
+
     def _train_advantage_net(self, seat: int) -> float:
         """One iteration of training on seat's advantage net.
 
@@ -264,15 +301,18 @@ class DeepCFR6MaxSolver:
 
         total_loss = 0.0
         for _ in range(self.cfg.train_steps_per_iter):
-            feats, targets, masks, _iters = buf.sample_batch(self.cfg.batch_size)
+            feats, targets, masks, iters = buf.sample_batch(self.cfg.batch_size)
             feats = feats.to(self.device)
             targets = targets.to(self.device)
             masks = masks.to(self.device)
+            iters = iters.to(self.device)
 
             preds = net(feats)
-            # MSE on legal-action subset, summed across actions, averaged across batch.
+            # MSE on legal-action subset, summed across actions, per-sample,
+            # then DCFR-weighted (vanilla -> None -> unweighted mean).
             per_sample = ((preds - targets) ** 2 * masks).sum(dim=1)
-            loss = per_sample.mean()
+            weights = self._dcfr_weights(iters)
+            loss = (weights * per_sample).mean() if weights is not None else per_sample.mean()
 
             opt.zero_grad()
             loss.backward()
