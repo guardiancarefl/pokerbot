@@ -1,0 +1,43 @@
+# Solver profiling config. Smallest viable CPU run.
+#
+# Goal: identify where time goes inside one full train() iteration.
+# Outputs (per scripts/profile_solver.py): cProfile call graph + top-30
+# cumulative-time + top-10 self-time tables.
+#
+# Sized to finish in ~2-3 min on CPU:
+#   - hidden_dim [32, 32]: small enough for CPU, big enough that adv-net
+#     training does real work
+#   - n_iterations 5: enough for one full seat rotation (6 seats) - 1, so
+#     we see steady-state cost not just iter-1 overhead
+#   - traversals_per_iter 20: small but representative
+#   - train_steps_per_iter 50: small but representative
+#
+# NOT for training. The resulting checkpoint is meaningless.
+
+tag: profile
+abstraction_path: runs/abstraction_20260521_223018_retrofit/abstraction.pkl
+
+starting_stack: 1500
+big_blind: 100
+small_blind: 50
+payout_mode: double_up
+buy_in: 1.0
+first_share: 0.65
+
+tournament_structure_path: configs/ignition_double_up_6max_turbo.yaml
+num_paid: 3
+
+hidden_dim: [32, 32]
+n_iterations: 5
+traversals_per_iter: 20
+train_steps_per_iter: 50
+batch_size: 32
+learning_rate: 0.001
+buffer_capacity: 50000
+
+cfr_variant: linear
+dcfr_exponent: 1.0
+
+bucket_runouts: 10
+max_traversal_depth: 200
+seed: 2026

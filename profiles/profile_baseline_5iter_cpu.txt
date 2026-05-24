@@ -1,0 +1,102 @@
+02:44:20  CPU forced: torch.cuda.is_available() = False
+02:44:20  config: TrainConfig6Max(starting_stack=1500, big_blind=100, small_blind=50, payout_mode='double_up', buy_in=1.0, first_share=0.65, hidden_dim=[32, 32], n_iterations=5, traversals_per_iter=20, train_steps_per_iter=50, batch_size=32, learning_rate=0.001, buffer_capacity=50000, bucket_runouts=10, max_traversal_depth=200, tournament_structure_path='configs/ignition_double_up_6max_turbo.yaml', num_paid=3, cfr_variant='linear', dcfr_exponent=1.0, seed=2026)
+02:44:20  loading abstraction: runs/abstraction_20260521_223018_retrofit/abstraction.pkl
+02:44:20  constructing solver (CPU)...
+02:44:21  profiling 5 iters under cProfile...
+02:45:08  profile complete: 47.7s for 5 iters (9.54s/iter)
+02:45:08  raw profile dumped to /tmp/solver6.prof
+02:45:08    visualize: snakeviz /tmp/solver6.prof  (if installed)
+  tournament mode: loaded ignition_double_up_6max_turbo (17 levels)
+DeepCFR6MaxSolver  device=cpu  feature_dim=236  payout_mode=double_up  payouts=[2.0, 2.0, 2.0]
+iter    1/5  trav=0  adv=  0.7422  bufs=(148, 0, 0, 0, 0, 0)  10.8s
+iter    2/5  trav=1  adv=  0.7178  bufs=(148, 189, 0, 0, 0, 0)  14.7s
+iter    3/5  trav=2  adv=  1.1288  bufs=(148, 189, 212, 0, 0, 0)  7.8s
+iter    4/5  trav=3  adv=  0.4240  bufs=(148, 189, 212, 159, 0, 0)  6.2s
+iter    5/5  trav=4  adv=  0.4253  bufs=(148, 189, 212, 159, 228, 0)  8.1s
+=== total: 0.8 min ===
+
+================================================================================
+Top 30 by CUMULATIVE time
+  (time spent in fn + everything it called; high cumtime = chain leading to expensive work)
+================================================================================
+         50086666 function calls (49987275 primitive calls) in 47.664 seconds
+
+   Ordered by: cumulative time
+   List reduced from 446 to 30 due to restriction <30>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.003    0.003   47.676   47.676 solver6.py:327(train)
+14092/100    0.355    0.000   46.798    0.468 cfr6.py:207(traverse_6max)
+     6844    0.105    0.000   44.383    0.006 infoset6.py:212(encode_from_parsed)
+     6844    0.045    0.000   44.201    0.006 infoset6.py:315(_get_bucket)
+     3440    0.556    0.000   44.090    0.013 abstraction.py:300(bucket_of)
+   571600    0.467    0.000   41.335    0.000 _stats_py.py:9695(wasserstein_distance)
+   571600   10.435    0.000   40.869    0.000 _stats_py.py:9873(_cdf_distance)
+  1143200    5.766    0.000   16.094    0.000 _stats_py.py:9960(_validate_distribution)
+  2858000    2.946    0.000    8.692    0.000 fromnumeric.py:71(_wrapreduction)
+  1714800    1.576    0.000    7.113    0.000 fromnumeric.py:2177(sum)
+  2286400    1.269    0.000    5.032    0.000 fromnumeric.py:53(_wrapfunc)
+  2882329    4.455    0.000    4.455    0.000 {method 'reduce' of 'numpy.ufunc' objects}
+  1143200    0.825    0.000    4.251    0.000 fromnumeric.py:2322(any)
+  1143200    0.622    0.000    3.461    0.000 fromnumeric.py:2512(cumsum)
+  1143200    0.588    0.000    2.781    0.000 fromnumeric.py:1025(argsort)
+   571600    2.421    0.000    2.750    0.000 function_base.py:1324(diff)
+     2858    0.076    0.000    2.079    0.001 abstraction.py:42(compute_hand_histogram)
+  1143200    2.035    0.000    2.035    0.000 {method 'cumsum' of 'numpy.ndarray' objects}
+    57160    0.030    0.000    1.498    0.000 evaluator.py:32(evaluate)
+    57160    0.301    0.000    1.462    0.000 evaluator.py:76(_seven)
+  1143200    1.403    0.000    1.403    0.000 {method 'argsort' of 'numpy.ndarray' objects}
+  1143200    1.262    0.000    1.262    0.000 {method 'searchsorted' of 'numpy.ndarray' objects}
+  2292116    1.178    0.000    1.178    0.000 {built-in method numpy.asarray}
+  1200360    0.620    0.000    1.161    0.000 evaluator.py:41(_five)
+  2858000    1.117    0.000    1.117    0.000 fromnumeric.py:72(<dictcomp>)
+        5    0.011    0.002    0.839    0.168 solver6.py:288(_train_advantage_net)
+     6844    0.053    0.000    0.812    0.000 networks6.py:107(predict_advantages)
+49658/7094    0.048    0.000    0.758    0.000 module.py:1775(_wrapped_call_impl)
+49658/7094    0.071    0.000    0.750    0.000 module.py:1783(_call_impl)
+     7094    0.016    0.000    0.726    0.000 solver.py:61(forward)
+
+
+
+================================================================================
+Top 20 by SELF time (tottime)
+  (time spent IN fn, excluding callees; high tottime = function to actually rewrite)
+================================================================================
+         50086666 function calls (49987275 primitive calls) in 47.664 seconds
+
+   Ordered by: internal time
+   List reduced from 446 to 20 due to restriction <20>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+   571600   10.435    0.000   40.869    0.000 _stats_py.py:9873(_cdf_distance)
+  1143200    5.766    0.000   16.094    0.000 _stats_py.py:9960(_validate_distribution)
+  2882329    4.455    0.000    4.455    0.000 {method 'reduce' of 'numpy.ufunc' objects}
+  2858000    2.946    0.000    8.692    0.000 fromnumeric.py:71(_wrapreduction)
+   571600    2.421    0.000    2.750    0.000 function_base.py:1324(diff)
+  1143200    2.035    0.000    2.035    0.000 {method 'cumsum' of 'numpy.ndarray' objects}
+  1714800    1.576    0.000    7.113    0.000 fromnumeric.py:2177(sum)
+  1143200    1.403    0.000    1.403    0.000 {method 'argsort' of 'numpy.ndarray' objects}
+  2286400    1.269    0.000    5.032    0.000 fromnumeric.py:53(_wrapfunc)
+  1143200    1.262    0.000    1.262    0.000 {method 'searchsorted' of 'numpy.ndarray' objects}
+  2292116    1.178    0.000    1.178    0.000 {built-in method numpy.asarray}
+  2858000    1.117    0.000    1.117    0.000 fromnumeric.py:72(<dictcomp>)
+  1143200    0.825    0.000    4.251    0.000 fromnumeric.py:2322(any)
+  1143200    0.622    0.000    3.461    0.000 fromnumeric.py:2512(cumsum)
+  1200360    0.620    0.000    1.161    0.000 evaluator.py:41(_five)
+  1143200    0.588    0.000    2.781    0.000 fromnumeric.py:1025(argsort)
+     3440    0.556    0.000   44.090    0.013 abstraction.py:300(bucket_of)
+  1198135    0.536    0.000    0.536    0.000 card.py:112(prime_product_from_hand)
+   571600    0.493    0.000    0.493    0.000 {method 'sort' of 'numpy.ndarray' objects}
+   571600    0.467    0.000   41.335    0.000 _stats_py.py:9695(wasserstein_distance)
+
+
+
+================================================================================
+INTERPRETATION GUIDE
+================================================================================
+  Look for:
+    - Traversal/CFR functions dominating cumtime -> parallel rollouts is the win
+    - Adv-net training functions dominating cumtime -> batch/network tuning is the win
+    - Encoder/abstraction functions in top-10 tottime -> overhead bug to fix BEFORE more compute
+    - OpenSpiel state copies in top-10 tottime -> structural issue, hard to fix
+    - torch primitives in top-10 tottime -> normal, focus on what calls them
