@@ -1,0 +1,64 @@
+# Phase 4f DCFR overnight: full-length DCFR-linear training run.
+#
+# Background: Session 11 shakedown (configs/six_max_phase4f_dcfr_linear_shakedown.yaml)
+# confirmed DCFR breaks the vanilla iter-200 plateau:
+#   DCFR-200 vs vanilla-200 at 5000 hands: +0.0105 +/- 0.0027 (3.9 sigma)
+#   DCFR-200 vs DCFR-100 at 2000 hands:    +0.0147 +/- 0.0045 (3.3 sigma)
+# (vs vanilla baseline plateau finding: vanilla-400 vs vanilla-200 = -0.0051 +/- 0.0044,
+# statistical noise / slight regression past iter 200.)
+#
+# Hypothesis for this run: DCFR's recency-weighted regret training keeps the
+# bot climbing well past iter 200. Target: a strong DCFR-3400 blueprint that
+# all future features (league play, subgame solving, within-match adaptation)
+# can be tested against as a real baseline.
+#
+# All hyperparameters identical to configs/six_max_phase4f_overnight.yaml except:
+#   tag, cfr_variant, dcfr_exponent.
+#
+# Expected wall-clock: ~8 hours on RTX PRO 4000 Blackwell at ~8-9 s/iter
+# (shakedown stabilized at ~7.5 s/iter; overnight at higher buffer load
+# usually trends slightly slower).
+#
+# Use:
+#   python -m scripts.train_6max --config configs/six_max_phase4f_dcfr_overnight.yaml
+
+tag: phase4f_dcfr_linear_overnight
+abstraction_path: runs/abstraction_20260521_223018_retrofit/abstraction.pkl
+
+# Game shape (ignored in tournament mode but required by dataclass).
+starting_stack: 1500
+big_blind: 100
+small_blind: 50
+payout_mode: double_up
+buy_in: 1.0
+first_share: 0.65
+
+# Tournament-aware training (identical to baseline overnight).
+tournament_structure_path: configs/ignition_double_up_6max_turbo.yaml
+num_paid: 3
+
+# Training hyperparameters (identical to baseline overnight).
+hidden_dim: [256, 256]
+n_iterations: 3400
+traversals_per_iter: 150
+train_steps_per_iter: 200
+batch_size: 64
+learning_rate: 0.001
+buffer_capacity: 500000
+
+# DCFR (Brown & Sandholm 2019): per-sample weight = t_i / T.
+# Same setting that produced the +0.0105 plateau-breaking signal in the
+# shakedown. Discounted variant (exponent>1.0) is the next experiment if
+# linear plateaus before iter 3400.
+cfr_variant: linear
+dcfr_exponent: 1.0
+
+# Encoder + solver behavior.
+bucket_runouts: 30
+max_traversal_depth: 200
+seed: 2026
+
+# Checkpoint every 200 iters for ~17 checkpoints across the run. Each is
+# ~9 MB (slim mode); total disk ~150 MB. Granular trajectory tracking
+# without quota stress.
+checkpoint_every: 200
