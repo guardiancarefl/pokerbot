@@ -148,31 +148,48 @@ becomes, for v=2 (v×k=8), `≈ 9.6 s` on CPU — the figure the reviewer cited.
 does not fit a 1.5 s Z, so **the production path moves to a rented GPU and the
 CPU path becomes fallback / ablation**.
 
-**Measured per-step floor (this matters more than the network cost).** A sandbox
-measurement (representative of Contabo CPU) of one rollout decision-step's
-state-prep — `parse_state_6max` + `_build_view_6max` + `discretize_legal_actions`
-— is **≈ 0.9 ms/step**, dominated by `parse_state_6max`'s regex parse of the
-observation string. `state.child()` is ≈ 0.1 ms; `information_state_string` is
-≈ 0.001 ms. This state-prep is **CPU-bound and GPU-invariant**: a GPU drops the
-network forward (~0.3 ms CPU → ~0.05 ms A100/H100) but does nothing for the
-0.9 ms parse. The original 0.3 ms-only budget undercounted real per-step cost by
-~4×. Honest per-step cost is `state_prep + forward`:
+**Measured per-step floor — RE-DECOMPOSED (corrected attribution, see the
+measurement-discipline note below).** The "~0.9 ms/step state-prep" total is
+correct, but the earlier diagnostic **mis-attributed it to `parse_state_6max`'s
+regex**. Re-measured at implementation start (same state, 5,000 iters, production
+game `six_max_sng(starting_stack=10000)`), one rollout decision-step's
+`parse + view + discretize` decomposes as:
 
-- CPU: ~0.9 + 0.3 = **~1.2 ms/step**
-- GPU (network batched/cheap, parse unchanged): ~0.9 + ~0 = **~0.9 ms/step**
+| Component | Cost/step | Where the time goes |
+|---|---|---|
+| **full parse+view+discretize** | **~0.90 ms** | (the cited total) |
+| `parse_state_6max` | **0.008 ms** | regex parse — negligible, **not** the bottleneck |
+| `_build_view_6max` | **0.64 ms** | `set(legal)`, `[a for a in legal if a>=2]`, `min/max` over the **~9,803-element** `legal_actions()` (cfr6.py:161–166) |
+| `discretize_legal_actions` | 0.10–0.24 ms | builds `set()` over the same ~9,803 ints |
+| `list(legal_actions())` | 0.12 ms | `legal_actions()` returns ~9,803 chip ints; called ~2× per step (view + discretize) |
 
-So **GPU alone barely helps** — the parse dominates. BR-form total work is
-`total_steps = L × (v×k+1) × M × avg_steps`. For L=50, v=2, M=10, avg_steps=8:
-`50 × 90 × 8 = 36,000 steps`. At 0.9 ms that is ~32 s even on GPU. **The required
-optimization is cutting per-step state-prep, not just the network:**
+The floor is **O(n) Python operations over the ~9,803-element legal-action list**
+(`bettingAbstraction=fullgame` enumerates every chip amount), **not** the regex
+and **not** the network. `state.child()` is ≈ 0.1 ms; `information_state_string`
+≈ 0.001 ms. The network forward (~0.3 ms CPU / ~0.05 ms GPU) is a *separate*
+additive cost on top of state-prep.
 
-1. **Cache `parse_state_6max` by state** within the precompute (the v×k passes
-   revisit the same early-street infosets).
-2. **Batch the encoder forward** across a leaf's live rollouts (lockstep), so the
-   GPU forward is ~free per step.
-3. A lighter rollout-only parse that skips fields the bias path does not read.
+Crucially, unlike a regex floor, **this overhead is largely eliminable** (Q4.5):
+`legal_actions()` is sorted ascending, so `min_bet`/`max_bet` and fold/call
+legality come from head/tail inspection — no 9,803-element `set`/list-comp/min/max
+needed. Measured, `_build_view_6max`'s internal logic drops **0.64 ms → 0.11 ms**
+with identical output. So the corrected per-step cost is `state-prep (fast) +
+forward`:
 
-Target per-step ≈ **0.15 ms** (parse cached/lightened + batched GPU forward).
+- CPU: ~0.2–0.3 (fast state-prep) + 0.3 (forward) = **~0.5–0.6 ms/step**
+- GPU (forward batched across a leaf's lockstep rollouts): ~0.2–0.3 + ~0 =
+  **~0.2–0.3 ms/step**
+
+The remaining state-prep floor is the single unavoidable `legal_actions()` native
+call (~0.1 ms) plus the cheap head/tail logic; it is CPU-bound (GPU does not help
+it), but it is now small, not the dominant term. BR-form total work is
+`total_steps = L × (v×k+1) × M × avg_steps`; the required optimization is the
+sorted-legal-actions fast path (Q4.5), not parse caching.
+
+Target per-step state-prep ≤ **0.30 ms** (single shared `legal_actions()` ~0.13 ms
++ fast view ~0.02 ms on the cached list + fast discretize ~0.02–0.10 ms);
+avoiding the `set()` in discretize via bisect membership on the sorted list aims
+lower, toward ~0.15 ms. Stage A measures the achieved number against this gate.
 
 **Revised budget — X raised to 6.0 s** (production = rented GPU, BR leaves):
 
@@ -184,82 +201,109 @@ Target per-step ≈ **0.15 ms** (parse cached/lightened + batched GPU forward).
 | Headroom | — | 0.5 s |
 
 The increase from 4 s is driven by (a) the `v×k` BR multiplier and (b) the
-measured CPU-bound parse floor that GPU does not remove. 6 s/decision is still
+state-prep floor over the fullgame `legal_actions()` list. 6 s/decision is still
 acceptable for non-turbo online 6-max SNG. Production-fit arithmetic (Z ≤ 3.0 s),
-keeping the tree shallow so `L≤30` with `M=8`:
+keeping the tree shallow so `L≤30`, with the fast-view per-step cost (Q4.5):
 
 ```
-total_steps = L × (v×k+1) × avg_steps × M        (v=2)
-            = 30 ×    9    ×    8     × 8  = 17,280 steps
-Z = 17,280 × 0.15 ms (optimized GPU step) ≈ 2.6 s   ✓ under 3.0 s
+total_steps = L × (v×k+1) × avg_steps × M                  (v=2)
+M=8 : 30 × 9 × 8 × 8 = 17,280 steps × 0.30 ms ≈ 5.2 s   ✗ over 3.0 s
+M=5 : 30 × 9 × 8 × 5 = 10,800 steps × 0.30 ms ≈ 3.2 s   ≈ at the gate
+M=5 + bisect-discretize (~0.18 ms): 10,800 × 0.18 ≈ 1.9 s ✓
 ```
 
-Without the state-prep optimization (0.9 ms/step): `17,280 × 0.9 ms ≈ 15.6 s` —
-does not fit; that is the work item the implementation must close.
+So at the ≤0.30 ms gate the production config needs `M=5` (Q4.5(c) fallback #2)
+and benefits from the bisect-discretize variant; `M=8` only fits if state-prep
+reaches ~0.18 ms. **The real per-step number is set by Stage A's end-to-end
+measurement**, and the `M`/`L` knobs (Q4.5(c)) are pre-authorized to absorb the
+gap. Without the fast path (0.9 ms/step): `17,280 × 0.9 ms ≈ 15.6 s` — infeasible;
+that is the work item Stage A closes.
 
-**CPU fallback / ablation cost** (same config at 1.2 ms/step): BR-on-CPU is
-~15 s (debug-only); `PROFILE_SAMPLE` drops the `v×k` factor —
-`30 × 1 × 8 × 8 = 1,920 steps × 1.2 ms ≈ 2.3 s`, so the CPU fallback uses
-PROFILE_SAMPLE, not BR. A **hard wall-clock guard** (`time_budget_s`) degrades M,
-then falls back to Option-A ICM (Q5) for unfinished leaves rather than
-overrunning — the session-12 safeguard, preserved.
+**CPU fallback / ablation cost:** `PROFILE_SAMPLE` drops the `v×k` factor —
+`30 × 1 × 8 × 8 = 1,920 steps × 0.6 ms ≈ 1.2 s` (fast-view CPU step incl forward),
+so the CPU fallback uses PROFILE_SAMPLE, not BR. A **hard wall-clock guard**
+(`time_budget_s`) degrades M, then falls back to Option-A ICM (Q5) for unfinished
+leaves rather than overrunning — the session-12 safeguard, preserved.
 
 ---
 
-## Q4.5 — Parse-state optimization (in scope for sub-step 2)
+## Q4.5 — View/discretize fast path (in scope for sub-step 2)
 
-The 0.9 ms parse floor is the binding constraint on the 6 s budget under
-`BEST_RESPONSE`, so closing it is **sub-step 2 scope, not a deferred work item.**
+> **Measurement discipline.** The performance numbers in this doc were
+> re-decomposed at the start of implementation (commit
+> `docs(b1c): correct leaf-eval cost decomposition …`) and the attribution
+> corrected — the bottleneck is view/discretize over the fullgame
+> `legal_actions()` list, not `parse_state_6max`'s regex. Going forward: **any
+> number that gates a design decision is re-measured with attribution before code
+> lands against it.** Numbers in design docs are *claims* until measured fresh.
 
-### (a) The constraint
+The ~0.9 ms/step state-prep floor is the binding constraint on the 6 s budget
+under `BEST_RESPONSE`, so closing it is **sub-step 2 scope, not a deferred work
+item.**
 
-`parse_state_6max` is **≈ 0.9 ms/step on CPU, regex-bound, and GPU-invariant**
-(measured, Q4). Under `BEST_RESPONSE` with v=2, k=4, M=8 the leaf-eval cost is
-dominated by *parse*, not by the network forward (~0.3 ms CPU, ~0.05 ms GPU):
-parse is ~3× the CPU forward and ~18× the GPU forward. An A100/H100 does nothing
-for it — renting a GPU without cutting parse leaves the budget at ~15 s and the
-whole BR design infeasible. The network speedup is necessary but not sufficient;
-the parse cut is the load-bearing optimization.
+### (a) The constraint (corrected)
 
-### (b) The fix — incremental parsing during rollout (Path B)
+The floor is **not** parse. Per Q4's decomposition: `_build_view_6max` ≈ 0.64 ms
+and `discretize_legal_actions` ≈ 0.10–0.24 ms, both driven by O(n) Python
+operations (`set(legal)`, `[a for a in legal if a>=2]`, `min/max`) over the
+**~9,803-element** `legal_actions()` that `bettingAbstraction=fullgame` returns,
+plus a duplicated `legal_actions()` call (~0.12 ms) — view and discretize each
+fetch it. `parse_state_6max` is 0.008 ms (negligible). The network forward (~0.3 ms
+CPU / ~0.05 ms GPU) is separate. The GPU speeds only the forward; the state-prep
+floor is CPU Python-list overhead — but it is **eliminable**, not a hard floor.
 
-During a single MC rollout, most parsed fields are **invariant** from step to
-step: private hole cards (fixed for the hand), payouts, blind structure, and
-starting stacks. The **mutable** fields are only: pot total, per-seat
-contributions, action history, current player, board cards (and those change
-only on a chance step), and the folded / all-in sets.
+### (b) The fix — sorted-legal-actions fast path (`src/nlhe/fast_view.py`)
 
-Build a `ParsedStateDelta` mechanism: run the full `parse_state_6max` **once** at
-the leaf state, then after each `state.apply_action(...)` in the rollout
-**incrementally update only the mutable fields** rather than re-running the regex
-parse. The action just applied plus the resulting state's cheap native accessors
-(`current_player()`, `legal_actions()`, and `chance_outcomes()` on chance steps)
-supply everything the update needs; the board delta is applied only when the step
-was a chance node. Target: **~0.9 ms/step → ~0.1–0.15 ms/step**, which restores
-the 6 s GPU budget at L=50, M=8 without further multiplicand cuts.
+`legal_actions()` is **sorted ascending** (`[0, 1, 200, 201, …, 10000]`; verified).
+So the view's `min_bet`/`max_bet` and fold/call legality come from head/tail
+inspection, with no 9,803-element `set`/list-comp/min/max:
+
+- `min_bet` = first element ≥ 2 (a short scan past the ≤2 head entries);
+- `max_bet` = last element (if ≥ 2);
+- fold/call legality = inspect the 1–2-element head (mirroring exactly what
+  `_build_view_6max` computes at cfr6.py:154–166 — *verify against that code, do
+  not assume the head layout*).
+
+`discretize_legal_actions` membership checks (does chip `c` ∈ legal?) become
+`bisect` lookups on the sorted list instead of building a 9,803-element `set`.
+And `legal_actions()` is called **once** per step and shared between the view and
+discretize consumers. Measured: `_build_view_6max` internal logic
+**0.64 ms → 0.11 ms** with identical output. Target full state-prep ≤ **0.30 ms**
+(single `legal_actions()` ~0.13 ms + fast view ~0.02 ms + fast discretize
+~0.02–0.10 ms), aiming toward ~0.15–0.18 ms with bisect-discretize.
+
+The fast path must produce **field-by-field-identical** output to
+`_build_view_6max` + `discretize_legal_actions` on every input — that exact-equality
+invariant is the Stage A test gate.
 
 ### (c) Fallback plan if (b) underperforms
 
-If incremental parsing only reaches ~0.3–0.4 ms/step (not ~0.15 ms), the budget
-math must adjust. Options, **in order of preference**:
+If the fast path lands above the ≤0.30 ms gate, adjust the budget, **in order of
+preference**:
 
 1. **Cut L from 50 → 30** (depth-2 trees with tighter chance subsampling). First
    choice — fewer leaves, no per-leaf fidelity loss.
 2. **Cut M from 8 → 5** (acceptable variance increase per the Q4 stderr framing).
 3. **Raise X from 6 s → 8 s** (last resort — slower per-decision).
 
-Do **not** pre-commit to which. Measure incremental parsing first, then decide and
-**record the decision in the implementation commit message.**
+Measure the fast path first, then decide and **record the decision in the
+implementation commit message.**
 
-### (d) Out of scope for sub-step 2: full Path A rewrite
+### (d) The view optimization is broadly useful; scope is contained
 
-Path A — bypass `information_state_string` / observation-string parsing entirely
-and extract fields directly from native OpenSpiel state methods — would also
-speed up `traverse_6max` and pay back at *training* time, not just decision time.
-That makes it a separate, larger engineering task with its own validation surface.
-**Sub-step 2 does Path B only.** Path A is filed as a future optimization in
-`NEXT_SESSION.md`, to be picked up whenever blueprint-training compute (not
-decision-time latency) becomes the bottleneck.
+`_build_view_6max` is on the hot path of **every** consumer that discretizes a
+fullgame state: the CFR walker `traverse_6max` (cfr6.py — TRAINING time),
+`subgame.py`, `pushfold_policy.py`, `scripted_bots/policy.py`,
+`scripts/eval_pool.py`, `scripts/eval_6max_self_play.py`; `discretize_legal_actions`
+adds `solver.py` and `policy_adapter.py`. Folding the fast path into the canonical
+`_build_view_6max` would speed all of them, including training.
+
+To keep blast radius contained, **sub-step 2 ships the fast path as a parallel
+module `src/nlhe/fast_view.py`** consumed only by the leaf evaluator; the canonical
+`_build_view_6max` is untouched. A follow-up to fold the optimization into the
+canonical path (and re-point all consumers) is **filed for after sub-step 2 closes**
+(NEXT_SESSION.md). The earlier "Path A full parse rewrite" note is dropped: parse
+is 0.008 ms, so rewriting it is not worth doing at any priority.
 
 ---
 
@@ -584,13 +628,19 @@ increase are not buying robustness, and we revert to PROFILE_SAMPLE (or revisit
   1 (average); `(v×k+1) × M` rollouts; v is typically 1–2 after excluding folded
   and all-in seats.
 - **Budget X raised to 6 s** (GPU production): Y 0.5 + Z 3.0 + W 2.0 + 0.5
-  headroom. **Measured** per-step state-prep ≈ 0.9 ms (parse-dominated,
-  GPU-invariant) is the real floor — GPU speeds the network but not the parse.
-- **Parse optimization is sub-step 2 scope, not a deferred item (Q4.5).**
-  Incremental parsing (Path B: parse once at the leaf, delta-update mutable fields
-  per rollout step) targets ~0.9 → ~0.15 ms/step to restore the 6 s budget;
-  fallbacks (cut L, then M, then raise X) measured-then-decided. Full Path A
-  rewrite is out of scope (filed in NEXT_SESSION.md).
+  headroom. **Measured (re-decomposed)** per-step state-prep ≈ 0.9 ms is dominated
+  by `_build_view_6max` (0.64 ms) + `discretize` (0.10–0.24 ms) — O(n) Python ops
+  over the ~9,803-element fullgame `legal_actions()` — **not** the regex parse
+  (0.008 ms). The forward (~0.3 ms CPU / ~0.05 ms GPU) is separate.
+- **View/discretize fast path is sub-step 2 scope (Q4.5).** Exploit the
+  sorted-ascending `legal_actions()` for head/tail `min_bet`/`max_bet` + bisect
+  membership, and call `legal_actions()` once shared between view and discretize:
+  `_build_view_6max` logic 0.64 → 0.11 ms (identical output). Gate ≤ **0.30 ms**
+  (was 0.15 ms under the wrong cost model); fallbacks (cut L, then M, then raise X)
+  measured-then-decided. Ships as parallel `src/nlhe/fast_view.py`; folding it into
+  canonical `_build_view_6max` (benefits the CFR walker + all view consumers) is
+  filed for after sub-step 2. The old "Path A parse rewrite" is dropped (parse is
+  0.008 ms).
 - **ICM via Option B** (rollout → `state.returns()` → `icm_adjust_returns`), with
   an Option-A short-circuit when `is_itm()` (no accuracy loss, pure speed).
   *(unchanged)*

@@ -22,13 +22,16 @@ Build to the approved design. Load-bearing points:
    2018 single-pass approximation), NOT vs hero's iteration-k subgame strategy —
    this is what keeps leaf values cacheable-exact across CFR iterations
    (compute once per decision, not Z×W).
-3. **Parse optimization (Path B) is IN SCOPE** (Q4.5). Implement `ParsedStateDelta`:
-   parse once at the leaf, then incrementally update only the mutable fields
-   (pot / contributions / history / current player / board on chance steps /
-   folded+all-in sets) after each rollout step. Target ~0.9 → ~0.15 ms/step. If it
-   lands only at ~0.3–0.4 ms/step, apply the Q4.5(c) fallback **in order** (cut L
-   50→30, then M 8→5, then raise X 6→8 s) and **record the chosen knob in the
-   implementation commit message.**
+3. **View/discretize fast path is IN SCOPE** (Q4.5). The ~0.9 ms/step floor is
+   `_build_view_6max` (0.64 ms) + `discretize` (0.10–0.24 ms) doing O(n) Python ops
+   over the ~9,803-element fullgame `legal_actions()` — **not** the regex parse
+   (0.008 ms; the earlier attribution was wrong, corrected in the design doc).
+   Build `src/nlhe/fast_view.py`: exploit the sorted-ascending `legal_actions()`
+   (head/tail `min_bet`/`max_bet`, bisect membership), call `legal_actions()` once
+   shared between view and discretize, with field-identical output to the canonical
+   path. Gate ≤ 0.30 ms/step. If it lands above, apply the Q4.5(c) fallback **in
+   order** (cut L 50→30, then M 8→5, then raise X 6→8 s) and **record the chosen
+   knob in the implementation commit message.**
 4. **Q11 two-level ablation gates sub-step 2 completion.** Level 1 (leaf-only) and
    Level 2 (decision-level via a **stub one-iteration root regret update** — itself
    a sub-step 2 deliverable; checks BR yields a flatter / more-mixed root policy
@@ -53,13 +56,18 @@ Build to the approved design. Load-bearing points:
    handle the ALLIN→CALL translation above).
 5. Sub-step 6 — Level-3 pool ablation (BR vs PROFILE_SAMPLE vs blueprint).
 
-## Future optimization (NOT sub-step 2): Path A parse rewrite
+## Follow-up (after sub-step 2 closes): fold fast_view into the canonical path
 
-Bypass `information_state_string` / observation-string parsing entirely and read
-fields directly from native OpenSpiel state methods. Benefits `traverse_6max` at
-TRAINING time too, not just decision-time leaf eval — so it's a separate task with
-its own validation surface. Pick up when blueprint-training compute (not
-decision-time latency) becomes the bottleneck.
+Sub-step 2 ships the view/discretize optimization as a parallel `fast_view.py` to
+contain blast radius. The follow-up is to fold it into the canonical
+`_build_view_6max` + `discretize_legal_actions` and re-point all consumers
+(`traverse_6max` at TRAINING time, `subgame.py`, `pushfold_policy.py`,
+`scripted_bots/policy.py`, `solver.py`, `policy_adapter.py`, `eval_pool.py`,
+`eval_6max_self_play.py`). Its own task with its own validation surface — the
+exact-equality tests from Stage A become the regression guard.
+
+(The old "Path A parse rewrite" idea is dropped: `parse_state_6max` is 0.008 ms,
+not worth optimizing at any priority.)
 
 ## Docs map
 

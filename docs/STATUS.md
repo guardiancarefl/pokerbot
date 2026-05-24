@@ -31,8 +31,9 @@
 ## Next up (sub-step 2 deliverables)
 1. `subgame_leaf.py`: BEST_RESPONSE (default) + PROFILE_SAMPLE leaf evaluator;
    6-vector ICM-equity values; `SubgameNode.leaf_value` field; `LeafEvalContext`.
-2. Path B incremental parsing (`ParsedStateDelta`) — in scope per Q4.5; record the
-   fallback knob chosen if it underperforms.
+2. View/discretize fast path (`src/nlhe/fast_view.py`) — in scope per Q4.5;
+   sorted-legal-actions fast path, gate ≤ 0.30 ms/step; record the fallback knob
+   chosen if it underperforms.
 3. Stub one-iteration root regret update (for Q11 Level 2).
 4. Q11 Level 1 (leaf-only) + Level 2 (decision-level) ablations — both gate
    sub-step 2 completion.
@@ -44,15 +45,18 @@
 - Sub-step 6: Level-3 pool ablation (BR vs PROFILE_SAMPLE vs blueprint).
 
 ## Known issues / open questions
-- `parse_state_6max` regex parse is ~0.9 ms/step (CPU-bound, GPU-invariant) — the
-  binding constraint on the BR-mode decision budget. Path B (sub-step 2) targets
-  ~0.15 ms/step; full Path A rewrite deferred (see `NEXT_SESSION.md`).
+- The ~0.9 ms/step state-prep floor is `_build_view_6max` (0.64 ms) + `discretize`
+  (0.10–0.24 ms) doing O(n) Python ops over the ~9,803-element fullgame
+  `legal_actions()` — NOT the regex parse (0.008 ms; earlier attribution corrected
+  2026-05-24). The fix is the sorted-legal-actions fast path (`fast_view.py`,
+  sub-step 2 Stage A), gate ≤ 0.30 ms/step; folding it into canonical
+  `_build_view_6max` is filed as a follow-up (see `NEXT_SESSION.md`).
 - BR-vs-blueprint robustness gain is an empirical bet, unproven until the Q11
   Level-3 pool ablation runs (post-sub-step-5).
 - `SESSION_LOG.md` documents through Session 9 only; Sessions 10–12 live in commit
   messages / STATUS, not back-filled. Session 13+ summarized in `docs/sessions/`.
 
 ## Decisions deferred
-- Path B fallback knob (cut L / cut M / raise X) — measure incremental parsing first.
+- Fast-path fallback knob (cut L / cut M / raise X) — measure `fast_view.py` first.
 - α (bias strength, default 3.0) and k tuning — revisit if the Q11 Level-3 ablation
   underwhelms.
