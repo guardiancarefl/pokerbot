@@ -1,58 +1,69 @@
 # Next Session Pickup Notes
 
-## Where the project stands at end of session 12
+## Where the project stands at end of session 13
 
-**Committed and pushed to origin (`phase4f-league`):**
-- Phase 5 archetype runtime: parser + runtime + policy adapter, 147 tests, 36 Shanky profiles loadable
-- League v2: LeaguePool with Shanky-dispatch, 28-entry registry, league-v2-600 baseline measured (tie with DCFR-matched-iter)
-- Shanky tournament eval vs DCFR-3000 (37 archetype matchups, all losses; 5 statistical ties)
-- **Subgame tree builder (Track B1c sub-step 1)** at `920e95f` — depth-limited tree construction, 15 tests passing
+B1c (depth-limited subgame solving) is mid-build:
 
-## What's NOT yet working (the gap to fix next session)
+- **Sub-step 1.5 — tree builder: DONE and correct** (`2be87df`). Enumerates the
+  `DiscreteAction` set via the same path as `cfr6.traverse_6max`; 20/20 tests
+  pass against the production game `six_max_sng(starting_stack=10000)`.
+- **Sub-step 2 — leaf evaluator: DESIGN APPROVED, not yet implemented.** Full
+  design in `docs/SUBGAME_LEAF_DESIGN.md` (commits 89ec957 → 4029757 → 98edf14).
 
-The subgame tree builder passes its own tests but has a critical bug exposed when used with the real production game:
+## Sub-step 2 is the next deliverable — implement `src/nlhe/subgame_leaf.py`
 
-**Bug:** `build_subgame_tree()` iterates raw `state.legal_actions()` to enumerate children at decision nodes. With OpenSpiel's `bettingAbstraction=fullgame` (what `six_max_sng()` uses), this returns ~10,000 chip-action integers — one per possible chip amount. The tree therefore explodes to 600+ leaves at depth=1 instead of the expected 3-5.
+Build to the approved design. Load-bearing points:
 
-**Fix:** The existing CFR walker in `src/nlhe/cfr6.py` (lines 290-350) handles this correctly by calling `discretize_legal_actions(legal_chip, view)` from `src/nlhe/actions.py`. That maps the ~10,000 raw chip actions to the 7-action `DiscreteAction` enum. The tree builder needs to use the same discretization at decision nodes.
+1. **BEST_RESPONSE is the production form**; PROFILE_SAMPLE is the fallback /
+   ablation mode (`LeafEvalContext.mode`). Both must be implementable; default is
+   BEST_RESPONSE. Leaf value = 6-vector ICM-equity deltas (drop-in for
+   `SubgameNode.terminal_returns`, stored on a new `SubgameNode.leaf_value` field).
+2. **Best-response is computed vs hero's BLUEPRINT at the root** (Brown/Sandholm
+   2018 single-pass approximation), NOT vs hero's iteration-k subgame strategy —
+   this is what keeps leaf values cacheable-exact across CFR iterations
+   (compute once per decision, not Z×W).
+3. **Parse optimization (Path B) is IN SCOPE** (Q4.5). Implement `ParsedStateDelta`:
+   parse once at the leaf, then incrementally update only the mutable fields
+   (pot / contributions / history / current player / board on chance steps /
+   folded+all-in sets) after each rollout step. Target ~0.9 → ~0.15 ms/step. If it
+   lands only at ~0.3–0.4 ms/step, apply the Q4.5(c) fallback **in order** (cut L
+   50→30, then M 8→5, then raise X 6→8 s) and **record the chosen knob in the
+   implementation commit message.**
+4. **Q11 two-level ablation gates sub-step 2 completion.** Level 1 (leaf-only) and
+   Level 2 (decision-level via a **stub one-iteration root regret update** — itself
+   a sub-step 2 deliverable; checks BR yields a flatter / more-mixed root policy
+   than PROFILE_SAMPLE on ~50 root decisions). Level 3 (full league-v2-600 pool,
+   5,000 hands) waits until after sub-step 5.
+5. **ICM Option B** (rollout → `state.returns()` → `icm_adjust_returns`) with the
+   `is_itm()` Option-A short-circuit. **BR ties → lowest bias index.**
 
-**What needs to change in `src/nlhe/subgame.py`:**
-1. At decision nodes, call `discretize_legal_actions` to get the discrete action set (not raw `state.legal_actions()`)
-2. Branch on each discrete action's corresponding chip action
-3. Store the DiscreteAction enum value (not the raw chip int) as `action_from_parent` for clarity in CFR
-4. Re-test against the real game: `pyspiel.load_game(six_max_sng(starting_stack=10000))`, NOT against a hand-written ACPC gamedef
+## Carry-forward for sub-step 5 (SubgamePolicy)
 
-**What `tests/test_subgame.py` needs:**
-- Existing tests use `load_universal_poker_from_acpc_gamedef` with a hand-written gamedef. They passed but didn't catch the bug because that gamedef has different action structure than the production wrapper.
-- New tests must use `pyspiel.load_game(six_max_sng(...))` to validate against the actual game.
+- **`DiscreteAction.ALLIN` → chip 0 = FOLD when facing a shove with no re-raise
+  room** (documented `b2dded5`). When SubgamePolicy selects ALLIN and translates
+  back to a game action in that state, it must map to **CALL (1)**, not the chip-0
+  fold. Do not let the alias ship a fold where the policy meant all-in.
 
-## Why the leaf evaluator was reverted
+## Remaining B1c roadmap
 
-The leaf evaluator (`src/nlhe/subgame_leaf.py`, sub-step 2) was built but reverted because it depends on the tree builder being correct for the real game. Once the tree builder fix is in and validated, the leaf evaluator can be rebuilt — its logic was mostly right (Brown/Sandholm-style k=4 biased continuation strategies, MC rollouts, ICM-adjusted payoffs). The rebuild will be faster because the architecture is already understood.
+1. **Sub-step 2 — leaf evaluator** (NEXT; this session's deliverable).
+2. Sub-step 3 — subgame CFR loop (replaces the Level-2 stub with the real solver).
+3. Sub-step 4 — policy extraction (hero's refined root action distribution).
+4. Sub-step 5 — SubgamePolicy wrapper (conform to `eval_pool.py` `Policy`;
+   handle the ALLIN→CALL translation above).
+5. Sub-step 6 — Level-3 pool ablation (BR vs PROFILE_SAMPLE vs blueprint).
 
-## Roadmap from here
+## Future optimization (NOT sub-step 2): Path A parse rewrite
 
-1. **Fix tree builder** to use `discretize_legal_actions`. Test against real game. Commit.
-2. **Rebuild leaf evaluator** (sub-step 2). Test against real leaf states.
-3. **Subgame CFR loop** (sub-step 3). Standard regret matching over the tree, with leaf values from the leaf evaluator.
-4. **Policy extraction** (sub-step 4). Read out hero's refined action distribution at the root infoset.
-5. **SubgamePolicy wrapper** (sub-step 5). Integration with the existing eval pipeline.
-6. **Eval against baseline** (sub-step 6). Measure if subgame-augmented dcfr-overnight-3000 beats pure dcfr-overnight-3000 on the standard pool.
+Bypass `information_state_string` / observation-string parsing entirely and read
+fields directly from native OpenSpiel state methods. Benefits `traverse_6max` at
+TRAINING time too, not just decision-time leaf eval — so it's a separate task with
+its own validation surface. Pick up when blueprint-training compute (not
+decision-time latency) becomes the bottleneck.
 
-Each sub-step is its own session deliverable. None should be attempted without first reading the relevant existing code end-to-end.
+## Docs map
 
-## Key lessons from session 12
-
-1. **Read before writing.** Don't assume what's in the codebase. Grep first, read the relevant files end-to-end, then write code. Two architectural mistakes this session were rooted in skipping that step.
-2. **Test against the production game, not stand-ins.** Tests that use simpler game definitions can pass while the code is broken for the real game.
-3. **Runtime CFR with MC equity is not deployable.** Push/fold work hit this wall. Subgame solver must follow the same lesson: precompute where possible, never run unbounded MC inside the hot path.
-4. **ICM-correct training is already in the codebase** via `src/nlhe/icm_returns.py` integrated with `src/nlhe/cfr6.py`. dcfr-overnight-3000 was trained ICM-correct. Don't claim ICM is missing without verifying.
-
-## Files to read end-to-end before touching subgame code
-
-- `src/nlhe/cfr6.py` (especially `traverse_6max` lines 207-417, the existing tree walker)
-- `src/nlhe/actions.py` (the `DiscreteAction` enum + `discretize_legal_actions`)
-- `src/nlhe/biased_policy.py` (the BiasedBlueprint that leaf eval will use)
-- `src/nlhe/icm_returns.py` (ICM transformation already wired into training)
-- `scripts/eval_pool.py` (CheckpointPolicy interface — what subgame policy must conform to)
-
+- `docs/SUBGAME_LEAF_DESIGN.md` — the approved sub-step 2 design (read first).
+- `docs/sessions/session_13_summary.md` — this session.
+- `docs/sessions/README.md` — the per-session-summary convention.
+- `docs/STATUS.md` — current snapshot. `docs/DECISIONS.md` — locked choices.
