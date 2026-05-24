@@ -206,6 +206,63 @@ overrunning — the session-12 safeguard, preserved.
 
 ---
 
+## Q4.5 — Parse-state optimization (in scope for sub-step 2)
+
+The 0.9 ms parse floor is the binding constraint on the 6 s budget under
+`BEST_RESPONSE`, so closing it is **sub-step 2 scope, not a deferred work item.**
+
+### (a) The constraint
+
+`parse_state_6max` is **≈ 0.9 ms/step on CPU, regex-bound, and GPU-invariant**
+(measured, Q4). Under `BEST_RESPONSE` with v=2, k=4, M=8 the leaf-eval cost is
+dominated by *parse*, not by the network forward (~0.3 ms CPU, ~0.05 ms GPU):
+parse is ~3× the CPU forward and ~18× the GPU forward. An A100/H100 does nothing
+for it — renting a GPU without cutting parse leaves the budget at ~15 s and the
+whole BR design infeasible. The network speedup is necessary but not sufficient;
+the parse cut is the load-bearing optimization.
+
+### (b) The fix — incremental parsing during rollout (Path B)
+
+During a single MC rollout, most parsed fields are **invariant** from step to
+step: private hole cards (fixed for the hand), payouts, blind structure, and
+starting stacks. The **mutable** fields are only: pot total, per-seat
+contributions, action history, current player, board cards (and those change
+only on a chance step), and the folded / all-in sets.
+
+Build a `ParsedStateDelta` mechanism: run the full `parse_state_6max` **once** at
+the leaf state, then after each `state.apply_action(...)` in the rollout
+**incrementally update only the mutable fields** rather than re-running the regex
+parse. The action just applied plus the resulting state's cheap native accessors
+(`current_player()`, `legal_actions()`, and `chance_outcomes()` on chance steps)
+supply everything the update needs; the board delta is applied only when the step
+was a chance node. Target: **~0.9 ms/step → ~0.1–0.15 ms/step**, which restores
+the 6 s GPU budget at L=50, M=8 without further multiplicand cuts.
+
+### (c) Fallback plan if (b) underperforms
+
+If incremental parsing only reaches ~0.3–0.4 ms/step (not ~0.15 ms), the budget
+math must adjust. Options, **in order of preference**:
+
+1. **Cut L from 50 → 30** (depth-2 trees with tighter chance subsampling). First
+   choice — fewer leaves, no per-leaf fidelity loss.
+2. **Cut M from 8 → 5** (acceptable variance increase per the Q4 stderr framing).
+3. **Raise X from 6 s → 8 s** (last resort — slower per-decision).
+
+Do **not** pre-commit to which. Measure incremental parsing first, then decide and
+**record the decision in the implementation commit message.**
+
+### (d) Out of scope for sub-step 2: full Path A rewrite
+
+Path A — bypass `information_state_string` / observation-string parsing entirely
+and extract fields directly from native OpenSpiel state methods — would also
+speed up `traverse_6max` and pay back at *training* time, not just decision time.
+That makes it a separate, larger engineering task with its own validation surface.
+**Sub-step 2 does Path B only.** Path A is filed as a future optimization in
+`NEXT_SESSION.md`, to be picked up whenever blueprint-training compute (not
+decision-time latency) becomes the bottleneck.
+
+---
+
 ## Q5 — ICM at leaf vs projected through rollout
 
 **Recommend Option B (MC-rollout to terminal, then ICM at terminal stacks), with
@@ -441,42 +498,70 @@ concrete `DeepCFR6MaxSolver` — keeps `subgame_leaf.py` aligned with the
 10. **Tie-break determinism.** Mock blueprint values to force two biases to give an
     opponent equal value; assert the chosen bias is the lowest index and the result
     is identical across runs/seeds (Q8).
+11. **(Optional, non-blocking) Hero-side direction in heads-up.** In a 2-player
+    (v=1) leaf where the game is cleanly zero-sum, assert hero's own value under
+    `BEST_RESPONSE` ≤ under uniform `PROFILE_SAMPLE` — the hero-side mirror of #9.
+    #9 (opponent's value, max ≥ mean) is the load-bearing mechanism check and is
+    always valid; this sister test is belt-and-suspenders, only meaningful where
+    zero-sum holds, and is **not** a gate.
 
 Tests 1–3 and 6 are deterministic or low-variance and gate sub-step 3; 4, 5, 9
 validate the bias / menu / best-response semantics; 7, 8, 10 validate the safety
-envelope and tie-break.
+envelope and tie-break; 11 is an optional zero-sum cross-check.
 
 ---
 
 ## Q11 — Ablation plan (acceptance gate for the BR design choice)
 
 The best-response-vs-profile-sample decision is an empirical bet; it must be
-measured, not assumed. The acceptance check is a three-way comparison against the
-standard pool:
+measured, not assumed — and at **two levels**. Level 1 proves the leaf
+mechanism; Level 2 proves the mechanism actually moves hero's *decision* in the
+expected direction. Both are required; the full pool measurement comes later
+(after sub-step 5).
 
-1. **pure blueprint** — `dcfr-overnight-3000`, no subgame solving (baseline);
-2. **subgame + PROFILE_SAMPLE leaves** — the cheaper averaged form;
-3. **subgame + BEST_RESPONSE leaves** — the production form.
+### Level 1 — leaf-only (gates sub-step 2 completion)
 
-**Staging (honest dependency).** The full pool comparison needs the SubgamePolicy
-(sub-steps 3–5) to route through `scripts/eval_pool.py`, so it cannot run at
-sub-step 2 in isolation. Two gates:
+On a fixed battery of ~50 hand-built leaf states spanning streets / stack-depths
+/ live-opponent counts, compute BR and `PROFILE_SAMPLE`(uniform) leaf 6-vectors
+and confirm the Q10 #9 ordering holds (BR ≥ uniform on the opponent's own value,
+≤ on hero) and quantify the per-leaf hero-value gap. This validates that the
+maximization mechanism is firing — but it does **not** show that BR produces
+better hero *decisions* in context. Sufficient on its own only to confirm the
+leaf evaluator is correct.
 
-- **Sub-step-2 micro-ablation (runs now, leaf-level):** on a fixed battery of
-  ~50 hand-built leaf states spanning streets / stack-depths / live-opponent
-  counts, compute BR and PROFILE_SAMPLE(uniform) leaf 6-vectors and confirm the
-  Q10 #9 ordering holds (BR ≥ uniform on opponent value, ≤ on hero) and quantify
-  the per-leaf hero-value gap. This validates the mechanism before the pipeline
-  exists.
-- **Post-sub-step-5 pool ablation (acceptance gate before locking BR):** run all
-  three challengers through `scripts/eval_pool.py` against the **same pool used
-  for the `league-v2-600` baseline** (`evals/league-v2-600_vs_pool_5000.json`),
-  at **5,000 hands/matchup** (the established sample size in that file). Report
-  the ICM-equity-delta diff ± stderr and σ per matchup (the script's headline
-  metric; the bb/100 framing is this delta scaled by the big blind).
+### Level 2 — decision-level (gates sub-step 2 → sub-step 3 handoff)
 
-**Success criterion:** subgame-BR ≥ subgame-PROFILE_SAMPLE ≥ blueprint, with the
-**BR-vs-blueprint gap statistically significant (σ > 2)** on the pool. If BR does
+Wrap the **simplest possible CFR around the leaf evaluator: a one-iteration
+regret update at the root infoset only** — plug leaf values into a single
+regret-matching step at the root, no full tree traversal. With that stub, measure
+**hero's action distribution at the root** under each leaf-eval mode across ~50
+representative root decisions.
+
+**Hypothesis:** `BEST_RESPONSE` yields a **flatter, more mixed / more
+conservative** root action distribution than `PROFILE_SAMPLE` on the same root
+state — because an opponent who best-responds to hero's line punishes pure
+strategies, pushing hero toward mixing. This is **not** a final-quality
+measurement; it is a sanity check that BR's strategic effect on hero's policy is
+**visible and in the expected direction** before investing in the full sub-step 3
+CFR loop.
+
+**Important:** Level 2 does **not** require the sub-step 3 implementation. It
+requires only the **stub one-iteration root regret update**, which is therefore a
+**sub-step 2 deliverable** (shipped alongside the leaf evaluator and discarded /
+superseded by the real solver in sub-step 3).
+
+### Level 3 (later) — full pool (acceptance gate before locking BR, post-sub-step-5)
+
+Once SubgamePolicy (sub-steps 3–5) can route through `scripts/eval_pool.py`, run
+all three challengers — (1) pure blueprint `dcfr-overnight-3000`, (2) subgame +
+`PROFILE_SAMPLE`, (3) subgame + `BEST_RESPONSE` — against the **same pool used for
+the `league-v2-600` baseline** (`evals/league-v2-600_vs_pool_5000.json`), at
+**5,000 hands/matchup** (the established sample size in that file). Report the
+ICM-equity-delta diff ± stderr and σ per matchup (the script's headline metric;
+the bb/100 framing is this delta scaled by the big blind).
+
+**Success criterion (Level 3):** subgame-BR ≥ subgame-PROFILE_SAMPLE ≥ blueprint,
+with the **BR-vs-blueprint gap statistically significant (σ > 2)**. If BR does
 *not* beat PROFILE_SAMPLE by more than noise, the `v×k` cost and the X→6 s budget
 increase are not buying robustness, and we revert to PROFILE_SAMPLE (or revisit
 α / k). This is the explicit go/no-go on the architectural change.
@@ -500,10 +585,12 @@ increase are not buying robustness, and we revert to PROFILE_SAMPLE (or revisit
   and all-in seats.
 - **Budget X raised to 6 s** (GPU production): Y 0.5 + Z 3.0 + W 2.0 + 0.5
   headroom. **Measured** per-step state-prep ≈ 0.9 ms (parse-dominated,
-  GPU-invariant) is the real floor — GPU speeds the network but not the parse, so
-  the implementation must cache/lighten the parse and batch forwards to reach
-  ~0.15 ms/step. CPU (BR ≈ 15 s) is debug-only; the CPU fallback uses
-  PROFILE_SAMPLE (~2.3 s).
+  GPU-invariant) is the real floor — GPU speeds the network but not the parse.
+- **Parse optimization is sub-step 2 scope, not a deferred item (Q4.5).**
+  Incremental parsing (Path B: parse once at the leaf, delta-update mutable fields
+  per rollout step) targets ~0.9 → ~0.15 ms/step to restore the 6 s budget;
+  fallbacks (cut L, then M, then raise X) measured-then-decided. Full Path A
+  rewrite is out of scope (filed in NEXT_SESSION.md).
 - **ICM via Option B** (rollout → `state.returns()` → `icm_adjust_returns`), with
   an Option-A short-circuit when `is_itm()` (no accuracy loss, pure speed).
   *(unchanged)*
@@ -532,6 +619,9 @@ increase are not buying robustness, and we revert to PROFILE_SAMPLE (or revisit
   conservation (sum≈0), blueprint-only ≡ pure rollout, permutation invariance,
   ITM short-circuit equivalence, budget guard, failure degradation, **BR ≥ uniform
   on opponent value (maximization fires)**, **tie-break determinism**.
-- **Ablation gate (Q11):** BR vs PROFILE_SAMPLE vs blueprint on the
-  `league-v2-600` pool at 5,000 hands/matchup; lock BR only if BR-vs-blueprint
-  σ > 2 and BR ≥ PROFILE_SAMPLE.
+- **Two-level ablation gate (Q11):** Level 1 (leaf-only) gates sub-step 2;
+  Level 2 (decision-level, via a **stub one-iteration root regret update** that is
+  itself a sub-step 2 deliverable) checks BR yields a flatter/more-mixed root
+  policy than PROFILE_SAMPLE on ~50 root decisions and gates the sub-step 3
+  handoff; Level 3 (full `league-v2-600` pool, 5,000 hands/matchup, post-sub-step-5)
+  locks BR only if BR-vs-blueprint σ > 2 and BR ≥ PROFILE_SAMPLE.
