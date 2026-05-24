@@ -167,6 +167,25 @@ class TrainConfig6Max:
     cfr_variant: str = "vanilla"
     dcfr_exponent: float = 1.0
 
+    # League play (Pillar 5). When league_mix > 0 AND league_registry_path
+    # is set, the solver loads a CheckpointRegistry + LeaguePool and, with
+    # probability league_mix per traversal, replaces self-play opponents
+    # with a sampled league checkpoint for that whole traversal. Granularity
+    # is per-traversal (all 5 opponent seats share one league policy within
+    # one hand of the tree) — this matches how a league checkpoint was
+    # trained and keeps integration simple. Per-seat-per-traversal sampling
+    # is a future extension.
+    #
+    # Defaults preserve pre-league behavior bit-for-bit (league_mix=0.0 means
+    # the override is never sampled and traverse_6max sees opponent_policy_
+    # override=None on every call).
+    league_mix: float = 0.0
+    league_registry_path: Optional[str] = None
+    league_sample_strategy: str = "uniform"
+    league_recency_halflife: float = 5.0
+    league_weights: Optional[dict] = None
+    league_tag_filter: Optional[list] = None
+
     seed: int = 2026
 
 
@@ -246,6 +265,43 @@ class DeepCFR6MaxSolver:
                 f"({len(self.tournament_structure.blind_schedule)} levels)"
             )
 
+        # League play: load registry + construct pool when both fields set.
+        # league_mix == 0 with a registry path is allowed (loads pool but
+        # never samples) — useful for debugging. league_mix > 0 with no
+        # registry path is a configuration error.
+        self.league_pool = None
+        if config.league_mix > 0.0 and not config.league_registry_path:
+            raise ValueError(
+                "league_mix > 0 requires league_registry_path to be set; "
+                f"got league_mix={config.league_mix}, "
+                f"league_registry_path={config.league_registry_path!r}"
+            )
+        if config.league_registry_path:
+            from src.nlhe.checkpoint_registry import CheckpointRegistry
+            from src.nlhe.league_pool import LeaguePool
+            registry = CheckpointRegistry.load(config.league_registry_path)
+            self.league_pool = LeaguePool(
+                registry=registry,
+                abstraction=abstraction,
+                structure=self.tournament_structure,
+                sample_strategy=config.league_sample_strategy,
+                weights=config.league_weights,
+                recency_halflife=config.league_recency_halflife,
+                tag_filter=config.league_tag_filter,
+            )
+            eligible = len(self.league_pool)
+            if eligible == 0:
+                raise ValueError(
+                    "league_registry_path resolved to an empty eligible "
+                    f"pool (registry={config.league_registry_path!r}, "
+                    f"tag_filter={config.league_tag_filter!r})"
+                )
+            self.log(
+                f"  league pool: {eligible} eligible checkpoints, "
+                f"strategy={config.league_sample_strategy}, "
+                f"mix={config.league_mix:.3f}"
+            )
+
         self.iteration = 0
 
         self.log(
@@ -255,6 +311,25 @@ class DeepCFR6MaxSolver:
         )
 
     # ---- Network training ----
+
+    def _maybe_sample_league_opponent(self):
+        """Sample a league opponent for this traversal, or None.
+
+        Returns:
+            A Policy (CheckpointPolicy per LeaguePool) when the per-traversal
+            league mix coin flip fires, or None when self-play should be used.
+
+        Defaults preserve pre-league behavior: league_mix=0.0 (and/or
+        league_pool=None) means this returns None on every call, so the
+        downstream traverse_6max sees opponent_policy_override=None.
+        """
+        if self.league_pool is None:
+            return None
+        if self.cfg.league_mix <= 0.0:
+            return None
+        if self.rng.random() >= self.cfg.league_mix:
+            return None
+        return self.league_pool.sample_opponent(self.rng)
 
     def _dcfr_weights(self, iters):
         """Per-sample DCFR weights for a batch.
@@ -374,11 +449,13 @@ class DeepCFR6MaxSolver:
                 )
                 for _ in range(self.cfg.traversals_per_iter):
                     state = self.game.new_initial_state()
+                    opp_override = self._maybe_sample_league_opponent()
                     traverse_6max(
                         state,
                         traversing_player=traverser,
                         ctx=ctx,
                         rng=self.rng,
+                        opponent_policy_override=opp_override,
                     )
             else:
                 # Tournament-aware mode: sample state + build game per trajectory.
@@ -406,11 +483,13 @@ class DeepCFR6MaxSolver:
                         max_depth=self.cfg.max_traversal_depth,
                         num_paid=self.cfg.num_paid,
                     )
+                    opp_override = self._maybe_sample_league_opponent()
                     traverse_6max(
                         state,
                         traversing_player=traverser,
                         ctx=ctx,
                         rng=self.rng,
+                        opponent_policy_override=opp_override,
                     )
 
             # Train the traverser's advantage net.

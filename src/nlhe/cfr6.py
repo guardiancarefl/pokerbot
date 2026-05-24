@@ -64,7 +64,7 @@ from __future__ import annotations
 
 import random
 from dataclasses import dataclass
-from typing import Any, Sequence
+from typing import Any, Optional, Sequence
 
 import numpy as np
 
@@ -210,6 +210,7 @@ def traverse_6max(
     ctx: CFR6MaxContext,
     rng: random.Random,
     depth: int = 0,
+    opponent_policy_override: Optional[Any] = None,
 ) -> float:
     """One external-sampling CFR traversal for 6-max NLHE.
 
@@ -234,6 +235,15 @@ def traverse_6max(
         rng: random source used to sample chance outcomes and opponent
             actions. The caller controls reproducibility via this rng's seed.
         depth: current recursion depth (internal; callers should not pass).
+        opponent_policy_override: optional Policy (per the protocol in
+            scripts/eval_pool.py — exposes select_action(parsed, state, rng,
+            mode) -> int chip-action). When set, all NON-traverser decision
+            nodes encountered in this traversal route through the override
+            instead of the self-play advantage net. Used by league play:
+            the solver pre-samples one league opponent per traversal and
+            threads it down. Default None preserves pre-league behavior
+            bit-for-bit; per-traversal granularity means all 5 opponent
+            seats share the same override within one traversal.
 
     Returns:
         The counterfactual value to `traversing_player` at this node, in
@@ -289,6 +299,7 @@ def traverse_6max(
             ctx,
             rng,
             depth + 1,
+            opponent_policy_override=opponent_policy_override,
         )
 
     # ---- Decision node.
@@ -298,6 +309,27 @@ def traverse_6max(
         parsed = parse_state_repeated_6max(state)
     else:
         parsed = parse_state_6max(state)
+
+    # ---- League-play short-circuit: at NON-traverser nodes with an override,
+    # the opponent's action comes from the override policy. We skip the
+    # self-play machinery (encoder.encode_from_parsed + advantage-net forward
+    # pass + regret-matching) entirely — the override is responsible for its
+    # own feature encoding and action selection. Per the Policy protocol in
+    # scripts/eval_pool.py, select_action returns an OpenSpiel chip action.
+    if opponent_policy_override is not None and cp != traversing_player:
+        chip_action = opponent_policy_override.select_action(
+            parsed, state, rng, mode="sample"
+        )
+        child = state.child(int(chip_action))
+        return traverse_6max(
+            child,
+            traversing_player,
+            ctx,
+            rng,
+            depth + 1,
+            opponent_policy_override=opponent_policy_override,
+        )
+
     view = _build_view_6max(state, parsed)
 
     legal_chip = list(state.legal_actions())
@@ -328,7 +360,12 @@ def traverse_6max(
                 continue  # discrete action not mappable to any legal chip action
             child = state.child(int(chip_action))
             values_per_action[int(da)] = traverse_6max(
-                child, traversing_player, ctx, rng, depth + 1
+                child,
+                traversing_player,
+                ctx,
+                rng,
+                depth + 1,
+                opponent_policy_override=opponent_policy_override,
             )
 
         # Expected value at this infoset under the CURRENT strategy.
@@ -369,4 +406,11 @@ def traverse_6max(
             legal_items = list(discrete_to_chip.items())
             da, chip_action = rng.choice(legal_items)
         child = state.child(int(chip_action))
-        return traverse_6max(child, traversing_player, ctx, rng, depth + 1)
+        return traverse_6max(
+            child,
+            traversing_player,
+            ctx,
+            rng,
+            depth + 1,
+            opponent_policy_override=opponent_policy_override,
+        )

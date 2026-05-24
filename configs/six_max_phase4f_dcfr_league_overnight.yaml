@@ -1,0 +1,73 @@
+# Phase 4f DCFR + league overnight: DCFR-linear with per-traversal league
+# opponent sampling. Built on top of configs/six_max_phase4f_dcfr_overnight.yaml.
+#
+# Background: Sessions 8-10 produced DCFR-200/400/600/800 checkpoints that
+# clearly outperform vanilla matched-compute. League play (Pillar 5 from the
+# original architecture) adds STRENGTH diversity to the training opponent
+# pool by mixing in archived versions of the bot itself, complementing the
+# style diversity that will come from archetypes/bought-bots in Phase 5.
+#
+# Wire-in (committed on phase4f-league branch):
+#   - TrainConfig6Max gains league_mix + league_registry_path + 4 sampling
+#     hyperparams. solver6 instantiates a LeaguePool when both fields set;
+#     traverse_6max gains opponent_policy_override threaded through every
+#     recursive call site. With probability league_mix per traversal, all 5
+#     opponent seats use the same sampled league checkpoint for that hand.
+#   - Defaults preserve self-play behavior bit-for-bit (league_mix=0.0).
+#
+# Cadence rationale: league_mix=0.30 means ~30% of traversals see a league
+# opponent. The other 70% remain self-play, which is needed because pure
+# league play would freeze the traverser against a static distribution and
+# lose the convergence-toward-equilibrium property of self-play CFR. The
+# 30/70 split is a starting point — Brown's PSRO papers use values in the
+# 0.2-0.5 range; pin via post-overnight ablation if necessary.
+#
+# Registry expectations: the registry referenced here must contain the
+# Session 10 DCFR overnight checkpoints (iter 200/400/600/800 and whatever
+# else has landed by launch time). Build before launching with:
+#   python -c "from src.nlhe.checkpoint_registry import CheckpointRegistry; \
+#       r = CheckpointRegistry(); \
+#       r.register('dcfr-overnight-200', 'runs/.../ckpt_iter_0200.pt', \
+#                  metadata={'iter': 200}, tags=['dcfr', 'overnight']); \
+#       # ... more registrations ... \
+#       r.save('runs/league/registry.json')"
+#
+# Use:
+#   python -m scripts.train_6max --config configs/six_max_phase4f_dcfr_league_overnight.yaml
+
+tag: phase4f_dcfr_league_overnight
+abstraction_path: runs/abstraction_20260521_223018_retrofit/abstraction.pkl
+
+starting_stack: 1500
+big_blind: 100
+small_blind: 50
+payout_mode: double_up
+buy_in: 1.0
+first_share: 0.65
+
+tournament_structure_path: configs/ignition_double_up_6max_turbo.yaml
+num_paid: 3
+
+hidden_dim: [256, 256]
+n_iterations: 3400
+traversals_per_iter: 150
+train_steps_per_iter: 200
+batch_size: 64
+learning_rate: 0.001
+buffer_capacity: 500000
+
+cfr_variant: linear
+dcfr_exponent: 1.0
+
+# League play: 30% of traversals replace self-play opponents with a
+# uniformly-sampled checkpoint from the registry.
+league_mix: 0.30
+league_registry_path: runs/league/registry.json
+league_sample_strategy: uniform
+league_tag_filter: [dcfr]
+
+bucket_runouts: 30
+max_traversal_depth: 200
+seed: 2026
+
+checkpoint_every: 200
