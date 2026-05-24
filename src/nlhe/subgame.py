@@ -98,6 +98,14 @@ class SubgameNode:
             raw chip ints. The chip int needed to replay via state.child()
             is derived on demand from discretize_legal_actions at this state.
         n_descendants: number of descendant nodes (computed after build).
+        leaf_value: at LEAF nodes, the per-seat ICM-equity-delta 6-vector the
+            leaf evaluator assigns (sub-step 2, src/nlhe/subgame_leaf.py). None
+            until evaluated. Same units/shape as terminal_returns so sub-step 3
+            backs up LEAF and TERMINAL nodes uniformly:
+                value_vec = node.terminal_returns if node.is_terminal
+                            else node.leaf_value
+            Populated by subgame_leaf.evaluate_leaves(tree, ctx) before the CFR
+            loop; a data field only (no behavior here).
     """
     kind: NodeKind
     state: Any
@@ -113,6 +121,7 @@ class SubgameNode:
     children: list["SubgameNode"] = field(default_factory=list)
     action_at_child: list[int] = field(default_factory=list)
     n_descendants: int = 0
+    leaf_value: Optional[list[float]] = None
 
     @property
     def is_decision(self) -> bool:
