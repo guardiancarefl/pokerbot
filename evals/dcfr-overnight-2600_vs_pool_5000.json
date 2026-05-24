@@ -1,0 +1,71 @@
+{
+  "challenger": {
+    "name": "dcfr-overnight-2600",
+    "path": "runs/six_max_20260524_014344_phase4f_dcfr_linear_overnight/checkpoints/ckpt_iter_2600.pt"
+  },
+  "n_hands_per_matchup": 5000,
+  "mode": "sample",
+  "base_seed": 2026,
+  "results": [
+    {
+      "opponent": "vanilla-100",
+      "n_hands": 5000,
+      "n_capped": 0,
+      "avg_challenger": 0.025968459980386296,
+      "avg_opponent": -0.02528948677340878,
+      "diff": 0.05125794675379508,
+      "stderr": 0.0024240339030473772,
+      "sigma": 21.145721885059483
+    },
+    {
+      "opponent": "vanilla-200",
+      "n_hands": 5000,
+      "n_capped": 0,
+      "avg_challenger": 0.014443336327976038,
+      "avg_opponent": -0.011791117785591613,
+      "diff": 0.026234454113567653,
+      "stderr": 0.0023505188546920066,
+      "sigma": 11.161133237114665
+    },
+    {
+      "opponent": "vanilla-400",
+      "n_hands": 5000,
+      "n_capped": 0,
+      "avg_challenger": 0.00800062739914715,
+      "avg_opponent": -0.0077009143250274265,
+      "diff": 0.015701541724174577,
+      "stderr": 0.0023490902474697056,
+      "sigma": 6.684094721812968
+    },
+    {
+      "opponent": "dcfr-100",
+      "n_hands": 5000,
+      "n_capped": 0,
+      "avg_challenger": 0.013425904220801768,
+      "avg_opponent": -0.014850620200287322,
+      "diff": 0.02827652442108909,
+      "stderr": 0.0023101073306920497,
+      "sigma": 12.240350933226189
+    },
+    {
+      "opponent": "dcfr-200",
+      "n_hands": 5000,
+      "n_capped": 0,
+      "avg_challenger": 0.010730083986641369,
+      "avg_opponent": -0.009983709507822966,
+      "diff": 0.020713793494464335,
+      "stderr": 0.0023237393126302017,
+      "sigma": 8.913991936134495
+    },
+    {
+      "opponent": "random",
+      "n_hands": 5000,
+      "n_capped": 0,
+      "avg_challenger": 0.08950916170979666,
+      "avg_opponent": -0.07806252816016111,
+      "diff": 0.16757168986995777,
+      "stderr": 0.0031056668081411148,
+      "sigma": 53.956750746953816
+    }
+  ]
+}

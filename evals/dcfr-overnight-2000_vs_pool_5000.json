@@ -1,0 +1,71 @@
+{
+  "challenger": {
+    "name": "dcfr-overnight-2000",
+    "path": "runs/six_max_20260524_014344_phase4f_dcfr_linear_overnight/checkpoints/ckpt_iter_2000.pt"
+  },
+  "n_hands_per_matchup": 5000,
+  "mode": "sample",
+  "base_seed": 2026,
+  "results": [
+    {
+      "opponent": "vanilla-100",
+      "n_hands": 5000,
+      "n_capped": 0,
+      "avg_challenger": 0.023594348781325415,
+      "avg_opponent": -0.02040210458386775,
+      "diff": 0.043996453365193165,
+      "stderr": 0.0024430005246076822,
+      "sigma": 18.009187031287475
+    },
+    {
+      "opponent": "vanilla-200",
+      "n_hands": 5000,
+      "n_capped": 0,
+      "avg_challenger": 0.01199565315667321,
+      "avg_opponent": -0.00873282870175705,
+      "diff": 0.020728481858430257,
+      "stderr": 0.002340908210373719,
+      "sigma": 8.854888784862272
+    },
+    {
+      "opponent": "vanilla-400",
+      "n_hands": 5000,
+      "n_capped": 0,
+      "avg_challenger": 0.010422554881750394,
+      "avg_opponent": -0.010983486733935567,
+      "diff": 0.02140604161568596,
+      "stderr": 0.0023646004575915464,
+      "sigma": 9.052709749320185
+    },
+    {
+      "opponent": "dcfr-100",
+      "n_hands": 5000,
+      "n_capped": 0,
+      "avg_challenger": 0.010414131830597409,
+      "avg_opponent": -0.009162437820419941,
+      "diff": 0.01957656965101735,
+      "stderr": 0.00223715522178758,
+      "sigma": 8.750653267311
+    },
+    {
+      "opponent": "dcfr-200",
+      "n_hands": 5000,
+      "n_capped": 0,
+      "avg_challenger": 0.01299450102448083,
+      "avg_opponent": -0.00862898378240025,
+      "diff": 0.02162348480688108,
+      "stderr": 0.002174175843750294,
+      "sigma": 9.945600706142589
+    },
+    {
+      "opponent": "random",
+      "n_hands": 5000,
+      "n_capped": 0,
+      "avg_challenger": 0.0903590466700444,
+      "avg_opponent": -0.07630253847957447,
+      "diff": 0.16666158514961887,
+      "stderr": 0.0031836923280014716,
+      "sigma": 52.34852114439051
+    }
+  ]
+}
