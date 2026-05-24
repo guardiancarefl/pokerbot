@@ -1,0 +1,210 @@
+
+custom
+
+//version 8
+
+preflop
+
+
+When stacksize > 78 fold force delay 5
+
+When stacksize > 66 and not (hand = AA or hand = KK or hand = AK or hand = QQ or hand = AQ suited) fold force delay 4
+
+When (hand = AA or hand = KK or hand = AK suited) and amounttocall <= 4 raisemax force delay 3
+
+
+when bigblindsize >= 10000 and stacksize < 2 and (totalinvested <= 1 or botslastaction = none) fold force
+
+When stacksize > 1 and stacksize <= 3 raise 2 force
+
+When stacksize < 4 and raises = 0 and calls = 0 raise 3 force
+
+
+
+
+When (hand = KQ or hand = KJ or hand = QJ or hand = JT or hand = KT or hand = QT) and not (hand = K suited or hand = Q suited or hand = J suited) and stacksize > 5 and stacksize < 78 usernobust
+
+When usernobust and stilltoact > 4 fold force
+
+When usernobust and raises = 0 and calls = 0 and stacksize > 20 raise 2 force
+
+When usernobust and raises = 0 and calls = 0 and stacksize > 15 and stilltoact <= 2 raise 2 force
+
+When usernobust and stacksize <= 4 raisemax force
+
+When usernobust and stacksize < 6 and raises = 0 and calls = 0 raisemax force
+
+When usernobust and stacksize > 15 and amounttocall = 1 and not (hand = KT or hand = QT) call force
+
+When usernobust fold force
+
+
+When hand = AQ and not (hand = AQ suited) and raises >= 1 and amounttocall > 33% stacksize and stacksize > 10 fold force
+
+
+
+
+
+
+
+When stacksize < 4 and (raises >= 1 or calls >= 1) and (hand = A or hand = Q suited or hand = J suited or pairinhand or hand = JT or hand = J9 suited or hand = J8 suited or hand = J7 suited or hand = T9 or hand = 98 or hand = 87 or hand = 76 or hand = 75 suited or hand = 74 suited or hand = 65 or hand = 64 suited or hand = 63 suited or hand = 54 suited or hand = T8 suited or hand = T7 suited or hand = 97 suited or hand = 96 suited or hand = 86 suited or hand = 85 suited or hand = QJ or hand = JT or hand = K suited or hand = T9 or hand = 98 or hand = 87 or hand = 76 suited or hand = T8 suited or hand = 97) raisemax force
+
+When stacksize < 6 and (raises >= 1 or calls >= 2) and (hand = A suited or hand = AK or hand = AQ or hand = AT or hand = A9 or hand = A8 or hand = A7 or hand = KQ or hand = KJ or hand = KT suited or hand = QJ suited or pairinhand or hand = JT suited or hand = T9 suited) and not (hand = 22 or hand = 33 or hand = 44) raisemax force
+
+When stacksize <= 10 and (raises >= 1 or calls >= 2) and (hand = AK or hand = AQ or hand = AJ suited or hand = TT or hand = JJ or hand = QQ or hand = KK or hand = AA or hand = KQ suited) raisemax force
+
+
+When stacksize < 21 and (hand = TT or hand = JJ or hand = QQ or hand = KK or hand = AA) and not (raises >= 2) raisemax force
+
+
+When stacksize < 4 and (raises = 0 and calls = 0) raisemax force
+
+When stacksize < 7 and (raises = 0 and calls = 0) and stilltoact <= 3 raisemax force
+
+When stacksize < 7 and (raises = 0 and calls = 0)  and (hand = A or hand = Q suited or hand = J suited or pairinhand or hand = JT or hand = J9 suited or hand = J8 suited or hand = J7 suited or hand = T9 or hand = 98 or hand = 87 or hand = 76 or hand = 75 suited or hand = 74 suited or hand = 65 or hand = 64 suited or hand = 63 suited or hand = 54 suited or hand = T8 suited or hand = T7 suited or hand = 97 suited or hand = 96 suited or hand = 86 suited or hand = 85 suited or hand = QJ or hand = JT or hand = K or hand = T9 or hand = 98 or hand = 87 or hand = 76 suited or hand = T8 suited or hand = 97) raisemax force
+
+When stacksize < 11 and (raises = 0 and calls = 0) and stilltoact <= 3 and (hand = A suited or hand = AK or hand = AQ or hand = AT or hand = A9 or hand = A8 or hand = A7 or hand = KQ or hand = KJ or hand = KT suited or hand = QJ suited or pairinhand or hand = JT suited or hand = T9 suited or hand = 98 suited or hand = 87 suited) and not (hand = 22 or hand = 33 or hand = 44) raisemax force
+
+When stacksize <= 15 and (raises = 0 and calls <= 2) and (hand = AK or hand = AQ suited or hand = TT or hand = JJ or hand = QQ or hand = KK or hand = AA) raisemax force
+
+
+
+
+When (raises = 0 and calls <= 2) and (hand = AK or hand = AQ suited or hand = QQ or hand = KK or hand = AA) raisemax force
+
+When (hand = AK or hand = QQ or hand = KK or hand = AA) and amounttocall <= 4 raisemax force
+
+
+When stacksize < 43 and (raises = 0 and calls <= 1) and stilltoact <= 3 and (hand = AJ suited or hand = AQ suited or hand = JJ) raisemax force
+
+When stacksize < 43 and stilltoact <= 3 and (hand = AJ suited or hand = AQ suited or hand = JJ) and amounttocall <= 4 raisemax force
+
+
+When stacksize < 28 and (raises = 0 and calls <= 1) and stilltoact <= 3 and (hand = A suited or hand = KQ suited or hand = KJ suited or hand = TT or hand = 99 or hand = T9 suited or hand = 98 suited) raisemax force
+
+When stacksize < 28 and stilltoact <= 3 and (hand = A suited or hand = KQ or hand = KJ suited or hand = TT or hand = 99 or hand = T9 suited or hand = 98 suited)  and amounttocall <= 4 raisemax force
+
+
+When stacksize > 45 and raises = 0 and calls = 0 and stilltoact <= 2 raise 2 force
+
+When stacksize > 22 and raises = 0 and calls = 0 and stilltoact <= 4 and (hand = 99 or hand = A suited or hand = T9 suited or hand = 98 suited) raise 2 force
+
+
+When stacksize > 55 and amounttocall < 5 and (raises = 1 or amounttocall = 1) and (pairinhand or hand = KQ suited or hand = QJ suited or hand = JT suited or hand = T9 suited or hand = 98 suited or hand = 87 suited or hand = 76 suited or hand = 65 suited or hand = A suited) call force
+
+When stacksize < 32 and (raises = 1 or calls = 1 or calls = 2) and amounttocall <= 3 and (hand = A suited or hand = AK) raisemax force
+
+When (hand = AA or hand = KK or hand = QQ or hand = AK suited) raisemax force
+
+
+
+
+When insmallblind and raises = 0 and calls >= 1 and stacksize > 5 and (hand = A or hand = KQ or hand = KJ or hand = KT or hand = QJ or hand = QT or hand = JT or hand = J9 or hand = K9 suited or hand = K8 suited or hand = K7 suited or hand = Q9 suited or hand = Q8 suited or hand = J8 suited or hand = J7 suited or hand = T9 or hand = T8 suited or hand = T7 suited or hand = 98 or hand = 97 suited or hand = 87 or hand = 76 suited) call force
+
+When (inbigblind or stilltoact = 2) and amounttocall = 1 and calls >= 1 and stacksize > 8 and (hand = A or hand = KQ or hand = KJ or hand = KT or hand = QJ or hand = QT or hand = JT or hand = J9 or hand = K9 suited or hand = K8 suited or hand = K7 suited or hand = Q9 suited or hand = Q8 suited or hand = J8 suited or hand = J7 suited or hand = T9 or hand = T8 suited or hand = T7 suited or hand = 98 or hand = 97 suited or hand = 87 or hand = 76 suited) call force
+
+
+
+when others
+when others fold force delay 5
+
+
+
+
+
+
+
+
+
+
+
+
+
+flop
+
+when (havenuts or havefullhouse) raisemax force
+
+When stacksize > 55 and opponents <= 2 and bets = 0 and raises = 0 and potsize < 20% stacksize bet 30% force
+
+When stacksize > 88 fold force delay 5
+
+When bets = 0 and raises = 0 and opponents <= 2 and (havestraight or haveflush or haveset or havetrips) raisemax force
+
+When bets = 0 and raises = 0 and opponents <= 2 and havetoptwopair and (board = A or board = K or board = Q or board = J) and not (flushpossible or straightpossible or paironboard) raisemax force
+
+When position = last and bets = 0 and raises = 0 and opponents <= 2 and (havestraightdraw or haveflushdraw) and not (flushpossible or straightpossible or paironboard) raisemax force
+
+When position = last and bets = 0 and raises = 0 and opponents <= 2 and havetwopair and havetoppair and (board = A or board = K or board = Q or board = J) and not (flushpossible or straightpossible or paironboard) raisemax force
+
+When position = last and bets = 0 and raises = 0 and opponents <= 2 and haveoverpair and (hand = AA or hand = KK or hand = QQ) and not (flushpossible or straightpossible or paironboard) raisemax force
+
+
+when others
+when others fold force delay 5
+
+
+
+
+
+
+
+
+
+
+
+
+
+turn
+
+
+when (havenuts or havefullhouse) and not (havebottomset or nutfullhouseorfourofakind >= 5 or tripsonboard) raisemax force
+
+When stacksize > 55 and opponents <= 2 and bets = 0 and raises = 0 and potsize < 20% stacksize and nobettingonflop bet 30% force
+
+When stacksize > 88 fold force delay 5
+
+When bets = 0 and raises = 0 and opponents <= 2 and (havestraight or haveflush or haveset or havetrips) and not (onecardstraightpossible or onecardflushpossible or raisesonflop or tripsonboard) raisemax force
+
+When bets = 0 and raises = 0 and opponents <= 2 and havetoptwopair and (board = A or board = K or board = Q or board = J) and not (flushpossible or straightpossible or paironboard) raisemax force
+
+When position = last and bets = 0 and raises = 0 and opponents <= 2 and havetwopair and havetoppair and (board = A or board = K or board = Q or board = J) and not (flushpossible or straightpossible or paironboard) bet 50% force
+
+When bets = 1 and raises = 0 and opponents <= 2 and amounttocall < 20% stacksize and (havestraight or haveflush or haveset) call force
+
+When bets = 1 and raises = 0 and opponents <= 2 and amounttocall < 20% stacksize and havetwopair and havetoppair call force
+
+when others
+when others fold force delay 4
+
+
+
+
+
+
+
+
+
+
+
+river
+
+
+when (havenuts or havefullhouse) and not (havebottomset or nutfullhouseorfourofakind >= 5 or tripsonboard) raisemax force
+
+When stacksize > 55 and opponents <= 2 and bets = 0 and raises = 0 and potsize < 20% stacksize and nobettingonturn bet 30% force
+
+When stacksize > 88 fold force delay 5
+
+When bets = 0 and raises = 0 and opponents <= 2 and (have2ndnutflush or have3rdnutflush) and not (paironboard) raisemax force
+
+When bets = 0 and raises = 0 and opponents <= 2 and havetoptwopair and (board = A or board = K or board = Q or board = J) and not (flushpossible or straightpossible or paironboard or raisesonturn) bet 50% force
+
+When position = last and bets = 0 and raises = 0 and opponents <= 2 and havetwopair and havetoppair and (board = A or board = K or board = Q or board = J) and not (flushpossible or straightpossible or paironboard) bet 50% force
+
+when nobettingonturn and opponents = 1 and bets = 1 and raises = 0 and amounttocall < 17% stacksize and (havetoppair or haveoverpair or havetwopair or haveflush or havestraight or havetrips or haveset) call force
+
+
+when others
+when others fold force delay 5
+
+
