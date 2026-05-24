@@ -77,8 +77,12 @@ class SubgameNode:
             them — only call read-only methods and create children.
         depth: action depth from root (root = 0). Used for depth-limit
             check.
-        action_from_parent: the discrete action (or chance outcome) that
-            led to this node from its parent. None at root.
+        action_from_parent: the action that led to this node from its parent.
+            For a child of a DECISION node this is the DiscreteAction value
+            (an IntEnum, 0..6 — the durable representation; the raw chip int
+            is re-derivable via discretize_legal_actions at the parent state).
+            For a child of a CHANCE node this is the raw chance-outcome int.
+            None at root.
         chance_prob: probability of this branch given the parent (chance
             nodes only). For decisions, weight comes from the strategy.
         current_player: at decision nodes, who acts. None elsewhere.
@@ -90,13 +94,18 @@ class SubgameNode:
         children: list of child SubgameNode. Empty for terminal and leaf.
         action_at_child: parallel to `children` — the action that produces
             each child. For chance nodes these are chance outcomes (ints);
-            for decision nodes these are discrete action ints.
+            for decision nodes these are DiscreteAction values (ints), NOT
+            raw chip ints. The chip int needed to replay via state.child()
+            is derived on demand from discretize_legal_actions at this state.
         n_descendants: number of descendant nodes (computed after build).
     """
     kind: NodeKind
     state: Any
     depth: int
     action_from_parent: Optional[int] = None
+    # One-STEP conditional probability of this branch given the parent (chance
+    # nodes only), NOT a cumulative reach probability. Sub-step 3 multiplies
+    # these along the path to recover reach.
     chance_prob: float = 1.0
     current_player: Optional[int] = None
     infoset_key: Optional[tuple] = None
@@ -136,6 +145,12 @@ class SubgameTree:
         all_nodes: every node in DFS-preorder. Useful for CFR loops.
         infoset_groups: mapping from infoset_key to the list of decision
             nodes that share that infoset. CFR operates on these groups.
+            NOTE: under chance subsampling these groups are over the SAMPLED
+            subgame, not the underlying game — information_state_string
+            includes the sampled board, so decision nodes under different
+            chance samples never merge into one infoset. This is intentional
+            (matches Brown/Sandholm depth-limited solving); sub-step 3 should
+            NOT try to "fix" it.
         n_decision_nodes / n_chance_nodes / n_terminal_nodes / n_leaf_nodes:
             counts by kind.
     """
@@ -317,7 +332,14 @@ def _build_node(
 
         return node
 
-    # === Decision node: enumerate legal discrete actions ===
+    # === Decision node: enumerate legal DISCRETE actions ===
+    # CRITICAL: we must NOT iterate raw state.legal_actions() here. Under
+    # bettingAbstraction=fullgame (what six_max_sng uses) that returns ~10k
+    # chip-amount ints, which would explode the tree to hundreds of leaves at
+    # depth 1. The CFR walker (cfr6.traverse_6max) collapses those to the
+    # 7-action DiscreteAction abstraction via discretize_legal_actions; the
+    # tree builder MUST enumerate that identical action set so the subgame the
+    # solver sees matches the game the walker plays.
     cp = state.current_player()
     infoset_key = _infoset_key_from_state(state, cp, skip_unsupported_states)
 
@@ -337,25 +359,61 @@ def _build_node(
     if infoset_key is not None:
         tree.infoset_groups.setdefault(infoset_key, []).append(node)
 
-    # Enumerate legal actions and recurse
-    legal_actions = list(state.legal_actions())
-    for action in legal_actions:
-        child_state = state.child(int(action))
+    # Source of truth for which children exist: the discrete-action map,
+    # built via the exact same path cfr6.traverse_6max uses (cfr6.py:333-336).
+    discrete_to_chip = _discretize_at_decision(state)
+    for da, chip_action in discrete_to_chip.items():
+        # Mirror cfr6.py:359 — defensive skip. discretize_legal_actions never
+        # actually returns None values, but keep the guard so the tree builder
+        # and the walker stay byte-for-byte aligned if that ever changes.
+        if chip_action is None:
+            continue
+        # The raw chip int is needed only to fetch the child state. We store
+        # the DiscreteAction value (IntEnum -> int-compatible) as the durable
+        # action label, not the chip int.
+        child_state = state.child(int(chip_action))
         child = _build_node(
             state=child_state,
             depth=depth + 1,        # decisions DO count toward action depth
             max_action_depth=max_action_depth,
             chance_samples_per_node=chance_samples_per_node,
             rng=rng,
-            action_from_parent=int(action),
+            action_from_parent=int(da),
             chance_prob=1.0,        # decisions are deterministic given strategy
             tree=tree,
             skip_unsupported_states=skip_unsupported_states,
         )
         node.children.append(child)
-        node.action_at_child.append(int(action))
+        node.action_at_child.append(int(da))
 
     return node
+
+
+def _discretize_at_decision(state) -> dict:
+    """Enumerate the discrete action set at a decision `state`.
+
+    Mirrors cfr6.traverse_6max exactly (cfr6.py:307-336): dispatch on
+    dealer_seat to pick the parser, build the GameStateView from the parsed
+    dict via cfr6._build_view_6max, then discretize the raw legal chip
+    actions against that view. Returns the {DiscreteAction: chip_int} mapping
+    that is the single source of truth for a decision node's children.
+
+    Importing cfr6 here (lazily) rather than at module top keeps the pure-data
+    dataclass tests free of the torch dependency that cfr6 -> networks6/solver
+    pulls in; tree construction needs open_spiel + torch on the pod anyway.
+    """
+    from src.nlhe.actions import discretize_legal_actions
+    from src.nlhe.cfr6 import _build_view_6max
+    from src.nlhe.infoset6 import parse_state_6max, parse_state_repeated_6max
+
+    # repeated_poker states expose dealer_seat(); single-hand states don't.
+    if hasattr(state, "dealer_seat"):
+        parsed = parse_state_repeated_6max(state)
+    else:
+        parsed = parse_state_6max(state)
+    view = _build_view_6max(state, parsed)
+    legal_chip = list(state.legal_actions())
+    return discretize_legal_actions(legal_chip, view)
 
 
 def _infoset_key_from_state(state, current_player: int,
@@ -380,16 +438,26 @@ def _infoset_key_from_state(state, current_player: int,
         raise
 
 
-def _compute_descendants(node: SubgameNode) -> int:
-    """DFS that computes n_descendants for each node (in-place)."""
-    if not node.children:
-        node.n_descendants = 0
-        return 0
-    total = 0
-    for c in node.children:
-        total += 1 + _compute_descendants(c)
-    node.n_descendants = total
-    return total
+def _compute_descendants(root: SubgameNode) -> None:
+    """Set n_descendants on every node, in-place, via iterative post-order DFS.
+
+    Iterative (explicit stack) rather than recursive: sub-step 3 will build
+    deeper trees and Python's default 1000-frame recursion limit would start
+    tripping on a recursive walk. A node is finalized only after all its
+    children are, so n_descendants reads are always already-computed:
+        n_descendants(node) = sum over children c of (1 + n_descendants(c))
+    """
+    stack: list[tuple[SubgameNode, bool]] = [(root, False)]
+    while stack:
+        node, processed = stack.pop()
+        if processed:
+            node.n_descendants = sum(1 + c.n_descendants for c in node.children)
+        else:
+            # Re-push the node to finalize after its children, then push
+            # children to be processed first.
+            stack.append((node, True))
+            for c in node.children:
+                stack.append((c, False))
 
 
 # ============================================================
