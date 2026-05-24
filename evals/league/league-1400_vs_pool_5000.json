@@ -1,0 +1,81 @@
+{
+  "challenger": {
+    "name": "league-1400",
+    "path": "runs/six_max_20260524_090852_phase4f_dcfr_league_overnight/checkpoints/ckpt_iter_1400.pt"
+  },
+  "n_hands_per_matchup": 5000,
+  "mode": "sample",
+  "base_seed": 2026,
+  "results": [
+    {
+      "opponent": "vanilla-100",
+      "n_hands": 5000,
+      "n_capped": 0,
+      "avg_challenger": 0.01372784760865365,
+      "avg_opponent": -0.013529602051106843,
+      "diff": 0.027257449659760492,
+      "stderr": 0.0026580655433344367,
+      "sigma": 10.254619088725372
+    },
+    {
+      "opponent": "vanilla-200",
+      "n_hands": 5000,
+      "n_capped": 0,
+      "avg_challenger": 0.0113273962629381,
+      "avg_opponent": -0.010440510265140743,
+      "diff": 0.02176790652807884,
+      "stderr": 0.0024556565192952813,
+      "sigma": 8.864393842150914
+    },
+    {
+      "opponent": "vanilla-400",
+      "n_hands": 5000,
+      "n_capped": 0,
+      "avg_challenger": 0.012563257998757,
+      "avg_opponent": -0.009744955634996763,
+      "diff": 0.022308213633753765,
+      "stderr": 0.0023528750101671414,
+      "sigma": 9.481257413741266
+    },
+    {
+      "opponent": "dcfr-100",
+      "n_hands": 5000,
+      "n_capped": 0,
+      "avg_challenger": 0.010097738482314501,
+      "avg_opponent": -0.009217210971286555,
+      "diff": 0.019314949453601057,
+      "stderr": 0.0024167498659499577,
+      "sigma": 7.992117730400238
+    },
+    {
+      "opponent": "dcfr-200",
+      "n_hands": 5000,
+      "n_capped": 0,
+      "avg_challenger": 0.008920607318048555,
+      "avg_opponent": -0.0063529096213265,
+      "diff": 0.015273516939375054,
+      "stderr": 0.0022744844242566418,
+      "sigma": 6.715155653073694
+    },
+    {
+      "opponent": "dcfr-overnight-3000",
+      "n_hands": 5000,
+      "n_capped": 0,
+      "avg_challenger": -0.011588588178454992,
+      "avg_opponent": 0.008668613845126348,
+      "diff": -0.02025720202358134,
+      "stderr": 0.002036090088867317,
+      "sigma": 9.94906960862939
+    },
+    {
+      "opponent": "random",
+      "n_hands": 5000,
+      "n_capped": 0,
+      "avg_challenger": 0.09044114196058697,
+      "avg_opponent": -0.07508556123299676,
+      "diff": 0.16552670319358373,
+      "stderr": 0.003297722264816168,
+      "sigma": 50.194252244832704
+    }
+  ]
+}
