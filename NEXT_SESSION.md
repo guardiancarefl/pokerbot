@@ -56,15 +56,26 @@ Build to the approved design. Load-bearing points:
    handle the ALLIN→CALL translation above).
 5. Sub-step 6 — Level-3 pool ablation (BR vs PROFILE_SAMPLE vs blueprint).
 
-## Follow-up (after sub-step 2 closes): fold fast_view into the canonical path
+## TRACKED DELIVERABLE — opens the session immediately after sub-step 2 closes: fold fast_view into the canonical path
 
-Sub-step 2 ships the view/discretize optimization as a parallel `fast_view.py` to
-contain blast radius. The follow-up is to fold it into the canonical
-`_build_view_6max` + `discretize_legal_actions` and re-point all consumers
-(`traverse_6max` at TRAINING time, `subgame.py`, `pushfold_policy.py`,
-`scripted_bots/policy.py`, `solver.py`, `policy_adapter.py`, `eval_pool.py`,
-`eval_6max_self_play.py`). Its own task with its own validation surface — the
-exact-equality tests from Stage A become the regression guard.
+Sub-step 2 ships the view/discretize optimization as a parallel `src/nlhe/fast_view.py`
+to contain blast radius (Stage A, commit below). Measured 6× faster
+(0.046 vs 0.28 ms/step) with field-identical output. The **next session after
+sub-step 2 closes opens with** folding it into the canonical
+`cfr6._build_view_6max` + `actions.discretize_legal_actions` and re-pointing all
+consumers: `traverse_6max` (TRAINING hot path), `subgame.py`, `pushfold_policy.py`,
+`scripted_bots/policy.py`, `solver.py`, `policy_adapter.py`,
+`scripts/eval_pool.py`, `scripts/eval_6max_self_play.py`.
+
+**Acceptance for the fold-in (not optional):**
+1. The Stage A exact-equality tests (`tests/test_fast_view.py`) become the
+   regression guard and must stay green after the canonical path is swapped.
+2. **Reproducibility against `dcfr-overnight-3000`:** run a small fixed training
+   step (same seed, same data) on the blueprint *before* and *after* the swap and
+   confirm the produced advantages / network outputs are identical to
+   floating-point tolerance. The CFR walker uses `_build_view_6max` on its hot
+   path, so the fold-in must not perturb training even at the bit/fp level. If
+   outputs diverge beyond tolerance, the fold-in is wrong — do not land it.
 
 (The old "Path A parse rewrite" idea is dropped: `parse_state_6max` is 0.008 ms,
 not worth optimizing at any priority.)
