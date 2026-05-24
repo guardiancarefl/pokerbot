@@ -1,0 +1,176 @@
+
+
+custom
+//Timid Tom version 7 Feb 22, 2023
+preflop
+
+When stilltoact >= 5 and (pairinhand or hand = AK or hand = AQ or hand = AJ or hand = AT suited or hand = KQ or hand = KJ or hand = KT suited or hand = QJ or hand = QT suited or hand = JT or hand = T9 suited or hand = 98 suited or hand = 87 suited or hand = 76 suited) useropenrangeutg
+
+When stilltoact >= 5 and raises = 0 and calls = 0 and (pairinhand or hand = AK or hand = AQ or hand = AJ or hand = AT suited or hand = KQ or hand = KJ or hand = KT suited or hand = QJ or hand = QT suited or hand = JT or hand = T9 suited or hand = 98 suited or hand = 87 suited or hand = 76 suited) raise 2 force
+
+When stilltoact >= 5 and not (useropenrangeutg) fold force
+
+When botslastaction = raise and useropenrangeutg and amounttocall <= 41% potsize and not (hand = AA or hand = KK) call force
+
+When raises >= 1 and useropenrangeutg and (hand = AA or hand = KK) raisemax force
+
+When raises = 1 and useropenrangeutg and botslastaction = none and (hand = AK suited or hand = QQ) and amounttocall <= 5 raisepot force
+
+When raises = 1 and useropenrangeutg and botslastaction = none and (hand = AQ suited or hand = AK or hand = QQ) and amounttocall <= 5 raisemin force
+
+When raises = 1 and useropenrangeutg and amounttocall <= 3 call force
+
+When raises = 1 and useropenrangeutg and amounttocall <= 5 and (pairinhand or hand = AK or hand = AQ or hand = AJ or hand = AT or hand = A suited or hand = KQ or hand = KJ or hand = KT or hand = K9 suited or hand = K8 suited or hand = QJ or hand = QT or hand = Q9 suited or hand = Q8 suited or hand = Q7 suited or hand = JT or hand = J9 suited or hand = J8 suited or hand = T9 suited or hand = T8 suited or hand = 98 suited or hand = 97 suited or hand = 87 suited or hand = 86 suited or hand = 76 suited or hand = 65 suited) call force
+
+When raises = 1 and useropenrangeutg and amounttocall <= 8 and (pairinhand or hand = AK or hand = AQ or hand = AJ or hand = AT suited or hand = KQ or hand = KJ suited or hand = QJ suited or hand = JT or hand = T9 suited or hand = 98 suited or hand = 87 suited) call force
+
+When raises = 1 and useropenrangeutg and hand = AQ and (amounttocall <= 14 or amounttocall <= 16% stacksize) call force
+
+When raises = 1 and useropenrangeutg and (hand = AK or hand = QQ) and (amounttocall <= 21 or amounttocall <= 21% stacksize) call force
+
+When raises = 1 and useropenrangeutg fold force
+
+
+
+
+
+
+
+When stilltoact = 4 and (pairinhand or hand = AK or hand = AQ or hand = AJ or hand = AT suited or hand = A9 suited or hand = KQ or hand = KJ or hand = KT suited or hand = QJ or hand = QT suited or hand = JT or hand = T9 suited or hand = 98 suited or hand = 87 suited or hand = 76 suited) useropenrangehj
+
+When stilltoact = 4 and raises = 0 and calls = 0 and (pairinhand or hand = AK or hand = AQ or hand = AJ or hand = AT suited or hand = A9 suited or hand = KQ or hand = KJ or hand = KT suited or hand = QJ or hand = QT suited or hand = JT or hand = T9 suited or hand = 98 suited or hand = 87 suited or hand = 76 suited) raise 2 force
+
+When stilltoact = 4 and not (useropenrangehj) fold force
+
+When botslastaction = raise and useropenrangehj and amounttocall <= 41% potsize and not (hand = AA or hand = KK or hand = QQ or hand = AK) call force
+
+When raises >= 1 and useropenrangehj and (hand = AA or hand = KK) raisemax force
+
+When raises = 1 and useropenrangehj and botslastaction = none and (hand = AK suited or hand = QQ) and amounttocall <= 5 raisepot force
+
+When raises = 1 and useropenrangehj and botslastaction = none and (hand = AQ suited or hand = AK) and amounttocall <= 5 raisemin force
+
+When raises = 1 and useropenrangehj and amounttocall <= 3 call force
+
+When raises = 1 and useropenrangehj and amounttocall <= 5 and (pairinhand or hand = AK or hand = AQ or hand = AJ or hand = AT or hand = A suited or hand = KQ or hand = KJ or hand = KT or hand = K9 suited or hand = K8 suited or hand = QJ or hand = QT or hand = Q9 suited or hand = Q8 suited or hand = Q7 suited or hand = JT or hand = J9 suited or hand = J8 suited or hand = T9 suited or hand = T8 suited or hand = 98 suited or hand = 97 suited or hand = 87 suited or hand = 86 suited or hand = 76 suited or hand = 65 suited) call force
+
+When raises = 1 and useropenrangehj and amounttocall <= 8 and (pairinhand or hand = AK or hand = AQ or hand = AJ or hand = AT suited or hand = KQ or hand = KJ suited or hand = QJ suited or hand = JT or hand = T9 suited or hand = 98 suited or hand = 87 suited) call force
+
+When raises = 1 and useropenrangehj and hand = AQ and (amounttocall <= 14 or amounttocall <= 16% stacksize) call force
+
+When raises = 1 and useropenrangehj and (hand = AK or hand = QQ) and (amounttocall <= 21 or amounttocall <= 21% stacksize) call force
+
+When raises = 1 and useropenrangehj fold force
+
+
+
+
+
+
+
+When stilltoact = 3 and (pairinhand or hand = AK or hand = AQ or hand = AJ or hand = AT or hand = A suited or hand = KQ or hand = KJ or hand = KT or hand = K9 suited or hand = K8 suited or hand = QJ or hand = QT or hand = Q9 suited or hand = Q8 suited or hand = Q7 suited or hand = JT or hand = J9 suited or hand = J8 suited or hand = T9 suited or hand = T8 suited or hand = 98 suited or hand = 97 suited or hand = 87 suited or hand = 86 suited or hand = 76 suited or hand = 75 suited or hand = 65 suited or hand = 54 suited) useropenrangeco
+
+When stilltoact = 3 and raises = 0 and calls = 0 and (pairinhand or hand = AK or hand = AQ or hand = AJ or hand = AT or hand = A suited or hand = KQ or hand = KJ or hand = KT or hand = K9 suited or hand = K8 suited or hand = QJ or hand = QT or hand = Q9 suited or hand = Q8 suited or hand = Q7 suited or hand = JT or hand = J9 suited or hand = J8 suited or hand = T9 suited or hand = T8 suited or hand = 98 suited or hand = 97 suited or hand = 87 suited or hand = 86 suited or hand = 76 suited or hand = 75 suited or hand = 65 suited or hand = 54 suited) raise 2 force
+
+When stilltoact = 3 and not (useropenrangeco) fold force
+
+When botslastaction = raise and useropenrangeco and amounttocall <= 41% potsize and not (hand = AA or hand = KK or hand = QQ or hand = AK) call force
+
+When raises >= 1 and useropenrangeco and (hand = AA or hand = KK) raisemax force
+
+When raises = 1 and useropenrangeco and botslastaction = none and (hand = AK suited or hand = QQ) and amounttocall <= 5 raisepot force
+
+When raises = 1 and useropenrangeco and botslastaction = none and (hand = AQ suited or hand = AK or hand = JJ) and amounttocall <= 5 raisemin force
+
+When raises = 1 and useropenrangeco and amounttocall <= 3 call force
+
+When raises = 1 and useropenrangeco and amounttocall <= 5 and (pairinhand or hand = AK or hand = AQ or hand = AJ or hand = AT or hand = A suited or hand = KQ or hand = KJ or hand = KT or hand = K9 suited or hand = K8 suited or hand = QJ or hand = QT or hand = Q9 suited or hand = Q8 suited or hand = Q7 suited or hand = JT or hand = J9 suited or hand = J8 suited or hand = T9 suited or hand = T8 suited or hand = 98 suited or hand = 97 suited or hand = 87 suited or hand = 86 suited or hand = 76 suited or hand = 65 suited) call force
+
+When raises = 1 and useropenrangeco and amounttocall <= 8 and (pairinhand or hand = AK or hand = AQ or hand = AJ or hand = AT suited or hand = KQ or hand = KJ suited or hand = QJ suited or hand = JT or hand = T9 suited or hand = 98 suited or hand = 87 suited) call force
+
+When raises = 1 and useropenrangeco and hand = AQ suited and (amounttocall <= 14 or amounttocall <= 16% stacksize) call force
+
+When raises = 1 and useropenrangeco and (hand = AK or hand = QQ) and (amounttocall <= 21 or amounttocall <= 21% stacksize) call force
+
+When raises = 1 and useropenrangeco fold force
+
+
+
+
+
+When stilltoact = 2 and (pairinhand or hand = A or hand = KQ or hand = KJ or hand = KT or hand = K9 or hand = K suited or hand = QJ or hand = QT or hand = Q9 or hand = Q suited or hand = JT or hand = J9 or hand = J8 suited or hand = J7 suited or hand = T9 or hand = T8 suited or hand = T7 suited or hand = 98 or hand = 97 suited or hand = 96 suited or hand = 87 or hand = 86 suited or hand = 85 suited or hand = 76 or hand = 75 suited or hand = 74 suited or hand = 65 suited or hand = 64 suited or hand = 54 suited or hand = 43 suited) useropenrangebut
+
+When stilltoact = 2 and raises = 0 and calls = 0 and (pairinhand or hand = A or hand = KQ or hand = KJ or hand = KT or hand = K9 or hand = K suited or hand = QJ or hand = QT or hand = Q9 or hand = Q suited or hand = JT or hand = J9 or hand = J8 suited or hand = J7 suited or hand = T9 or hand = T8 suited or hand = T7 suited or hand = 98 or hand = 97 suited or hand = 96 suited or hand = 87 or hand = 86 suited or hand = 85 suited or hand = 76 or hand = 75 suited or hand = 74 suited or hand = 65 suited or hand = 64 suited or hand = 54 suited or hand = 43 suited) raise 2 force
+
+When stilltoact = 2 and not (useropenrangebut) fold force
+
+When botslastaction = raise and useropenrangebut and amounttocall <= 41% potsize and not (hand = AA or hand = KK or hand = QQ or hand = AK) call force
+
+When raises >= 1 and useropenrangebut and (hand = AA or hand = KK) raisemax force
+
+When raises = 1 and useropenrangebut and botslastaction = none and (hand = AK or hand = QQ) and amounttocall <= 5 raisepot force
+
+When raises = 1 and useropenrangebut and botslastaction = none and (hand = AQ suited or hand = JJ) and amounttocall <= 5 raisemin force
+
+When raises = 1 and useropenrangebut and amounttocall <= 3 call force
+
+When raises = 1 and useropenrangebut and amounttocall <= 5 and (pairinhand or hand = AK or hand = AQ or hand = AJ or hand = AT or hand = A suited or hand = KQ or hand = KJ or hand = KT or hand = K9 suited or hand = K8 suited or hand = QJ or hand = QT or hand = Q9 suited or hand = Q8 suited or hand = Q7 suited or hand = JT or hand = J9 suited or hand = J8 suited or hand = T9 suited or hand = T8 suited or hand = 98 suited or hand = 97 suited or hand = 87 suited or hand = 86 suited or hand = 76 suited or hand = 65 suited) call force
+
+When raises = 1 and useropenrangebut and amounttocall <= 8 and (pairinhand or hand = AK or hand = AQ or hand = AJ or hand = AT suited or hand = KQ or hand = KJ suited or hand = QJ suited or hand = JT or hand = T9 suited or hand = 98 suited or hand = 87 suited) call force
+
+When raises = 1 and useropenrangebut and (hand = AQ suited or hand = AJ suited or hand = JJ) and (amounttocall <= 14 or amounttocall <= 16% stacksize) call force
+
+When raises = 1 and useropenrangebut and (hand = AK or hand = QQ) and (amounttocall <= 21 or amounttocall <= 21% stacksize) call force
+
+When raises = 1 and useropenrangebut fold force
+
+
+
+When stilltoact = 1 and (pairinhand or hand = A or hand = KQ or hand = KJ or hand = KT or hand = K9 or hand = K suited or hand = QJ or hand = QT or hand = Q9 or hand = Q suited or hand = JT or hand = J9 or hand = J8 suited or hand = J7 suited or hand = T9 or hand = T8 suited or hand = T7 suited or hand = 98 or hand = 97 suited or hand = 96 suited or hand = 87 or hand = 86 suited or hand = 85 suited or hand = 76 or hand = 75 suited or hand = 74 suited or hand = 65 suited or hand = 64 suited or hand = 54 suited or hand = 43 suited) useropenrangesb
+
+When stilltoact = 1 and raises = 0 and calls = 0 and (pairinhand or hand = A or hand = KQ or hand = KJ or hand = KT or hand = K9 or hand = K suited or hand = QJ or hand = QT or hand = Q9 or hand = Q suited or hand = JT or hand = J9 or hand = J8 suited or hand = J7 suited or hand = T9 or hand = T8 suited or hand = T7 suited or hand = 98 or hand = 97 suited or hand = 96 suited or hand = 87 or hand = 86 suited or hand = 85 suited or hand = 76 or hand = 75 suited or hand = 74 suited or hand = 65 suited or hand = 64 suited or hand = 54 suited or hand = 43 suited) raise 2 force
+
+When stilltoact = 1 and amounttocall = 1 and (hand = K or hand = Q or hand = J or hand = T suited or hand = T8 or hand = T7 or hand = 9 suited or hand = 97 or hand = 96 or hand = 95 or hand = 86 or hand = 85 or hand = 75 or hand = 74 or hand = 65 or hand = 64 or hand = 54 or hand = 43) call force
+
+When stilltoact = 1 and not (useropenrangesb) fold force
+
+When botslastaction = raise and useropenrangesb and amounttocall <= 41% potsize and not (hand = AA or hand = KK or hand = QQ or hand = AK) call force
+
+When raises >= 1 and useropenrangesb and (hand = AA or hand = KK) raisemax force
+
+When raises = 1 and useropenrangesb and botslastaction = none and (hand = AK or hand = QQ) and amounttocall <= 5 raisepot force
+
+When raises = 1 and useropenrangesb and botslastaction = none and (hand = AQ suited or hand = JJ) and amounttocall <= 5 raisemin force
+
+When stilltoact = 1 and useropenrangesb and raises = 1 and amounttocall <= 5 and (lastraiserposition = 2 or lastraiserposition = 3) and (hand = AJ suited or hand = AQ or hand = KQ suited or hand = TT) raisemin force
+
+When raises = 1 and useropenrangesb and amounttocall <= 3 call force
+
+When raises = 1 and useropenrangesb and amounttocall <= 5 and (pairinhand or hand = AK or hand = AQ or hand = AJ or hand = AT or hand = A suited or hand = KQ or hand = KJ or hand = KT or hand = K9 suited or hand = K8 suited or hand = QJ or hand = QT or hand = Q9 suited or hand = Q8 suited or hand = Q7 suited or hand = JT or hand = J9 suited or hand = J8 suited or hand = T9 suited or hand = T8 suited or hand = 98 suited or hand = 97 suited or hand = 87 suited or hand = 86 suited or hand = 76 suited or hand = 65 suited) call force
+
+When raises = 1 and useropenrangesb and amounttocall <= 8 and (pairinhand or hand = AK or hand = AQ or hand = AJ or hand = AT suited or hand = KQ or hand = KJ suited or hand = QJ suited or hand = JT or hand = T9 suited or hand = 98 suited or hand = 87 suited) call force
+
+When raises = 1 and useropenrangesb and (hand = AQ suited or hand = AJ suited or hand = JJ) and (amounttocall <= 14 or amounttocall <= 16% stacksize) call force
+
+When raises = 1 and useropenrangesb and (hand = AK or hand = QQ) and (amounttocall <= 21 or amounttocall <= 21% stacksize) call force
+
+When raises = 1 and useropenrangesb fold force
+
+
+
+
+
+
+flop
+
+When BotsLastPreflopAction = raise and bets = 0 and raises = 0 and opponents <= 2 and random <= 40 userflopcbet
+
+When BotsLastPreflopAction = raise and bets = 0 and raises = 0 and opponents <= 2 and random <= 40 bet 55% force
+
+
+
+turn
+
+When userflopcbet and opponents = 1 and bets = 0 and raises = 0 and botslastaction = bet and not (raisesonflop or havenuts) and random <= 25 bet 55% force
+
+

@@ -1,0 +1,25 @@
+custom
+preflop
+when (hand = AA or hand = KK or hand = AK or hand = QQ or hand = JJ or hand = TT or hand = 99 or hand = AQ suited or hand = KQ suited or hand = AJ suited) beep force
+when others
+  when others fold force
+  
+flop
+when botslastaction = beep beep force
+
+when others
+  when others fold force
+
+turn
+when botslastaction = beep beep force
+
+when others
+  when others fold force
+
+river
+when botslastaction = beep beep force
+
+when others
+  when others fold force
+
+
