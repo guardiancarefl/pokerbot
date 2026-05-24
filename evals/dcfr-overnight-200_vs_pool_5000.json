@@ -1,0 +1,71 @@
+{
+  "challenger": {
+    "name": "dcfr-overnight-200",
+    "path": "runs/six_max_20260524_014344_phase4f_dcfr_linear_overnight/checkpoints/ckpt_iter_0200.pt"
+  },
+  "n_hands_per_matchup": 5000,
+  "mode": "sample",
+  "base_seed": 2026,
+  "results": [
+    {
+      "opponent": "vanilla-100",
+      "n_hands": 5000,
+      "n_capped": 0,
+      "avg_challenger": 0.016096912148637402,
+      "avg_opponent": -0.016839460623474068,
+      "diff": 0.03293637277211147,
+      "stderr": 0.002909046711528165,
+      "sigma": 11.322050155327176
+    },
+    {
+      "opponent": "vanilla-200",
+      "n_hands": 5000,
+      "n_capped": 0,
+      "avg_challenger": 0.0066017157176961275,
+      "avg_opponent": -0.0067761319517771765,
+      "diff": 0.013377847669473305,
+      "stderr": 0.0027099020479265873,
+      "sigma": 4.936653588534326
+    },
+    {
+      "opponent": "vanilla-400",
+      "n_hands": 5000,
+      "n_capped": 0,
+      "avg_challenger": 0.004533247908666866,
+      "avg_opponent": -0.003416691375093702,
+      "diff": 0.007949939283760568,
+      "stderr": 0.0028070221947629438,
+      "sigma": 2.8321611772763164
+    },
+    {
+      "opponent": "dcfr-100",
+      "n_hands": 5000,
+      "n_capped": 0,
+      "avg_challenger": 0.0054069831107062824,
+      "avg_opponent": -0.005386871683531646,
+      "diff": 0.010793854794237927,
+      "stderr": 0.0027978552774998353,
+      "sigma": 3.8579031878601384
+    },
+    {
+      "opponent": "dcfr-200",
+      "n_hands": 5000,
+      "n_capped": 0,
+      "avg_challenger": -0.004736139899703989,
+      "avg_opponent": 0.005135000758718119,
+      "diff": -0.009871140658422109,
+      "stderr": 0.0027098493899064082,
+      "sigma": 3.642689772793253
+    },
+    {
+      "opponent": "random",
+      "n_hands": 5000,
+      "n_capped": 0,
+      "avg_challenger": 0.08632804740477795,
+      "avg_opponent": -0.07699140910620768,
+      "diff": 0.16331945651098562,
+      "stderr": 0.0035388994249496513,
+      "sigma": 46.149787518561425
+    }
+  ]
+}
