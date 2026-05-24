@@ -1,0 +1,266 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "name": "dcfr-overnight-200",
+      "path": "runs/six_max_20260524_014344_phase4f_dcfr_linear_overnight/checkpoints/ckpt_iter_0200.pt",
+      "metadata": {
+        "iter": 200,
+        "run_dir": "runs/six_max_20260524_014344_phase4f_dcfr_linear_overnight",
+        "config_tag": "phase4f_dcfr_linear_overnight"
+      },
+      "tags": [
+        "dcfr",
+        "overnight"
+      ]
+    },
+    {
+      "name": "dcfr-overnight-400",
+      "path": "runs/six_max_20260524_014344_phase4f_dcfr_linear_overnight/checkpoints/ckpt_iter_0400.pt",
+      "metadata": {
+        "iter": 400,
+        "run_dir": "runs/six_max_20260524_014344_phase4f_dcfr_linear_overnight",
+        "config_tag": "phase4f_dcfr_linear_overnight"
+      },
+      "tags": [
+        "dcfr",
+        "overnight"
+      ]
+    },
+    {
+      "name": "dcfr-overnight-600",
+      "path": "runs/six_max_20260524_014344_phase4f_dcfr_linear_overnight/checkpoints/ckpt_iter_0600.pt",
+      "metadata": {
+        "iter": 600,
+        "run_dir": "runs/six_max_20260524_014344_phase4f_dcfr_linear_overnight",
+        "config_tag": "phase4f_dcfr_linear_overnight"
+      },
+      "tags": [
+        "dcfr",
+        "overnight"
+      ]
+    },
+    {
+      "name": "dcfr-overnight-800",
+      "path": "runs/six_max_20260524_014344_phase4f_dcfr_linear_overnight/checkpoints/ckpt_iter_0800.pt",
+      "metadata": {
+        "iter": 800,
+        "run_dir": "runs/six_max_20260524_014344_phase4f_dcfr_linear_overnight",
+        "config_tag": "phase4f_dcfr_linear_overnight"
+      },
+      "tags": [
+        "dcfr",
+        "overnight"
+      ]
+    },
+    {
+      "name": "dcfr-overnight-1000",
+      "path": "runs/six_max_20260524_014344_phase4f_dcfr_linear_overnight/checkpoints/ckpt_iter_1000.pt",
+      "metadata": {
+        "iter": 1000,
+        "run_dir": "runs/six_max_20260524_014344_phase4f_dcfr_linear_overnight",
+        "config_tag": "phase4f_dcfr_linear_overnight"
+      },
+      "tags": [
+        "dcfr",
+        "overnight"
+      ]
+    },
+    {
+      "name": "dcfr-overnight-1200",
+      "path": "runs/six_max_20260524_014344_phase4f_dcfr_linear_overnight/checkpoints/ckpt_iter_1200.pt",
+      "metadata": {
+        "iter": 1200,
+        "run_dir": "runs/six_max_20260524_014344_phase4f_dcfr_linear_overnight",
+        "config_tag": "phase4f_dcfr_linear_overnight"
+      },
+      "tags": [
+        "dcfr",
+        "overnight"
+      ]
+    },
+    {
+      "name": "dcfr-overnight-1400",
+      "path": "runs/six_max_20260524_014344_phase4f_dcfr_linear_overnight/checkpoints/ckpt_iter_1400.pt",
+      "metadata": {
+        "iter": 1400,
+        "run_dir": "runs/six_max_20260524_014344_phase4f_dcfr_linear_overnight",
+        "config_tag": "phase4f_dcfr_linear_overnight"
+      },
+      "tags": [
+        "dcfr",
+        "overnight"
+      ]
+    },
+    {
+      "name": "dcfr-overnight-1600",
+      "path": "runs/six_max_20260524_014344_phase4f_dcfr_linear_overnight/checkpoints/ckpt_iter_1600.pt",
+      "metadata": {
+        "iter": 1600,
+        "run_dir": "runs/six_max_20260524_014344_phase4f_dcfr_linear_overnight",
+        "config_tag": "phase4f_dcfr_linear_overnight"
+      },
+      "tags": [
+        "dcfr",
+        "overnight"
+      ]
+    },
+    {
+      "name": "dcfr-overnight-1800",
+      "path": "runs/six_max_20260524_014344_phase4f_dcfr_linear_overnight/checkpoints/ckpt_iter_1800.pt",
+      "metadata": {
+        "iter": 1800,
+        "run_dir": "runs/six_max_20260524_014344_phase4f_dcfr_linear_overnight",
+        "config_tag": "phase4f_dcfr_linear_overnight"
+      },
+      "tags": [
+        "dcfr",
+        "overnight"
+      ]
+    },
+    {
+      "name": "dcfr-overnight-2000",
+      "path": "runs/six_max_20260524_014344_phase4f_dcfr_linear_overnight/checkpoints/ckpt_iter_2000.pt",
+      "metadata": {
+        "iter": 2000,
+        "run_dir": "runs/six_max_20260524_014344_phase4f_dcfr_linear_overnight",
+        "config_tag": "phase4f_dcfr_linear_overnight"
+      },
+      "tags": [
+        "dcfr",
+        "overnight"
+      ]
+    },
+    {
+      "name": "dcfr-overnight-2200",
+      "path": "runs/six_max_20260524_014344_phase4f_dcfr_linear_overnight/checkpoints/ckpt_iter_2200.pt",
+      "metadata": {
+        "iter": 2200,
+        "run_dir": "runs/six_max_20260524_014344_phase4f_dcfr_linear_overnight",
+        "config_tag": "phase4f_dcfr_linear_overnight"
+      },
+      "tags": [
+        "dcfr",
+        "overnight"
+      ]
+    },
+    {
+      "name": "dcfr-overnight-2400",
+      "path": "runs/six_max_20260524_014344_phase4f_dcfr_linear_overnight/checkpoints/ckpt_iter_2400.pt",
+      "metadata": {
+        "iter": 2400,
+        "run_dir": "runs/six_max_20260524_014344_phase4f_dcfr_linear_overnight",
+        "config_tag": "phase4f_dcfr_linear_overnight"
+      },
+      "tags": [
+        "dcfr",
+        "overnight"
+      ]
+    },
+    {
+      "name": "dcfr-overnight-2600",
+      "path": "runs/six_max_20260524_014344_phase4f_dcfr_linear_overnight/checkpoints/ckpt_iter_2600.pt",
+      "metadata": {
+        "iter": 2600,
+        "run_dir": "runs/six_max_20260524_014344_phase4f_dcfr_linear_overnight",
+        "config_tag": "phase4f_dcfr_linear_overnight"
+      },
+      "tags": [
+        "dcfr",
+        "overnight"
+      ]
+    },
+    {
+      "name": "dcfr-overnight-2800",
+      "path": "runs/six_max_20260524_014344_phase4f_dcfr_linear_overnight/checkpoints/ckpt_iter_2800.pt",
+      "metadata": {
+        "iter": 2800,
+        "run_dir": "runs/six_max_20260524_014344_phase4f_dcfr_linear_overnight",
+        "config_tag": "phase4f_dcfr_linear_overnight"
+      },
+      "tags": [
+        "dcfr",
+        "overnight"
+      ]
+    },
+    {
+      "name": "dcfr-overnight-3000",
+      "path": "runs/six_max_20260524_014344_phase4f_dcfr_linear_overnight/checkpoints/ckpt_iter_3000.pt",
+      "metadata": {
+        "iter": 3000,
+        "run_dir": "runs/six_max_20260524_014344_phase4f_dcfr_linear_overnight",
+        "config_tag": "phase4f_dcfr_linear_overnight"
+      },
+      "tags": [
+        "dcfr",
+        "overnight"
+      ]
+    },
+    {
+      "name": "dcfr-overnight-3200",
+      "path": "runs/six_max_20260524_014344_phase4f_dcfr_linear_overnight/checkpoints/ckpt_iter_3200.pt",
+      "metadata": {
+        "iter": 3200,
+        "run_dir": "runs/six_max_20260524_014344_phase4f_dcfr_linear_overnight",
+        "config_tag": "phase4f_dcfr_linear_overnight"
+      },
+      "tags": [
+        "dcfr",
+        "overnight"
+      ]
+    },
+    {
+      "name": "dcfr-overnight-3400",
+      "path": "runs/six_max_20260524_014344_phase4f_dcfr_linear_overnight/checkpoints/ckpt_iter_3400.pt",
+      "metadata": {
+        "iter": 3400,
+        "run_dir": "runs/six_max_20260524_014344_phase4f_dcfr_linear_overnight",
+        "config_tag": "phase4f_dcfr_linear_overnight"
+      },
+      "tags": [
+        "dcfr",
+        "overnight"
+      ]
+    },
+    {
+      "name": "dcfr-shake-100",
+      "path": "runs/six_max_20260524_005853_phase4f_dcfr_linear_shakedown/checkpoints/ckpt_iter_0100.pt",
+      "metadata": {
+        "iter": 100,
+        "run_dir": "runs/six_max_20260524_005853_phase4f_dcfr_linear_shakedown",
+        "config_tag": "phase4f_dcfr_linear_shakedown"
+      },
+      "tags": [
+        "dcfr",
+        "shakedown"
+      ]
+    },
+    {
+      "name": "dcfr-shake-200",
+      "path": "runs/six_max_20260524_005853_phase4f_dcfr_linear_shakedown/checkpoints/ckpt_iter_0200.pt",
+      "metadata": {
+        "iter": 200,
+        "run_dir": "runs/six_max_20260524_005853_phase4f_dcfr_linear_shakedown",
+        "config_tag": "phase4f_dcfr_linear_shakedown"
+      },
+      "tags": [
+        "dcfr",
+        "shakedown"
+      ]
+    },
+    {
+      "name": "dcfr-peak-3000",
+      "path": "runs/six_max_20260524_014344_phase4f_dcfr_linear_overnight/checkpoints/ckpt_iter_3000.pt",
+      "metadata": {
+        "iter": 3000,
+        "run_dir": "runs/six_max_20260524_014344_phase4f_dcfr_linear_overnight",
+        "config_tag": "phase4f_dcfr_linear_overnight",
+        "note": "overnight peak"
+      },
+      "tags": [
+        "dcfr",
+        "peak"
+      ]
+    }
+  ]
+}

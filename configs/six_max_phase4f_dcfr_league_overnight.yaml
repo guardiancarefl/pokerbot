@@ -30,7 +30,7 @@
 #       r.register('dcfr-overnight-200', 'runs/.../ckpt_iter_0200.pt', \
 #                  metadata={'iter': 200}, tags=['dcfr', 'overnight']); \
 #       # ... more registrations ... \
-#       r.save('runs/league/registry.json')"
+#       r.save('configs/league/registry.json')"
 #
 # Use:
 #   python -m scripts.train_6max --config configs/six_max_phase4f_dcfr_league_overnight.yaml
@@ -62,7 +62,7 @@ dcfr_exponent: 1.0
 # League play: 30% of traversals replace self-play opponents with a
 # uniformly-sampled checkpoint from the registry.
 league_mix: 0.30
-league_registry_path: runs/league/registry.json
+league_registry_path: configs/league/registry.json
 league_sample_strategy: uniform
 league_tag_filter: [dcfr]
 
