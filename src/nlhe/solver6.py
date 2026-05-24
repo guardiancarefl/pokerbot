@@ -167,6 +167,15 @@ class TrainConfig6Max:
     cfr_variant: str = "vanilla"
     dcfr_exponent: float = 1.0
 
+    # Periodic advantage-network reinitialization (Brown 2019 sec 4.3).
+    # Counted in PER-SEAT iterations: with 6 seats cycling, per-seat
+    # iter k corresponds to global iter 6*k. None (default) disables.
+    reinit_adv_every: Optional[int] = None
+    # Reset Adam optimizer state at reinit too. Keeping Adam momentum
+    # across a net reset hits the fresh net with huge stale-momentum
+    # gradients on its first step; almost always catastrophic.
+    reinit_reset_optimizer: bool = True
+
     seed: int = 2026
 
 
@@ -284,6 +293,32 @@ class DeepCFR6MaxSolver:
             w = ratio ** self.cfg.dcfr_exponent
         s = w.sum().clamp(min=1e-8)
         return w * (w.shape[0] / s)
+
+    def _maybe_reinit_advantage_net(self, seat: int) -> bool:
+        """If reinit cadence triggers, reset seat's advantage net.
+
+        Returns True if a reinit happened (so the caller can log it).
+
+        Cadence is counted in per-seat iterations: at the moment seat
+        s is the traverser, per_seat_iter = ((self.iteration - 1) //
+        NUM_SEATS_6MAX) + 1. Reinit fires when per_seat_iter is a
+        positive multiple of reinit_adv_every.
+
+        Called from train() AFTER traversals AND BEFORE the advantage
+        net training step, so the freshly-reset net immediately trains
+        on the accumulated buffer (including this iter's new samples).
+        """
+        every = self.cfg.reinit_adv_every
+        if every is None or every <= 0:
+            return False
+        per_seat_iter = ((self.iteration - 1) // NUM_SEATS_6MAX) + 1
+        if per_seat_iter > 0 and per_seat_iter % every == 0:
+            self.policy_nets.reinit_seat(
+                seat,
+                reset_optimizer=self.cfg.reinit_reset_optimizer,
+            )
+            return True
+        return False
 
     def _train_advantage_net(self, seat: int) -> float:
         """One iteration of training on seat's advantage net.
@@ -413,6 +448,11 @@ class DeepCFR6MaxSolver:
                         rng=self.rng,
                     )
 
+            # Periodic reinit (Brown 2019) — runs AFTER traversal
+            # (so buffer has this iter's samples) and BEFORE training
+            # (so the fresh net immediately trains on accumulated data).
+            reinit_fired = self._maybe_reinit_advantage_net(traverser)
+
             # Train the traverser's advantage net.
             adv_loss = self._train_advantage_net(traverser)
 
@@ -424,9 +464,10 @@ class DeepCFR6MaxSolver:
             for s in range(NUM_SEATS_6MAX):
                 metrics[f"buf_{s}"].append(len(self.policy_nets.buffer_for(s)))
 
+            reinit_marker = " REINIT" if reinit_fired else ""
             self.log(
                 f"iter {it:>4}/{self.cfg.n_iterations}  "
-                f"trav={traverser}  "
+                f"trav={traverser}{reinit_marker}  "
                 f"adv={'nan' if math.isnan(adv_loss) else f'{adv_loss:.4f}':>8}  "
                 f"bufs=({', '.join(str(len(self.policy_nets.buffer_for(s))) for s in range(NUM_SEATS_6MAX))})  "
                 f"{elapsed:.1f}s"

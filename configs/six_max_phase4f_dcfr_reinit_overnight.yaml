@@ -1,0 +1,61 @@
+# Phase 4f DCFR + reinit overnight: DCFR-linear with periodic advantage-net
+# reinitialization every 4 per-seat iters (Brown 2019 sec 4.3).
+#
+# Background: configs/six_max_phase4f_dcfr_overnight.yaml broke the vanilla
+# plateau at iter 200. Reinit is Brown's second documented technique for
+# pushing Deep CFR past where it would otherwise stall — at scheduled
+# intervals, reset the advantage net to fresh weights and retrain from
+# scratch on the accumulated reservoir buffer. The buffer carries the
+# regret history; the net just relearns the current sampling distribution.
+#
+# Cadence rationale: reinit_adv_every=4 means each seat resets every 4
+# per-seat iters = every 24 global iters. Over 3400 global iters that's
+# ~141 reinits per seat. Brown reports the technique is most useful in
+# the middle of training — early iters have nothing to reset against,
+# late iters' buffers are saturated.
+#
+# Comparison plan: run side-by-side with the existing DCFR-only overnight.
+# Same seed, same hyperparams except reinit. Diff at iter 3400 isolates
+# the reinit contribution from DCFR alone.
+#
+# Expected wall-clock: ~8 hours. Reinit itself is O(network params) and
+# negligible vs. traversal cost.
+#
+# Use:
+#   python -m scripts.train_6max --config configs/six_max_phase4f_dcfr_reinit_overnight.yaml
+
+tag: phase4f_dcfr_reinit_overnight
+abstraction_path: runs/abstraction_20260521_223018_retrofit/abstraction.pkl
+
+starting_stack: 1500
+big_blind: 100
+small_blind: 50
+payout_mode: double_up
+buy_in: 1.0
+first_share: 0.65
+
+tournament_structure_path: configs/ignition_double_up_6max_turbo.yaml
+num_paid: 3
+
+hidden_dim: [256, 256]
+n_iterations: 3400
+traversals_per_iter: 150
+train_steps_per_iter: 200
+batch_size: 64
+learning_rate: 0.001
+buffer_capacity: 500000
+
+cfr_variant: linear
+dcfr_exponent: 1.0
+
+# Reinit every 4 per-seat iters (~every 24 global). Optimizer reset on
+# (default, per patch recommendation — keeping Adam momentum across a
+# weight reset typically catastrophic).
+reinit_adv_every: 4
+reinit_reset_optimizer: true
+
+bucket_runouts: 30
+max_traversal_depth: 200
+seed: 2026
+
+checkpoint_every: 200

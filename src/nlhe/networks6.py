@@ -87,6 +87,29 @@ class PlayerNetworks6Max:
         self._check_seat(seat)
         return self.buffers[seat]
 
+    def reinit_seat(self, seat: int, reset_optimizer: bool = True) -> None:
+        """Reset seat's advantage net to fresh init. Buffer is untouched.
+
+        Brown 2019 (Deep CFR, sec 4.3): periodically resetting the
+        advantage network weights and retraining from scratch on the
+        accumulated reservoir buffer dramatically improves convergence.
+        The buffer carries the regret history; the net just needs to
+        relearn the current sampling distribution.
+
+        reset_optimizer defaults to True because keeping Adam's
+        momentum/variance estimates across a net reset typically causes
+        catastrophic first-gradient updates (huge stale momentum hits a
+        fresh net). Almost always you want this True.
+        """
+        self._check_seat(seat)
+        fresh = MLP(in_dim=self.input_dim, hidden=self.hidden,
+                    out_dim=N_DISCRETE_ACTIONS).to(self.device)
+        self.nets[seat] = fresh
+        if reset_optimizer:
+            self.optimizers[seat] = optim.Adam(
+                fresh.parameters(), lr=self.learning_rate
+            )
+
     def _check_seat(self, seat: int) -> None:
         if not (0 <= seat < NUM_SEATS_6MAX):
             raise IndexError(f"seat {seat} out of range [0, {NUM_SEATS_6MAX})")
