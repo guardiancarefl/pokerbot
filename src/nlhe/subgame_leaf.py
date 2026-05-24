@@ -5,9 +5,9 @@ same units `cfr6.traverse_6max` backs up at true terminals — so sub-step 3's C
 loop can treat LEAF and TERMINAL nodes uniformly. Full design and rationale:
 `docs/SUBGAME_LEAF_DESIGN.md` (the contract this module conforms to).
 
-STATUS: STAGE C — PROFILE_SAMPLE mode implemented. BEST_RESPONSE (Stage D) and the
-`evaluate_leaves` batch path (Stage E) are not yet implemented and raise
-NotImplementedError with a message naming the stage that adds them.
+STATUS: STAGE D — PROFILE_SAMPLE and BEST_RESPONSE modes implemented. The
+`evaluate_leaves` batch path (Stage E) is not yet implemented and raises
+NotImplementedError naming Stage E.
 
 Cost model (validated provenance, for future readers — not buried in the doc):
   Per-decision-step cost ≈ 0.4 ms CPU / 0.13 ms GPU INCLUDING the network
@@ -337,6 +337,163 @@ def _option_a(node: SubgameNode, ctx: LeafEvalContext):
         return [0.0] * _NUM_SEATS, False
 
 
+_TIE_EPS = 1e-9
+
+
+def _reset_cache(ctx: LeafEvalContext) -> None:
+    try:
+        ctx.blueprint.encoder.reset_cache()
+    except Exception:
+        pass
+
+
+def _past(deadline) -> bool:
+    return deadline is not None and time.perf_counter() > deadline
+
+
+def _bias_dist_fn(ctx: LeafEvalContext, biases: dict):
+    """action_dist_fn for `_rollout_once`: hero plays bias 0 (blueprint); each
+    opponent seat plays `biases.get(seat, 0)` (0 = blueprint default)."""
+    hero = ctx.hero_seat
+    bb = ctx.biased_blueprint
+
+    def fn(probs7, mask7, cp):
+        bias_idx = 0 if cp == hero else int(biases.get(cp, 0))
+        return bb.action_probs(probs7, mask7, bias_idx)
+    return fn
+
+
+def _menu_biases(prior, seat: int, k: int) -> list:
+    """BEST_RESPONSE menu (Q7): the biases the opponent may choose from.
+
+    prior None → full menu [0, k). Otherwise a bias is IN the menu iff its weight
+    is > 0 (weight 0 EXCLUDES it). The additive value-tilt Q7 also describes is
+    DEFERRED to Track C1 — Stage D implements menu MEMBERSHIP only. So a positive
+    non-uniform prior behaves like a uniform full menu in Stage D; only zeros
+    matter. (Documented; revisit when C1 needs tilt.)
+    """
+    if prior is None:
+        return list(range(k))
+    arr = np.asarray(prior, dtype=float)
+    row = arr if arr.ndim == 1 else arr[seat]
+    menu = [b for b in range(k) if b < len(row) and float(row[b]) > 0.0]
+    return menu if menu else list(range(k))
+
+
+def _opponent_bias_values(node, ctx, o, menu, rng, deadline=None):
+    """CRN evaluation rollouts for opponent `o` (Addition 1).
+
+    For each bias b in `menu`, run ctx.n_samples rollouts with opponent o playing
+    b, ALL OTHER opponents playing blueprint (bias 0), hero playing blueprint;
+    collect opponent o's OWN ICM-equity-delta per sample. Common-random-numbers:
+    the SAME per-sample seeds (with a reset cache) are reused across biases, so a
+    bias-invariant policy yields identical samples (EXACT ties → clean lowest-index
+    tie-break) and the bias comparison has reduced variance.
+
+    NOTE: 'other opponents = blueprint' here follows Q3's single-pass approximation
+    ('others held at blueprint'). The prompt's Addition 1 wording said 'other
+    opponents playing their priors'; under prior-as-MENU (Q7) there is no sampling
+    distribution to draw from in BR mode, so the blueprint baseline is used. (Flagged.)
+
+    Returns ({bias: [per-sample o-values]}, budget_hit).
+    """
+    eval_seeds = [rng.randrange(2 ** 31) for _ in range(ctx.n_samples)]
+    out = {b: [] for b in menu}
+    for b in menu:
+        dist_fn = _bias_dist_fn(ctx, {o: b})
+        for m in range(ctx.n_samples):
+            if _past(deadline):
+                return out, True
+            r = random.Random(eval_seeds[m])
+            _reset_cache(ctx)
+            vec = _rollout_once(node.state.clone(), ctx, dist_fn, r)
+            if vec is not None:
+                out[b].append(vec[o])
+    return out, False
+
+
+def _best_response_biases(node, ctx, rng, deadline=None):
+    """Per-opponent independent best-response bias selection (Q3, Addition 1).
+
+    Live opponents = non-hero seats with chips behind (money > 0): excludes
+    all-in / busted seats (Q3). Folded-but-chipped seats stay in the loop but
+    never act, so their per-bias values tie and they resolve to bias 0 (harmless;
+    pruning folded seats is a Stage-E perf optimization, not a Stage-D concern).
+
+    For each live opponent, argmax over its menu of mean opponent-value, with a
+    deterministic LOWEST-INDEX tie-break (Q8). Returns (br_dict, budget_hit).
+    """
+    parsed = parse_state_6max(node.state)
+    money = parsed["money"]
+    live = [o for o in range(_NUM_SEATS)
+            if o != ctx.hero_seat and o < len(money) and money[o] > 0]
+    k = ctx.biased_blueprint.k
+    br = {}
+    for o in live:
+        menu = _menu_biases(ctx.opponent_prior, o, k)
+        vals, hit = _opponent_bias_values(node, ctx, o, menu, rng, deadline)
+        if hit:
+            return br, True
+        means = {b: (sum(v) / len(v) if v else float("-inf"))
+                 for b, v in vals.items()}
+        max_v = max(means.values())
+        br[o] = min(b for b in menu if means[b] >= max_v - _TIE_EPS)
+    return br, False
+
+
+def _evaluate_best_response(node: SubgameNode, ctx: LeafEvalContext,
+                           rng) -> LeafEvalResult:
+    """BEST_RESPONSE: opponents independently best-respond among biases (Q3).
+
+    Phase 1 selects each live opponent's BR bias (CRN eval rollouts, others=
+    blueprint). Phase 2 ('value-collecting rollouts') runs ctx.n_samples rollouts
+    with every opponent at its selected BR bias and hero at blueprint; the mean
+    ICM-equity-delta 6-vector is the leaf value. ITM short-circuit, wall-clock
+    guard, and per-sample failure handling match PROFILE_SAMPLE.
+
+    Cost per leaf: v×k×M_eval evaluation rollouts + M_value value rollouts. Stage D
+    keeps M_eval = M_value = ctx.n_samples (Addition 1); Stage E may split them.
+    """
+    t0 = time.perf_counter()
+    deadline = (t0 + ctx.time_budget_s) if ctx.time_budget_s is not None else None
+
+    if ctx.icm_short_circuit and is_itm(list(ctx.starting_stacks), ctx.num_paid):
+        val, ok = _option_a(node, ctx)
+        return LeafEvalResult(value=tuple(val), degraded=(not ok),
+                              n_completed=0, short_circuited=True)
+    if _past(deadline):
+        val, _ok = _option_a(node, ctx)
+        return LeafEvalResult(value=tuple(val), degraded=True, n_completed=0)
+
+    br, hit = _best_response_biases(node, ctx, rng, deadline)
+    if hit:
+        val, _ok = _option_a(node, ctx)
+        return LeafEvalResult(value=tuple(val), degraded=True, n_completed=0)
+
+    # Phase 2: value-collecting rollouts under the composed BR profile.
+    _reset_cache(ctx)
+    biases = {o: br.get(o, 0) for o in range(_NUM_SEATS) if o != ctx.hero_seat}
+    dist_fn = _bias_dist_fn(ctx, biases)
+    acc = [0.0] * _NUM_SEATS
+    n = 0
+    degraded = False
+    for _ in range(ctx.n_samples):
+        if _past(deadline):
+            degraded = True
+            break
+        vec = _rollout_once(node.state.clone(), ctx, dist_fn, rng)
+        if vec is None:
+            continue
+        for i in range(_NUM_SEATS):
+            acc[i] += vec[i]
+        n += 1
+    if n == 0:
+        val, _ok = _option_a(node, ctx)
+        return LeafEvalResult(value=tuple(val), degraded=True, n_completed=0)
+    mean = tuple(acc[i] / n for i in range(_NUM_SEATS))
+    return LeafEvalResult(value=mean, degraded=degraded, n_completed=n)
+
+
 def _evaluate_profile_sample(node: SubgameNode, ctx: LeafEvalContext,
                              rng) -> LeafEvalResult:
     """PROFILE_SAMPLE: prior-weighted average over opponents' biases (Q3 fallback form).
@@ -363,12 +520,7 @@ def _evaluate_profile_sample(node: SubgameNode, ctx: LeafEvalContext,
             degraded = True
             break
         opp = _draw_opp_biases(ctx, rng)
-
-        def dist_fn(probs7, mask7, cp, _opp=opp):
-            bias_idx = 0 if cp == ctx.hero_seat else _opp.get(cp, 0)
-            return ctx.biased_blueprint.action_probs(probs7, mask7, bias_idx)
-
-        vec = _rollout_once(node.state.clone(), ctx, dist_fn, rng)
+        vec = _rollout_once(node.state.clone(), ctx, _bias_dist_fn(ctx, opp), rng)
         if vec is None:
             continue  # drop failed/NaN sample (Q8)
         for i in range(_NUM_SEATS):
@@ -413,10 +565,7 @@ def evaluate_leaf(node: SubgameNode, ctx: LeafEvalContext) -> LeafEvalResult:
     if ctx.mode == LeafEvalMode.PROFILE_SAMPLE:
         return _evaluate_profile_sample(node, ctx, rng)
     if ctx.mode == LeafEvalMode.BEST_RESPONSE:
-        raise NotImplementedError(
-            "evaluate_leaf: BEST_RESPONSE mode lands in Stage D. Stage C "
-            "implements PROFILE_SAMPLE only."
-        )
+        return _evaluate_best_response(node, ctx, rng)
     raise ValueError(f"unknown LeafEvalMode: {ctx.mode!r}")
 
 

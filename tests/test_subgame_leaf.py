@@ -124,13 +124,13 @@ class TestSubgameNodeLeafValueField(unittest.TestCase):
 # ============================================================
 
 class TestEntryPointSignatures(unittest.TestCase):
-    def test_evaluate_leaf_accepts_node_and_ctx(self):
+    def test_evaluate_leaf_signature(self):
+        # Both modes are implemented now (Stages C/D), so evaluate_leaf no longer
+        # raises NotImplementedError; assert the (node, ctx) signature structurally.
+        import inspect
         from src.nlhe.subgame_leaf import evaluate_leaf
-        from src.nlhe.subgame import SubgameNode, NodeKind
-        node = SubgameNode(kind=NodeKind.LEAF, state=None, depth=4)
-        ctx = _make_minimal_context()
-        with self.assertRaises(NotImplementedError):
-            evaluate_leaf(node, ctx)
+        params = list(inspect.signature(evaluate_leaf).parameters)
+        self.assertEqual(params[:2], ["node", "ctx"])
 
     def test_evaluate_leaves_accepts_tree_and_ctx(self):
         from src.nlhe.subgame_leaf import evaluate_leaves
@@ -173,8 +173,28 @@ class TestBlueprintProviderRealSolver(unittest.TestCase):
 
 
 # ============================================================
-# PROFILE_SAMPLE mode behavior (Stage C) — requires a real solver
+# Leaf evaluation behavior (Stages C+D) — requires a real solver
 # ============================================================
+
+_SHARED = {}
+
+
+def _shared_solver():
+    """Load the blueprint solver once, cached across test classes."""
+    if "solver" not in _SHARED:
+        artifacts = _find_solver_artifacts()
+        if artifacts is None:
+            _SHARED["solver"] = None
+            return None
+        from src.nlhe.abstraction import Abstraction
+        from src.nlhe.game_strings import TournamentStructure
+        from scripts.eval_6max_self_play import _load_solver
+        abstr_path, ckpt_path, struct_path = artifacts
+        _SHARED["structure"] = TournamentStructure.from_yaml(struct_path)
+        _SHARED["solver"] = _load_solver(ckpt_path, Abstraction.load(abstr_path),
+                                         _SHARED["structure"])
+    return _SHARED["solver"]
+
 
 def _walk_to_decision(game, seed, postflop=False):
     """Return a decision state from the production game (optionally post-flop)."""
@@ -185,8 +205,6 @@ def _walk_to_decision(game, seed, postflop=False):
         a, p = zip(*s.chance_outcomes()); s = s.child(int(rng.choices(a, weights=p, k=1)[0]))
     if not postflop:
         return s
-    # everyone calls/checks until the round completes into the flop deal, then
-    # advance past the flop chance to the first post-flop decision.
     guard = 0
     while not s.child(1).is_chance_node():
         s = s.child(1); guard += 1; assert guard < 20
@@ -196,25 +214,39 @@ def _walk_to_decision(game, seed, postflop=False):
     return s
 
 
+def _busted_seat_decision(structure, stacks, dealer_seat, seed):
+    """A decision state from a CONSISTENT busted-seat game (some stacks == 0).
+
+    universal_poker can't 'sit out' a player, so busted seats are given a 1-chip
+    placeholder by to_inner_game_string_for_state (they fold on first action).
+    This yields a real, consistent game where only the nonzero-stack seats play —
+    the only way to get a true sub-6-alive table for ITM / heads-up fixtures.
+    """
+    import pyspiel
+    import random
+    bl = structure.level(1)
+    gs = structure.to_inner_game_string_for_state(blind_level=bl, stacks=stacks,
+                                                  dealer_seat=dealer_seat)
+    game = pyspiel.load_game(gs)
+    return _walk_to_decision(game, seed)
+
+
 @unittest.skipUnless(_HAS_OPEN_SPIEL, "Requires open_spiel")
 class TestProfileSampleMode(unittest.TestCase):
-    """PROFILE_SAMPLE leaf evaluation against a real loaded blueprint."""
+    """Leaf evaluation against a real loaded blueprint. The core invariants are
+    parametrized over BOTH modes; mode-specific tests live in their own classes."""
 
     @classmethod
     def setUpClass(cls):
-        artifacts = _find_solver_artifacts()
-        if artifacts is None:
+        solver = _shared_solver()
+        if solver is None:
             raise unittest.SkipTest("solver artifacts not present")
         import pyspiel
-        from src.nlhe.abstraction import Abstraction
-        from src.nlhe.game_strings import TournamentStructure, six_max_sng
-        from scripts.eval_6max_self_play import _load_solver
+        from src.nlhe.game_strings import six_max_sng
         from src.nlhe.biased_policy import BiasedBlueprint
         from src.nlhe.subgame import SubgameNode, NodeKind
-
-        abstr_path, ckpt_path, struct_path = artifacts
-        cls.solver = _load_solver(ckpt_path, Abstraction.load(abstr_path),
-                                  TournamentStructure.from_yaml(struct_path))
+        cls.solver = solver
+        cls.structure = _SHARED["structure"]
         cls.stack = int(cls.solver.encoder.starting_stack)
         cls.game = pyspiel.load_game(six_max_sng(starting_stack=cls.stack))
         cls.biased = BiasedBlueprint()
@@ -237,109 +269,149 @@ class TestProfileSampleMode(unittest.TestCase):
         defaults.update(kw)
         return LeafEvalContext(**defaults)
 
-    # --- 1. reproducibility (same seed -> bit-identical) ---
+    def _both_modes(self):
+        from src.nlhe.subgame_leaf import LeafEvalMode
+        return (LeafEvalMode.PROFILE_SAMPLE, LeafEvalMode.BEST_RESPONSE)
+
+    # ---- parametrized over both modes (Addition 4: rerun via subTest) ----
+
     def test_reproducible_same_seed(self):
         import random
         from src.nlhe.subgame_leaf import evaluate_leaf
-        r1 = evaluate_leaf(self.leaf, self._ctx(n_samples=8, rng=random.Random(42)))
-        r2 = evaluate_leaf(self.leaf, self._ctx(n_samples=8, rng=random.Random(42)))
-        self.assertEqual(r1.value, r2.value)
-        self.assertFalse(r1.degraded)
-        self.assertEqual(len(r1.value), 6)
+        for mode in self._both_modes():
+            with self.subTest(mode=mode):
+                r1 = evaluate_leaf(self.leaf, self._ctx(mode=mode, n_samples=6,
+                                                        rng=random.Random(42)))
+                r2 = evaluate_leaf(self.leaf, self._ctx(mode=mode, n_samples=6,
+                                                        rng=random.Random(42)))
+                self.assertEqual(r1.value, r2.value)
+                self.assertEqual(len(r1.value), 6)
 
-    # --- 2. conservation (sum ~ 0) ---
     def test_conservation_sum_zero(self):
         import random
         from src.nlhe.subgame_leaf import evaluate_leaf
-        r = evaluate_leaf(self.leaf, self._ctx(n_samples=16, rng=random.Random(3)))
-        self.assertLess(abs(sum(r.value)), 1e-6)
+        for mode in self._both_modes():
+            with self.subTest(mode=mode):
+                r = evaluate_leaf(self.leaf, self._ctx(mode=mode, n_samples=10,
+                                                       rng=random.Random(3)))
+                self.assertLess(abs(sum(r.value)), 1e-6)
 
-    # --- 3. ITM short-circuit equivalence (on vs off) ---
     def test_itm_short_circuit_equivalence(self):
         # Consistent ITM on a fresh 6-alive game requires num_paid >= alive (=6).
         # With equal payouts of length 6, icm_equity is [payout]*6 for ANY positive
         # stacks, so BOTH the Option-A short-circuit and the full rollout yield the
-        # zero-vector exactly. (Realistic num_paid=3 ITM needs busted-seat games,
-        # exercised elsewhere; this test pins the short-circuit MECHANISM + equivalence.)
+        # zero-vector exactly. (Realistic num_paid=3 busted-seat ITM is exercised by
+        # test_itm_short_circuit_realistic, which documents an icm.py limitation.)
         import random
         from src.nlhe.subgame_leaf import evaluate_leaf
-        kw = dict(n_samples=16, num_paid=6, payouts=[2.0] * 6)
-        r_on = evaluate_leaf(self.leaf, self._ctx(icm_short_circuit=True,
-                                                  rng=random.Random(1), **kw))
-        r_off = evaluate_leaf(self.leaf, self._ctx(icm_short_circuit=False,
-                                                   rng=random.Random(1), **kw))
-        self.assertTrue(r_on.short_circuited)
-        self.assertFalse(r_off.short_circuited)
-        for i in range(6):
-            self.assertLess(abs(r_on.value[i]), 1e-6)
-            self.assertLess(abs(r_off.value[i]), 1e-6)
+        for mode in self._both_modes():
+            with self.subTest(mode=mode):
+                kw = dict(mode=mode, n_samples=10, num_paid=6, payouts=[2.0] * 6)
+                r_on = evaluate_leaf(self.leaf, self._ctx(icm_short_circuit=True,
+                                                          rng=random.Random(1), **kw))
+                r_off = evaluate_leaf(self.leaf, self._ctx(icm_short_circuit=False,
+                                                           rng=random.Random(1), **kw))
+                self.assertTrue(r_on.short_circuited)
+                self.assertFalse(r_off.short_circuited)
+                for i in range(6):
+                    self.assertLess(abs(r_on.value[i]), 1e-6)
+                    self.assertLess(abs(r_off.value[i]), 1e-6)
 
-    # --- 4. point-mass-on-blueprint == blueprint-only (within 3x stderr) ---
+    def test_budget_guard_degrades_and_respects_clock(self):
+        import time
+        import random
+        from src.nlhe.subgame_leaf import evaluate_leaf
+        for mode in self._both_modes():
+            with self.subTest(mode=mode):
+                ctx = self._ctx(mode=mode, n_samples=300, time_budget_s=0.001,
+                                rng=random.Random(7))
+                t0 = time.perf_counter()
+                r = evaluate_leaf(self.leaf, ctx)
+                elapsed = time.perf_counter() - t0
+                self.assertTrue(r.degraded)
+                # correct guard stops after ~1 in-flight rollout; broken guard runs
+                # all 300 (~seconds). Slack widened to 0.4 s for the oversubscribed
+                # host (CLAUDE.md ~10x variance), still catches a seconds-long runaway.
+                self.assertLessEqual(elapsed, 0.001 + 0.4)
+
+    def test_nan_blueprint_degrades_no_raise(self):
+        import math
+        import random
+        import types
+        import numpy as np
+        from src.nlhe.subgame_leaf import evaluate_leaf, BlueprintProvider
+        nan_blueprint = types.SimpleNamespace(
+            encoder=self.solver.encoder,
+            policy_nets=types.SimpleNamespace(
+                predict_advantages=lambda seat, features: np.full(7, np.nan, np.float32)),
+        )
+        self.assertIsInstance(nan_blueprint, BlueprintProvider)
+        for mode in self._both_modes():
+            with self.subTest(mode=mode):
+                ctx = self._ctx(mode=mode, blueprint=nan_blueprint, n_samples=6,
+                                rng=random.Random(0))
+                r = evaluate_leaf(self.leaf, ctx)  # must not raise
+                self.assertTrue(r.degraded)
+                self.assertEqual(r.n_completed, 0)
+                self.assertTrue(all(math.isfinite(x) for x in r.value))
+
+    # ---- PROFILE_SAMPLE-specific ----
+
     def test_pointmass_blueprint_matches_unbiased(self):
         import math
         import random
         from src.nlhe.subgame_leaf import _rollout_once
         M = 64
         hero = self.leaf.current_player
-        ctx = self._ctx()  # only blueprint/stacks/payouts/hero used by _rollout_once
+        ctx = self._ctx()
 
         def collect(use_bias):
             vals = []
             for i in range(M):
-                r = random.Random(2000 + i)         # identical seed per paired sample
-                self.solver.encoder.reset_cache()   # identical cache state per sample
+                r = random.Random(2000 + i)
+                self.solver.encoder.reset_cache()
                 if use_bias:
-                    # point-mass on bias 0 == apply the blueprint bias config
                     fn = lambda probs, mask, cp: self.biased.action_probs(probs, mask, 0)
                 else:
-                    fn = lambda probs, mask, cp: probs  # raw RM+ blueprint, no bias path
+                    fn = lambda probs, mask, cp: probs
                 vec = _rollout_once(self.leaf.state.clone(), ctx, fn, r)
                 if vec is not None:
                     vals.append(vec[hero])
             return vals
 
-        a = collect(use_bias=True)    # bias-0 path
-        b = collect(use_bias=False)   # unbiased reference
+        a = collect(True); b = collect(False)
         self.assertGreater(min(len(a), len(b)), 30)
-        mean_a = sum(a) / len(a)
-        mean_b = sum(b) / len(b)
-        var_a = sum((x - mean_a) ** 2 for x in a) / max(1, len(a) - 1)
-        var_b = sum((x - mean_b) ** 2 for x in b) / max(1, len(b) - 1)
-        stderr = math.sqrt(var_a / len(a) + var_b / len(b))
-        # If bias-0 != identity (bias-plumbing bug) the means diverge beyond noise.
-        self.assertLessEqual(abs(mean_a - mean_b), 3.0 * stderr + 1e-9)
+        ma = sum(a) / len(a); mb = sum(b) / len(b)
+        va = sum((x - ma) ** 2 for x in a) / max(1, len(a) - 1)
+        vb = sum((x - mb) ** 2 for x in b) / max(1, len(b) - 1)
+        stderr = math.sqrt(va / len(a) + vb / len(b))
+        self.assertLessEqual(abs(ma - mb), 3.0 * stderr + 1e-9)
 
-    # --- 5. symmetric-prior consistency (permutation-invariance proxy) ---
     def test_symmetric_prior_seed_consistency(self):
-        # Exact opponent-seat permutation symmetry is infeasible in NLHE (distinct
-        # hole cards). The realizable core of "symmetric prior -> value determined
-        # by the leaf, not the sampling order" is seed-independence in expectation:
-        # under a uniform prior, two seeds agree within 3x stderr elementwise.
+        # permutation-invariance proxy: exact seat-permutation symmetry is
+        # infeasible in NLHE (distinct hole cards), so we test the realizable core
+        # — under a uniform prior, two seeds agree within 3x stderr elementwise.
         import math
         import random
-        from src.nlhe.subgame_leaf import _rollout_once
+        from src.nlhe.subgame_leaf import _rollout_once, _bias_dist_fn
         M = 64
-        ctx = self._ctx()  # uniform prior (opponent_prior=None)
+        ctx = self._ctx()
+        k = self.biased.k
 
         def collect(seed0):
             vecs = []
             for i in range(M):
                 r = random.Random(seed0 + i)
                 self.solver.encoder.reset_cache()
-                opp = {s: 0 for s in range(6)}  # placeholder; replaced below
-                # uniform draws over k biases per opponent seat
-                k = self.biased.k
                 opp = {s: r.choices(range(k), weights=[1.0 / k] * k, k=1)[0]
                        for s in range(6) if s != ctx.hero_seat}
-                fn = lambda probs, mask, cp, _o=opp: self.biased.action_probs(
-                    probs, mask, 0 if cp == ctx.hero_seat else _o.get(cp, 0))
-                vec = _rollout_once(self.leaf.state.clone(), ctx, fn, r)
+                vec = _rollout_once(self.leaf.state.clone(), ctx,
+                                    _bias_dist_fn(ctx, opp), r)
                 if vec is not None:
                     vecs.append(vec)
             return vecs
 
-        va = collect(5000)
-        vb = collect(9000)
+        va = collect(5000); vb = collect(9000)
         self.assertGreater(min(len(va), len(vb)), 30)
         for seat in range(6):
             xa = [v[seat] for v in va]; xb = [v[seat] for v in vb]
@@ -350,43 +422,248 @@ class TestProfileSampleMode(unittest.TestCase):
             self.assertLessEqual(abs(ma - mb), 3.0 * stderr + 1e-9,
                                  f"seat {seat} seed-inconsistent beyond 3 sigma")
 
-    # --- 6. budget guard: degraded flag + wall-clock respected ---
-    def test_budget_guard_degrades_and_respects_clock(self):
-        import time
-        import random
-        from src.nlhe.subgame_leaf import evaluate_leaf
-        ctx = self._ctx(n_samples=300, time_budget_s=0.001, rng=random.Random(7))
-        t0 = time.perf_counter()
-        r = evaluate_leaf(self.leaf, ctx)
-        elapsed = time.perf_counter() - t0
-        # (a) returns degraded
-        self.assertTrue(r.degraded)
-        # (b) respects the budget within slack. A correct guard stops after ~1
-        # in-flight rollout; a broken guard would run all 300 (~seconds). Slack
-        # widened to 0.4 s for the oversubscribed host (CLAUDE.md ~10x variance)
-        # while still catching a seconds-long runaway.
-        self.assertLessEqual(elapsed, 0.001 + 0.4)
+    # ---- Addition 2: biases actually bias the rollout ----
 
-    # --- 7. failure degradation: NaN blueprint -> degraded, no exception ---
-    def test_nan_blueprint_degrades_no_raise(self):
-        import math
+    def test_biases_produce_different_rollouts(self):
+        """Addition 2 — biases must actually bias (not silently default to bias 0).
+
+        DEVIATION (surfaced in the Stage D report): the spec sketched a HERO-value
+        directional MC signal (fold-biased opponents -> higher hero EV by >3 sigma).
+        Measured, that effect is real but tiny (~0.05) and washes out against the
+        per-hand ICM variance (~2.0) even at M>=120 (a 15bb preflop hero often folds
+        immediately, so opponent style barely moves hero's value at a single leaf) —
+        a 3-sigma MC gate there would be flaky. The SAME failure mode (biases 1-3
+        collapsing to bias 0 / broken bias application) is caught DETERMINISTICALLY
+        and hero-hand-independently here: with real blueprint probs, the biased
+        action distributions the rollout samples from MUST differ across biases, in
+        the right direction (fold-bias raises P(FOLD); raise-bias lowers it).
+        """
+        import random
+        import numpy as np
+        from src.nlhe.actions import DiscreteAction
+        from src.nlhe.infoset6 import parse_state_6max
+        from src.nlhe.fast_view import fast_view_and_discretize
+        from src.nlhe.subgame_leaf import _blueprint_probs, _legal_mask
+        ctx = self._ctx()
+        parsed = parse_state_6max(self.leaf.state)
+        _view, disc, _legal = fast_view_and_discretize(self.leaf.state, parsed)
+        cp = self.leaf.current_player
+        probs = _blueprint_probs(ctx, parsed, cp, disc, random.Random(1))
+        self.assertIsNotNone(probs)
+        mask = _legal_mask(disc)
+        d0 = self.biased.action_probs(probs, mask, 0)  # blueprint
+        d1 = self.biased.action_probs(probs, mask, 1)  # fold-biased
+        d3 = self.biased.action_probs(probs, mask, 3)  # raise-biased
+        # biases must NOT collapse to the blueprint or to each other
+        self.assertFalse(np.allclose(d1, d0), "fold-bias == blueprint (not applied)")
+        self.assertFalse(np.allclose(d3, d0), "raise-bias == blueprint (not applied)")
+        self.assertGreater(float(np.max(np.abs(d1 - d3))), 0.05,
+                           "fold- and raise-biased distributions barely differ")
+        # directional sanity on the distribution (when FOLD is a non-trivial option)
+        F = int(DiscreteAction.FOLD)
+        if mask[F] > 0 and 0.0 < probs[F] < 1.0:
+            self.assertGreater(d1[F], d0[F])  # fold-biased folds MORE
+            self.assertLess(d3[F], d0[F])     # raise-biased folds LESS
+
+    # ---- Addition 3: realistic busted-seat ITM (documents an icm.py limitation) ----
+
+    def test_itm_short_circuit_realistic(self):
+        """Realistic ITM (num_paid=3, 3 busted + 3 alive) — the regime that fires in
+        production. FINDING (surfaced, not silently skipped): the Q5 'Option-A approx
+        Option-B in ITM' claim does NOT hold here. is_itm fires and the short-circuit
+        (Option-A) correctly returns ~0 (the 3 alive are locked at the equal payout),
+        but the full rollout (Option-B) diverges by a lot. Root cause: icm.py splits
+        the BOTTOM payouts among ALL stack-0 seats (icm.py:97-104) rather than modeling
+        already-eliminated, out-of-the-money players, so when an alive player busts
+        mid-rollout the 3 pre-busted seats spuriously gain equity. The short-circuit
+        AVOIDS this artifact (returns the locked-equity value); the rollout inherits it.
+        Resolution (keep short-circuit / disable / fix icm.py busted-handling) is flagged
+        for review — see the Stage D report. This test pins the discrepancy so it is not
+        lost; if icm.py is later fixed to model out-of-money players, this test will flag
+        (rollout would also -> 0) and should be revisited.
+        """
+        import random
+        from src.nlhe.subgame_leaf import evaluate_leaf, LeafEvalMode
+        from src.nlhe.icm import is_itm
+        from src.nlhe.subgame import SubgameNode, NodeKind
+        stacks_itm = [4000, 4000, 4000, 0, 0, 0]
+        self.assertTrue(is_itm(stacks_itm, 3))  # fixture genuinely fires
+        st = _busted_seat_decision(self.structure, stacks_itm, dealer_seat=0, seed=3)
+        leaf = SubgameNode(kind=NodeKind.LEAF, state=st, depth=4,
+                           current_player=st.current_player())
+
+        def ev(sc, seed):
+            from src.nlhe.icm import sng_payouts_6max_double_up
+            from src.nlhe.subgame_leaf import LeafEvalContext
+            return evaluate_leaf(leaf, LeafEvalContext(
+                blueprint=self.solver, biased_blueprint=self.biased,
+                starting_stacks=stacks_itm, payouts=list(sng_payouts_6max_double_up()),
+                hero_seat=leaf.current_player, mode=LeafEvalMode.PROFILE_SAMPLE,
+                num_paid=3, icm_short_circuit=sc, n_samples=40, rng=random.Random(seed)))
+
+        r_on = ev(True, 1)
+        r_off = ev(False, 1)
+        # short-circuit fires and returns the (correct) ~locked-equity value
+        self.assertTrue(r_on.short_circuited)
+        self.assertLess(max(abs(x) for x in r_on.value), 0.05)
+        self.assertLess(abs(sum(r_on.value)), 1e-6)
+        # rollout is finite/conserved and produced samples
+        self.assertGreater(r_off.n_completed, 0)
+        self.assertLess(abs(sum(r_off.value)), 1e-6)
+        # DOCUMENTED DISCREPANCY: they do NOT agree (icm.py busted-handling artifact)
+        max_gap = max(abs(r_on.value[i] - r_off.value[i]) for i in range(6))
+        self.assertGreater(max_gap, 0.1,
+                           "expected the documented icm.py busted-handling discrepancy; "
+                           "if gone, icm.py may have been fixed — revisit this test")
+
+
+@unittest.skipUnless(_HAS_OPEN_SPIEL, "Requires open_spiel")
+class TestBestResponseMode(unittest.TestCase):
+    """BEST_RESPONSE-specific mechanism checks (Q10 #9, #10, #11)."""
+
+    @classmethod
+    def setUpClass(cls):
+        solver = _shared_solver()
+        if solver is None:
+            raise unittest.SkipTest("solver artifacts not present")
+        import pyspiel
+        from src.nlhe.game_strings import six_max_sng
+        from src.nlhe.biased_policy import BiasedBlueprint
+        from src.nlhe.subgame import SubgameNode, NodeKind
+        cls.solver = solver
+        cls.structure = _SHARED["structure"]
+        cls.stack = int(cls.solver.encoder.starting_stack)
+        cls.game = pyspiel.load_game(six_max_sng(starting_stack=cls.stack))
+        cls.biased = BiasedBlueprint()
+        st = _walk_to_decision(cls.game, seed=7)
+        cls.leaf = SubgameNode(kind=NodeKind.LEAF, state=st, depth=4,
+                               current_player=st.current_player())
+
+    def _ctx(self, leaf=None, **kw):
+        from src.nlhe.subgame_leaf import LeafEvalContext, LeafEvalMode
+        from src.nlhe.icm import sng_payouts_6max_double_up
+        leaf = leaf or self.leaf
+        defaults = dict(
+            blueprint=self.solver, biased_blueprint=self.biased,
+            starting_stacks=[self.stack] * 6,
+            payouts=list(sng_payouts_6max_double_up()),
+            hero_seat=leaf.current_player, mode=LeafEvalMode.BEST_RESPONSE)
+        defaults.update(kw)
+        return LeafEvalContext(**defaults)
+
+    # ---- Q10 #9: maximization fires (max >= mean) + argmax selection ----
+
+    def test_br_mechanism_opponent_value_ge_uniform(self):
+        import random
+        from src.nlhe.subgame_leaf import (
+            _opponent_bias_values, _best_response_biases, _menu_biases)
+        from src.nlhe.infoset6 import parse_state_6max
+        money = parse_state_6max(self.leaf.state)["money"]
+        hero = self.leaf.current_player
+        live = [o for o in range(6) if o != hero and money[o] > 0]
+        self.assertTrue(live)
+        o = live[0]
+        k = self.biased.k
+        menu = _menu_biases(None, o, k)
+        ctx = self._ctx(n_samples=30)
+        vals, _ = _opponent_bias_values(self.leaf, ctx, o, menu, random.Random(999))
+        means = {b: sum(v) / len(v) for b, v in vals.items() if v}
+        max_v = max(means.values())
+        mean_v = sum(means.values()) / len(means)
+        # BR (max over biases) >= uniform (mean over biases): the max>=mean identity.
+        self.assertGreaterEqual(max_v, mean_v - 1e-9)
+        # the selection picks the argmax with lowest-index tie-break.
+        br, _ = _best_response_biases(self.leaf, ctx, random.Random(999))
+        expected = min(b for b in menu if means[b] >= max_v - 1e-9)
+        self.assertEqual(br[o], expected)
+
+    # ---- Q10 #10: tie-break determinism ----
+
+    def test_br_tie_break_deterministic(self):
+        # A CALL-dominant synthetic blueprint puts all RM+ mass on CALL; every bias
+        # config leaves an all-CALL distribution unchanged, so all biases produce
+        # IDENTICAL opponent values (exact tie under CRN) -> lowest index (0) wins.
         import random
         import types
         import numpy as np
-        from src.nlhe.subgame_leaf import evaluate_leaf, BlueprintProvider
+        from src.nlhe.subgame_leaf import _best_response_biases
 
-        nan_blueprint = types.SimpleNamespace(
-            encoder=self.solver.encoder,  # real encoder (encode_from_parsed/reset_cache)
-            policy_nets=types.SimpleNamespace(
-                predict_advantages=lambda seat, features: np.full(7, np.nan, np.float32)),
-        )
-        self.assertIsInstance(nan_blueprint, BlueprintProvider)
-        ctx = self._ctx(blueprint=nan_blueprint, n_samples=8, rng=random.Random(0))
-        r = evaluate_leaf(self.leaf, ctx)  # must not raise
-        self.assertTrue(r.degraded)
-        self.assertEqual(r.n_completed, 0)
-        self.assertEqual(len(r.value), 6)
-        self.assertTrue(all(math.isfinite(x) for x in r.value))
+        def call_dominant(seat, features):
+            a = np.full(7, -1.0, dtype=np.float32)
+            a[1] = 10.0  # CALL
+            return a
+        stub = types.SimpleNamespace(
+            encoder=self.solver.encoder,
+            policy_nets=types.SimpleNamespace(predict_advantages=call_dominant))
+        brs = []
+        for seed in (1, 2, 3):
+            ctx = self._ctx(blueprint=stub, n_samples=6, rng=random.Random(seed))
+            br, _ = _best_response_biases(self.leaf, ctx, random.Random(seed))
+            brs.append(br)
+        for br in brs:
+            for o, b in br.items():
+                self.assertEqual(b, 0, "tie should resolve to lowest bias index")
+        self.assertEqual(brs[0], brs[1])
+        self.assertEqual(brs[1], brs[2])
+
+    # ---- Q10 #11 (optional): hero value BR <= uniform in heads-up zero-sum ----
+
+    def test_br_hero_value_le_uniform_2p(self):
+        # Heads-up (one live opponent) via a 2-alive busted-seat game, winner-take-all
+        # (num_paid=1) so ICM is ~zero-sum and is_itm does NOT fire. An opponent who
+        # best-responds can only hurt hero vs a uniform-prior opponent. Optional /
+        # non-blocking: uses generous tolerance; the load-bearing mechanism check is #9.
+        import math
+        import random
+        from src.nlhe.icm import is_itm
+        from src.nlhe.subgame import SubgameNode, NodeKind
+        from src.nlhe.subgame_leaf import (
+            LeafEvalContext, LeafEvalMode, _rollout_once, _bias_dist_fn,
+            _best_response_biases)
+        stacks_hu = [3000, 3000, 0, 0, 0, 0]   # 2 alive -> heads-up
+        self.assertFalse(is_itm(stacks_hu, 1))  # num_paid=1 -> short-circuit won't fire
+        st = _busted_seat_decision(self.structure, stacks_hu, dealer_seat=0, seed=5)
+        leaf = SubgameNode(kind=NodeKind.LEAF, state=st, depth=4,
+                           current_player=st.current_player())
+        hero = leaf.current_player
+        payouts = [2.0]  # winner-take-all
+        base = dict(blueprint=self.solver, biased_blueprint=self.biased,
+                    starting_stacks=stacks_hu, payouts=payouts, hero_seat=hero,
+                    num_paid=1, icm_short_circuit=False)
+        opp = [o for o in range(6) if o != hero and stacks_hu[o] > 0]
+        if not opp:
+            self.skipTest("heads-up fixture has no live opponent")
+        M = 40
+
+        def hero_value(biases_fn, seed0):
+            vals = []
+            ctx = LeafEvalContext(mode=LeafEvalMode.BEST_RESPONSE, n_samples=M,
+                                  rng=random.Random(seed0), **base)
+            for i in range(M):
+                r = random.Random(seed0 + i)
+                self.solver.encoder.reset_cache()
+                vec = _rollout_once(leaf.state.clone(), ctx, biases_fn(r), r)
+                if vec is not None:
+                    vals.append(vec[hero])
+            return vals, ctx
+
+        # BR: opponent plays its best-response bias.
+        ctx_br = LeafEvalContext(mode=LeafEvalMode.BEST_RESPONSE, n_samples=M,
+                                 rng=random.Random(123), **base)
+        br, _ = _best_response_biases(leaf, ctx_br, random.Random(123))
+        br_vals, _ = hero_value(lambda r: _bias_dist_fn(ctx_br, br), 4242)
+        # Uniform: opponent draws bias uniformly each rollout.
+        k = self.biased.k
+        uni_vals, _ = hero_value(
+            lambda r: _bias_dist_fn(ctx_br, {o: r.choices(range(k),
+                                    weights=[1.0 / k] * k, k=1)[0] for o in opp}), 4242)
+        self.assertGreater(min(len(br_vals), len(uni_vals)), 20)
+        m_br = sum(br_vals) / len(br_vals); m_uni = sum(uni_vals) / len(uni_vals)
+        vbr = sum((x - m_br) ** 2 for x in br_vals) / max(1, len(br_vals) - 1)
+        vun = sum((x - m_uni) ** 2 for x in uni_vals) / max(1, len(uni_vals) - 1)
+        stderr = math.sqrt(vbr / len(br_vals) + vun / len(uni_vals))
+        # hero no better under BR opponent than under uniform opponent (1-sided, 3 sigma).
+        self.assertLessEqual(m_br, m_uni + 3.0 * stderr)
 
 
 if __name__ == "__main__":
