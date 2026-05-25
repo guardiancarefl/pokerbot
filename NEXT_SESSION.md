@@ -47,14 +47,26 @@ Build to the approved design. Load-bearing points:
   back to a game action in that state, it must map to **CALL (1)**, not the chip-0
   fold. Do not let the alias ship a fold where the policy meant all-in.
 
+## Stage E.5 (encoder bucket-MC precompute) — MUST land before sub-step 6
+
+Stage E.5 (encoder bucket-MC precompute, design doc Q12) must land before sub-step 6
+evaluation. The slow Stage-E evaluator (`evaluate_leaves`, cache-shared) is usable
+for sub-step 3 development but won't scale to sub-step 6's pool evaluation (many
+subgame solves required): BR M=5 is ~30 s per 64-leaf tree because the encoder
+bucket-MC (10.77 ms/distinct-board) dominates. E.5 precomputes board→bucket once
+per `evaluate_leaves` (~400× target on the encoder path). The design budget Z=1.5 s
+is NOT closed until E.5 lands; lockstep network batching from the original Q4 plan
+is a non-bottleneck and was not built.
+
 ## Remaining B1c roadmap
 
-1. **Sub-step 2 — leaf evaluator** (NEXT; this session's deliverable).
-2. Sub-step 3 — subgame CFR loop (replaces the Level-2 stub with the real solver).
-3. Sub-step 4 — policy extraction (hero's refined root action distribution).
-4. Sub-step 5 — SubgamePolicy wrapper (conform to `eval_pool.py` `Policy`;
+1. **Sub-step 2 — leaf evaluator** (Stages A–E DONE; Stages F, G remain).
+2. Stage E.5 — encoder bucket-MC precompute (budget-closing; before sub-step 6).
+3. Sub-step 3 — subgame CFR loop (replaces the Level-2 stub with the real solver).
+4. Sub-step 4 — policy extraction (hero's refined root action distribution).
+5. Sub-step 5 — SubgamePolicy wrapper (conform to `eval_pool.py` `Policy`;
    handle the ALLIN→CALL translation above).
-5. Sub-step 6 — Level-3 pool ablation (BR vs PROFILE_SAMPLE vs blueprint).
+6. Sub-step 6 — Level-3 pool ablation (BR vs PROFILE_SAMPLE vs blueprint).
 
 ## TRACKED DELIVERABLE — opens the session immediately after sub-step 2 closes: fold fast_view into the canonical path
 

@@ -169,6 +169,20 @@ and **not** the network. `state.child()` is ≈ 0.1 ms; `information_state_strin
 ≈ 0.001 ms. The network forward (~0.3 ms CPU / ~0.05 ms GPU) is a *separate*
 additive cost on top of state-prep.
 
+> **SUPERSEDED by the Stage E measurement (see Q12).** This entire Q4 cost model
+> omitted the dominant term: the encoder's bucket-MC. At each rollout decision the
+> blueprint needs `encode_from_parsed`, whose `_get_bucket` runs a treys MC equity
+> over `bucket_runouts=20` — **10.77 ms per distinct `(hero,board)` cache-miss**
+> (measured Stage E), ~43× the network forward and ~12× the fast-path state-prep.
+> So "the budget closes via batched network forward" is **wrong**: lockstep network
+> batching optimizes a non-bottleneck. The actual levers are (i) **cache-sharing**
+> across all leaves/samples (shipped in Stage E `evaluate_leaves`: 3× PROFILE,
+> ~10× single-leaf BR) and (ii) the **bucket-MC precompute** (Stage E.5, Q12) —
+> the budget-closing fix. The new claim: *cache-sharing + bucket precompute closes
+> the budget; lockstep network batching is a smaller secondary optimization to be
+> measured only if needed after E.5.* The numbers below stand as state-prep
+> figures but are not the binding cost.
+
 Crucially, unlike a regex floor, **this overhead is largely eliminable** (Q4.5):
 `legal_actions()` is sorted ascending, so `min_bet`/`max_bet` and fold/call
 legality come from head/tail inspection — no 9,803-element `set`/list-comp/min/max
@@ -236,6 +250,22 @@ leaves rather than overrunning — the session-12 safeguard, preserved.
 > `legal_actions()` list, not `parse_state_6max`'s regex. Going forward: **any
 > number that gates a design decision is re-measured with attribution before code
 > lands against it.** Numbers in design docs are *claims* until measured fresh.
+>
+> **Meta-pattern (three instances, three stages).** This is now a recurring
+> failure mode, not a one-off: (1) the parse-attribution misdiagnosis — the
+> ~0.9 ms/step floor was asserted to be `parse_state_6max`'s regex; re-measurement
+> at Stage A showed it was `_build_view_6max`/`discretize` over the 9,803-element
+> legal list (`dc09617`). (2) the ICM busted-seat bug — `icm_equity` was assumed
+> correct for pre-busted seats; it was not, spuriously enriching already-eliminated
+> seats (`ae8e1b5`). (3) the encoder bucket-MC mis-attribution — Q4 asserted the
+> per-step cost was the network forward (~0.13 ms GPU); Stage E measured it as the
+> encoder's bucket-MC at **10.77 ms per distinct `(hero,board)` cache-miss**, ~43×
+> the network (Q12). All three were load-bearing numbers asserted WITHOUT
+> measurement-with-attribution, and all three were caught only by re-measuring at
+> the start of the implementation that depended on them. **Therefore: every
+> numerical claim in this doc (cost, speedup, accuracy) is a HYPOTHESIS pending
+> fresh measurement, not a fact to design against. Stage prompts must schedule the
+> re-measurement explicitly before any code is written against the number.**
 
 The ~0.9 ms/step state-prep floor is the binding constraint on the 6 s budget
 under `BEST_RESPONSE`, so closing it is **sub-step 2 scope, not a deferred work
@@ -609,6 +639,68 @@ with the **BR-vs-blueprint gap statistically significant (σ > 2)**. If BR does
 *not* beat PROFILE_SAMPLE by more than noise, the `v×k` cost and the X→6 s budget
 increase are not buying robustness, and we revert to PROFILE_SAMPLE (or revisit
 α / k). This is the explicit go/no-go on the architectural change.
+
+---
+
+## Q12 — Encoder bucket-MC precompute (Stage E.5, budget-closing follow-up)
+
+Stage E shipped `evaluate_leaves` with cache-sharing (one bucket-cache reset for
+the whole tree) and measured the real per-step cost. The design budget Z=1.5 s is
+NOT closed; this section files the budget-closing task. **It must land before
+sub-step 6 (pool evaluation runs many subgame solves).** The slow Stage-E
+evaluator is fine for sub-step 3 development.
+
+### The bottleneck (measured, Stage E, this GPU box)
+
+| component | cost/step | batchable? |
+|---|---|---|
+| `parse_state_6max` | 0.009 ms | no (CPU regex) |
+| `fast_view_and_discretize` | 0.023 ms | no (CPU) |
+| `state.child()` | 0.001 ms | no (CPU) |
+| `predict_advantages` (network) | 0.25 ms single / **0.45 µs/row** batched | yes (GPU) |
+| **`encode_from_parsed` cache MISS** | **10.77 ms** | **no** — treys MC equity, `bucket_runouts=20`, per distinct `(hero,board)` |
+| `encode_from_parsed` cache HIT | 0.025 ms | n/a |
+
+`evaluate_leaves` (cache-shared) on a 64-leaf depth-3 tree: PROFILE M=8 ≈ **3.5 s**,
+BR M=8 ≈ **44 s**, BR M=5 ≈ **30 s**. The bucket-MC dominates by ~43× over the
+network; cache-sharing makes repeated boards cheap but rollouts visit hundreds of
+*distinct* turn/river boards, each a fresh 10.77 ms MC. This is the session-12
+"runtime equity MC is not deployable" wall, inside `InfosetEncoder6Max._get_bucket`.
+
+### Proposed approach
+
+Precompute a `board → bucket` table for the depth-limited subgame's *sampled*
+boards ONCE per `evaluate_leaves` call (the subgame fixes hero's hole cards and
+subsamples a bounded set of boards), then have the rollout encoder LOOK UP the
+bucket instead of running MC. Turn/river buckets are reused across all rollouts of
+all leaves, so the dominant cost is paid once per distinct board rather than once
+per encounter.
+
+### Design questions to resolve (in E.5)
+
+- **Hook point.** Where does the precompute live — a new helper in `subgame_leaf`
+  that walks the tree's reachable boards, or a method on the abstraction? How does
+  the rollout encoder consult it (the rollouts deal *new* turn/river cards not in
+  the tree — does the table cover the rollout's board space, or only the tree's,
+  with a fallback to MC for off-table boards)?
+- **Encoder API.** Does `InfosetEncoder6Max` need an API change to accept a
+  precomputed bucket map / a pluggable bucket source, or can it be done via the
+  existing `_bucket_cache` (pre-populate it)? Pre-populating `_bucket_cache` may be
+  the minimal change and composes with the Stage-E cache-sharing already shipped.
+- **Precompute cost.** How many distinct boards must be bucketed up front, and
+  what does that cost vs. the savings? (If the rollout reaches boards far outside
+  the precomputed set, the table misses and we fall back to MC — quantify the hit
+  rate.)
+- **Interaction with cache-sharing.** The Stage-E shared cache already memoizes
+  buckets within a decision; E.5 front-loads/expands it. Confirm they compose and
+  that reproducibility/CRN semantics are preserved.
+
+### Expected speedup target
+
+Per-rollout encoder cost drops from ~**86 ms** (≈8 steps × 10.77 ms all-miss) to
+~**200 µs** (table lookups), ≈**400×** on the dominant cost path — which is what
+brings BR back toward the Z budget. Lockstep network batching remains a smaller
+secondary optimization, measured only if still needed after E.5.
 
 ---
 
