@@ -619,5 +619,149 @@ class TestProductionKGated(unittest.TestCase):
                         f"CFR loop took {dt:.3f}s at K=1000 on a {len(tree.all_nodes)}-node tree")
 
 
+# ============================================================
+# Sub-step 4: extract_action (policy extraction)
+# ============================================================
+
+def _result_with_policy(p, mask, degraded=False):
+    from src.nlhe.subgame_solver import SubgameSolveResult
+    p = np.asarray(p, dtype=np.float32)
+    mask = np.asarray(mask, dtype=np.float32)
+    return SubgameSolveResult(
+        root_policy=p, root_blueprint=p.copy(), legal_mask=mask,
+        hero_seat=0, n_iterations=100, n_decision_nodes_cached=1, degraded=degraded)
+
+
+@unittest.skipUnless(_HAS_OPEN_SPIEL, "Requires open_spiel")
+class TestExtractActionRealState(unittest.TestCase):
+    def setUp(self):
+        from src.nlhe.subgame import _discretize_at_decision
+        self.state = _first_decision_state(seed=42)
+        self.dmap = _discretize_at_decision(self.state)   # {DiscreteAction: chip}
+        self.legal_idxs = sorted(int(da) for da in self.dmap)
+        self.mask = np.zeros(7, dtype=np.float32)
+        for i in self.legal_idxs:
+            self.mask[i] = 1.0
+
+    def test_argmax_returns_max_action(self):
+        from src.nlhe.actions import DiscreteAction
+        from src.nlhe.subgame_solver import extract_action
+        astar = self.legal_idxs[-1]
+        p = np.zeros(7)
+        p[astar] = 0.8
+        for i in self.legal_idxs:
+            if i != astar:
+                p[i] = 0.2 / (len(self.legal_idxs) - 1)
+        res = _result_with_policy(p, self.mask)
+        chip = extract_action(res, self.state, random.Random(0), mode="argmax")
+        self.assertEqual(chip, self.dmap[DiscreteAction(astar)])
+
+    def test_sample_converges_to_distribution(self):
+        from src.nlhe.actions import DiscreteAction
+        from src.nlhe.subgame_solver import extract_action
+        self.assertIn(0, self.legal_idxs)  # FOLD legal, chip 0
+        self.assertIn(1, self.legal_idxs)  # CALL legal, chip 1
+        p = np.zeros(7)
+        p[0] = 0.6
+        p[1] = 0.4
+        res = _result_with_policy(p, self.mask)
+        rng = random.Random(123)
+        N, cnt_fold = 20000, 0
+        fold_chip = self.dmap[DiscreteAction.FOLD]
+        for _ in range(N):
+            if extract_action(res, self.state, rng, mode="sample") == fold_chip:
+                cnt_fold += 1
+        freq = cnt_fold / N
+        self.assertAlmostEqual(freq, 0.6, delta=0.02,
+                               msg=f"FOLD frequency {freq:.4f} not within 0.02 of 0.60")
+
+    def test_masked_elements_never_selected(self):
+        from src.nlhe.actions import DiscreteAction
+        from src.nlhe.subgame_solver import extract_action
+        illegal = next(i for i in range(7) if i not in self.legal_idxs)
+        legal = self.legal_idxs[0]
+        # deliberately put 0.3 mass on an ILLEGAL index — extract must mask it away,
+        # leaving all weight on `legal` (so every draw returns legal's chip).
+        p = np.zeros(7)
+        p[legal] = 0.7
+        p[illegal] = 0.3
+        res = _result_with_policy(p, self.mask)
+        rng = random.Random(7)
+        legal_chip = self.dmap[DiscreteAction(legal)]
+        for _ in range(2000):
+            self.assertEqual(extract_action(res, self.state, rng, mode="sample"), legal_chip)
+        self.assertEqual(extract_action(res, self.state, random.Random(1), mode="argmax"),
+                         legal_chip)
+
+    def test_allin_not_aliased_when_max_bet_positive(self):
+        from src.nlhe.actions import DiscreteAction
+        from src.nlhe.subgame_solver import extract_action
+        if int(DiscreteAction.ALLIN) not in self.legal_idxs:
+            self.skipTest("ALLIN not legal at this root")
+        allin_chip = self.dmap[DiscreteAction.ALLIN]
+        self.assertGreater(allin_chip, 0)  # a real all-in (max_bet), not the chip-0 alias
+        p = np.zeros(7)
+        p[int(DiscreteAction.ALLIN)] = 1.0
+        res = _result_with_policy(p, self.mask)
+        chip = extract_action(res, self.state, random.Random(0), mode="argmax")
+        self.assertEqual(chip, allin_chip)  # NOT remapped to CALL
+
+    def test_degraded_still_returns_legal_action(self):
+        from src.nlhe.subgame_solver import extract_action
+        p = np.zeros(7)
+        for i in self.legal_idxs:
+            p[i] = 1.0 / len(self.legal_idxs)
+        res = _result_with_policy(p, self.mask, degraded=True)  # degraded -> no fallback here
+        chip = extract_action(res, self.state, random.Random(0), mode="sample")
+        self.assertIn(chip, set(self.dmap.values()))
+
+    def test_reproducible_same_seed(self):
+        from src.nlhe.subgame_solver import extract_action
+        p = np.zeros(7)
+        for i in self.legal_idxs:
+            p[i] = 1.0 / len(self.legal_idxs)
+        res = _result_with_policy(p, self.mask)
+        seq1 = [extract_action(res, self.state, random.Random(5), mode="sample")
+                for _ in range(1)]  # fresh seed each construction -> deterministic
+        r1, r2 = random.Random(5), random.Random(5)
+        s1 = [extract_action(res, self.state, r1, mode="sample") for _ in range(50)]
+        s2 = [extract_action(res, self.state, r2, mode="sample") for _ in range(50)]
+        self.assertEqual(s1, s2)
+
+
+class TestExtractActionAlias(unittest.TestCase):
+    """ALLIN->CALL alias on the exact {FOLD:0, CALL:1, ALLIN:0} map (monkeypatched —
+    the real no-re-raise-room shove is hard to construct deterministically, and the
+    alias is map-driven, so injecting the map is the precise unit test)."""
+
+    def _result_force_allin(self):
+        mask = np.zeros(7, dtype=np.float32)
+        mask[0] = mask[1] = mask[6] = 1.0  # FOLD, CALL, ALLIN legal
+        p = np.zeros(7, dtype=np.float32)
+        p[6] = 1.0  # force ALLIN
+        return _result_with_policy(p, mask)
+
+    def test_alias_fires_returns_call_not_fold(self):
+        from unittest import mock
+        from src.nlhe.actions import DiscreteAction
+        from src.nlhe.subgame_solver import extract_action
+        fake = {DiscreteAction.FOLD: 0, DiscreteAction.CALL: 1, DiscreteAction.ALLIN: 0}
+        res = self._result_force_allin()
+        with mock.patch("src.nlhe.subgame_solver._discretize_at_decision", return_value=fake):
+            chip = extract_action(res, object(), random.Random(0), mode="argmax")
+        self.assertEqual(chip, 1,
+                         "ALLIN in {FOLD:0,CALL:1,ALLIN:0} must alias to CALL(1), not FOLD(0)")
+
+    def test_no_alias_when_allin_nonzero(self):
+        from unittest import mock
+        from src.nlhe.actions import DiscreteAction
+        from src.nlhe.subgame_solver import extract_action
+        fake = {DiscreteAction.FOLD: 0, DiscreteAction.CALL: 1, DiscreteAction.ALLIN: 500}
+        res = self._result_force_allin()
+        with mock.patch("src.nlhe.subgame_solver._discretize_at_decision", return_value=fake):
+            chip = extract_action(res, object(), random.Random(0), mode="argmax")
+        self.assertEqual(chip, 500)
+
+
 if __name__ == "__main__":
     unittest.main()

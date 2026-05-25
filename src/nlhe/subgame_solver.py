@@ -38,11 +38,10 @@ K progression (n_iterations):
   - K > 1  → the full vanilla weighted CFR loop with the running average strategy.
             (Stage 3-C/3-D.)
 
-STATUS: STAGE 3-D — full solver + diagnostic enrichment. K=0 passthrough, K=1
-single-iteration regret update (bit-identical to the Stage-G stub), and K>1 the
-multi-iteration vanilla weighted CFR loop (`_run_cfr`) with deeper tree descent and
-linear-LCFR average-strategy output. SubgameSolveResult carries diagnostic fields
-(convergence_history, root_q_values, blueprint/refined advantages) and
+STATUS: sub-step 3 CLOSED (full solver: K=0 passthrough, K=1 stub-identical regret
+update, K>1 the multi-iteration vanilla weighted CFR loop `_run_cfr`, production
+K=1000) + sub-step 4 `extract_action` (root_policy -> played chip action, sample/
+argmax, ALLIN->CALL alias). SubgameSolveResult carries diagnostic fields and
 `summarize_solve_result` produces a JSON-serializable summary for sub-step 5/6.
 """
 from __future__ import annotations
@@ -59,7 +58,7 @@ from src.nlhe.actions import DiscreteAction
 from src.nlhe.icm_returns import icm_adjust_returns
 from src.nlhe.infoset6 import parse_state_6max, parse_state_repeated_6max
 from src.nlhe.solver import _strategy_from_advantages
-from src.nlhe.subgame import SubgameTree, iter_decision_nodes
+from src.nlhe.subgame import SubgameTree, iter_decision_nodes, _discretize_at_decision
 # Reuse the leaf evaluator's blueprint protocol rather than redefining it — a
 # DeepCFR6MaxSolver already satisfies it (encoder + policy_nets).
 from src.nlhe.subgame_leaf import BlueprintProvider
@@ -639,3 +638,74 @@ def summarize_solve_result(result: SubgameSolveResult) -> dict:
         "convergence_history": [[int(t), fnum(l, 9)]
                                 for t, l in result.convergence_history],
     }
+
+
+# ============================================================
+# Policy extraction (sub-step 4) — root_policy -> played chip action
+# ============================================================
+
+def extract_action(result: SubgameSolveResult, state, rng: random.Random,
+                   mode: str = "sample") -> int:
+    """Map `result.root_policy` to an OpenSpiel chip action for state.apply_action().
+
+    The subgame-solver analog of the blueprint's eval-time selection
+    (`eval_6max_self_play._sample_action_from_policy`), substituting the refined
+    `root_policy` for the blueprint's RM+-from-advantages. Steps:
+      1. discretize the ROOT state via `subgame._discretize_at_decision` — the SAME
+         {DiscreteAction: chip} map the tree builder/solver used, so the selectable
+         actions are exactly the ones `root_policy` was masked over (Decision 4.2).
+      2. select a DiscreteAction: argmax over legal (`mode="argmax"`) or weighted
+         sample from the masked policy (`mode="sample"`, the default — matches the
+         blueprint eval default; Decision 4.1). The masking guarantees illegal
+         actions are never selected.
+      3. translate to a chip via the map, then apply the ALLIN->CALL alias at this
+         translation boundary (Decision 4.3 / b2dded5): in a no-re-raise-room shove
+         the map is {FOLD:0, CALL:1, ALLIN:0}, so ALLIN resolving to chip 0 is FOLD —
+         remap it to CALL (chip 1), the all-in-equivalent.
+
+    Args:
+        result: a SubgameSolveResult (its `root_policy` / `legal_mask`).
+        state: the ROOT OpenSpiel state the subgame was built from (hero to act).
+        rng: explicit random source for sampling (Decision 4.4); the same rng the
+            caller / `eval_pool` threads — never numpy global, never the solve-time
+            `SubgameSolveContext.rng`.
+        mode: "sample" (weighted, default) or "argmax" (greedy). Any non-"argmax"
+            value samples.
+
+    Returns:
+        The OpenSpiel chip-action int. Always a legal action; `result.degraded` is NOT
+        handled here (root_policy is always valid and sub-step 4 has no blueprint to
+        fall back to — the degraded->blueprint decision is sub-step 5's, Decision 4.5).
+    """
+    discrete_to_chip = _discretize_at_decision(state)  # {DiscreteAction: chip}
+    if not discrete_to_chip:
+        # Defensive: no discrete actions (unexpected non-decision state) — any legal.
+        return int(rng.choice(list(state.legal_actions())))
+
+    p = np.asarray(result.root_policy, dtype=np.float64)
+    legal = np.asarray(result.legal_mask, dtype=np.float64) > 0
+    weights = p * legal  # p is already masked, but enforce it (Decision: never pick illegal)
+
+    if mode == "argmax":
+        idx = int(np.argmax(np.where(legal, p, -np.inf)))
+    elif float(weights.sum()) > 0.0:
+        idx = rng.choices(range(_N_ACTIONS), weights=weights.tolist(), k=1)[0]
+    else:
+        # All-zero masked policy (should not happen for a valid solve) — uniform
+        # over the legal discrete actions.
+        idx = int(rng.choice([int(da) for da in discrete_to_chip]))
+
+    da = DiscreteAction(idx)
+    chip = discrete_to_chip.get(da)
+    if chip is None:
+        # Belt-and-suspenders: selected action absent from the map (mask/map drift).
+        da, chip = rng.choice(list(discrete_to_chip.items()))
+
+    # ALLIN -> CALL alias (b2dded5): chip 0 is FOLD, so an ALLIN resolving to 0 is the
+    # no-re-raise-room shove; CALL (1) is the all-in-equivalent there.
+    if da == DiscreteAction.ALLIN and int(chip) == 0:
+        call_chip = discrete_to_chip.get(DiscreteAction.CALL)
+        if call_chip is not None:
+            chip = call_chip
+
+    return int(chip)
