@@ -1,5 +1,21 @@
 # Next Session Pickup Notes
 
+## Runtime state (added session 16 — read before any eval/timing planning)
+
+The project's **nominal** runtime is the Contabo VPS (12 vCPU, no GPU) per the
+original architectural decision (CLAUDE.md / DECISIONS.md). **Actual development
+since ~session 13 runs on whatever RunPod instance is currently active** — session
+16's measurement box was a 128-core + RTX PRO 4000 Blackwell machine, not Contabo.
+CLAUDE.md and the body of this file still describe the Contabo host; treat that as
+the nominal/fallback target, not a statement of the live box. For sub-step 6 eval
+planning: the Q13 conclusion (**current evaluator is adequate, no optimization
+needed**) holds across hardware — on Contabo (12 vCPU, parallelism Y≈10) the full
+Level-3 ablation is **~21 h** wall-clock; on a many-core box (Y≈24+) it is
+**~10.5 h or less**. Both fit an overnight-to-weekend budget. Note the Q13
+hardware surprise: this evaluator runs **faster on CPU than GPU** (single-row
+`[64,64]` forward is launch-bound), so a GPU pod is not required — many CPU cores
+are what help. Full reasoning: `docs/STAGE_E_BUDGET_REDERIVATION.md`.
+
 ## Where the project stands at end of session 13
 
 B1c (depth-limited subgame solving) is mid-build:
