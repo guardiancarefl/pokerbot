@@ -258,3 +258,41 @@ tests use a mock blueprint and run anywhere.
    pattern to match is `CheckpointPolicy`, and the blueprint fall-through reuses
    `_sample_action_from_solver` verbatim. The `CheckpointPolicy` interface needs
    nothing beyond what's above.
+
+---
+
+## Stage 5-A measurement findings and regime asymmetry
+
+Measured at Stage 5-A close (`scripts/measure_gate_rate.py`, 500 self-play hands on
+the `dcfr-3000` blueprint, 3000 decisions):
+
+- **Empirical gate fire-rate `f = 0.271`** — below the §D `f≈0.55` hypothesis (the
+  `max-prob<0.95` half was over-estimated; many turbo-SNG spots are forced shove/fold
+  or near-deterministic blueprint). Below the [0.45, 0.65] re-derivation band, the
+  "pleasant surprise" case: **proceed with the gate as-is.** Sub-step-6 wall-clock
+  re-derived at `f=0.271`: ~20,600 solves/challenger × ~15 s ≈ **~8.6 h Contabo-
+  parallel (Y≈10) / ~3.6 h many-core (Y≈24)** — comfortably inside budget (was 17.4 h
+  / 7.3 h at `f=0.55`). Sequential is still ~86 h — the parallelism prerequisite
+  (Finding 2) stands.
+
+- **98.2% of natural decisions are PREFLOP** (preflop 2946 / flop 41 / turn 9 /
+  river 4, of 3000). This turbo SNG at the sampled blind levels is short-stacked and
+  push/fold-dominated — most hands resolve before a flop. The gate's solves are
+  correspondingly ~97% preflop (791 of 813; per-street solve rates preflop 0.268,
+  flop 0.463, turn 0.222, river 0.250).
+
+**The regime asymmetry (load-bearing for sub-step-6 interpretation).** This deployment
+distribution is the **opposite** of where Stages F/G found the strongest BR signal.
+Stage F per-(leaf,opp) resolution climbed **preflop 1.5% → flop 3.5% → turn 10.4% →
+river 18.0%**; Stage G's resolution concentrated on the river (M=32: river 8/12 vs
+preflop 3/13). The architecture's measurable lift is largest late-street; the bot
+overwhelmingly *fires* the solver preflop. **Implication:** sub-step 6's measured
+strength delta will be dominated by the **preflop** regime — the weakest-signal regime
+in the validation. A rough expectation: **half to a quarter** of what the Stage G
+aggregate signal would project under uniform regime weighting. **This is not a failure
+mode** — the architecture works directionally (Stage F +3.4σ, Stage G +3.07σ); the
+regime where it most clearly *demonstrates* lift simply differs from the regime where
+the bot most often *deploys* it. Both are true at once. The finding informs how to
+read sub-step 6's number (and may later motivate revisiting tree depth or the gate for
+preflop spots); it does **not** block Stage 5-B — the implementation proceeds as
+designed.
