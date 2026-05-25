@@ -15,12 +15,12 @@ Two design findings carried in the code:
     wall-clock budget assumes hand-level multiprocessing (independent hands, each with
     its own SubgamePolicy). Not designed here — noted so it is planned.
 
-STATUS: STAGE 5-A — scaffold + gate + instrumentation + starting_stacks reconstruction.
-`select_action` evaluates the gate and, on SKIP, falls through to the blueprint via
-`_sample_action_from_policy`; on SOLVE it counts the decision and raises
-NotImplementedError (the solve branch lands in Stage 5-B). The gate is fully evaluated
-and counted so `f` (solve fraction) can be measured (`scripts/measure_gate_rate.py`)
-before any solve runs.
+STATUS: STAGE 5-B — full pipeline. `select_action` evaluates the gate; on SKIP it
+falls through to the blueprint (`_sample_action_from_policy`); on SOLVE it runs the
+full pipeline (`_solve_action`: build_subgame_tree → evaluate_leaves → solve_subgame →
+extract_action), falling through to the blueprint on a degraded result. Gate
+instrumentation (`stats()`) and `f` measurement (`scripts/measure_gate_rate.py`) from
+Stage 5-A carry forward; the degraded-handling diagnostics polish is Stage 5-C.
 """
 from __future__ import annotations
 
@@ -33,8 +33,11 @@ from src.nlhe.actions import DiscreteAction
 from src.nlhe.biased_policy import BiasedBlueprint
 from src.nlhe.icm import sng_payouts_6max_double_up
 from src.nlhe.solver import _strategy_from_advantages
-from src.nlhe.subgame import _discretize_at_decision
-from src.nlhe.subgame_leaf import LeafEvalMode
+from src.nlhe.subgame import _discretize_at_decision, build_subgame_tree
+from src.nlhe.subgame_leaf import LeafEvalMode, LeafEvalContext, evaluate_leaves
+from src.nlhe.subgame_solver import (
+    SubgameSolveContext, solve_subgame, extract_action,
+)
 
 log = logging.getLogger("subgame_policy")
 
@@ -122,6 +125,31 @@ class SubgamePolicy:
         contribution = parsed["contribution"]
         return [int(money[i]) + int(contribution[i]) for i in range(_NUM_SEATS)]
 
+    # ---- solve branch (Stage 5-B) ----
+    def _solve_action(self, parsed, state, rng, mode) -> int:
+        """The full subgame-solve pipeline for a gated-SOLVE decision:
+        build_subgame_tree -> evaluate_leaves -> solve_subgame -> extract_action.
+        On a degraded result, falls through to the blueprint (Decision 5.2; the
+        diagnostics polish is Stage 5-C, here we just route correctly + count)."""
+        cp = parsed["current_player"]
+        starting_stacks = self._reconstruct_starting_stacks(parsed)
+        tree = build_subgame_tree(
+            state, max_action_depth=self.max_action_depth,
+            chance_samples_per_node=self.chance_samples_per_node, rng=rng)
+        batch = evaluate_leaves(tree, LeafEvalContext(
+            blueprint=self.solver, biased_blueprint=self.biased,
+            starting_stacks=starting_stacks, payouts=self.payouts, hero_seat=cp,
+            mode=self.leaf_mode, n_samples=self.n_samples, rng=rng,
+            num_paid=self.num_paid))
+        result = solve_subgame(tree, SubgameSolveContext(
+            blueprint=self.solver, starting_stacks=starting_stacks,
+            payouts=self.payouts, hero_seat=cp, n_iterations=self.n_iterations,
+            rng=rng, num_paid=self.num_paid))
+        if result.degraded or batch.partial_eval_degraded:
+            self.n_degraded += 1
+            return self._blueprint_action(parsed, state, rng, mode)
+        return extract_action(result, state, rng, mode)
+
     # ---- Policy contract ----
     def select_action(self, parsed, state, rng, mode: str = "sample") -> int:
         self.n_decisions_total += 1
@@ -130,10 +158,7 @@ class SubgamePolicy:
             self.n_gated_skip += 1
             return self._blueprint_action(parsed, state, rng, mode)
         self.n_gated_solve += 1
-        raise NotImplementedError(
-            "SubgamePolicy solve branch lands in Stage 5-B "
-            "(build_subgame_tree -> evaluate_leaves -> solve_subgame -> extract_action). "
-            "Stage 5-A gates + counts only; this decision was gated SOLVE-eligible.")
+        return self._solve_action(parsed, state, rng, mode)
 
     def stats(self) -> dict:
         return {

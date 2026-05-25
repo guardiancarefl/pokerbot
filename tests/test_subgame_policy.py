@@ -106,14 +106,15 @@ class TestSubgamePolicyGate(unittest.TestCase):
         self.assertEqual(p.n_decisions_total, 1)
 
     def test_gate_solve_on_mixed_blueprint(self):
+        # A mixed blueprint with >=3 legal actions gates to SOLVE. (The full solve
+        # pipeline is exercised by TestSubgamePolicyPipeline with small params; here
+        # we just assert the gate routing decision.)
         state = _first_decision_state()
         p = _make_policy(self.MIXED)
-        # gate identifies SOLVE -> counted, then NotImplementedError (Stage 5-A)
-        with self.assertRaises(NotImplementedError):
-            p.select_action(self._parsed(state), state, random.Random(0), mode="sample")
-        self.assertEqual(p.n_gated_solve, 1)
-        self.assertEqual(p.n_gated_skip, 0)
-        self.assertEqual(p.n_decisions_total, 1)
+        g = p._evaluate_gate(self._parsed(state), state, random.Random(0))
+        self.assertTrue(g["solve"])
+        self.assertGreaterEqual(g["n_legal"], 3)
+        self.assertLess(g["max_prob"], 0.95)
 
     def test_gate_skip_when_fewer_than_three_actions(self):
         # Monkeypatch the discretize to a 2-action map (the no-re-raise-room shape);
@@ -200,6 +201,67 @@ class TestStartingStacksReconstruction(unittest.TestCase):
         self.assertGreater(saw_postflop, 0, "no mid-hand multi-street states")
         self.assertGreater(saw_allin, 0, "no all-in states exercised — reconstruction "
                                          "not covered for the all-in / partial-all-in scenario")
+
+
+# ============================================================
+# Stage 5-B: full pipeline (build -> eval -> solve -> extract)
+# ============================================================
+
+@unittest.skipUnless(_HAS_OPEN_SPIEL, "Requires open_spiel")
+class TestSubgamePolicyPipeline(unittest.TestCase):
+    MIXED = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]       # -> gate SOLVE
+    DECISIVE = [0.0, 10.0, 0.0, 0.0, 0.0, 0.0, 0.0]   # -> gate SKIP
+    SMALL = dict(n_samples=2, max_action_depth=2, n_iterations=10)  # fast mock solves
+
+    def _parsed(self, state):
+        from src.nlhe.infoset6 import parse_state_6max
+        return parse_state_6max(state)
+
+    def test_pipeline_executes_returns_legal(self):
+        state = _first_decision_state()
+        p = _make_policy(self.MIXED, **self.SMALL)
+        chip = p.select_action(self._parsed(state), state, random.Random(0), mode="sample")
+        self.assertIn(chip, set(state.legal_actions()))
+        self.assertEqual(p.n_gated_solve, 1)
+        self.assertEqual(p.n_gated_skip, 0)
+        self.assertEqual(p.n_degraded, 0)
+
+    def test_solve_branch_taken_not_fallthrough(self):
+        from unittest import mock
+        state = _first_decision_state()
+        p = _make_policy(self.MIXED, **self.SMALL)
+        with mock.patch.object(p, "_blueprint_action",
+                               wraps=p._blueprint_action) as spy:
+            chip = p.select_action(self._parsed(state), state, random.Random(0), mode="argmax")
+        self.assertIn(chip, set(state.legal_actions()))
+        self.assertEqual(p.n_gated_solve, 1)
+        self.assertEqual(p.n_degraded, 0)
+        spy.assert_not_called()  # non-degraded solve returns via extract_action, not fall-through
+
+    def test_gated_skip_matches_blueprint_exactly(self):
+        from scripts.eval_6max_self_play import _sample_action_from_policy
+        state = _first_decision_state()
+        p = _make_policy(self.DECISIVE, **self.SMALL)
+        parsed = self._parsed(state)
+        chip_sg = p.select_action(parsed, state, random.Random(0), mode="argmax")
+        chip_bp = _sample_action_from_policy(p.solver, parsed, state, random.Random(0),
+                                             mode="argmax")
+        self.assertEqual(chip_sg, chip_bp)
+        self.assertEqual(p.n_gated_skip, 1)
+        self.assertEqual(p.n_gated_solve, 0)
+
+    def test_end_to_end_single_hand_smoke(self):
+        from scripts.eval_pool import play_one_hand_two_policies, UniformRandomPolicy
+        from src.nlhe.game_strings import TournamentStructure
+        structure = TournamentStructure.from_yaml(
+            "configs/ignition_double_up_6max_turbo.yaml")
+        challenger = _make_policy(self.MIXED, **self.SMALL)
+        challenger.name = "subgame"
+        opponent = UniformRandomPolicy("rand")
+        result = play_one_hand_two_policies(
+            challenger, opponent, structure, random.Random(3), mode="sample")
+        self.assertFalse(result["exceeded_cap"], "hand did not reach terminal")
+        self.assertEqual(len(result["seat_to_equity_delta"]), 6)
 
 
 if __name__ == "__main__":
