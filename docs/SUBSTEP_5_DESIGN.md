@@ -296,3 +296,54 @@ the bot most often *deploys* it. Both are true at once. The finding informs how 
 read sub-step 6's number (and may later motivate revisiting tree depth or the gate for
 preflop spots); it does **not** block Stage 5-B — the implementation proceeds as
 designed.
+
+---
+
+## Stage 5-C closure — sub-step 5 COMPLETE (session 20)
+
+Sub-step 5 is closed. `SubgamePolicy` (`src/nlhe/subgame_policy.py`) is a drop-in
+`eval_pool.Policy` challenger: gate → SKIP (blueprint) / SOLVE
+(build→evaluate_leaves→solve→extract) → degraded → blueprint fall-through with a
+WARNING + `n_degraded` (no temporal back-off, decisions are independent). `stats()`
+exposes the four counters + `gate_skip_rate` / `gate_solve_rate` / `degraded_rate`.
+
+**Stage-5 findings (all commits):**
+- **Regime asymmetry** (`4cf3fe7`): deployment is **98.2% preflop**; Stage F/G's
+  strongest BR signal is late-street. Tempers sub-step-6 magnitude expectations.
+- **Gate fire-rate `f ≈ 0.271`** measured (`6ab60be`, `scripts/measure_gate_rate.py`),
+  below the 0.55 hypothesis (the "pleasant surprise" branch → proceed).
+- **Chance-leaf parse crash** (finding #7) fixed (`03576eb`): `_best_response_biases`
+  / `_option_a` crashed on chance-node leaves (`observation_string(-1)`); now parse
+  chance-safely. Surfaced at Stage-5-B integration; Stage F/G never exercised it.
+- **Chance leaves ~88% bias-INACTIVE** (`03576eb`, measured 22/25): BR adds ~zero
+  signal there.
+- **Tree-builder leaf explosion** (finding #8) fixed (`9ff106d`): chance branched ×8
+  without consuming the action-depth budget, compounding across streets → a
+  round-closing depth-3 tree blew up to **2560 leaves**, and the chance-leaf fix made
+  them all evaluable → a single solve took **>666 s**. Two coordinated changes:
+  (A) chance collapses to a LEAF (transparent; the rollout draws the board) →
+  **2560 → 5–12 leaves**, and (B) chance leaves use **blueprint-only** evaluation
+  (skip the `v×k` BR, justified by 88% bias-inactivity). Also a correctness fix — a
+  depth-limited solver should not expand chance into the tree.
+- **Per-solve cost (production M=8 depth-3 K=1000):** chance-free ~12–22 s (≈ Q13),
+  chance-reaching ~5 s; **blended ~6.7 s** over a 50-decision benchmark (per-skip
+  ~0.9 ms; 0 degraded). Bit-identity to the Stage-G stub preserved throughout.
+- **Sub-step-6 wall-clock at f≈0.27:** ~20,600 solves/challenger × ~6.7 s ≈
+  **~3.8 h Contabo-parallel (Y≈10) / ~1.6 h many-core (Y≈24)** — comfortably <24 h.
+  Feasible end-to-end.
+
+**LOAD-BEARING context for sub-step 6 interpretation.** The compound of (98% preflop)
++ (chance leaves 88% bias-inactive, blueprint-only) + (round-closing solves are
+shallow, blueprint-dominated) means the BR architecture's measurable lift **in
+deployment** is concentrated in the **minority of chance-free, decision-bearing
+solves**. Stage F/G's aggregate signal magnitudes (+3.4σ / +3.07σ) were measured on a
+**different leaf/decision mix** than deployment produces. Sub-step 6's measured bb/100
+is the **deployment-mix reality** and may be **substantially below** what the Stage
+F/G aggregate would naively project. This is not a defect — the architecture works
+directionally; the regime where it most clearly demonstrates lift differs from the
+regime where the bot most often deploys it. Read sub-step 6's number through this lens.
+
+**Next: sub-step 6** — the Level-3 pool ablation (subgame-BR vs subgame-PROFILE vs
+blueprint over `league-v2-600` × 5,000 hands), which needs hand-level multiprocessing
+(`eval_pool` is sequential — Finding 2). The first measured strength delta from
+subgame solving.

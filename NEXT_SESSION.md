@@ -16,7 +16,7 @@ hardware surprise: this evaluator runs **faster on CPU than GPU** (single-row
 `[64,64]` forward is launch-bound), so a GPU pod is not required — many CPU cores
 are what help. Full reasoning: `docs/STAGE_E_BUDGET_REDERIVATION.md`.
 
-## Where the project stands (start of session 20)
+## Where the project stands (start of session 21)
 
 B1c (depth-limited subgame solving):
 
@@ -50,28 +50,42 @@ B1c (depth-limited subgame solving):
   policy. **Production K=1000.** Closed by execution-and-measurement (implementation
   Stages 3-A…3-E), not an ablation gate. Both flagged decisions approved: vanilla
   CFR (Decision 2) and BR-as-safety / no CFV gadget (Decision 6).
-- **Path: Path A (confirmation-first). Sub-steps 2 & 3 are CLOSED.** Next is sub-step 4.
+- **Sub-step 4 — policy extraction: CLOSED** (session 20, `9798832`;
+  `subgame_solver.extract_action`). root_policy → played chip action (sample/argmax),
+  reuses the tree's discretize map, `ALLIN`→CALL(1) chip-0 alias at translation.
+- **Sub-step 5 — SubgamePolicy wrapper: CLOSED** (session 20, `6ab60be`→`9ff106d`;
+  `src/nlhe/subgame_policy.py`, `docs/SUBSTEP_5_DESIGN.md` Stage-5-C closure,
+  `docs/sessions/session_20_summary.md`). Drop-in `eval_pool.Policy`; gate (empirical
+  f≈0.27) → SKIP/SOLVE → degraded→blueprint. Two foundational findings caught + fixed
+  (chance-leaf parse crash `03576eb`; tree-builder leaf explosion `9ff106d`). Per-solve
+  ~6.7 s blended; sub-step-6 ~3.8 h Contabo-parallel — feasible.
+- **Path: Path A (confirmation-first). Sub-steps 2–5 are CLOSED.** Next is sub-step 6.
 
-## Current deliverable — Sub-step 4 (policy extraction)
+## Current deliverable — Sub-step 6 (Level-3 pool ablation: the strength go/no-go)
 
-Turn `SubgameSolveResult.root_policy` (the refined masked 7-vector from
-`subgame_solver.solve_subgame`) into a **played action**. Scope:
-- Map the 7-vector `DiscreteAction` distribution to a chosen action — support both
-  argmax (eval/exploit) and sampling (mixed-strategy play) modes, mirroring the
-  blueprint's own action-selection (`eval_6max_self_play._sample_action_from_policy`,
-  `eval_pool` `mode` arg).
-- Translate the chosen `DiscreteAction` back to an OpenSpiel chip action via the same
-  `discretize_legal_actions` map the solver/tree used — and handle the
-  **`DiscreteAction.ALLIN` → chip-0 FOLD alias**: when ALLIN is selected facing a
-  shove with no re-raise room, emit **CALL (1)**, not the chip-0 fold (`b2dded5`).
-  (This is the carry-forward formerly filed under sub-step 5; it surfaces here at the
-  extraction boundary.)
-- Keep it a thin, pure-ish function over `SubgameSolveResult` + the root state; the
-  `eval_pool.Policy` wrapper that *calls* build→evaluate_leaves→solve→extract is
-  sub-step 5.
+Measure the strength delta from subgame solving: three challengers — **subgame-BR**
+(`SubgamePolicy(leaf_mode=BEST_RESPONSE)`), **subgame-PROFILE**
+(`leaf_mode=PROFILE_SAMPLE`), and **blueprint** (plain `CheckpointPolicy`) — over the
+`league-v2-600` pool × 5,000 hands/matchup, reporting the ICM-equity-delta diff ± σ.
+Success criterion (Q11 Level 3): subgame-BR ≥ subgame-PROFILE ≥ blueprint with the
+**BR-vs-blueprint gap σ > 2**; if BR doesn't beat PROFILE by more than noise, revert
+to PROFILE (or revisit α/k).
 
-Sub-step 3's diagnostic fields (`summarize_solve_result`) are available for the
-extraction layer / sub-step 6 to log.
+**Two load-bearing prerequisites / context (do NOT skip):**
+1. **`eval_pool.py` is SEQUENTIAL** — the ~3.8 h Contabo-parallel projection assumes
+   **hand-level multiprocessing** (independent hands/matchups, each with its own
+   `SubgamePolicy`). Sub-step 6 must add this wrapper or the run is ~38 h+ sequential.
+2. **REGIME ASYMMETRY (interpretation).** Deployment is **98% preflop**; chance leaves
+   are blueprint-only / 88% bias-inactive; round-closing solves are shallow. So the BR
+   architecture's measurable lift in deployment concentrates in the **minority of
+   chance-free decision-bearing solves** — a **different mix** than Stage F/G measured
+   (+3.4σ / +3.07σ). Sub-step 6's bb/100 may be **substantially below** the naive Stage
+   F/G projection. This is not a defect; read the number through this lens. Full
+   reasoning: `docs/SUBSTEP_5_DESIGN.md` Stage-5-C closure.
+
+The full stack (build_subgame_tree → evaluate_leaves → solve_subgame → extract_action
+→ SubgamePolicy) routes through `eval_pool` unchanged; `summarize_solve_result` and
+`SubgamePolicy.stats()` are available for per-matchup diagnostics.
 
 ## Ablation gate reference (Stages F & G methodology, for sub-step 3 / Level 3 to reuse)
 
@@ -95,11 +109,13 @@ for the resolution-intractable-but-aggregate-confirmed case this SNG produces:
 2. ~~Stage E.5 — bucket-MC precompute~~ — **SHELVED (Q13)**, no longer on the path.
 3. **Sub-step 3 — subgame CFR solver — CLOSED** (session 19, vanilla weighted CFR,
    production K=1000; `src/nlhe/subgame_solver.py`).
-4. **Sub-step 4 — policy extraction (root_policy → action; ALLIN→CALL alias) — NEXT.**
-5. Sub-step 5 — SubgamePolicy wrapper (conform to `eval_pool.py` `Policy`; calls
-   build→evaluate_leaves→solve→extract).
-6. Sub-step 6 — Level-3 pool ablation (BR vs PROFILE_SAMPLE vs blueprint),
-   the full `league-v2-600` pool × 5,000 hands (Q13: ~10.5 h at Y≈24, feasible).
+4. **Sub-step 4 — policy extraction — CLOSED** (session 20, `9798832`;
+   `extract_action`, ALLIN→CALL alias).
+5. **Sub-step 5 — SubgamePolicy wrapper — CLOSED** (session 20, `6ab60be`→`9ff106d`;
+   + chance-leaf fix `03576eb` and tree-builder cost mitigation `9ff106d`).
+6. **Sub-step 6 — Level-3 pool ablation (BR vs PROFILE_SAMPLE vs blueprint) — NEXT.**
+   `league-v2-600` × 5,000 hands; ~3.8 h Contabo-parallel at the measured ~6.7 s/solve
+   and f≈0.27 — needs hand-level multiprocessing (eval_pool is sequential).
 
 ## Carry-forward for sub-step 5 (SubgamePolicy)
 

@@ -1,8 +1,8 @@
 # Project Status
 
-**Last updated:** 2026-05-25 (Session 19)
-**Current phase:** B1c — depth-limited subgame solving (real-time), sub-step 4
-(sub-step 3 CLOSED)
+**Last updated:** 2026-05-26 (Session 20)
+**Current phase:** B1c — depth-limited subgame solving (real-time), sub-step 6
+(sub-steps 4 & 5 CLOSED)
 
 > Note: this file was badly stale before Session 13 (it still read "Pre-Phase-1
 > setup, 2026-05-21"). Rewritten from git history + the docs. Cross-check
@@ -57,25 +57,42 @@
   an ablation gate. Measured: K=1000 loop 0.109 s (~15× under estimate, ~250× under
   the 27 s budget); convergence `converged_l1_tail` 4.4e-2→4.4e-8 over K=10→1000.
   Safety = BR leaf mode, no CFV gadget (Decision 6, approved).
+- **B1c sub-step 4 — policy extraction CLOSED** (session 20, `9798832`;
+  `subgame_solver.extract_action`). root_policy 7-vector → played chip action
+  (sample default / argmax), reuses the tree's discretize map, applies the
+  `ALLIN`→CALL(1) chip-0 alias (`b2dded5`) at the translation boundary.
+- **B1c sub-step 5 — SubgamePolicy wrapper CLOSED** (session 20, `6ab60be`→`9ff106d`;
+  `src/nlhe/subgame_policy.py`, `docs/SUBSTEP_5_DESIGN.md`,
+  `docs/sessions/session_20_summary.md`). Drop-in `eval_pool.Policy`: gate (≥3 actions
+  AND blueprint max-prob <0.95; empirical f≈0.27) → SKIP (blueprint) / SOLVE
+  (build→evaluate_leaves→solve→extract) → degraded → blueprint fall-through (WARNING +
+  `n_degraded`, no back-off). Two foundational findings caught + fixed this session:
+  **chance-leaf parse crash** (`03576eb`) and **tree-builder leaf explosion**
+  (`9ff106d`, 2560→5–12 leaves; chance now collapses to a transparent leaf, chance
+  leaves use blueprint-only eval — 88% bias-inactive). Per-solve ~6.7 s blended
+  (≈ Q13); sub-step-6 projected **~3.8 h Contabo-parallel** — feasible.
 
 ## In progress
-- B1c **sub-step 4 — policy extraction** (turn `SubgameSolveResult.root_policy` into a
-  played action). Sub-step 3 (the CFR solver) is closed.
+- B1c **sub-step 6 — Level-3 pool ablation** (subgame-BR vs subgame-PROFILE vs
+  blueprint over `league-v2-600` × 5,000 hands). Sub-steps 4 & 5 are closed; the
+  full subgame-solving stack (tree → leaf-eval → solver → extract → SubgamePolicy)
+  routes through `eval_pool` unchanged.
 
-## Next up (sub-step 4 + handoff)
-1. **Sub-step 4 — policy extraction:** map the refined `root_policy` 7-vector to a
-   played action (argmax / sampling), and handle the `DiscreteAction.ALLIN` → CALL(1)
-   translation when ALLIN maps to the chip-0 fold alias (`b2dded5`). Small follow-up.
+## Next up (sub-step 6 + handoff)
+1. **Sub-step 6 design proposal** (next session): the go/no-go strength measurement.
+   Needs **hand-level multiprocessing** (`eval_pool` is sequential; ~3.8 h
+   Contabo-parallel only with it). **Load-bearing interpretation context:** the
+   deployment mix (98% preflop, chance leaves blueprint-only/bias-inactive,
+   round-closing solves shallow) concentrates the BR lift in the minority of
+   chance-free decision-bearing solves — sub-step 6's bb/100 may be **well below**
+   the Stage F/G aggregate-signal projection (see SUBSTEP_5_DESIGN Stage-5-C closure).
 2. View/discretize fast path is shipped (`src/nlhe/fast_view.py`); fold into the
-   canonical path now that sub-step 2/3 have closed (see NEXT_SESSION.md tracked
+   canonical path now that sub-steps 2–5 have closed (NEXT_SESSION.md tracked
    deliverable + acceptance criteria).
 
 ## Then (later B1c sub-steps)
-- Sub-step 5: SubgamePolicy wrapper (conform to `eval_pool.Policy`) — carries the
-  `DiscreteAction.ALLIN` → CALL(1) translation when facing a shove with no re-raise
-  room (the chip-0 alias, `b2dded5`).
-- Sub-step 6: Level-3 pool ablation (BR vs PROFILE_SAMPLE vs blueprint) — the first
-  measured strength delta from subgame solving.
+- Decide the `dcfr-overnight-3000` ICM-retrain after sub-step 6 measures the
+  busted-seat-bias impact (`ae8e1b5`).
 
 ## Known issues / open questions
 - The ~0.9 ms/step state-prep floor is `_build_view_6max` (0.64 ms) + `discretize`
