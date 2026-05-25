@@ -86,7 +86,7 @@ class TestLeafEvalContextDefaults(unittest.TestCase):
         ctx = _make_minimal_context()
         # documented defaults
         self.assertEqual(ctx.mode, LeafEvalMode.BEST_RESPONSE)
-        self.assertEqual(ctx.n_samples, 5)            # design M (dropped 8->5 in Stage E)
+        self.assertEqual(ctx.n_samples, 8)            # design M (restored 5->8 in session-16 Q13)
         self.assertIsNone(ctx.opponent_prior)
         self.assertIsNone(ctx.rng)
         self.assertTrue(ctx.icm_short_circuit)

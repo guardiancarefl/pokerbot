@@ -138,13 +138,18 @@ class LeafEvalContext:
             includes + tilts the argmax); in PROFILE_SAMPLE it is the sampling
             distribution over biases. Track C1 nudges it; never hardcoded.
         n_samples: MC rollouts per (leaf, strategy) — the design's M.
-            DEFAULT = 5. Stage E measured BR over a 64-leaf depth-3 tree at ~44 s
-            (M=8) vs ~30 s (M=5) on this GPU box (both >> the Z=1.5 s design budget
-            — the budget is not closed by sample-count tuning; see evaluate_leaves
-            and design doc Q12). Per the Stage-E decision rule (M=8 BR cost > 12 s),
-            the default dropped 8 -> 5, which is still within Q4's stderr bounds and
-            ~32% cheaper. The budget-closing fix is the encoder bucket-MC precompute
-            (Stage E.5); M is a live knob, not the lever.
+            DEFAULT = 8 (the original design value). M is a REAL budget lever per
+            the session-16 Q13 measurement: network forwards dominate BR cost
+            (~45%) and scale linearly in M, so M directly multiplies the dominant
+            cost (BR M=8 d3 ≈ 20.5 s vs M=5 ≈ 13.8 s per decision). The session-14
+            drop to 5 was made under the wrong attribution (assumed bucket-MC
+            dominated and M wouldn't help) and is reverted. Default 8 is chosen for
+            MEASUREMENT QUALITY — M=5 carries ~26 % more MC stderr (sqrt(8/5)),
+            which hurts when sub-step 6 measures small bb/100 deltas. The budget is
+            closed by PARALLELISM, not sample-count: sub-step 6 is throughput-bound
+            and parallelizes (Q13 / docs/STAGE_E_BUDGET_REDERIVATION.md), so M=8 at
+            Y≈24 is ~0.85 s effective vs the ~27 s/decision budget. M=5 remains
+            available as a cost-saving knob (e.g. real-time deployment latency).
         rng: random source for chance/bias/action sampling. None → a fresh
             `random.Random()` is created at eval time. NOTE: reproducibility
             (same seed → identical result) holds because `evaluate_leaf` resets
@@ -177,7 +182,7 @@ class LeafEvalContext:
 
     mode: LeafEvalMode = LeafEvalMode.BEST_RESPONSE
     opponent_prior: Optional[Any] = None
-    n_samples: int = 5  # design M; dropped 8->5 per Stage E measurement (see docstring)
+    n_samples: int = 8  # design M; restored 5->8 per session-16 Q13 (see docstring)
     rng: Optional[random.Random] = None
     icm_short_circuit: bool = True
     time_budget_s: Optional[float] = None
