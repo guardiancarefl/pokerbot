@@ -120,13 +120,32 @@ below are set relative to this measured variance and the blueprint's own pool ed
   than blueprint). The architecture does not lift strength as measured → do not lock
   BR; surface for diagnosis (the Path-A discipline).
 
-**BR-vs-PROFILE (the revert gate, per Q11):** for a **full PASS** verdict, also
-require `L_BRvsP ≥ +0.001` (BR beats PROFILE, consistent with Stage G's value-
-suppression direction). If `L_BRvsP ≈ 0` (within noise) while `L ≥ +0.002`, the
-verdict is recorded as **PASS_BR≈PROFILE**: subgame solving lifts strength but BR's
-`v×k` cost is **not** buying robustness over PROFILE in deployment → flag the
-revert-to-PROFILE consideration (Q11's explicit go/no-go) rather than silently keeping
-BR. If `L_BRvsP < 0` significantly, PROFILE is the better production choice.
+**BR-vs-PROFILE (the revert gate, per Q11) — gated on SIGNIFICANCE, not absolute
+magnitude.** Variance grounding for `L_BRvsP = mean_o(diff_BR,o − diff_PROFILE,o)`:
+per-opponent diffs have stderr ~0.0026 (5,000 hands); **unpaired**, the difference has
+stderr ~0.0026·√2 ≈ 0.0037/opponent, pooled over 5 ≈ **0.0016**. Under that
+conservative bound, `+0.001` is only **~0.6σ — within noise**: a fixed `+0.001`
+absolute gate would "revert to PROFILE" on noise. CRN pairing makes the real stderr
+*lower* — BR and PROFILE play **identically on the ~73% gated-SKIP decisions** (both
+fall through to the same blueprint action) and differ only at the ~27% solves where
+the leaf-eval mode changes the refined policy, so per-hand paired differences are
+sparse → the paired stderr could be several× below 0.0016. But that correlation is
+**unmeasured** (Finding: re-measure at Stage 6-C). So the gate is on the **measured
+significance**, not a magnitude guess:
+- At the conservative unpaired pooled stderr ~0.0016: `L_BRvsP` reaches **1.5σ at
+  ≈ +0.0024**, **2σ at ≈ +0.0032**. Under CRN pairing these magnitudes drop in
+  proportion to the (measured) paired stderr.
+- **Full PASS requires PASS-strict on `L` AND `σ(L_BRvsP) ≥ 1.5` in BR's favor**
+  (BR statistically distinguishable from PROFILE) — using the *measured* paired
+  `σ(L_BRvsP)`, with a `+0.001` absolute floor only as a triviality guard.
+- **If `L` passes (strict or substantive) but `σ(L_BRvsP) < 1.5`:** verdict
+  **PASS_BR_EQUIVALENT_TO_PROFILE** — the architecture lifts strength, but BR is **not
+  statistically distinguishable from PROFILE at this sample size**, so BR's `v×k`
+  complexity is **not justified by the data** → recommend **PROFILE for production**.
+  (This is distinct from a confident "revert": it says *we lack the data to prefer BR*,
+  not *PROFILE is provably better*.)
+- **If `σ(L_BRvsP) ≥ 1.5 in BR's DISfavor** (PROFILE significantly beats BR):** PROFILE
+  is the better production choice — recommend reverting to PROFILE.
 
 These are pre-committed: after the run, the verdict is read off mechanically; numbers
 are not retuned to the result (the Stage F/G discipline that caught eight findings).
@@ -169,9 +188,10 @@ numbers are HYPOTHESES pending the Stage-6-C smoke re-measurement (the project r
 4. **End-to-end smoke.** 1 matchup × 100 hands per challenger (mock or real blueprint
    if artifacts) completes, no worker crash, produces a valid result JSON with the lift
    fields and `stats()` per challenger.
-5. **Verdict logic.** Unit-test the four-branch `verdict(lift, sigma, per_opp, l_brvsp)`
-   against hand-fed numbers hitting each branch (PASS / SUBSTANTIVE / AMBIGUOUS / FAIL /
-   PASS_BR≈PROFILE). No game needed.
+5. **Verdict logic.** Unit-test `verdict(L, sigma_L, per_opp, L_brvsp, sigma_brvsp)`
+   against hand-fed numbers hitting each branch (PASS / SUBSTANTIVE_PASS / AMBIGUOUS /
+   FAIL / PASS_BR_EQUIVALENT_TO_PROFILE), including the σ(L_BRvsP) ≥ 1.5 gate. No game
+   needed.
 
 All game-touching tests use the production `six_max_sng` / tournament structure.
 
