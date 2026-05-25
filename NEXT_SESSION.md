@@ -48,7 +48,7 @@ B1c (depth-limited subgame solving):
 ## Current deliverable — Sub-step 3 (subgame CFR loop)
 
 Replace the Stage-G one-iteration root **stub** with the **real multi-iteration
-external-sampling CFR over the depth-limited subgame tree** (`subgame.build_subgame_tree`),
+vanilla weighted CFR over the depth-limited subgame tree** (`subgame.build_subgame_tree`),
 leaf values supplied by the now-confirmed `BEST_RESPONSE` evaluator
 (`subgame_leaf.evaluate_leaf`). Reuse the production regret/RM+ math (`cfr6.py`,
 `solver._strategy_from_advantages`); the stub already wired the root-level pieces, so

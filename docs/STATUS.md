@@ -52,7 +52,7 @@
   root stub). Sub-step 2 (leaf evaluator + Stages F/G ablation gates) is closed.
 
 ## Next up (sub-step 3 + handoff)
-1. **Sub-step 3 (Q11 Level 2 → 3 handoff):** multi-iteration external-sampling CFR
+1. **Sub-step 3 (Q11 Level 2 → 3 handoff):** multi-iteration vanilla weighted CFR
    over the depth-limited subgame tree, leaf values from the now-confirmed BR
    evaluator. Carry the Stage-F/G methodology: late-street/decision-latitude is where
    the BR effect lives; the split-metric + SUBSTANTIVE_PASS_AGGREGATE pattern fits

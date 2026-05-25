@@ -26,6 +26,23 @@ This principle constrains the architecture in specific ways, called out below.
 - Safe subgame solving (Pluribus-style) to avoid exploitable inconsistencies.
 - Budget: target sub-second per decision, more during evaluation.
 
+**How "safe subgame solving" is realized here (B1c sub-step 2/3).** In this 6-max
+ICM setting, Pluribus-style safety is realized by the **`BEST_RESPONSE` leaf mode**,
+not by a HUNL-style counterfactual-value (CFV) gadget. At the depth limit each live
+opponent independently best-responds among the k=4 biased continuation strategies
+(`biased_policy.py`), so hero's refined strategy is solved against an opponent who
+adversarially picks the most damaging continuation — structurally the same
+worst-case-over-opponent-continuations mechanism Pluribus used, with the bias menu
+discretizing what Pluribus's CFV gadget handled continuously. The DeepStack/Libratus
+CFV gadget is a 2-player-zero-sum construction (scalar exploitability, root opponent
+CFVs) and is **structurally inapplicable** to multiplayer ICM, so it is not
+implemented. Empirical confirmation: Stage G measured BR suppressing hero value by
+**+3.07σ** vs profile-sampling and moving hero's root policy above the per-deal noise
+floor (`docs/sessions/session_18_summary.md`, `docs/SUBGAME_LEAF_DESIGN.md` Q11
+Level 2). The sub-step-3 CFR loop therefore runs plain vanilla weighted CFR over the
+already-robust leaf values and adds no separate safety gadget (`docs/SUBSTEP_3_DESIGN.md`
+Decision 6).
+
 ### Layer 4: Within-match adaptation (Position 2)
 **Scope: within current match only. All state wiped at match end.**
 
