@@ -1,0 +1,560 @@
+{
+  "stage": "G",
+  "q11_level": 2,
+  "session": 18,
+  "verdict": "FAIL",
+  "verdict_notes": [
+    "resolution_rate = 0.0%  [most mode-deviating action >3\u03c3 CRN-paired on 0/5 usable roots].",
+    "differentiation_rate = nan%  [among resolved, BR-vs-PROFILE policy shift L1 >= 0.05 (material); direction-AGNOSTIC].",
+    "value_suppression = +0.0411 \u00b1 0.0347 (+1.2\u03c3)  [BR opponents hurt hero \u2014 continuity with Stage F]. LOAD-BEARING.",
+    "policy_divergence = mean L1 0.0028 vs null p99.7 0.0034 (significant=False). LOAD-BEARING.",
+    "n_distinct_shifted_actions = 0  [non-degeneracy guard].",
+    "entropy_delta (SOFT): entropy direction NOT significant in predicted (flatter) direction (+0.0016, +1.0\u03c3) \u2014 surfacing for interpretation; the flatness prediction was an over-specific theoretical assumption, NOT a load-bearing gate (Addition 2).",
+    "filter_rate (Addition 1) = 0.0% (0/5 valid roots excluded for <3 legal actions)."
+  ],
+  "repro": {
+    "git_rev": "50126b4546917bf2425a2ea745bfd96ee33606f9",
+    "blueprint_ckpt": "runs/six_max_20260524_014344_phase4f_dcfr_linear_overnight/checkpoints/ckpt_iter_3000.pt",
+    "blueprint_md5": "795d713ef23224c1283db512deb6761a",
+    "abstraction": "runs/abstraction_20260521_223018/abstraction.pkl",
+    "structure": "configs/ignition_double_up_6max_turbo.yaml",
+    "seed": 18,
+    "n_roots": 5,
+    "samples_per_condition": 8,
+    "num_paid": 3,
+    "min_late_roots": 2,
+    "min_actions_filter": 3,
+    "l1_floor": 0.05,
+    "perm_b": 400,
+    "starting_stack": 1500,
+    "python": "3.10.12",
+    "numpy": "1.26.3",
+    "timestamp_utc": "20260525T055634Z"
+  },
+  "filter_stats": {
+    "roots_passing_other_filters": 5,
+    "excluded_few_actions": 0,
+    "kept_ge3_actions": 5,
+    "filter_rate": 0.0
+  },
+  "aggregate": {
+    "n_roots": 5,
+    "n_usable": 5,
+    "n_degraded": 0,
+    "street_distribution": {
+      "0": 2,
+      "1": 1,
+      "2": 1,
+      "3": 1
+    },
+    "n_late_roots_ge2": 2,
+    "n_resolved": 0,
+    "resolution_rate": 0.0,
+    "differentiation_rate": NaN,
+    "value_suppression": {
+      "mean": 0.04111224361956769,
+      "stderr": 0.03470610967979939,
+      "sigma": 1.1845823112665657
+    },
+    "entropy_delta": {
+      "mean": 0.001600344967166345,
+      "stderr": 0.001600344967166345,
+      "sigma": 1.0,
+      "frac_resolved_br_flatter": NaN
+    },
+    "policy_divergence": {
+      "observed_mean_l1": 0.0028306752443313598,
+      "null_p997": 0.0034265756607055665,
+      "frac_null_ge_obs": 0.24,
+      "perm_b": 400,
+      "significant": false
+    },
+    "n_distinct_shifted_actions": 0,
+    "shifted_action_hist": {},
+    "mean_entropy": {
+      "br": 0.20642436714615003,
+      "profile": 0.2048240221789837
+    },
+    "mean_kl_br_blueprint": 4.239950465603217
+  },
+  "per_root": [
+    {
+      "meta": {
+        "target_street": 0,
+        "street_idx": 0,
+        "n_live_opp": 5,
+        "alive_count": 6,
+        "blind_level": 1,
+        "n_actions": 6,
+        "eff_stack": 1532
+      },
+      "hero": 5,
+      "legal_actions": [
+        0,
+        1,
+        3,
+        4,
+        5,
+        6
+      ],
+      "degraded": false,
+      "sigma0": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "sigma_br": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "sigma_profile": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "sigma_baseline": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "q_br": [
+        0.02452609269886069,
+        -0.003283948185424171,
+        0.0,
+        -0.10933716247943326,
+        -0.16901737880556045,
+        -0.3625074798709024,
+        -0.47514130191272597
+      ],
+      "q_profile": [
+        0.03499363293365648,
+        -0.00302705057650271,
+        0.0,
+        -0.10933716247943326,
+        -0.16901737880556045,
+        -0.3625074798709024,
+        -0.22068083001997396
+      ],
+      "q_baseline": [
+        0.023926050396557708,
+        -0.003283948185424171,
+        0.0,
+        -0.10933716247943326,
+        -0.16901737880556045,
+        -0.3625074798709024,
+        -0.22068083001997396
+      ],
+      "l1_br_profile": 0.0,
+      "shifted_action": 0,
+      "entropy_br": -0.0,
+      "entropy_profile": -0.0,
+      "entropy_delta": 0.0,
+      "kl_br_blueprint": 6.000000478442223e-09,
+      "resolved": false,
+      "resolution_action": 6,
+      "resolution_absmean_crn": 0.254460471892752,
+      "resolution_stderr_crn": 0.16658348197467415,
+      "resolution_n_paired": 8,
+      "differentiated": false,
+      "value_suppression_root": 0.044197484956078205
+    },
+    {
+      "meta": {
+        "target_street": 1,
+        "street_idx": 1,
+        "n_live_opp": 5,
+        "alive_count": 6,
+        "blind_level": 2,
+        "n_actions": 5,
+        "eff_stack": 1427
+      },
+      "hero": 2,
+      "legal_actions": [
+        1,
+        3,
+        4,
+        5,
+        6
+      ],
+      "degraded": false,
+      "sigma0": [
+        0.0,
+        0.20000000298023224,
+        0.0,
+        0.20000000298023224,
+        0.20000000298023224,
+        0.20000000298023224,
+        0.20000000298023224
+      ],
+      "sigma_br": [
+        0.0,
+        0.46448567509651184,
+        0.0,
+        0.3925315737724304,
+        0.14298275113105774,
+        0.0,
+        0.0
+      ],
+      "sigma_profile": [
+        0.0,
+        0.47156235575675964,
+        0.0,
+        0.3919948935508728,
+        0.13644273579120636,
+        0.0,
+        0.0
+      ],
+      "sigma_baseline": [
+        0.0,
+        0.49351266026496887,
+        0.0,
+        0.3974074125289917,
+        0.10907993465662003,
+        0.0,
+        0.0
+      ],
+      "q_br": [
+        0.0,
+        0.09910521603143743,
+        0.0,
+        0.041815561076822716,
+        -0.1861986418031214,
+        -0.7888236982203155,
+        -0.769143813815947
+      ],
+      "q_profile": [
+        0.0,
+        0.10456475168303281,
+        0.0,
+        0.041815561076822716,
+        -0.18719171423400904,
+        -0.7572180981456296,
+        -0.769143813815947
+      ],
+      "q_baseline": [
+        0.0,
+        0.1096711842539094,
+        0.0,
+        0.041815561076822716,
+        -0.18770202218478677,
+        -0.5904893449504652,
+        -0.769143813815947
+      ],
+      "l1_br_profile": 0.0141533762216568,
+      "shifted_action": 1,
+      "entropy_br": 1.001356256283888,
+      "entropy_profile": 0.9933545314480563,
+      "entropy_delta": 0.008001724835831725,
+      "kl_br_blueprint": 0.608081658150212,
+      "resolved": false,
+      "resolution_action": 5,
+      "resolution_absmean_crn": 0.03160560007468592,
+      "resolution_stderr_crn": 0.03457771065421644,
+      "resolution_n_paired": 8,
+      "differentiated": false,
+      "value_suppression_root": 0.007214412659078731
+    },
+    {
+      "meta": {
+        "target_street": 2,
+        "street_idx": 2,
+        "n_live_opp": 4,
+        "alive_count": 5,
+        "blind_level": 5,
+        "n_actions": 3,
+        "eff_stack": 1729
+      },
+      "hero": 4,
+      "legal_actions": [
+        1,
+        3,
+        6
+      ],
+      "degraded": false,
+      "sigma0": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "sigma_br": [
+        0.0,
+        0.9951344728469849,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.004865562543272972
+      ],
+      "sigma_profile": [
+        0.0,
+        0.9951344728469849,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.004865562543272972
+      ],
+      "sigma_baseline": [
+        0.0,
+        0.995256245136261,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.004743816331028938
+      ],
+      "q_br": [
+        0.0,
+        0.13670563511973038,
+        0.0,
+        -0.6881035707885327,
+        0.0,
+        0.0,
+        -0.4975695101288319
+      ],
+      "q_profile": [
+        0.0,
+        0.13670563511973038,
+        0.0,
+        -0.6881035707885327,
+        0.0,
+        0.0,
+        -0.4975695101288319
+      ],
+      "q_baseline": [
+        0.0,
+        0.15290526949567404,
+        0.0,
+        -0.6881035707885327,
+        0.0,
+        0.0,
+        -0.4975695101288319
+      ],
+      "l1_br_profile": 0.0,
+      "shifted_action": 0,
+      "entropy_br": 0.03076557944686213,
+      "entropy_profile": 0.03076557944686213,
+      "entropy_delta": 0.0,
+      "kl_br_blueprint": 20.59167065186587,
+      "resolved": false,
+      "resolution_action": 1,
+      "resolution_absmean_crn": 0.0,
+      "resolution_stderr_crn": 0.0,
+      "resolution_n_paired": 8,
+      "differentiated": false,
+      "value_suppression_root": 0.0
+    },
+    {
+      "meta": {
+        "target_street": 3,
+        "street_idx": 3,
+        "n_live_opp": 5,
+        "alive_count": 6,
+        "blind_level": 4,
+        "n_actions": 3,
+        "eff_stack": 1497
+      },
+      "hero": 3,
+      "legal_actions": [
+        1,
+        3,
+        6
+      ],
+      "degraded": false,
+      "sigma0": [
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "sigma_br": [
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "sigma_profile": [
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "sigma_baseline": [
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "q_br": [
+        0.0,
+        0.19194038894473417,
+        0.0,
+        -0.5810349330790354,
+        0.0,
+        0.0,
+        -0.38886892171410614
+      ],
+      "q_profile": [
+        0.0,
+        0.2531500714495738,
+        0.0,
+        -0.5677441698748146,
+        0.0,
+        0.0,
+        0.05759072372880897
+      ],
+      "q_baseline": [
+        0.0,
+        0.2508348921221341,
+        0.0,
+        -0.5954075838183039,
+        0.0,
+        0.0,
+        -0.09122915808549607
+      ],
+      "l1_br_profile": 0.0,
+      "shifted_action": 0,
+      "entropy_br": -0.0,
+      "entropy_profile": -0.0,
+      "entropy_delta": 0.0,
+      "kl_br_blueprint": 6.000000478442223e-09,
+      "resolved": false,
+      "resolution_action": 6,
+      "resolution_absmean_crn": 0.44645964544291517,
+      "resolution_stderr_crn": 0.21785000027815857,
+      "resolution_n_paired": 8,
+      "differentiated": false,
+      "value_suppression_root": 0.1736533637173252
+    },
+    {
+      "meta": {
+        "target_street": 0,
+        "street_idx": 0,
+        "n_live_opp": 5,
+        "alive_count": 6,
+        "blind_level": 1,
+        "n_actions": 6,
+        "eff_stack": 1428
+      },
+      "hero": 2,
+      "legal_actions": [
+        0,
+        1,
+        3,
+        4,
+        5,
+        6
+      ],
+      "degraded": false,
+      "sigma0": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "sigma_br": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "sigma_profile": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "sigma_baseline": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "q_br": [
+        2.8446519681132876e-05,
+        -0.0281322410001886,
+        0.0,
+        0.035132433001992425,
+        0.035132433001992425,
+        0.035132433001992425,
+        0.035132433001992425
+      ],
+      "q_profile": [
+        4.3764806200358164e-05,
+        -0.14517181869456997,
+        0.0,
+        0.035132433001992425,
+        0.035132433001992425,
+        0.035132433001992425,
+        0.035132433001992425
+      ],
+      "q_baseline": [
+        2.8446519681132876e-05,
+        -0.14517181869456997,
+        0.0,
+        0.035132433001992425,
+        0.035132433001992425,
+        0.035132433001992425,
+        0.035132433001992425
+      ],
+      "l1_br_profile": 0.0,
+      "shifted_action": 0,
+      "entropy_br": -0.0,
+      "entropy_profile": -0.0,
+      "entropy_delta": 0.0,
+      "kl_br_blueprint": 6.000000478442223e-09,
+      "resolved": false,
+      "resolution_action": 1,
+      "resolution_absmean_crn": 0.11703957769438142,
+      "resolution_stderr_crn": 0.1170395776943814,
+      "resolution_n_paired": 8,
+      "differentiated": false,
+      "value_suppression_root": -0.0195040432346437
+    }
+  ]
+}
