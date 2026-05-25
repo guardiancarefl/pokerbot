@@ -266,6 +266,21 @@ leaves rather than overrunning — the session-12 safeguard, preserved.
 > numerical claim in this doc (cost, speedup, accuracy) is a HYPOTHESIS pending
 > fresh measurement, not a fact to design against. Stage prompts must schedule the
 > re-measurement explicitly before any code is written against the number.**
+>
+> **Sub-rule (the specific refinement — fourth instance, session 15; reinforced
+> session 16).** Finding (3) was itself wrong one level down: the per-*call*
+> bucket-MC cost (10.77 ms) is right, but it was asserted to be the *bottleneck*
+> without multiplying by **call frequency** — re-measured, bucket-MC is only ~15%
+> of BR cost (197 calls) while the network forward is ~45% (29,846 calls). That is
+> a *fourth* instance of the same root cause: **a per-unit cost mistaken for an
+> aggregate cost.** So, promoted to a hard rule: **any measurement-with-attribution
+> that gates a design MUST report (a) per-call cost, (b) call frequency at the
+> relevant call site, AND (c) post-cache-miss frequency if a cache is involved** —
+> a per-call number alone is never sufficient to name a bottleneck. The four
+> findings: parse-attribution, ICM busted-seat, encoder bucket-MC per-call, and the
+> bucket-MC *aggregate* inversion. (Q13/session 16 produced a fifth class —
+> per-call cost mis-attributed to the *wrong device*: the GPU forward is slower
+> than CPU at single-row sizes; see `docs/STAGE_E_BUDGET_REDERIVATION.md`.)
 
 The ~0.9 ms/step state-prep floor is the binding constraint on the 6 s budget
 under `BEST_RESPONSE`, so closing it is **sub-step 2 scope, not a deferred work
@@ -645,7 +660,8 @@ increase are not buying robustness, and we revert to PROFILE_SAMPLE (or revisit
 ## Q12 — Encoder bucket-MC precompute (Stage E.5, budget-closing follow-up)
 
 > **SUPERSEDED by the session-15 re-measurement (the actual budget levers are
-> elsewhere; see Q13, pending).** Stage E.5 as scoped here — precompute a
+> elsewhere; Q13 below RESOLVED this — Stage E.5/E.6 shelved, sub-step 3 is next).**
+> Stage E.5 as scoped here — precompute a
 > `board→bucket` table so rollouts look up instead of running the bucket-MC — was
 > measured to be a **non-budget-closing** optimization. On the same 64-leaf
 > depth-3 production tree (`six_max_sng(starting_stack=1500)`, BR M=5), the cost
@@ -679,14 +695,10 @@ increase are not buying robustness, and we revert to PROFILE_SAMPLE (or revisit
 > **bit-identical** (verified 64/64 leaf values, max diff 0.0) and cuts BR M=5
 > 16.7 s → 13.0 s (misses 417 → 83).
 >
-> **What replaces E.5 — Q13 (pending).** Re-derive the *actual* target before any
-> further optimization: sub-step 6's first use is an **offline pool ablation**
-> (throughput, not real-time latency), so the question is the throughput budget
-> and whether the current evaluator (post-reset-fix, ~13 s BR M=5 on the 64-leaf
-> tree) parallelized across workers already meets it — and only then whether a
-> Stage E.5 needs to exist at all and what it optimizes (candidate levers in
-> priority order: reduce the BR `v×k×M` rollout/network-forward count; lockstep
-> network batching across parallel rollouts; trim rollout glue). The text below
+> **What replaced E.5 — Q13 (RESOLVED, session 16; see Q13 below and
+> `docs/STAGE_E_BUDGET_REDERIVATION.md`).** The re-derivation set a
+> measurement-grounded throughput target and found the **current evaluator already
+> meets it** — Stage E.5/E.6 is shelved, next work is sub-step 3. The text below
 > is preserved as the original (contradicted) proposal.
 
 Stage E shipped `evaluate_leaves` with cache-sharing (one bucket-cache reset for
@@ -746,6 +758,36 @@ Per-rollout encoder cost drops from ~**86 ms** (≈8 steps × 10.77 ms all-miss)
 ~**200 µs** (table lookups), ≈**400×** on the dominant cost path — which is what
 brings BR back toward the Z budget. Lockstep network batching remains a smaller
 secondary optimization, measured only if still needed after E.5.
+
+---
+
+## Q13 — Budget re-derivation (RESOLVED, session 16)
+
+Full reasoning + all measurements: **`docs/STAGE_E_BUDGET_REDERIVATION.md`.**
+Replaces the arbitrary `Z = 1.5 s` real-time budget with what sub-step 6 needs.
+
+**Target set.** Sub-step 6 (Q11 Level-3) is an *offline* pool ablation — 2 subgame
+challengers × 5 opponents × 5,000 hands × ~3.04 challenger decisions/hand ≈
+**76,000 subgame solves per challenger**, where (Q6) each solve is **one
+`evaluate_leaves` call cached across CFR iterations**. The metric is *throughput*,
+not real-time latency. At an overnight-to-1-day budget and the measured CPU
+parallelism factor Y = 24 (128-core box; ~10 on Contabo), the required
+cost-per-decision is **~27 s**.
+
+**Current evaluator meets it.** Measured BR M=5 depth-3 = **10 s/decision on CPU**
+(faster than 13.8 s on GPU — the single-row `[64,64]` forward is launch-bound on
+the GPU; **production should run on CPU, not GPU**). CPU 1-thread workers scale
+near-linearly (23.7× of 32); the shared GPU only gives ~3× of 4. Projected
+ablation wall-clock ≈ **10.5 h** (BR 8.8 h + PROFILE 1.6 h) — comfortably
+overnight, ~2.7× inside budget.
+
+**Decision.** **Stage E.5/E.6 is shelved** — bucket-MC is only ~15% of BR cost
+(99.3% cache hit; nothing for a precompute to recover), the dominant network
+forward is already cheap on CPU, and parallelism closes the throughput gap by
+~65×. **Next work is sub-step 3.** A *contingent* network-forward-batching stage
+(network ~45% of BR; ~440× per-row batched headroom; glue ~26% is the next
+bottleneck) is recorded for **deployment latency only**, scoped only against a
+concrete sub-3 s real-time requirement, re-measured first.
 
 ---
 
