@@ -87,10 +87,11 @@ class TestSubgamePolicyGate(unittest.TestCase):
         params = list(inspect.signature(SubgamePolicy.select_action).parameters)
         self.assertEqual(params, ["self", "parsed", "state", "rng", "mode"])
         self.assertTrue(callable(p.select_action))
-        # stats() shape
+        # stats() shape (Stage 5-C added computed rates)
         s = p.stats()
         self.assertEqual(set(s), {"n_decisions_total", "n_gated_skip",
-                                  "n_gated_solve", "n_degraded"})
+                                  "n_gated_solve", "n_degraded",
+                                  "gate_skip_rate", "gate_solve_rate", "degraded_rate"})
 
     def _parsed(self, state):
         from src.nlhe.infoset6 import parse_state_6max
@@ -262,6 +263,94 @@ class TestSubgamePolicyPipeline(unittest.TestCase):
             challenger, opponent, structure, random.Random(3), mode="sample")
         self.assertFalse(result["exceeded_cap"], "hand did not reach terminal")
         self.assertEqual(len(result["seat_to_equity_delta"]), 6)
+
+
+# ============================================================
+# Stage 5-C: degraded diagnostics + reproducibility
+# ============================================================
+
+@unittest.skipUnless(_HAS_OPEN_SPIEL, "Requires open_spiel")
+class TestSubgamePolicyStageC(unittest.TestCase):
+    MIXED = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+    DECISIVE = [0.0, 10.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    SMALL = dict(n_samples=2, max_action_depth=2, n_iterations=10)
+
+    def _parsed(self, state):
+        from src.nlhe.infoset6 import parse_state_6max
+        return parse_state_6max(state)
+
+    def test_reproducible_same_seed(self):
+        state = _first_decision_state()
+        parsed = self._parsed(state)
+        p = _make_policy(self.MIXED, **self.SMALL)
+        a1 = p.select_action(parsed, state, random.Random(5), mode="sample")
+        a2 = p.select_action(parsed, state, random.Random(5), mode="sample")
+        self.assertEqual(a1, a2)  # full pipeline deterministic given the seed
+
+    def test_gate_decision_seed_independent(self):
+        # The gate (encode -> predict -> RM+ max_prob) has no rng-dependent sampling,
+        # so the SOLVE/SKIP decision is identical across seeds.
+        state = _first_decision_state()
+        parsed = self._parsed(state)
+        p = _make_policy(self.MIXED, **self.SMALL)
+        decisions = {p._evaluate_gate(parsed, state, random.Random(s))["solve"]
+                     for s in (1, 2, 3, 99)}
+        self.assertEqual(len(decisions), 1)  # all seeds agree
+
+    def test_action_distribution_matches_solved_policy(self):
+        # Isolate the SAMPLING layer: mock build/eval/solve so each select_action just
+        # samples a FIXED solved root policy (0.7 FOLD / 0.3 CALL); confirm the action
+        # frequencies match within ~3% (the per-decision pipeline cost is irrelevant
+        # here and is covered by the timing benchmark).
+        from unittest import mock
+        from src.nlhe.subgame_solver import SubgameSolveResult
+        from src.nlhe.subgame_leaf import LeafBatchResult
+        state = _first_decision_state()
+        parsed = self._parsed(state)
+        p = _make_policy(self.MIXED, **self.SMALL)
+        pol = np.zeros(7, np.float32); pol[0] = 0.7; pol[1] = 0.3
+        mask = np.zeros(7, np.float32); mask[0] = 1.0; mask[1] = 1.0
+        fixed = SubgameSolveResult(root_policy=pol, root_blueprint=pol, legal_mask=mask,
+                                   hero_seat=parsed["current_player"], n_iterations=10,
+                                   n_decision_nodes_cached=1, degraded=False)
+        batch = LeafBatchResult(n_leaves=0, n_evaluated=0, partial_eval_degraded=False)
+        rng = random.Random(2024); N = 2000; fold = 0
+        with mock.patch("src.nlhe.subgame_policy.build_subgame_tree", return_value=None), \
+             mock.patch("src.nlhe.subgame_policy.evaluate_leaves", return_value=batch), \
+             mock.patch("src.nlhe.subgame_policy.solve_subgame", return_value=fixed):
+            for _ in range(N):
+                if p.select_action(parsed, state, rng, mode="sample") == 0:  # FOLD chip
+                    fold += 1
+        self.assertAlmostEqual(fold / N, 0.7, delta=0.03)
+
+    def test_degraded_falls_through_with_diagnostics(self):
+        from unittest import mock
+        from src.nlhe.subgame_solver import SubgameSolveResult
+        state = _first_decision_state()
+        parsed = self._parsed(state)
+        p = _make_policy(self.MIXED, **self.SMALL)
+        degraded = SubgameSolveResult(
+            root_policy=np.zeros(7, np.float32), root_blueprint=np.zeros(7, np.float32),
+            legal_mask=np.zeros(7, np.float32), hero_seat=parsed["current_player"],
+            n_iterations=10, n_decision_nodes_cached=1, degraded=True)
+        with mock.patch("src.nlhe.subgame_policy.solve_subgame", return_value=degraded):
+            with self.assertLogs("subgame_policy", level="WARNING") as cm:
+                chip = p.select_action(parsed, state, random.Random(0), mode="sample")
+        self.assertIn(chip, set(state.legal_actions()))     # legal blueprint fall-through
+        self.assertEqual(p.n_degraded, 1)
+        self.assertEqual(p.n_gated_solve, 1)
+        self.assertTrue(any("degraded -> blueprint fall-through" in m for m in cm.output))
+
+    def test_stats_rates(self):
+        p = _make_policy(self.MIXED, **self.SMALL)
+        p.n_decisions_total = 100
+        p.n_gated_skip = 73
+        p.n_gated_solve = 27
+        p.n_degraded = 3
+        s = p.stats()
+        self.assertAlmostEqual(s["gate_skip_rate"], 0.73)
+        self.assertAlmostEqual(s["gate_solve_rate"], 0.27)
+        self.assertAlmostEqual(s["degraded_rate"], 3 / 27)
 
 
 if __name__ == "__main__":

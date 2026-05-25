@@ -15,12 +15,13 @@ Two design findings carried in the code:
     wall-clock budget assumes hand-level multiprocessing (independent hands, each with
     its own SubgamePolicy). Not designed here — noted so it is planned.
 
-STATUS: STAGE 5-B — full pipeline. `select_action` evaluates the gate; on SKIP it
+STATUS: STAGE 5-C — sub-step 5 CLOSED. `select_action` evaluates the gate; on SKIP it
 falls through to the blueprint (`_sample_action_from_policy`); on SOLVE it runs the
 full pipeline (`_solve_action`: build_subgame_tree → evaluate_leaves → solve_subgame →
-extract_action), falling through to the blueprint on a degraded result. Gate
-instrumentation (`stats()`) and `f` measurement (`scripts/measure_gate_rate.py`) from
-Stage 5-A carry forward; the degraded-handling diagnostics polish is Stage 5-C.
+extract_action), falling through to the blueprint on a degraded result with a WARNING
++ `n_degraded` increment (no temporal back-off). `stats()` exposes the four counters
+plus gate_skip_rate / gate_solve_rate / degraded_rate. Empirical f≈0.27, per-solve
+~6.7s blended (`scripts/measure_gate_rate.py`); see `docs/SUBSTEP_5_DESIGN.md`.
 """
 from __future__ import annotations
 
@@ -33,7 +34,7 @@ from src.nlhe.actions import DiscreteAction
 from src.nlhe.biased_policy import BiasedBlueprint
 from src.nlhe.icm import sng_payouts_6max_double_up
 from src.nlhe.solver import _strategy_from_advantages
-from src.nlhe.subgame import _discretize_at_decision, build_subgame_tree
+from src.nlhe.subgame import _discretize_at_decision, build_subgame_tree, iter_leaf_nodes
 from src.nlhe.subgame_leaf import LeafEvalMode, LeafEvalContext, evaluate_leaves
 from src.nlhe.subgame_solver import (
     SubgameSolveContext, solve_subgame, extract_action,
@@ -125,12 +126,16 @@ class SubgamePolicy:
         contribution = parsed["contribution"]
         return [int(money[i]) + int(contribution[i]) for i in range(_NUM_SEATS)]
 
-    # ---- solve branch (Stage 5-B) ----
-    def _solve_action(self, parsed, state, rng, mode) -> int:
+    # ---- solve branch (Stage 5-B pipeline + Stage 5-C degraded diagnostics) ----
+    def _solve_action(self, parsed, state, rng, mode, gate) -> int:
         """The full subgame-solve pipeline for a gated-SOLVE decision:
         build_subgame_tree -> evaluate_leaves -> solve_subgame -> extract_action.
-        On a degraded result, falls through to the blueprint (Decision 5.2; the
-        diagnostics polish is Stage 5-C, here we just route correctly + count)."""
+
+        On a degraded result (a leaf lacked a value, or the leaf-eval budget was cut
+        short) fall through to the blueprint (Decision 5.2), increment `n_degraded`,
+        and log the decision context at WARNING. NO temporal back-off: decisions are
+        independent, so the next decision solves normally — backing off would only
+        forfeit refinement on subsequent (unrelated) decisions for no benefit."""
         cp = parsed["current_player"]
         starting_stacks = self._reconstruct_starting_stacks(parsed)
         tree = build_subgame_tree(
@@ -147,6 +152,16 @@ class SubgamePolicy:
             rng=rng, num_paid=self.num_paid))
         if result.degraded or batch.partial_eval_degraded:
             self.n_degraded += 1
+            n_chance = sum(1 for lf in iter_leaf_nodes(tree)
+                           if lf.state is not None and lf.state.is_chance_node())
+            reason = ("solve result.degraded (a leaf lacked a value)"
+                      if result.degraded
+                      else "evaluate_leaves partial_eval_degraded (budget cut short)")
+            log.warning(
+                "SubgamePolicy degraded -> blueprint fall-through: street=%s n_legal=%s "
+                "blueprint_max_prob=%.3f leaves=%d chance_leaves=%d reason=%s",
+                gate["street_idx"], gate["n_legal"], gate["max_prob"],
+                tree.n_leaf_nodes, n_chance, reason)
             return self._blueprint_action(parsed, state, rng, mode)
         return extract_action(result, state, rng, mode)
 
@@ -158,12 +173,19 @@ class SubgamePolicy:
             self.n_gated_skip += 1
             return self._blueprint_action(parsed, state, rng, mode)
         self.n_gated_solve += 1
-        return self._solve_action(parsed, state, rng, mode)
+        return self._solve_action(parsed, state, rng, mode, gate)
 
     def stats(self) -> dict:
+        """Diagnostic counters + computed rates (Stage 5-C). degraded_rate is over
+        SOLVED decisions (the denominator that can degrade), not all decisions."""
+        n = self.n_decisions_total
+        solve = self.n_gated_solve
         return {
-            "n_decisions_total": self.n_decisions_total,
+            "n_decisions_total": n,
             "n_gated_skip": self.n_gated_skip,
-            "n_gated_solve": self.n_gated_solve,
+            "n_gated_solve": solve,
             "n_degraded": self.n_degraded,
+            "gate_skip_rate": (self.n_gated_skip / n) if n else 0.0,
+            "gate_solve_rate": (solve / n) if n else 0.0,
+            "degraded_rate": (self.n_degraded / max(1, solve)),
         }
