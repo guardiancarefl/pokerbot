@@ -1,6 +1,6 @@
 # Project Status
 
-**Last updated:** 2026-05-24 (Session 13)
+**Last updated:** 2026-05-25 (Session 17)
 **Current phase:** B1c — depth-limited subgame solving (real-time), sub-step 2
 
 > Note: this file was badly stale before Session 13 (it still read "Pre-Phase-1
@@ -24,19 +24,32 @@
 - **B1c sub-step 2 — leaf evaluator DESIGN approved**
   (`docs/SUBGAME_LEAF_DESIGN.md`, best-response form, after two revisions +
   Q4.5 / Q11 additions).
+- **B1c sub-step 2 — leaf evaluator IMPLEMENTED** (Stages A–E, `994b587`→`fd7fb88`;
+  ICM busted-seat fix `ae8e1b5`; M=8 restore `db89145`; cache-reset guard
+  `3109fb0`). Correct, tested, production-ready.
+- **Q13 — leaf-eval budget RESOLVED** (`b092480`, session 16): no optimization
+  needed, Stage E.5/E.6 shelved (`docs/STAGE_E_BUDGET_REDERIVATION.md`).
+- **B1c sub-step 2 — Stage F (Q11 Level 1 leaf ablation) CLOSED** via
+  SUBSTANTIVE_PASS_AGGREGATE (session 17, `e939bce`→`9dbbfd4`;
+  `docs/sessions/session_17_summary.md`). The per-pair opponent-own-value
+  resolution gate is structurally intractable (55% of leaf-opp pairs have zero
+  bias effect → max resolution ~45% at any M), but the architecture is confirmed
+  by the aggregate hero-direction signal (+3.4/+3.6σ), 94% differentiation among
+  resolved pairs, and a non-degenerate menu.
 
 ## In progress
-- B1c sub-step 2 implementation — `src/nlhe/subgame_leaf.py` (next deliverable).
+- B1c sub-step 2 closure — **Stage G (Q11 Level 2, decision-level stub ablation)**
+  is the one remaining gate.
 
-## Next up (sub-step 2 deliverables)
-1. `subgame_leaf.py`: BEST_RESPONSE (default) + PROFILE_SAMPLE leaf evaluator;
-   6-vector ICM-equity values; `SubgameNode.leaf_value` field; `LeafEvalContext`.
-2. View/discretize fast path (`src/nlhe/fast_view.py`) — in scope per Q4.5;
-   sorted-legal-actions fast path, gate ≤ 0.30 ms/step; record the fallback knob
-   chosen if it underperforms.
-3. Stub one-iteration root regret update (for Q11 Level 2).
-4. Q11 Level 1 (leaf-only) + Level 2 (decision-level) ablations — both gate
-   sub-step 2 completion.
+## Next up (sub-step 2 closure + handoff)
+1. **Stage G (Q11 Level 2):** stub one-iteration root regret update around the leaf
+   evaluator; measure hero's root action distribution under BR vs PROFILE_SAMPLE.
+   **Design the gate around the regime where the architecture predicts effects**
+   (late-street / bias-active root decisions), not a uniform per-decision
+   expectation — the Stage-F structural-intractability lesson. Reuse the Stage-F
+   split-metric pattern (resolution / differentiation / SUBSTANTIVE_PASS_AGGREGATE).
+2. View/discretize fast path is shipped (`src/nlhe/fast_view.py`); fold into the
+   canonical path AFTER sub-step 2 closes (see NEXT_SESSION.md tracked deliverable).
 
 ## Then (later B1c sub-steps)
 - Sub-step 3: subgame CFR loop. Sub-step 4: policy extraction.

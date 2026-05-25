@@ -618,6 +618,43 @@ maximization mechanism is firing — but it does **not** show that BR produces
 better hero *decisions* in context. Sufficient on its own only to confirm the
 leaf evaluator is correct.
 
+#### CLOSED — session 17, via SUBSTANTIVE_PASS_AGGREGATE (`scripts/ablation_leaf_eval.py`)
+
+Level 1 closed, but the original "per-leaf hero-value gap" / "opponent-own-value
+`max >= mean`" framing turned out to be the **wrong instrument**, and the gate
+methodology was rebuilt. Findings (record: `docs/sessions/session_17_summary.md`;
+data: `evals/leaf_eval_ablation_session17_M32_*.json` `diagnostic_findings`):
+
+- **The per-pair opponent-own-value gate is structurally measurement-intractable**
+  in this shallow 6-max SNG. ~55% of (leaf, opp) pairs have *zero* bias effect on
+  the opponent's own value — the opponent never faces a bias-sensitive decision in
+  the rollout — capping maximum per-pair resolution at ~45% at **any** M. The raw
+  signal is also CRN-paired-noise-bound (even M=32 resolves only 7.7% of pairs),
+  and the winner's curse on max-bias selection makes M-projections optimistic (true
+  M for a 0.50 gate is in the many-hundreds). Per-pair resolution is therefore a
+  **diagnostic, not a PASS/FAIL gate**, here.
+- **The driver of detectable effects is street / decision-latitude, not stack
+  depth.** Resolution climbs preflop 1.5% -> flop 3.5% -> turn 10.4% -> river
+  18.0%; effects concentrate where opponents face genuine committed decisions.
+- **The architecture is confirmed by the AGGREGATE signal** (what we actually care
+  about): BR opponents hurt hero by +3.4 sigma (BASELINE-BR) / +3.6 sigma
+  (PROFILE-BR) across the 50-leaf battery; the effect is **exactly zero** on the
+  bias-inactive leaves (BR == blueprint by construction) and concentrates on
+  bias-active late-street leaves — the signature of a real mechanism, not noise. BR
+  selects non-blueprint on 94% of resolved pairs across a non-degenerate menu
+  (biases 1/2/3 all chosen). This is the `SUBSTANTIVE_PASS_AGGREGATE` verdict.
+
+**Lesson for Level 2 (Stage G) — load-bearing:** do **not** gate the
+decision-level ablation on a uniform expectation across all ~50 root decisions. The
+bias effect is *absent* in the majority of states and *concentrated* in
+late-street / bias-active spots; a uniform per-decision gate would hit the same
+structural-intractability wall and spuriously FAIL. Gate on the regime where the
+architecture predicts an effect (root decisions where >=1 live opponent has real
+post-flop / committed latitude) and treat the rest as expected no-ops. Reuse the
+Level-1 split-metric pattern (a "is the effect detectable" measure separate from a
+"does BR move hero's policy in the predicted direction" measure, with an
+aggregate-signal fallback for the intractable-but-confirmed case).
+
 ### Level 2 — decision-level (gates sub-step 2 → sub-step 3 handoff)
 
 Wrap the **simplest possible CFR around the leaf evaluator: a one-iteration
