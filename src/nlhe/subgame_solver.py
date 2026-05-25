@@ -38,8 +38,9 @@ K progression (n_iterations):
   - K > 1  → the full vanilla weighted CFR loop with the running average strategy.
             (Stage 3-C/3-D.)
 
-STATUS: STAGE 3-A — scaffold + warm-up caching + K=0 path. `solve_subgame` raises
-NotImplementedError for n_iterations >= 1 (Stages 3-B/3-C land that).
+STATUS: STAGE 3-B — scaffold + warm-up caching + K=0 passthrough + K=1 single-
+iteration regret update (bit-identical to the Stage-G stub). `solve_subgame` raises
+NotImplementedError for n_iterations > 1 (the multi-iteration loop lands in 3-C).
 """
 from __future__ import annotations
 
@@ -51,6 +52,7 @@ from typing import Optional, Sequence
 import numpy as np
 
 from src.nlhe.actions import DiscreteAction
+from src.nlhe.icm_returns import icm_adjust_returns
 from src.nlhe.infoset6 import parse_state_6max, parse_state_repeated_6max
 from src.nlhe.solver import _strategy_from_advantages
 from src.nlhe.subgame import SubgameTree, iter_decision_nodes
@@ -244,7 +246,78 @@ def _build_warmup(tree: SubgameTree, ctx: SubgameSolveContext, rng) -> _WarmupCa
 
 
 # ============================================================
-# Entry point (Stage 3-A: warm-up + K=0; K>=1 lands later)
+# Regret update + hero action values (Stage 3-B: the K=1 case)
+# ============================================================
+
+def _regret_matched_policy(adv: np.ndarray, q: np.ndarray,
+                           mask: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """One-iteration root regret update; returns (sigma_m, sigma0).
+
+    DELIBERATELY mirrors `scripts.ablation_decision_level.stub_root_policy`
+    line-for-line — the Stage-G validated stub. We copy the math rather than import
+    it so `src/nlhe/` does not depend on a `scripts/` ablation harness (which would
+    also pull torch-heavy modules at import). The Stage-3-B bit-identity test
+    (`test_k1_bit_identical_to_stub`) is the guard that keeps the two in lockstep.
+
+        sigma0 = RM+(adv)              # blueprint masked policy
+        ev     = Σ_a sigma0[a]·q[a]    # blueprint-mix value under the leaf values
+        r[a]   = (q[a] − ev)·mask[a]   # instantaneous regret (cfr6.py:378)
+        sigma_m= RM+(adv + r)          # blueprint regret + one fresh iteration
+
+    The float32 round-trips inside `_strategy_from_advantages` and the float64
+    ev/r arithmetic match the stub exactly, so K=1 is bit-identical to it.
+    """
+    adv = np.asarray(adv, dtype=np.float64)
+    q = np.asarray(q, dtype=np.float64)
+    mask = np.asarray(mask, dtype=np.float64)
+    sigma0 = _strategy_from_advantages(adv.astype(np.float32), mask.astype(np.float32))
+    ev = float((sigma0 * q * mask).sum())
+    r = (q - ev) * mask
+    sigma_m = _strategy_from_advantages((adv + r).astype(np.float32),
+                                        mask.astype(np.float32))
+    return sigma_m, sigma0
+
+
+def _hero_action_values(root, ctx: SubgameSolveContext) -> tuple[np.ndarray, bool]:
+    """Hero's per-action value q[a] from the root's immediate children (depth-1).
+
+    LEAF child   → `leaf_value[hero]` (populated by `evaluate_leaves`; design Q1/Q6).
+    TERMINAL child → `icm_adjust_returns(terminal_returns, ...)[hero]` (cfr6.py:278-285).
+    Mirrors the Stage-G stub's per-child q extraction (ablation_decision_level.py:307-326),
+    but READS the cached `leaf_value` instead of re-running rollouts. Returns
+    (q: (7,) float64, degraded), where `degraded` is True if any reached LEAF lacks
+    a `leaf_value` (e.g. a budget-truncated batch) — that action contributes q=0 and
+    sub-step 5 can fall back to blueprint.
+
+    K=1 uses ONLY the root's children (the depth-1 subgame); deeper descent is the
+    Stage-3-C multi-iteration loop.
+    """
+    q = np.zeros(_N_ACTIONS, dtype=np.float64)
+    degraded = False
+    for child in root.children:
+        a = int(child.action_from_parent)
+        if child.is_terminal:
+            icm = icm_adjust_returns(list(child.terminal_returns),
+                                     list(ctx.starting_stacks), list(ctx.payouts))
+            q[a] = float(icm[ctx.hero_seat])
+        elif child.is_leaf:
+            if child.leaf_value is None:
+                degraded = True
+                q[a] = 0.0
+            else:
+                q[a] = float(child.leaf_value[ctx.hero_seat])
+        else:
+            # A depth-1 root child is always LEAF or TERMINAL (subgame.py:267-293):
+            # the terminal check precedes the depth cut, and a chance node at the
+            # depth limit becomes a LEAF. A DECISION/CHANCE child here means the tree
+            # was not built at max_action_depth=1 — degrade rather than guess.
+            degraded = True
+            q[a] = 0.0
+    return q, degraded
+
+
+# ============================================================
+# Entry point (Stage 3-A: warm-up + K=0; Stage 3-B: K=1)
 # ============================================================
 
 def solve_subgame(tree: SubgameTree, ctx: SubgameSolveContext) -> SubgameSolveResult:
@@ -285,8 +358,26 @@ def solve_subgame(tree: SubgameTree, ctx: SubgameSolveContext) -> SubgameSolveRe
             degraded=False,
         )
 
+    if ctx.n_iterations == 1:
+        # K=1 — a single root regret update over the depth-1 subgame. Bit-identical
+        # to the Stage-G stub (the seed-to-plant continuity gate). Uses only the
+        # root's immediate children; no deeper traversal (that is Stage 3-C).
+        q, degraded = _hero_action_values(root, ctx)
+        root_adv = cache.adv[nid]
+        sigma_m, _sigma0 = _regret_matched_policy(root_adv, q, root_mask)
+        return SubgameSolveResult(
+            root_policy=sigma_m,
+            root_blueprint=root_sigma0.copy(),
+            legal_mask=root_mask.copy(),
+            hero_seat=ctx.hero_seat,
+            n_iterations=1,
+            n_decision_nodes_cached=len(cache.adv),
+            degraded=degraded,
+        )
+
     raise NotImplementedError(
-        "solve_subgame with n_iterations >= 1 lands in Stage 3-B (K=1, stub "
-        "bit-identity) and Stage 3-C (K>1, full vanilla weighted CFR loop). "
-        "Stage 3-A ships warm-up caching + the K=0 blueprint-passthrough path only."
+        "solve_subgame with n_iterations > 1 lands in Stage 3-C (the full vanilla "
+        "weighted CFR loop with multi-iteration accumulation and deeper tree "
+        "descent). Stage 3-A/3-B ship warm-up caching, the K=0 passthrough, and the "
+        "K=1 single-iteration regret update (Stage-G-stub bit-identity)."
     )

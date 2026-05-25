@@ -210,11 +210,129 @@ class TestK0BlueprintPassthrough(unittest.TestCase):
         with self.assertRaises(ValueError):
             solve_subgame(tree, _make_ctx(tree, n_iterations=0, hero_seat=wrong))
 
-    def test_k1_raises_not_implemented(self):
+    def test_k2_raises_not_implemented(self):
+        # K=1 is now implemented (Stage 3-B); the multi-iteration loop (K>1) is 3-C.
         from src.nlhe.subgame_solver import solve_subgame
         tree = self._tree(depth=1)
         with self.assertRaises(NotImplementedError):
-            solve_subgame(tree, _make_ctx(tree, n_iterations=1))
+            solve_subgame(tree, _make_ctx(tree, n_iterations=2))
+
+
+# ============================================================
+# Stage 3-B: the K=1 path (Stage-G-stub bit-identity gate)
+# ============================================================
+
+def _depth1_tree(seed=42):
+    """Real six_max_sng depth-1 subgame around hero's first decision."""
+    from src.nlhe.subgame import build_subgame_tree
+    return build_subgame_tree(_first_decision_state(seed=seed),
+                              max_action_depth=1, rng=random.Random(seed + 1))
+
+
+def _set_leaf_values(tree, hero_entry_fn, seed=99):
+    """Hand-populate every LEAF child's leaf_value deterministically (bypasses the
+    rollout evaluator so the bit-identity gate isolates the regret-update wiring).
+    hero_entry_fn(action_int) -> hero's value at that action; other seats get
+    deterministic noise (irrelevant to hero-value q)."""
+    rng = np.random.default_rng(seed)
+    hero = tree.root.current_player
+    for child in tree.root.children:
+        if child.is_leaf:
+            v = rng.normal(0.0, 0.2, size=6)
+            v[hero] = hero_entry_fn(int(child.action_from_parent))
+            child.leaf_value = v.tolist()
+
+
+def _independent_q(tree, ctx):
+    """Recompute hero action values q[a] from the root children WITHOUT calling the
+    solver's helper — the reference the bit-identity gate feeds to stub_root_policy."""
+    from src.nlhe.icm_returns import icm_adjust_returns
+    q = np.zeros(7, dtype=np.float64)
+    hero = tree.root.current_player
+    for child in tree.root.children:
+        a = int(child.action_from_parent)
+        if child.is_terminal:
+            icm = icm_adjust_returns(list(child.terminal_returns),
+                                     list(ctx.starting_stacks), list(ctx.payouts))
+            q[a] = float(icm[hero])
+        else:
+            q[a] = float(child.leaf_value[hero])
+    return q
+
+
+@unittest.skipUnless(_HAS_OPEN_SPIEL, "Requires open_spiel")
+class TestK1RegretUpdate(unittest.TestCase):
+    def test_k1_bit_identical_to_stub(self):
+        """THE GATE: K=1 solver root_policy == Stage-G stub_root_policy(adv, q, mask),
+        bit-identical, on a real ≥3-action production decision."""
+        from scripts.ablation_decision_level import stub_root_policy
+        from src.nlhe.subgame_solver import solve_subgame, _mask_from_children
+        tree = _depth1_tree(seed=42)
+        self.assertGreaterEqual(len(tree.root.children), 3,
+                                "need a root with >=3 legal actions for a non-trivial gate")
+        # deterministic, clearly non-flat leaf values (so the update does real work)
+        _set_leaf_values(tree, hero_entry_fn=lambda a: 0.05 * a - 0.1)
+        ctx = _make_ctx(tree, n_iterations=1)
+        res = solve_subgame(tree, ctx)
+
+        hero = tree.root.current_player
+        adv = _MockNets().predict_advantages(hero, None)
+        mask = _mask_from_children(tree.root)
+        q = _independent_q(tree, ctx)
+        sigma_stub, _sigma0 = stub_root_policy(adv, q, mask)
+
+        self.assertTrue(
+            np.array_equal(res.root_policy, sigma_stub),
+            f"K=1 solver {res.root_policy} != stub {sigma_stub}")
+        self.assertEqual(res.n_iterations, 1)
+        self.assertFalse(res.degraded)
+
+    def test_flat_q_reduces_to_blueprint_passthrough(self):
+        """Bias-inactive root (flat q across legal actions) ⇒ r=0 ⇒ K=1 == K=0."""
+        from src.nlhe.subgame_solver import solve_subgame
+        tree = _depth1_tree(seed=42)
+        self.assertTrue(all(c.is_leaf for c in tree.root.children),
+                        "this fixture assumes no terminal children at the root")
+        _set_leaf_values(tree, hero_entry_fn=lambda a: 0.5)  # constant hero value
+        k1 = solve_subgame(tree, _make_ctx(tree, n_iterations=1))
+        k0 = solve_subgame(tree, _make_ctx(tree, n_iterations=0))
+        np.testing.assert_allclose(k1.root_policy, k0.root_policy, atol=1e-6)
+
+    def test_mask_preservation_pure(self):
+        """Masked actions stay 0 regardless of how large their adv/q are."""
+        from src.nlhe.subgame_solver import _regret_matched_policy
+        adv = np.array([0.4, 0.1, -0.2, 0.3, 0.05, 9.9, 9.9], dtype=np.float64)
+        mask = np.array([1, 1, 1, 1, 1, 0, 0], dtype=np.float64)  # 5,6 illegal
+        q = np.array([1.0, 2.0, 3.0, 0.5, 0.1, 100.0, 100.0], dtype=np.float64)
+        sigma_m, sigma0 = _regret_matched_policy(adv, q, mask)
+        self.assertEqual(float(sigma_m[5]), 0.0)
+        self.assertEqual(float(sigma_m[6]), 0.0)
+        self.assertEqual(float(sigma0[5]), 0.0)
+        self.assertAlmostEqual(float(sigma_m.sum()), 1.0, places=5)
+
+    def test_k0_vs_k1_differ_on_bias_active_root(self):
+        """K=1 actually does work: a strongly bias-active root moves the policy off
+        the blueprint passthrough by L1 > 0.001."""
+        from src.nlhe.subgame_solver import solve_subgame
+        tree = _depth1_tree(seed=42)
+        # one action far more valuable than the rest -> large regret -> mass shifts
+        acts = sorted(int(c.action_from_parent) for c in tree.root.children)
+        boosted = acts[-1]
+        _set_leaf_values(tree, hero_entry_fn=lambda a: (2.0 if a == boosted else -0.5))
+        k0 = solve_subgame(tree, _make_ctx(tree, n_iterations=0))
+        k1 = solve_subgame(tree, _make_ctx(tree, n_iterations=1))
+        l1 = float(np.abs(k1.root_policy - k0.root_policy).sum())
+        self.assertGreater(l1, 0.001, f"K=1 did not move the policy (L1={l1})")
+
+    def test_k1_reproducible_same_seed(self):
+        t1 = _depth1_tree(seed=7)
+        _set_leaf_values(t1, hero_entry_fn=lambda a: 0.05 * a, seed=5)
+        t2 = _depth1_tree(seed=7)
+        _set_leaf_values(t2, hero_entry_fn=lambda a: 0.05 * a, seed=5)
+        from src.nlhe.subgame_solver import solve_subgame
+        r1 = solve_subgame(t1, _make_ctx(t1, n_iterations=1, rng=random.Random(123)))
+        r2 = solve_subgame(t2, _make_ctx(t2, n_iterations=1, rng=random.Random(123)))
+        self.assertTrue(np.array_equal(r1.root_policy, r2.root_policy))
 
 
 if __name__ == "__main__":
