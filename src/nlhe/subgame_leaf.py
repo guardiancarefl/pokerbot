@@ -369,6 +369,19 @@ def _draw_opp_biases(ctx: LeafEvalContext, rng) -> dict:
     return out
 
 
+def _parse_leaf_state(state):
+    """`parse_state_6max`, CHANCE-SAFE. A depth-limited subgame leaf can be a CHANCE
+    node — a board-deal pending when a betting round closes at the depth limit — where
+    `current_player() == -1` and `observation_string` rejects it (sub-step-5
+    integration finding; Stages F/G never exercised chance leaves: hand-built leaves /
+    depth-1 trees). Parse under a fixed observer (seat 0) in that case; Money and
+    PlayerContribution are public, so the only fields these callers read (`money`) stay
+    correctly seat-indexed. The rollout path itself already handles chance nodes."""
+    if state.current_player() < 0:
+        return parse_state_6max(state, observer=0)
+    return parse_state_6max(state)
+
+
 def _option_a(node: SubgameNode, ctx: LeafEvalContext):
     """Option-A ICM estimate at the leaf (Q5): icm_equity(current) - icm_equity(start).
 
@@ -376,7 +389,7 @@ def _option_a(node: SubgameNode, ctx: LeafEvalContext):
     short-circuit and as the all-samples-failed fallback. Returns (value_list, ok).
     """
     try:
-        parsed = parse_state_6max(node.state)
+        parsed = _parse_leaf_state(node.state)
         current = list(parsed["money"])
         starting = list(ctx.starting_stacks)
         # Exclude pre-busted seats (entered at stack 0) from both ICM endpoints,
@@ -482,8 +495,13 @@ def _best_response_biases(node, ctx, rng, deadline=None):
 
     For each live opponent, argmax over its menu of mean opponent-value, with a
     deterministic LOWEST-INDEX tie-break (Q8). Returns (br_dict, budget_hit).
+
+    At a CHANCE-node leaf (round closed at the depth limit) the parse is chance-safe
+    (`_parse_leaf_state`); `money` is then current behind-chips per seat, so all-in
+    continuers (money 0) are correctly excluded from `live` and only seats with chips
+    — who act on the next street, reached via the rollout's board deal — drive BR.
     """
-    parsed = parse_state_6max(node.state)
+    parsed = _parse_leaf_state(node.state)
     money = parsed["money"]
     live = [o for o in range(_NUM_SEATS)
             if o != ctx.hero_seat and o < len(money) and money[o] > 0]

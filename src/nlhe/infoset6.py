@@ -49,7 +49,7 @@ _RE_SEQUENCES = re.compile(r"\[Sequences: ([^\]]*)\]")
 _RE_CONTRIBUTION = re.compile(r"\[PlayerContribution: ([\d\s]+)\]")
 
 
-def parse_state_6max(state: Any) -> dict:
+def parse_state_6max(state: Any, observer: int | None = None) -> dict:
     """Parse an OpenSpiel universal_poker state for a 6-max game.
 
     Uses observation_string() rather than information_state_string()
@@ -66,9 +66,27 @@ def parse_state_6max(state: Any) -> dict:
         public_cards (str): board cards e.g. "Kh2c3d"
         sequences (str): the betting sequence string e.g. "ccc/cc"
         num_players (int): always 6 in 6-max
+
+    `observer`: which seat's observation/information string to read; defaults to the
+    acting player. Chance/terminal states have current_player() == -1, which
+    observation_string rejects, so a caller that must parse such a state (e.g. a
+    chance-node subgame leaf) passes an explicit observer seat. Money and
+    PlayerContribution are PUBLIC, so they stay correctly seat-indexed regardless of
+    observer; private_cards/public_cards/sequences become observer-relative, and
+    information_state_string is read defensively at chance nodes (it may be
+    unavailable). A caller parsing a non-acting state should rely only on the public
+    money/contribution fields.
     """
-    obs = state.observation_string(state.current_player())
-    info = state.information_state_string(state.current_player())
+    cp = state.current_player()
+    obs_player = observer if observer is not None else cp
+    obs = state.observation_string(obs_player)
+    if cp < 0:
+        try:
+            info = state.information_state_string(obs_player)
+        except Exception:
+            info = ""
+    else:
+        info = state.information_state_string(obs_player)
 
     out = {"num_players": 6}
 

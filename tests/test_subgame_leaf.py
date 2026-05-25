@@ -653,6 +653,61 @@ class TestBestResponseMode(unittest.TestCase):
         defaults.update(kw)
         return LeafEvalContext(**defaults)
 
+    # ---- chance-node-leaf safety (sub-step-5 integration fix) ----
+
+    def _chance_leaf(self):
+        """A LEAF whose state is a CHANCE node: a board-deal pending because the
+        betting round closes at the depth limit (the leaf shape the depth-K solver
+        produces but Stages F/G never exercised)."""
+        from src.nlhe.subgame import SubgameNode, NodeKind
+        s = _walk_to_decision(self.game, seed=7)
+        guard = 0
+        while not s.child(1).is_chance_node():   # call until the round closes -> chance
+            s = s.child(1); guard += 1
+            if guard > 25:
+                self.skipTest("no round-closing chance state reached")
+        cs = s.child(1)
+        self.assertTrue(cs.is_chance_node())
+        return SubgameNode(kind=NodeKind.LEAF, state=cs, depth=4, current_player=None)
+
+    def test_chance_leaf_evaluates_finite_no_crash(self):
+        # Regression: before the fix, parsing a chance-node leaf crashed
+        # (observation_string(current_player()==-1)). Must now evaluate cleanly.
+        import math
+        import random
+        from src.nlhe.subgame_leaf import evaluate_leaf
+        leaf = self._chance_leaf()
+        res = evaluate_leaf(leaf, self._ctx(leaf=leaf, hero_seat=0, n_samples=6,
+                                            rng=random.Random(1)))
+        v = res.value
+        self.assertEqual(len(v), 6)
+        self.assertTrue(all(math.isfinite(x) for x in v))           # finite
+        self.assertLess(max(abs(x) for x in v), 3.0)                # ICM-delta magnitude
+        self.assertLess(abs(sum(v)), 0.05)                          # ~prize-pool-conserved
+
+    def test_chance_leaf_bias_values_computed(self):
+        # The chance-safe parse -> live-opp detection -> per-bias rollouts chain
+        # produces finite values for all k biases (the BR mechanism reaches the
+        # post-board-deal decisions via the rollout). Whether the k values DIFFER
+        # (bias-active) or are equal (bias-inactive) is leaf-dependent and reported
+        # from the aggregate measurement (predominantly inactive in this turbo regime).
+        import math
+        import random
+        from src.nlhe.subgame_leaf import (
+            _opponent_bias_values, _menu_biases, _parse_leaf_state)
+        leaf = self._chance_leaf()
+        money = _parse_leaf_state(leaf.state)["money"]
+        live = [o for o in range(6) if o != 0 and money[o] > 0]
+        self.assertTrue(live, "expected live opponents at a flop-deal chance leaf")
+        o = live[0]
+        menu = _menu_biases(None, o, self.biased.k)
+        ctx = self._ctx(leaf=leaf, hero_seat=0, n_samples=6)
+        vals, hit = _opponent_bias_values(leaf, ctx, o, menu, random.Random(3))
+        self.assertFalse(hit)
+        means = {b: (sum(v) / len(v) if v else float("nan")) for b, v in vals.items()}
+        self.assertEqual(len(means), self.biased.k)
+        self.assertTrue(all(math.isfinite(m) for m in means.values()))
+
     # ---- Q10 #9: maximization fires (max >= mean) + argmax selection ----
 
     def test_br_mechanism_opponent_value_ge_uniform(self):
