@@ -210,12 +210,18 @@ class TestK0BlueprintPassthrough(unittest.TestCase):
         with self.assertRaises(ValueError):
             solve_subgame(tree, _make_ctx(tree, n_iterations=0, hero_seat=wrong))
 
-    def test_k2_raises_not_implemented(self):
-        # K=1 is now implemented (Stage 3-B); the multi-iteration loop (K>1) is 3-C.
+    def test_k2_runs_via_general_loop(self):
+        # K>1 is now implemented (Stage 3-C) — it no longer raises; it returns a
+        # valid refined policy via the multi-iteration loop.
         from src.nlhe.subgame_solver import solve_subgame
         tree = self._tree(depth=1)
-        with self.assertRaises(NotImplementedError):
-            solve_subgame(tree, _make_ctx(tree, n_iterations=2))
+        for c in tree.root.children:
+            if c.is_leaf:
+                c.leaf_value = [0.0] * 6  # populate so nothing is degraded
+        res = solve_subgame(tree, _make_ctx(tree, n_iterations=2))
+        self.assertEqual(res.n_iterations, 2)
+        self.assertFalse(res.degraded)
+        self.assertAlmostEqual(float(res.root_policy.sum()), 1.0, places=5)
 
 
 # ============================================================
@@ -333,6 +339,150 @@ class TestK1RegretUpdate(unittest.TestCase):
         r1 = solve_subgame(t1, _make_ctx(t1, n_iterations=1, rng=random.Random(123)))
         r2 = solve_subgame(t2, _make_ctx(t2, n_iterations=1, rng=random.Random(123)))
         self.assertTrue(np.array_equal(r1.root_policy, r2.root_policy))
+
+
+# ============================================================
+# Stage 3-C: the K>1 multi-iteration vanilla weighted CFR loop
+# ============================================================
+
+def _set_all_leaf_values(tree, seed=99):
+    """Hand-populate every LEAF in the tree with a deterministic 6-vector."""
+    from src.nlhe.subgame import iter_leaf_nodes
+    rng = np.random.default_rng(seed)
+    for leaf in iter_leaf_nodes(tree):
+        leaf.leaf_value = rng.normal(0.0, 0.3, size=6).tolist()
+
+
+def _synthetic_chance_tree():
+    """Analytical anchor (hero root, no real game state). Tests chance weighting:
+
+        root (hero, actions {0,1})
+          action 0 -> CHANCE {p=0.9 -> leaf hero=1.0 ; p=0.1 -> leaf hero=0.0}  => q[0]=0.9
+          action 1 -> leaf hero=0.7                                              => q[1]=0.7
+
+    Correct chance_prob weighting gives q[0]=0.9 > q[1]=0.7 ⇒ the BR is pure on
+    action 0. A uniform mis-weighting would give q[0]=0.5 < 0.7 ⇒ pure on action 1,
+    so the assertion (pure on 0) catches a weighting bug. Returns (tree, cache, hero).
+    """
+    from src.nlhe.subgame import SubgameNode, SubgameTree, NodeKind
+    from src.nlhe.subgame_solver import _WarmupCache
+    from src.nlhe.solver import _strategy_from_advantages
+    hero = 0
+
+    def leaf(v, prob, afp):
+        n = SubgameNode(kind=NodeKind.LEAF, state=None, depth=2,
+                        action_from_parent=afp, chance_prob=prob)
+        lv = [0.0] * 6
+        lv[hero] = v
+        n.leaf_value = lv
+        return n
+
+    l_hi = leaf(1.0, 0.9, 0)
+    l_lo = leaf(0.0, 0.1, 1)
+    chance = SubgameNode(kind=NodeKind.CHANCE, state=None, depth=1,
+                         action_from_parent=0, chance_prob=1.0)
+    chance.children = [l_hi, l_lo]
+    chance.action_at_child = [0, 1]
+    l_b = leaf(0.7, 1.0, 1)
+
+    root = SubgameNode(kind=NodeKind.DECISION, state=None, depth=0,
+                       current_player=hero)
+    root.children = [chance, l_b]
+    root.action_at_child = [0, 1]  # DiscreteAction 0 and 1
+
+    tree = SubgameTree(root=root, all_nodes=[root, chance, l_hi, l_lo, l_b],
+                       n_decision_nodes=1, n_chance_nodes=1, n_leaf_nodes=3)
+
+    cache = _WarmupCache()
+    nid = id(root)
+    mask = np.zeros(7, dtype=np.float32)
+    mask[0] = 1.0
+    mask[1] = 1.0
+    cache.adv[nid] = np.zeros(7, dtype=np.float32)  # uniform start
+    cache.mask[nid] = mask
+    cache.sigma[nid] = _strategy_from_advantages(cache.adv[nid], mask)
+    return tree, cache, hero
+
+
+@unittest.skipUnless(_HAS_OPEN_SPIEL, "Requires open_spiel")
+class TestKMultiIteration(unittest.TestCase):
+    def _tree(self, depth=2, seed=42):
+        from src.nlhe.subgame import build_subgame_tree
+        t = build_subgame_tree(_first_decision_state(seed=seed),
+                               max_action_depth=depth, rng=random.Random(seed + 1))
+        _set_all_leaf_values(t, seed=seed + 50)
+        return t
+
+    def test_k100_valid_distribution(self):
+        from src.nlhe.subgame_solver import solve_subgame
+        tree = self._tree(depth=2)
+        res = solve_subgame(tree, _make_ctx(tree, n_iterations=100))
+        p, mask = res.root_policy, res.legal_mask
+        self.assertEqual(p.shape, (7,))
+        self.assertTrue(np.all(p >= 0.0))
+        self.assertAlmostEqual(float(p.sum()), 1.0, places=5)
+        self.assertEqual(float(p[mask == 0].sum()), 0.0)
+        self.assertEqual(res.n_iterations, 100)
+
+    def test_k1_general_loop_matches_special_branch(self):
+        """The general K>1 loop at N=1 reproduces the Stage-3-B special branch
+        (which solve_subgame routes K==1 to), within tiny tolerance."""
+        import random as _r
+        from src.nlhe.subgame_solver import solve_subgame, _build_warmup, _run_cfr
+        tree = _depth1_tree(seed=42)
+        _set_leaf_values(tree, hero_entry_fn=lambda a: 0.05 * a - 0.1)
+        ctx1 = _make_ctx(tree, n_iterations=1)
+        special = solve_subgame(tree, ctx1).root_policy  # K==1 special branch
+        cache = _build_warmup(tree, ctx1, _r.Random(0))
+        general_k1, _l1, _deg = _run_cfr(tree, ctx1, cache)
+        np.testing.assert_allclose(general_k1, special, atol=1e-6)
+
+    def test_convergence_l1_tail_decreases(self):
+        from src.nlhe.subgame_solver import solve_subgame
+        tail = {}
+        for K in (10, 100, 1000):
+            tree = self._tree(depth=2)  # identical tree+leaves each K
+            res = solve_subgame(tree, _make_ctx(tree, n_iterations=K))
+            tail[K] = res.converged_l1_tail
+        # average-policy movement shrinks with more iterations (~1/K)
+        self.assertGreater(tail[100], tail[1000])
+        self.assertGreater(tail[10], tail[100])
+
+    def test_k100_reproducible(self):
+        from src.nlhe.subgame_solver import solve_subgame
+        t1 = self._tree(depth=2, seed=11)
+        t2 = self._tree(depth=2, seed=11)
+        r1 = solve_subgame(t1, _make_ctx(t1, n_iterations=100, rng=random.Random(1)))
+        r2 = solve_subgame(t2, _make_ctx(t2, n_iterations=100, rng=random.Random(1)))
+        self.assertTrue(np.array_equal(r1.root_policy, r2.root_policy))
+
+    def test_cost_gate_k1000_under_5s(self):
+        import time
+        from src.nlhe.subgame_solver import solve_subgame
+        tree = self._tree(depth=3, seed=42)
+        t0 = time.perf_counter()
+        res = solve_subgame(tree, _make_ctx(tree, n_iterations=1000))
+        dt = time.perf_counter() - t0
+        self.assertLess(dt, 5.0, f"K=1000 took {dt:.2f}s on a {len(tree.all_nodes)}-node tree")
+        self.assertEqual(res.n_iterations, 1000)
+
+
+class TestVanillaWeightingAnalytical(unittest.TestCase):
+    """Math anchor: no real game state, pure loop verification."""
+
+    def test_converges_to_analytical_best_response(self):
+        from src.nlhe.icm import sng_payouts_6max_double_up
+        from src.nlhe.subgame_solver import SubgameSolveContext, _run_cfr
+        tree, cache, hero = _synthetic_chance_tree()
+        ctx = SubgameSolveContext(
+            blueprint=_MockBlueprint(), starting_stacks=[10000] * 6,
+            payouts=sng_payouts_6max_double_up(), hero_seat=hero, n_iterations=1000)
+        policy, l1_tail, degraded = _run_cfr(tree, ctx, cache)
+        # q[0]=0.9 (=0.9*1.0+0.1*0.0, correct chance weighting) > q[1]=0.7 ⇒ pure on 0
+        self.assertGreater(policy[0], 0.99, f"policy={policy}")
+        self.assertLess(policy[1], 0.01, f"policy={policy}")
+        self.assertAlmostEqual(float(policy.sum()), 1.0, places=5)
+        self.assertFalse(degraded)
 
 
 if __name__ == "__main__":

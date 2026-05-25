@@ -38,9 +38,9 @@ K progression (n_iterations):
   - K > 1  → the full vanilla weighted CFR loop with the running average strategy.
             (Stage 3-C/3-D.)
 
-STATUS: STAGE 3-B — scaffold + warm-up caching + K=0 passthrough + K=1 single-
-iteration regret update (bit-identical to the Stage-G stub). `solve_subgame` raises
-NotImplementedError for n_iterations > 1 (the multi-iteration loop lands in 3-C).
+STATUS: STAGE 3-C — full solver. K=0 passthrough, K=1 single-iteration regret update
+(bit-identical to the Stage-G stub), and K>1 the multi-iteration vanilla weighted CFR
+loop (`_run_cfr`) with deeper tree descent and linear-LCFR average-strategy output.
 """
 from __future__ import annotations
 
@@ -151,8 +151,11 @@ class SubgameSolveResult:
         degraded: True if any reached LEAF lacked a `leaf_value` (e.g. a
             budget-truncated batch). Lets sub-step 5 choose a blueprint fallback.
             Always False on the K=0 path (no leaves are read).
-        converged_l1_tail: mean per-iteration root-policy L1 change over the last
-            10% of iterations (the Stage-3-E convergence metric). NaN until K>=1.
+        converged_l1_tail: L1 change in the AVERAGE (output) root policy between the
+            last two iterations — the Stage-3-E convergence metric (design doc D
+            "root-policy L1 change"). NaN for K<2. Not the current-strategy
+            consecutive L1, which collapses to 0 in ~1-2 iterations here (the subgame
+            is a best response to fixed opponents; see _run_cfr).
     """
     root_policy: np.ndarray
     root_blueprint: np.ndarray
@@ -317,7 +320,132 @@ def _hero_action_values(root, ctx: SubgameSolveContext) -> tuple[np.ndarray, boo
 
 
 # ============================================================
-# Entry point (Stage 3-A: warm-up + K=0; Stage 3-B: K=1)
+# Multi-iteration vanilla weighted CFR loop (Stage 3-C: the K>1 case)
+# ============================================================
+
+def _leaf_terminal_hero_values(tree: SubgameTree,
+                               ctx: SubgameSolveContext) -> tuple[dict, bool]:
+    """Precompute each LEAF/TERMINAL node's hero scalar value ONCE.
+
+    These are iteration-invariant (design Q1/Q6: leaf values are fixed for the whole
+    solve), so the CFR loop must not recompute `icm_adjust_returns` per iteration —
+    that would put the dominant cost back inside the loop. LEAF → leaf_value[hero];
+    TERMINAL → icm_adjust_returns(terminal_returns, ...)[hero] (cfr6.py:278-285).
+    Returns (values: {id(node): float}, degraded), degraded=True if any LEAF lacks a
+    leaf_value (budget-truncated batch) — that node contributes 0 and sub-step 5 can
+    fall back to blueprint."""
+    hero = ctx.hero_seat
+    stacks = list(ctx.starting_stacks)
+    payouts = list(ctx.payouts)
+    values: dict = {}
+    degraded = False
+    for node in tree.all_nodes:
+        if node.is_terminal:
+            icm = icm_adjust_returns(list(node.terminal_returns), stacks, payouts)
+            values[id(node)] = float(icm[hero])
+        elif node.is_leaf:
+            if node.leaf_value is None:
+                degraded = True
+                values[id(node)] = 0.0
+            else:
+                values[id(node)] = float(node.leaf_value[hero])
+    return values, degraded
+
+
+def _run_cfr(tree: SubgameTree, ctx: SubgameSolveContext,
+             cache: _WarmupCache) -> tuple[np.ndarray, float, bool]:
+    """The K-iteration vanilla weighted CFR loop (Decisions 2 & 4).
+
+    Vanilla, NOT external sampling: every iteration visits every node, weighting
+    chance children by `chance_prob` (subgame.py:114-117) and opponent children by
+    the FIXED blueprint strategy (Decision 4). Only HERO accumulates regret. The
+    per-node hero counterfactual value is a scalar (hero's slice) — we never need the
+    other seats' values because opponents do not update.
+
+    Per iteration t (weight w_t = t, linear LCFR averaging):
+      hero node I → σ_pre = RM+(R[I]); q[a] = value(child_a); ev = Σ σ_pre·q;
+                    R[I] = max(R[I] + (q−ev)·mask, 0)  (RM+ clamp);
+                    σ_post = RM+(R[I]); S[I] += w_t · σ_post; return ev.
+    Warm-start R[I] = blueprint advantages (cache.adv[I]), so K=1 reduces to the
+    Stage-G stub (RM+(adv + r)); K>1 accumulates further iterations.
+
+    Returns (root_policy: (7,) float32 average strategy, converged_l1_tail, degraded).
+    converged_l1_tail = L1 between the AVERAGE root policy at iterations K-1 and K
+    (NaN if K<2) — the Stage-3-E convergence diagnostic (see the SubgameSolveResult
+    field note on why the average, not the current strategy).
+
+    Per-node regret/strategy tables are keyed by id(node): this single-deal subgame's
+    hero infosets are singletons (subgame.py:158-162 — chance subsampling keeps
+    sampled-subgame decision nodes distinct; sub-step 3 is told not to merge them).
+    """
+    hero = ctx.hero_seat
+    K = ctx.n_iterations
+    values, degraded = _leaf_terminal_hero_values(tree, ctx)
+
+    # Hero regret (R) + linearly-weighted average-strategy (S) accumulators.
+    R: dict = {}
+    S: dict = {}
+    for node in iter_decision_nodes(tree):
+        if node.current_player == hero:
+            nid = id(node)
+            R[nid] = cache.adv[nid].astype(np.float64)
+            S[nid] = np.zeros(_N_ACTIONS, dtype=np.float64)
+
+    def traverse(node, w: float) -> float:
+        if node.is_leaf or node.is_terminal:
+            return values[id(node)]
+        if node.is_chance:
+            tot = 0.0
+            for child in node.children:
+                p = child.chance_prob
+                if p:
+                    tot += p * traverse(child, w)
+            return tot
+        nid = id(node)
+        if node.current_player != hero:
+            # Opponent: fixed blueprint strategy weights the children (Decision 4).
+            sig = cache.sigma[nid]
+            tot = 0.0
+            for child in node.children:
+                p = float(sig[int(child.action_from_parent)])
+                if p != 0.0:
+                    tot += p * traverse(child, w)
+            return tot
+        # Hero decision node.
+        mask = cache.mask[nid]
+        Rn = R[nid]
+        sigma_pre = _strategy_from_advantages(Rn.astype(np.float32), mask)
+        q = np.zeros(_N_ACTIONS, dtype=np.float64)
+        for child in node.children:
+            q[int(child.action_from_parent)] = traverse(child, w)
+        ev = float((sigma_pre * q * mask).sum())
+        R[nid] = np.maximum(Rn + (q - ev) * mask, 0.0)  # RM+ clamp
+        sigma_post = _strategy_from_advantages(R[nid].astype(np.float32), mask)
+        S[nid] += w * sigma_post
+        return ev
+
+    # converged_l1_tail tracks the AVERAGE (output) root-policy movement between the
+    # last two iterations — the design-doc D "root-policy L1 change", and the signal
+    # Stage 3-E needs to pick K. NOT the CURRENT-strategy consecutive L1: with
+    # opponents fixed (Decision 4) the subgame is a best-response problem, and RM+
+    # drives the current strategy to its (pure) BR in ~1-2 iterations, so its
+    # consecutive L1 collapses to 0 immediately and cannot inform K. The average
+    # output keeps moving ~1/K and is what "has the solve converged" actually means.
+    root_id = id(tree.root)
+    prev_avg = None
+    l1_tail = float("nan")
+    for t in range(1, K + 1):
+        traverse(tree.root, float(t))
+        avg_t = S[root_id] / (t * (t + 1) / 2.0)  # running linear-weighted average
+        if prev_avg is not None:
+            l1_tail = float(np.abs(avg_t - prev_avg).sum())
+        prev_avg = avg_t
+
+    return prev_avg.astype(np.float32), l1_tail, degraded
+
+
+# ============================================================
+# Entry point (Stage 3-A: K=0; Stage 3-B: K=1; Stage 3-C: K>1)
 # ============================================================
 
 def solve_subgame(tree: SubgameTree, ctx: SubgameSolveContext) -> SubgameSolveResult:
@@ -375,9 +503,17 @@ def solve_subgame(tree: SubgameTree, ctx: SubgameSolveContext) -> SubgameSolveRe
             degraded=degraded,
         )
 
-    raise NotImplementedError(
-        "solve_subgame with n_iterations > 1 lands in Stage 3-C (the full vanilla "
-        "weighted CFR loop with multi-iteration accumulation and deeper tree "
-        "descent). Stage 3-A/3-B ship warm-up caching, the K=0 passthrough, and the "
-        "K=1 single-iteration regret update (Stage-G-stub bit-identity)."
+    # K>1 — the full multi-iteration vanilla weighted CFR loop (Stage 3-C). Deeper
+    # tree descent: opponents fixed at blueprint, chance weighted by chance_prob,
+    # hero accumulates regret; output is the linearly-weighted average root strategy.
+    root_policy, l1_tail, degraded = _run_cfr(tree, ctx, cache)
+    return SubgameSolveResult(
+        root_policy=root_policy,
+        root_blueprint=root_sigma0.copy(),
+        legal_mask=root_mask.copy(),
+        hero_seat=ctx.hero_seat,
+        n_iterations=ctx.n_iterations,
+        n_decision_nodes_cached=len(cache.adv),
+        degraded=degraded,
+        converged_l1_tail=l1_tail,
     )
