@@ -80,6 +80,14 @@ at the start of the work depending on it):
    network forward (~0.13 ms GPU). Reality (Stage E): `encode_from_parsed`
    cache-miss = **10.77 ms** (treys MC, `bucket_runouts=20`), ~43× the network
    (0.25 ms single / 0.45 µs/row batched). Filed as Stage E.5 / Q12.
+   > **CORRECTION (session 15):** the per-*call* number (10.77 ms) is right, but
+   > the "*bottleneck*" framing is wrong in **aggregate** — it is the same Q4 error
+   > one level down (per-unit cost asserted without multiplying by call frequency).
+   > Re-measured on the same 64-leaf depth-3 tree (BR M=5): bucket-MC is only **27%**
+   > of cost (417 calls, 83 distinct boards under the shared cache), while the
+   > **network forward is 38%** (29,974 calls). So finding #3 is itself a *fourth*
+   > instance of the meta-lesson below. Stage E.5 (bucket-MC precompute) is
+   > consequently superseded — see design-doc Q12 SUPERSEDED + Q13 (pending).
 
 **Meta-lesson (recorded in design doc Q4.5):** three wrong load-bearing numbers in
 three stages, same root cause. Going forward, every numerical claim in any design
@@ -92,6 +100,31 @@ bucket-MC. `evaluate_leaves` (64-leaf depth-3 tree): PROFILE M=8 ≈ 3.5 s, BR M
 44 s, BR M=5 ≈ 30 s. Cache-sharing freezes each `(hero,board)` bucket-MC draw, so a
 few leaves differ ~0.5 from per-leaf-fresh evaluation (a bucket-assignment flip
 under `bucket_runouts=20` noise, not a bug; batch values are self-consistent).
+
+> **CORRECTION (session 15) — two claims in the paragraph above are wrong:**
+> 1. *"the bottleneck is CPU/treys-bound bucket-MC"* — no. In aggregate the
+>    **network forward dominates** (BR M=5: net 38% vs bucket-MC 27%; see the
+>    correction on finding #3). Bucket-MC precompute (Stage E.5) is therefore
+>    superseded (design-doc Q12).
+> 2. *"cache-sharing freezes the bucket-MC draw → bucket-assignment flips"* — there
+>    is **no draw to freeze.** `bucket_of` is **fully deterministic and
+>    order-independent**: it discards its `rng` and seeds from
+>    `sha256(sorted(hero,board))` (verified: same `(hero,board)` → same bucket
+>    across seeds and across board orderings). So the same hand always maps to the
+>    same bucket regardless of cache state, and there are **no bucket-assignment
+>    flips.** Proof: removing the batch-mode cache reset yields **bit-identical**
+>    leaf values (64/64, max diff 0.0), which means cache state cannot change a
+>    leaf value — and the cache path never advances `ctx.rng`. The ~0.5 batch-vs-
+>    standalone differences in `test_evaluate_leaves_matches_evaluate_leaf_sequentially`
+>    are ordinary **Monte-Carlo rollout-sampling variance from the two runs using
+>    different seeds** (batch `Random(101)` shared-stream vs standalone `Random(7777)`
+>    per-leaf), not a cache effect. (Absolute timings above are not comparable
+>    across sessions — the box load varies ~10×; session 15 measured PROFILE M=8
+>    ≈ 1.5 s, BR M=5 ≈ 16.7 s intact / 13.0 s after guarding the reset. The
+>    *attribution*, not the wall-clock, is the durable fact.)
+> The `test_subgame_leaf.py` docstring at the `test_evaluate_leaves_matches_*`
+> test carries the same misattribution; left as a follow-up (it does not affect
+> the assertion, which tolerates the variance).
 
 Tests at close: leaf evaluator 24 + 10 subtests; no regression across
 icm/icm_returns/subgame/fast_view/cfr6 (95/95).

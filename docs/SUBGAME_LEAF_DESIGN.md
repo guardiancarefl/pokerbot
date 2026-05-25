@@ -644,6 +644,51 @@ increase are not buying robustness, and we revert to PROFILE_SAMPLE (or revisit
 
 ## Q12 — Encoder bucket-MC precompute (Stage E.5, budget-closing follow-up)
 
+> **SUPERSEDED by the session-15 re-measurement (the actual budget levers are
+> elsewhere; see Q13, pending).** Stage E.5 as scoped here — precompute a
+> `board→bucket` table so rollouts look up instead of running the bucket-MC — was
+> measured to be a **non-budget-closing** optimization. On the same 64-leaf
+> depth-3 production tree (`six_max_sng(starting_stack=1500)`, BR M=5), the cost
+> decomposes as: **network forward 38%** (29,974 calls × 0.21 ms), **bucket-MC
+> 27%** (only 417 calls, of which 83 distinct), rollout glue 22%, parse/view 7%,
+> encode-rest 5.5%. Two things break the premise:
+> 1. **The Stage-E shared cache already does what the precompute would do.** It
+>    achieves a ~99% bucket hit-rate (BR visits only **83 distinct `(hole,board)`
+>    keys**, not the "hundreds" assumed here). A precompute recovers ≈0 over it —
+>    the residual ~0.9 s of genuinely-distinct boards is irreducible (you must
+>    bucket each distinct board once, precompute or not).
+> 2. **Bucket-MC is not the bottleneck.** Eliminating it entirely still leaves BR
+>    M=5 at ~12 s, **8× over Z=1.5 s.** The "~400× on the dominant cost path"
+>    figure was computed against an *all-miss uncached* baseline (86 ms/rollout)
+>    that Stage E already eliminated. The per-call ratio (bucket 11 ms vs net
+>    0.21 ms ≈ 52×) is real but **inverts in aggregate** because the call counts
+>    invert it (417 bucket calls vs 29,974 network calls).
+>
+> This is the **same meta-pattern as Q4** (and as the three session-14 findings):
+> a per-unit cost asserted as the bottleneck without multiplying by call
+> frequency. Note this also retroactively contradicts Q4's own superseding claim
+> that "lockstep network batching optimizes a non-bottleneck" — the network
+> forward *is* the largest aggregate cost.
+>
+> **A free win was taken** (session 15, commit `3109fb0` — `perf(subgame_leaf):
+> guard BR phase-2 cache reset…`): `_evaluate_best_response`'s phase-2 `_reset_cache`
+> ignored `manage_cache_externally`, resetting the shared cache once per leaf
+> (65× in the 64-leaf batch). Since `bucket_of` is **fully deterministic**
+> (seeded from `sha256(sorted(hero,board))`, `rng` discarded, order-independent)
+> and the cache path never advances `ctx.rng`, guarding the reset is
+> **bit-identical** (verified 64/64 leaf values, max diff 0.0) and cuts BR M=5
+> 16.7 s → 13.0 s (misses 417 → 83).
+>
+> **What replaces E.5 — Q13 (pending).** Re-derive the *actual* target before any
+> further optimization: sub-step 6's first use is an **offline pool ablation**
+> (throughput, not real-time latency), so the question is the throughput budget
+> and whether the current evaluator (post-reset-fix, ~13 s BR M=5 on the 64-leaf
+> tree) parallelized across workers already meets it — and only then whether a
+> Stage E.5 needs to exist at all and what it optimizes (candidate levers in
+> priority order: reduce the BR `v×k×M` rollout/network-forward count; lockstep
+> network batching across parallel rollouts; trim rollout glue). The text below
+> is preserved as the original (contradicted) proposal.
+
 Stage E shipped `evaluate_leaves` with cache-sharing (one bucket-cache reset for
 the whole tree) and measured the real per-step cost. The design budget Z=1.5 s is
 NOT closed; this section files the budget-closing task. **It must land before
