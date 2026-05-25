@@ -86,7 +86,7 @@ class TestLeafEvalContextDefaults(unittest.TestCase):
         ctx = _make_minimal_context()
         # documented defaults
         self.assertEqual(ctx.mode, LeafEvalMode.BEST_RESPONSE)
-        self.assertEqual(ctx.n_samples, 8)            # provisional design M
+        self.assertEqual(ctx.n_samples, 5)            # design M (dropped 8->5 in Stage E)
         self.assertIsNone(ctx.opponent_prior)
         self.assertIsNone(ctx.rng)
         self.assertTrue(ctx.icm_short_circuit)
@@ -132,14 +132,27 @@ class TestEntryPointSignatures(unittest.TestCase):
         params = list(inspect.signature(evaluate_leaf).parameters)
         self.assertEqual(params[:2], ["node", "ctx"])
 
-    def test_evaluate_leaves_accepts_tree_and_ctx(self):
+    def test_evaluate_leaves_signature(self):
+        # evaluate_leaves is implemented (Stage E); assert (tree, ctx) signature.
+        import inspect
         from src.nlhe.subgame_leaf import evaluate_leaves
+        params = list(inspect.signature(evaluate_leaves).parameters)
+        self.assertEqual(params[:2], ["tree", "ctx"])
+
+    def test_evaluate_leaves_handles_zero_leaves(self):
+        # A tree with no LEAF nodes (e.g. a terminal root) is a no-op: returns a
+        # zero-count summary, mutates nothing, never raises, never touches the
+        # blueprint. Sandbox-runnable (no solver needed).
+        from src.nlhe.subgame_leaf import evaluate_leaves, LeafBatchResult
         from src.nlhe.subgame import SubgameNode, SubgameTree, NodeKind
-        root = SubgameNode(kind=NodeKind.LEAF, state=None, depth=0)
-        tree = SubgameTree(root=root, all_nodes=[root], n_leaf_nodes=1)
-        ctx = _make_minimal_context()
-        with self.assertRaises(NotImplementedError):
-            evaluate_leaves(tree, ctx)
+        root = SubgameNode(kind=NodeKind.TERMINAL, state=None, depth=0,
+                           terminal_returns=[0.0] * 6)
+        tree = SubgameTree(root=root, all_nodes=[root], n_terminal_nodes=1)
+        res = evaluate_leaves(tree, _make_minimal_context())
+        self.assertIsInstance(res, LeafBatchResult)
+        self.assertEqual(res.n_leaves, 0)
+        self.assertEqual(res.n_evaluated, 0)
+        self.assertFalse(res.partial_eval_degraded)
 
 
 # ============================================================
@@ -421,6 +434,107 @@ class TestProfileSampleMode(unittest.TestCase):
             stderr = math.sqrt(sa / len(xa) + sb / len(xb))
             self.assertLessEqual(abs(ma - mb), 3.0 * stderr + 1e-9,
                                  f"seat {seat} seed-inconsistent beyond 3 sigma")
+
+    # ---- Stage E: evaluate_leaves batch path (shared cache) ----
+
+    def _small_tree(self, depth=2):
+        import random
+        from src.nlhe.subgame import build_subgame_tree
+        st = _walk_to_decision(self.game, seed=11, postflop=True)
+        return build_subgame_tree(st, max_action_depth=depth,
+                                  chance_samples_per_node=2, rng=random.Random(11))
+
+    def _tree_ctx(self, tree, **kw):
+        from src.nlhe.subgame_leaf import LeafEvalContext, LeafEvalMode
+        from src.nlhe.icm import sng_payouts_6max_double_up
+        defaults = dict(
+            blueprint=self.solver, biased_blueprint=self.biased,
+            starting_stacks=[self.stack] * 6,
+            payouts=list(sng_payouts_6max_double_up()),
+            hero_seat=tree.root.current_player, mode=LeafEvalMode.PROFILE_SAMPLE)
+        defaults.update(kw)
+        return LeafEvalContext(**defaults)
+
+    def test_evaluate_leaves_mutates_in_place(self):
+        import random
+        from src.nlhe.subgame_leaf import evaluate_leaves
+        from src.nlhe.subgame import iter_leaf_nodes
+        tree = self._small_tree()
+        leaves = list(iter_leaf_nodes(tree))
+        self.assertGreater(len(leaves), 1)
+        res = evaluate_leaves(tree, self._tree_ctx(tree, n_samples=6, rng=random.Random(5)))
+        self.assertEqual(res.n_leaves, len(leaves))
+        self.assertEqual(res.n_evaluated, len(leaves))
+        self.assertFalse(res.partial_eval_degraded)
+        for lf in leaves:
+            self.assertIsNotNone(lf.leaf_value)
+            self.assertEqual(len(lf.leaf_value), 6)
+
+    def test_evaluate_leaves_budget_respected(self):
+        import random
+        from src.nlhe.subgame_leaf import evaluate_leaves
+        from src.nlhe.subgame import iter_leaf_nodes
+        tree = self._small_tree()
+        leaves = list(iter_leaf_nodes(tree))
+        self.assertGreater(len(leaves), 1)
+        # time_budget_s=0.0 -> the between-leaves deadline trips before any leaf,
+        # so the batch is partial. Must not raise.
+        res = evaluate_leaves(tree, self._tree_ctx(tree, n_samples=6,
+                                                   time_budget_s=0.0, rng=random.Random(5)))
+        self.assertTrue(res.partial_eval_degraded)
+        self.assertLess(res.n_evaluated, res.n_leaves)
+        # consistency: exactly the evaluated leaves are populated; the rest are None.
+        n_populated = sum(1 for lf in leaves if lf.leaf_value is not None)
+        n_none = sum(1 for lf in leaves if lf.leaf_value is None)
+        self.assertEqual(n_populated, res.n_evaluated)
+        self.assertEqual(n_none, res.n_leaves - res.n_evaluated)
+
+    def test_evaluate_leaves_matches_evaluate_leaf_sequentially(self):
+        """Batching does not STRUCTURALLY change the per-leaf result. Asserts:
+          (a) reproducibility — same seed -> bit-identical leaf values;
+          (b) ICM conservation — each leaf value 6-vector sums to ~0;
+          (c) agreement with standalone evaluate_leaf — MEAN |diff| is small (most
+              leaves match closely), per-element bounded.
+
+        SURFACED FINDING: cache-sharing (the Stage E speedup) FREEZES each
+        (hero, board) bucket-MC draw for the whole batch, whereas standalone
+        evaluate_leaf re-draws it per call. Because the abstraction's bucket MC is
+        noisy (bucket_runouts=20), a few leaves can differ from per-leaf-fresh
+        evaluation by ~0.5 (a bucket-assignment flip), which exceeds pure rollout
+        stderr. This is NOT a bug — both are valid given the bucket noise, and the
+        batch's values are self-consistent across leaves (the property sub-step 3's
+        CFR actually needs). The mean-|diff| bound below catches a real structural
+        break (which would shift ~every element) while tolerating these flips."""
+        import random
+        from src.nlhe.subgame_leaf import evaluate_leaves, evaluate_leaf
+        from src.nlhe.subgame import iter_leaf_nodes
+        M = 24
+        tree = self._small_tree()
+        leaves = list(iter_leaf_nodes(tree))
+        evaluate_leaves(tree, self._tree_ctx(tree, n_samples=M, rng=random.Random(101)))
+        batch_vals = [list(lf.leaf_value) for lf in leaves]
+        # (a) reproducibility: re-run with the same seed -> identical.
+        for lf in leaves:
+            lf.leaf_value = None
+        evaluate_leaves(tree, self._tree_ctx(tree, n_samples=M, rng=random.Random(101)))
+        for idx, lf in enumerate(leaves):
+            self.assertEqual(list(lf.leaf_value), batch_vals[idx],
+                             f"evaluate_leaves not reproducible at leaf {idx}")
+        # (b) conservation.
+        for idx, b in enumerate(batch_vals):
+            self.assertLess(abs(sum(b)), 1e-6, f"leaf {idx} not conserved: sum={sum(b)}")
+        # (c) mostly-agrees with standalone; bounded outliers.
+        diffs = []
+        for idx, lf in enumerate(leaves):
+            seq = evaluate_leaf(lf, self._tree_ctx(tree, n_samples=M,
+                                                   rng=random.Random(7777))).value
+            for seat in range(6):
+                diffs.append(abs(batch_vals[idx][seat] - seq[seat]))
+        mean_diff = sum(diffs) / len(diffs)
+        self.assertLessEqual(mean_diff, 0.2,
+                             f"mean |batch-seq|={mean_diff:.3f} too large (structural divergence?)")
+        self.assertLessEqual(max(diffs), 1.5,
+                             f"max |batch-seq|={max(diffs):.3f} too large")
 
     # ---- Addition 2: biases actually bias the rollout ----
 

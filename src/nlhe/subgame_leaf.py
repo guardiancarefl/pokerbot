@@ -5,9 +5,11 @@ same units `cfr6.traverse_6max` backs up at true terminals — so sub-step 3's C
 loop can treat LEAF and TERMINAL nodes uniformly. Full design and rationale:
 `docs/SUBGAME_LEAF_DESIGN.md` (the contract this module conforms to).
 
-STATUS: STAGE D — PROFILE_SAMPLE and BEST_RESPONSE modes implemented. The
-`evaluate_leaves` batch path (Stage E) is not yet implemented and raises
-NotImplementedError naming Stage E.
+STATUS: STAGE E — PROFILE_SAMPLE and BEST_RESPONSE modes plus the
+`evaluate_leaves` batch path (shared-cache) are implemented. The design budget
+Z=1.5 s is NOT yet closed: the dominant cost is the encoder bucket-MC, not the
+network forward (see evaluate_leaves and design doc Q4/Q12). The budget-closing
+encoder bucket-MC precompute is the Stage E.5 follow-up.
 
 Cost model (validated provenance, for future readers — not buried in the doc):
   Per-decision-step cost ≈ 0.4 ms CPU / 0.13 ms GPU INCLUDING the network
@@ -36,10 +38,11 @@ Return-type note (deviation from Q9's literal `-> tuple[float, ...]`):
 """
 from __future__ import annotations
 
+import logging
 import math
 import random
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from enum import Enum
 from typing import Any, Optional, Protocol, Sequence, runtime_checkable
 
@@ -50,7 +53,9 @@ from src.nlhe.icm import icm_equity, is_itm
 from src.nlhe.icm_returns import icm_adjust_returns
 from src.nlhe.infoset6 import parse_state_6max
 from src.nlhe.fast_view import fast_view_and_discretize
-from src.nlhe.subgame import SubgameNode, SubgameTree
+from src.nlhe.subgame import SubgameNode, SubgameTree, iter_leaf_nodes
+
+log = logging.getLogger("subgame_leaf")
 
 # 6-max; kept local so importing this module does not pull torch (networks6).
 _NUM_SEATS = 6
@@ -133,11 +138,13 @@ class LeafEvalContext:
             includes + tilts the argmax); in PROFILE_SAMPLE it is the sampling
             distribution over biases. Track C1 nudges it; never hardcoded.
         n_samples: MC rollouts per (leaf, strategy) — the design's M.
-            DEFAULT = 8 is PROVISIONAL: it is the optimistic-batching assumption
-            pending Stage E's measured batched cost. If Stage E shows M=8 does not
-            fit Z = 1.5 s, the default drops to M = 5 (still within Q4's stderr
-            bounds). The knob is live; do NOT fix it to 5 prematurely — keep 8 as
-            the default and let Stage E's measurement choose.
+            DEFAULT = 5. Stage E measured BR over a 64-leaf depth-3 tree at ~44 s
+            (M=8) vs ~30 s (M=5) on this GPU box (both >> the Z=1.5 s design budget
+            — the budget is not closed by sample-count tuning; see evaluate_leaves
+            and design doc Q12). Per the Stage-E decision rule (M=8 BR cost > 12 s),
+            the default dropped 8 -> 5, which is still within Q4's stderr bounds and
+            ~32% cheaper. The budget-closing fix is the encoder bucket-MC precompute
+            (Stage E.5); M is a live knob, not the lever.
         rng: random source for chance/bias/action sampling. None → a fresh
             `random.Random()` is created at eval time. NOTE: reproducibility
             (same seed → identical result) holds because `evaluate_leaf` resets
@@ -150,6 +157,17 @@ class LeafEvalContext:
             completed samples, and sets `degraded=True` (Q4/Q8). Checked between
             rollouts (a rollout is not interrupted mid-flight).
         num_paid: paid finishing positions (Double Up 6-max = 3).
+        manage_cache_externally: cache-lifecycle control. False (default,
+            standalone evaluate_leaf): evaluate_leaf resets the blueprint encoder's
+            bucket cache at entry, and BR evaluation resets it per CRN sample —
+            giving per-call reproducibility and clean (exact-tie) common random
+            numbers. True (set by evaluate_leaves via dataclasses.replace): NO
+            internal resets — the BATCH owns the cache (one reset for the whole
+            tree), so the expensive encoder bucket-MC (~10.77 ms/cache-miss) is
+            shared across all leaves and samples. The tradeoff: BR's per-sample
+            CRN becomes approximate (the shared cache desyncs the bucket-MC rng
+            between bias passes), trading a little argmax-ranking variance for the
+            ~3-10x batch speedup. See evaluate_leaves.
     """
     blueprint: BlueprintProvider
     biased_blueprint: Any
@@ -159,11 +177,12 @@ class LeafEvalContext:
 
     mode: LeafEvalMode = LeafEvalMode.BEST_RESPONSE
     opponent_prior: Optional[Any] = None
-    n_samples: int = 8  # design M; provisional pending Stage E (see docstring)
+    n_samples: int = 5  # design M; dropped 8->5 per Stage E measurement (see docstring)
     rng: Optional[random.Random] = None
     icm_short_circuit: bool = True
     time_budget_s: Optional[float] = None
     num_paid: int = 3
+    manage_cache_externally: bool = False
 
 
 # ============================================================
@@ -189,6 +208,25 @@ class LeafEvalResult:
     degraded: bool = False
     n_completed: int = 0
     short_circuited: bool = False
+
+
+@dataclass
+class LeafBatchResult:
+    """Summary returned by `evaluate_leaves` (which also mutates the tree in place).
+
+    Attributes:
+        n_leaves: total leaf nodes in the tree.
+        n_evaluated: leaf nodes whose `leaf_value` was populated this call.
+        partial_eval_degraded: True if the wall-clock budget cut the batch off
+            before all leaves were evaluated — the un-evaluated leaves keep
+            `leaf_value = None`. (Naming note: the per-leaf result uses
+            `degraded` for a fallback VALUE; this flag is the distinct
+            batch-level concept of an INCOMPLETE pass. `eval_pool.py` uses
+            `exceeded_cap` for an analogous budget breach.)
+    """
+    n_leaves: int
+    n_evaluated: int
+    partial_eval_degraded: bool = False
 
 
 # ============================================================
@@ -410,7 +448,11 @@ def _opponent_bias_values(node, ctx, o, menu, rng, deadline=None):
             if _past(deadline):
                 return out, True
             r = random.Random(eval_seeds[m])
-            _reset_cache(ctx)
+            if not ctx.manage_cache_externally:
+                # Per-sample reset gives clean CRN (exact ties) for standalone
+                # evaluate_leaf. Under evaluate_leaves the batch owns the cache
+                # (shared across samples), so we skip it — CRN is then approximate.
+                _reset_cache(ctx)
             vec = _rollout_once(node.state.clone(), ctx, dist_fn, r)
             if vec is not None:
                 out[b].append(vec[o])
@@ -553,19 +595,22 @@ def evaluate_leaf(node: SubgameNode, ctx: LeafEvalContext) -> LeafEvalResult:
       - PROFILE_SAMPLE: prior-weighted average over opponents' biases (Stage C).
       - BEST_RESPONSE: opponents best-respond among biases (Stage D — not yet).
 
-    Resets the blueprint encoder's bucket cache at the start so a freshly seeded
-    `ctx.rng` yields bit-identical bucket draws across calls (the cache otherwise
-    persists and would desync rng usage); the cache still speeds up the M rollouts
-    WITHIN this call.
+    Cache lifecycle: when `ctx.manage_cache_externally` is False (default,
+    standalone use), resets the blueprint encoder's bucket cache at the start so a
+    freshly seeded `ctx.rng` yields reproducible bucket draws across calls (the
+    cache otherwise persists and would desync rng usage); the cache still speeds up
+    the M rollouts WITHIN this call. When True (called by evaluate_leaves), the
+    batch owns the cache and this reset is skipped so it is shared across leaves.
 
     See the module return-type note for why this returns a `LeafEvalResult` rather
     than Q9's literal bare tuple.
     """
     rng = ctx.rng if ctx.rng is not None else random.Random()
-    try:
-        ctx.blueprint.encoder.reset_cache()
-    except Exception:
-        pass
+    if not ctx.manage_cache_externally:
+        try:
+            ctx.blueprint.encoder.reset_cache()
+        except Exception:
+            pass
 
     if ctx.mode == LeafEvalMode.PROFILE_SAMPLE:
         return _evaluate_profile_sample(node, ctx, rng)
@@ -574,20 +619,63 @@ def evaluate_leaf(node: SubgameNode, ctx: LeafEvalContext) -> LeafEvalResult:
     raise ValueError(f"unknown LeafEvalMode: {ctx.mode!r}")
 
 
-def evaluate_leaves(tree: SubgameTree, ctx: LeafEvalContext) -> None:
-    """Populate `node.leaf_value` for every LEAF node in `tree`, IN PLACE.
+def evaluate_leaves(tree: SubgameTree, ctx: LeafEvalContext) -> LeafBatchResult:
+    """Evaluate every LEAF in `tree`, MUTATING `node.leaf_value` in place.
 
-    Side effect: mutates each leaf node — sets `node.leaf_value` to the evaluated
-    6-vector (`evaluate_leaf(node, ctx).value`). Returns None. The batch entry
-    point sub-step 3 calls ONCE before the CFR loop; where possible it batches the
-    per-step network forward across leaves in lockstep (the Q4 batching argument).
+    The batch entry point sub-step 3 calls ONCE before the CFR loop. Side effect:
+    sets `node.leaf_value = list(evaluate_leaf(node, ...).value)` for each leaf
+    from `iter_leaf_nodes(tree)`. Also returns a `LeafBatchResult` summary (Q9
+    sketched a None return; the summary carries the `partial_eval_degraded` flag
+    the budget guard needs — leaf values are still delivered via the in-place
+    mutation, so sub-step 3's `node.leaf_value` read is unchanged).
 
-    NOTE: NOT YET IMPLEMENTED — the batch path (and its lockstep batching) lands in
-    Stage E. Sub-step 3 must NOT rely on `evaluate_leaves` being callable until
-    then; call `evaluate_leaf` per leaf in the meantime if needed.
+    Cache lifecycle (Stage E — the measured budget lever): resets the blueprint
+    encoder's bucket cache exactly ONCE here, then runs all leaves with
+    `manage_cache_externally=True` so NO further resets happen. The dominant
+    leaf-eval cost is `encode_from_parsed`'s bucket-MC (~10.77 ms per distinct
+    (hero, board) cache-miss); sharing the cache across all leaves and samples
+    turns repeated boards into ~0.025 ms hits — the 3x (PROFILE) / ~10x (BR
+    single-leaf) speedup measured in Stage E. NOTE: the design budget Z=1.5 s is
+    NOT closed by this alone (see design doc Q4/Q12); the bucket-MC precompute
+    (Stage E.5) is the budget-closing follow-up. Lockstep NETWORK batching from
+    the original Q4 plan optimizes a non-bottleneck (network forward is 0.25 ms
+    single / 0.45 us/row batched, vs the 10.77 ms bucket-MC) and is not done here.
+
+    Budget guard: `ctx.time_budget_s` bounds the WHOLE batch, checked between
+    leaves (a leaf in progress is not interrupted). On exhaustion, remaining
+    leaves keep `leaf_value=None`, `partial_eval_degraded=True` is returned, and a
+    warning is logged.
     """
-    raise NotImplementedError(
-        "evaluate_leaves: the batch path (lockstep-batched forward across leaves) "
-        "lands in Stage E. Until then, mutation semantics are fixed (sets "
-        "node.leaf_value in place, returns None); use evaluate_leaf per leaf."
+    leaves = list(iter_leaf_nodes(tree))
+    n = len(leaves)
+    if n == 0:
+        return LeafBatchResult(n_leaves=0, n_evaluated=0, partial_eval_degraded=False)
+
+    # ONE cache reset for the whole batch; children run cache-managed-externally so
+    # they neither reset at entry nor per BR sample (shared cache = the speedup).
+    _reset_cache(ctx)
+    batch_ctx = replace(
+        ctx,
+        manage_cache_externally=True,
+        time_budget_s=None,  # batch enforces a tree-wide deadline between leaves
+        rng=ctx.rng if ctx.rng is not None else random.Random(),
     )
+
+    t0 = time.perf_counter()
+    deadline = (t0 + ctx.time_budget_s) if ctx.time_budget_s is not None else None
+    n_eval = 0
+    for leaf in leaves:
+        if _past(deadline):
+            break
+        res = evaluate_leaf(leaf, batch_ctx)
+        leaf.leaf_value = list(res.value)
+        n_eval += 1
+
+    partial = n_eval < n
+    if partial:
+        log.warning(
+            "evaluate_leaves: time budget (%.4fs) exhausted after %d/%d leaves; "
+            "remaining leaves keep leaf_value=None (partial_eval_degraded).",
+            ctx.time_budget_s if ctx.time_budget_s is not None else -1.0, n_eval, n,
+        )
+    return LeafBatchResult(n_leaves=n, n_evaluated=n_eval, partial_eval_degraded=partial)
