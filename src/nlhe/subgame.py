@@ -292,53 +292,28 @@ def _build_node(
         tree.n_leaf_nodes += 1
         return node
 
-    # === Chance node: subsample outcomes ===
+    # === Chance node: COLLAPSE INTO A LEAF (chance is transparent). ===
+    # Stage-5-B cost-bounding fix. Expanding chance into the tree caused a leaf
+    # explosion at round-closing / all-in spots: chance branches ×chance_samples
+    # AND does NOT consume the action-depth budget, so board deals compound across
+    # streets within one depth-K budget (a depth-3 round-closing tree blew up to
+    # 2560 leaves, 2048 of them chance). Depth now measures hero/opponent ACTIONS
+    # only; a chance node becomes a LEAF whose state carries the pending board deal,
+    # and the leaf evaluator's rollout draws the board as it plays forward (the
+    # chance-safe parse from 03576eb handles current_player() == -1). The
+    # `chance_samples_per_node` parameter is retained for API compatibility but is no
+    # longer used for in-tree expansion.
     if state.is_chance_node():
-        outcomes = state.chance_outcomes()  # list of (action, prob)
-        n_total = len(outcomes)
-        n_sample = min(chance_samples_per_node, n_total)
-
-        # Uniform subsample of outcomes (don't preserve original probs —
-        # we renormalize so the subsample sums to 1.0)
-        # For full enumeration (n_sample == n_total), use original probs.
-        if n_sample >= n_total:
-            sampled_outcomes = outcomes
-        else:
-            indices = rng.sample(range(n_total), n_sample)
-            sampled_outcomes = [outcomes[i] for i in indices]
-
-        # Renormalize probabilities
-        total_p = sum(p for _, p in sampled_outcomes)
-        if total_p <= 0:
-            total_p = 1.0  # shouldn't happen but defensive
-
         node = SubgameNode(
-            kind=NodeKind.CHANCE,
+            kind=NodeKind.LEAF,
             state=state,
             depth=depth,
             action_from_parent=action_from_parent,
             chance_prob=chance_prob,
+            current_player=None,  # chance node: no acting player
         )
         tree.all_nodes.append(node)
-        tree.n_chance_nodes += 1
-
-        for action, prob in sampled_outcomes:
-            child_state = state.child(int(action))
-            normalized_p = prob / total_p
-            child = _build_node(
-                state=child_state,
-                depth=depth,         # chance does not count toward action depth
-                max_action_depth=max_action_depth,
-                chance_samples_per_node=chance_samples_per_node,
-                rng=rng,
-                action_from_parent=int(action),
-                chance_prob=normalized_p,
-                tree=tree,
-                skip_unsupported_states=skip_unsupported_states,
-            )
-            node.children.append(child)
-            node.action_at_child.append(int(action))
-
+        tree.n_leaf_nodes += 1
         return node
 
     # === Decision node: enumerate legal DISCRETE actions ===

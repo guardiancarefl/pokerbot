@@ -708,6 +708,22 @@ class TestBestResponseMode(unittest.TestCase):
         self.assertEqual(len(means), self.biased.k)
         self.assertTrue(all(math.isfinite(m) for m in means.values()))
 
+    def test_chance_leaf_uses_blueprint_only_skips_br(self):
+        # Stage-5-B cost optimization: _best_response_biases returns an EMPTY br_dict
+        # at a chance-node leaf (skip the v×k BR menu -> phase 2 plays all opponents at
+        # blueprint). Justified by 22/25 chance leaves being bias-inactive.
+        import random
+        from src.nlhe.subgame_leaf import _best_response_biases, evaluate_leaf
+        leaf = self._chance_leaf()
+        br, hit = _best_response_biases(leaf, self._ctx(leaf=leaf, hero_seat=0,
+                                                        n_samples=4), random.Random(1))
+        self.assertEqual(br, {})        # blueprint-only: no BR bias selection
+        self.assertFalse(hit)
+        # the leaf still evaluates to a finite ICM-magnitude value (via blueprint roll)
+        res = evaluate_leaf(leaf, self._ctx(leaf=leaf, hero_seat=0, n_samples=4,
+                                            rng=random.Random(1)))
+        self.assertTrue(all(abs(x) < 3.0 for x in res.value))
+
     # ---- Q10 #9: maximization fires (max >= mean) + argmax selection ----
 
     def test_br_mechanism_opponent_value_ge_uniform(self):

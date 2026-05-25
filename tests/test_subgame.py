@@ -360,5 +360,43 @@ class TestTreeBuilderDiscretization(unittest.TestCase):
         self.assertEqual(len(fold_child.terminal_returns), 6)
 
 
+# ============================================================
+# Stage-5-B mitigation: chance collapses into leaves (no expansion)
+# ============================================================
+
+def _round_closing_decision(seed: int = 42):
+    """A preflop decision where CALLing closes the betting round (child(1) is a
+    chance node), so a depth-K tree reaches a board-deal chance node."""
+    s = _first_decision_state(seed=seed)
+    guard = 0
+    while not s.child(1).is_chance_node():
+        s = s.child(1)
+        guard += 1
+        if guard > 12:
+            break
+    return s
+
+
+@unittest.skipUnless(_HAS_OPEN_SPIEL, "Requires open_spiel")
+class TestChanceCollapsesToLeaf(unittest.TestCase):
+    def test_chance_becomes_leaf_no_expansion_no_explosion(self):
+        from src.nlhe.subgame import build_subgame_tree, iter_leaf_nodes
+        s = _round_closing_decision()
+        self.assertTrue(s.child(1).is_chance_node(),
+                        "fixture: calling should close the round into a chance node")
+        tree = build_subgame_tree(s, max_action_depth=3, chance_samples_per_node=8)
+        # Change A: chance is NEVER expanded into the tree -> no CHANCE-kind nodes,
+        # and chance states appear only as LEAVES (current_player None).
+        self.assertEqual(tree.n_chance_nodes, 0)
+        chance_leaves = [lf for lf in iter_leaf_nodes(tree) if lf.state.is_chance_node()]
+        self.assertGreater(len(chance_leaves), 0, "tree should reach >=1 chance leaf")
+        for lf in chance_leaves:
+            self.assertIsNone(lf.current_player)
+        # No leaf explosion: bounded leaf count (was 2000+ when chance expanded x8
+        # and compounded across streets within the depth budget).
+        self.assertLess(tree.n_leaf_nodes, 200,
+                        f"leaf explosion not bounded: {tree.n_leaf_nodes} leaves")
+
+
 if __name__ == "__main__":
     unittest.main()

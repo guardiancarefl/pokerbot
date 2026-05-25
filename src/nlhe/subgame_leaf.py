@@ -496,11 +496,20 @@ def _best_response_biases(node, ctx, rng, deadline=None):
     For each live opponent, argmax over its menu of mean opponent-value, with a
     deterministic LOWEST-INDEX tie-break (Q8). Returns (br_dict, budget_hit).
 
-    At a CHANCE-node leaf (round closed at the depth limit) the parse is chance-safe
-    (`_parse_leaf_state`); `money` is then current behind-chips per seat, so all-in
-    continuers (money 0) are correctly excluded from `live` and only seats with chips
-    — who act on the next street, reached via the rollout's board deal — drive BR.
+    CHANCE-node leaf -> BLUEPRINT-ONLY evaluation (Stage-5-B cost optimization).
+    When the leaf is a chance node (a board deal pending; current_player() == -1) we
+    skip the v×k BR menu entirely and return an empty br_dict, so phase 2 plays all
+    opponents at blueprint (a single composed-profile pass, no bias enumeration). This
+    cuts per-chance-leaf cost ~(v×k+1)× — and forgoes ~zero architectural signal:
+    Stage 5-B measured 22/25 chance leaves bias-INACTIVE (all k biases produced
+    identical opponent values), because the post-board-deal decisions in this
+    short-stack regime are mostly near-forced. The ~12% bias-active chance leaves lose
+    their BR signal, but that is a small fraction of total BR signal (Stage G: the
+    late-street DECISION regime dominates), and chance leaves are the costliest leaves
+    in the tree. Net: large compute win for negligible signal loss.
     """
+    if node.state.current_player() < 0:   # chance-node leaf -> blueprint-only (skip BR)
+        return {}, False
     parsed = _parse_leaf_state(node.state)
     money = parsed["money"]
     live = [o for o in range(_NUM_SEATS)
