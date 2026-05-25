@@ -518,7 +518,17 @@ def _evaluate_best_response(node: SubgameNode, ctx: LeafEvalContext,
         return LeafEvalResult(value=tuple(val), degraded=True, n_completed=0)
 
     # Phase 2: value-collecting rollouts under the composed BR profile.
-    _reset_cache(ctx)
+    # Reset the bucket cache ONLY when this call owns it (standalone evaluate_leaf,
+    # for clean per-call CRN). Under evaluate_leaves (manage_cache_externally=True)
+    # the BATCH owns the cache and resetting here would defeat the Stage-E shared
+    # cache once per leaf. The reset has no correctness role: bucket_of is fully
+    # deterministic (seeded from sha256(sorted(hero,board)), rng discarded), so a
+    # warm cache returns the same buckets a cold one would, and the cache path
+    # never advances ctx.rng — so skipping the reset leaves leaf values bit-identical
+    # while cutting redundant bucket-MC. Measured: BR M=5 on the 64-leaf depth-3
+    # tree 16.7s -> 13.0s, bucket-MC misses 417 -> 83, all 64 leaf values identical.
+    if not ctx.manage_cache_externally:
+        _reset_cache(ctx)
     biases = {o: br.get(o, 0) for o in range(_NUM_SEATS) if o != ctx.hero_seat}
     dist_fn = _bias_dist_fn(ctx, biases)
     acc = [0.0] * _NUM_SEATS
