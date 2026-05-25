@@ -676,6 +676,48 @@ requires only the **stub one-iteration root regret update**, which is therefore 
 **sub-step 2 deliverable** (shipped alongside the leaf evaluator and discarded /
 superseded by the real solver in sub-step 3).
 
+#### CLOSED — session 18, via SUBSTANTIVE_PASS_AGGREGATE (`scripts/ablation_decision_level.py`)
+
+Implemented the stub (depth-1 subgame at hero's decision → per-action hero values
+`q_M` under BR/PROFILE/baseline via Stage F's CRN rollout primitives → refine
+`σ0 = RM+(adv)` into `σ_M = RM+(adv + r)`, `r = (q − ev)·mask`). Gated with a
+split-metric pattern mirroring Stage F, regime-aware per the Level-1 lesson
+(≥3-action / ≥1-live-opp / non-ITM filter, late-street oversampling). Records:
+`docs/sessions/session_18_summary.md`; data:
+`evals/decision_level_ablation_session18_{production,M32}_*.json`,
+`docs/STAGE_G_DESIGN.md`.
+
+- **M=16 production gate FAILed as a clean 2–3σ near-miss** (value_suppression
+  +2.45σ vs the 3σ bar; policy_divergence significant at ~99.5% but not the required
+  99.7%). Per design G-D this is the *measurement-budget* band that permits one
+  M-escalation — not a genuine sub-2σ FAIL.
+- **M=32 escalation closed it via SUBSTANTIVE_PASS_AGGREGATE.** Both load-bearing
+  signals crossed: BR suppresses hero value **+3.07σ** and BR **moves the root
+  policy** above the per-deal noise floor (policy_divergence significant, observed
+  mean L1 0.330 > permutation-null p99.7 0.297). resolution 28% (14/50),
+  differentiation 71.4% (10/14), 6 distinct shifted actions. The null shrank with M
+  (0.375→0.297) faster than the signal (0.374→0.330), opening the gap — the signature
+  of a real effect separating from noise, not threshold-shopping.
+- **The "BR is flatter" hypothesis (Q11 Level-2 stated direction) was NOT confirmed.**
+  BR was slightly *less* flat than PROFILE at both M (entropy_delta −0.29σ; only ~36%
+  of resolved roots BR-flatter). The Pluribus-style mixing intuition does not hold in
+  this shallow ICM SNG; **BR shifts mass without flattening**. Entropy was demoted to
+  a soft, reported-only signal **before** the run (Addition 2) — had it gated, a
+  correct architecture would have spuriously FAILed on a wrong theoretical prior. This
+  is the load-bearing methodology lesson of Stage G.
+- **Same street/decision-latitude gradient as Level 1** (resolution concentrates on
+  the river: M=32 preflop 3/13, flop 2/13, turn 1/12, river 8/12).
+
+**Methodology deviation (approved, session 18).** `policy_divergence` is operationalized
+as a **per-deal mode-label permutation null** (B=400; significant iff observed mean
+L1 exceeds the null's 99.7th percentile), **not** the literal "CRN-paired bootstrap
+CI, CI-lower > 0" of the G-C spec above. Reason: a bootstrap CI on L1 *distances* is
+near-trivial — L1 ≥ 0, so its lower bound is essentially always > 0 — and does not
+test the actual claim. The permutation null tests the meaningful question: *does the
+BR/PROFILE label assignment matter?* This is the same class of "stronger than the
+literal spec" deviation approved in Stage F (absolute-deviation resolution,
+CRN-paired stderr). The pre-committed thresholds were otherwise honored mechanically.
+
 ### Level 3 (later) — full pool (acceptance gate before locking BR, post-sub-step-5)
 
 Once SubgamePolicy (sub-steps 3–5) can route through `scripts/eval_pool.py`, run

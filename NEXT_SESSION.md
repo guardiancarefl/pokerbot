@@ -16,7 +16,7 @@ hardware surprise: this evaluator runs **faster on CPU than GPU** (single-row
 `[64,64]` forward is launch-bound), so a GPU pod is not required — many CPU cores
 are what help. Full reasoning: `docs/STAGE_E_BUDGET_REDERIVATION.md`.
 
-## Where the project stands (start of session 18)
+## Where the project stands (start of session 19)
 
 B1c (depth-limited subgame solving):
 
@@ -34,49 +34,58 @@ B1c (depth-limited subgame solving):
   at any M), but the architecture is confirmed by the **aggregate** signal:
   hero-direction +3.4σ (BASELINE−BR) / +3.6σ (PROFILE−BR), 94% differentiation
   among resolved pairs, non-degenerate menu (biases 1/2/3 all selected).
-- **Path: Path A (confirmation-first).** Stage F done; Stage G (decision-level)
-  remains before sub-step 3.
+- **Stage G (Q11 Level 2) — CLOSED via SUBSTANTIVE_PASS_AGGREGATE** (session 18,
+  `cb82072`→`b4f85dd`). See `docs/sessions/session_18_summary.md`. The M=16 gate was
+  a clean 2–3σ near-miss; the one design-sanctioned M=32 escalation cleared both
+  load-bearing bars (value_suppression +3.07σ; policy_divergence significant, obs L1
+  0.330 > null p99.7 0.297; differentiation 71.4%, 6 distinct shifted actions). BR
+  demonstrably moves hero's *root decision*, not just leaf values. Finding: the
+  "BR flatter" prior was wrong (BR shifts mass, does not flatten) — entropy was
+  correctly demoted to non-load-bearing before the run.
+- **Path: Path A (confirmation-first). Sub-step 2 is CLOSED** (leaf evaluator +
+  Stages F & G). Next is sub-step 3.
 
-## Current deliverable — Stage G (Q11 Level 2, decision-level ablation)
+## Current deliverable — Sub-step 3 (subgame CFR loop)
 
-Wrap the **simplest possible CFR around the leaf evaluator: a one-iteration regret
-update at the root infoset only** (no full tree traversal). Measure hero's root
-action distribution under each leaf-eval mode across ~50 root decisions.
-Hypothesis: BR yields a flatter / more-mixed root policy than PROFILE_SAMPLE. The
-stub is a **sub-step 2 deliverable**, superseded by the real solver in sub-step 3.
+Replace the Stage-G one-iteration root **stub** with the **real multi-iteration
+external-sampling CFR over the depth-limited subgame tree** (`subgame.build_subgame_tree`),
+leaf values supplied by the now-confirmed `BEST_RESPONSE` evaluator
+(`subgame_leaf.evaluate_leaf`). Reuse the production regret/RM+ math (`cfr6.py`,
+`solver._strategy_from_advantages`); the stub already wired the root-level pieces, so
+this is the traversal + multi-iteration accumulation the stub deliberately skipped.
 
-**Carry the Stage-F lesson into Stage G's success criterion (load-bearing):** do
-NOT gate on a uniform expectation across all ~50 root decisions. Stage F showed
-the bias effect is *absent* in the majority of states (opponents with no
-bias-sensitive decision) and *concentrated* in late-street / bias-active spots —
-a uniform per-decision gate would hit the same structural-intractability wall and
-spuriously FAIL. Design Stage G's gate around the regime where the architecture
-predicts an effect (root decisions where ≥1 live opponent faces real
-post-flop / committed latitude), and treat the rest as expected no-ops. The Stage-F
-split-metric pattern (resolution vs differentiation, CRN-paired stderr,
-`SUBSTANTIVE_PASS_AGGREGATE` for the intractable-but-confirmed case) is the model.
+**Carry the validated Stage-F/G methodology forward (load-bearing):**
+- The BR effect is **absent in most states** and **concentrated late-street /
+  bias-active** — design any sub-step-3 acceptance around that regime, never a uniform
+  expectation. The split-metric + `SUBSTANTIVE_PASS_AGGREGATE` pattern is the right
+  instrument for this shallow SNG.
+- **Do NOT design around a "BR flatter" expectation.** Stage G showed BR *shifts
+  mass without flattening* (entropy −0.29σ). Any flatness-direction criterion must be
+  soft/reported, not a gate (the Addition-2 lesson).
+- The full BR-vs-PROFILE-vs-blueprint go/no-go is the **Level-3 pool ablation**
+  (sub-step 6), not sub-step 3.
 
-## Stage F gate reference (the methodology, for Stage G to reuse)
+## Ablation gate reference (Stages F & G methodology, for sub-step 3 / Level 3 to reuse)
 
-`scripts/ablation_leaf_eval.py` `verdict()` — split metric, status in
-{PASS, SUBSTANTIVE_PASS_AGGREGATE, FAIL}:
-- **resolution_rate** = fraction of (leaf,opp) pairs where the most blueprint-
-  deviating bias beats blueprint by > 3σ on the **CRN-paired** difference (cancels
-  per-deal variance — the only way the small bias signal clears noise).
-- **differentiation_rate** = among resolved pairs, fraction where BR picks a
-  non-blueprint bias.
-- PASS iff resolution ≥ 0.50 AND (differentiation ≥ 0.30 OR resolution ≥ 0.90);
-  **SUBSTANTIVE_PASS_AGGREGATE** iff resolution < 0.25 AND both aggregate hero
-  deltas ≥ 3σ (positive) AND differentiation ≥ 0.90 AND ≥ 3 distinct biases among
-  resolved (W2 non-degenerate-menu guard); else FAIL.
+Both gates use a split metric (`verdict()`), status in
+{PASS, SUBSTANTIVE_PASS_AGGREGATE, FAIL}, with **resolution** ("is the effect
+detectable at >3σ on a CRN-paired difference") separated from **differentiation**
+("does BR actually move the decision"), plus a `SUBSTANTIVE_PASS_AGGREGATE` fallback
+for the resolution-intractable-but-aggregate-confirmed case this SNG produces:
+- **Stage F** (`scripts/ablation_leaf_eval.py`): per-(leaf,opp) resolution;
+  differentiation = BR picks non-blueprint bias.
+- **Stage G** (`scripts/ablation_decision_level.py`): per-root resolution on the
+  most mode-deviating action; differentiation = material L1 root-policy shift
+  (direction-agnostic); load-bearing aggregate = value_suppression (≥3σ) +
+  policy_divergence (per-deal mode-label **permutation null**, significant @99.7% —
+  approved over the literal "bootstrap CI" spec, see SUBGAME_LEAF_DESIGN.md Q11 L2).
 
 ## B1c roadmap (post-Q13)
 
-1. **Sub-step 2 — leaf evaluator** (Stages A–E DONE; **Stage F CLOSED** session 17
-   via SUBSTANTIVE_PASS_AGGREGATE; **Stage G remains** — gates the formal sub-step
-   2 close).
+1. **Sub-step 2 — leaf evaluator — CLOSED** (Stages A–E DONE; **Stage F CLOSED**
+   session 17, **Stage G CLOSED** session 18, both via SUBSTANTIVE_PASS_AGGREGATE).
 2. ~~Stage E.5 — bucket-MC precompute~~ — **SHELVED (Q13)**, no longer on the path.
-3. Sub-step 3 — subgame CFR loop (replaces the Stage-G Level-2 stub).
+3. **Sub-step 3 — subgame CFR loop (replaces the Stage-G Level-2 stub) — NEXT.**
 4. Sub-step 4 — policy extraction (hero's refined root action distribution).
 5. Sub-step 5 — SubgamePolicy wrapper (conform to `eval_pool.py` `Policy`;
    handle the ALLIN→CALL translation below).
@@ -116,9 +125,13 @@ all consumers: `traverse_6max` (TRAINING hot path), `subgame.py`,
 
 ## Docs map
 
-- `docs/SUBGAME_LEAF_DESIGN.md` — the sub-step 2 design + Q13 resolution (read first).
+- `docs/SUBGAME_LEAF_DESIGN.md` — the sub-step 2 design + Q11 Stage F/G outcomes +
+  Q13 resolution (read first).
+- `docs/STAGE_G_DESIGN.md` — Stage G design proposal (stub, regime-aware gate).
 - `docs/STAGE_E_BUDGET_REDERIVATION.md` — full Q13 budget reasoning + measurements.
-- `docs/sessions/session_17_summary.md` — most recent session (Stage F closure).
+- `docs/sessions/session_18_summary.md` — most recent session (Stage G closure,
+  sub-step 2 complete).
+- `docs/sessions/session_17_summary.md` — Stage F closure.
 - `docs/sessions/session_16_summary.md` — Q13 budget re-derivation.
 - `docs/sessions/README.md` — the per-session-summary convention.
 - `docs/STATUS.md` — current snapshot. `docs/DECISIONS.md` — locked choices.

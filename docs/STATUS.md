@@ -1,7 +1,8 @@
 # Project Status
 
-**Last updated:** 2026-05-25 (Session 17)
-**Current phase:** B1c — depth-limited subgame solving (real-time), sub-step 2
+**Last updated:** 2026-05-25 (Session 18)
+**Current phase:** B1c — depth-limited subgame solving (real-time), sub-step 3
+(sub-step 2 CLOSED)
 
 > Note: this file was badly stale before Session 13 (it still read "Pre-Phase-1
 > setup, 2026-05-21"). Rewritten from git history + the docs. Cross-check
@@ -36,20 +37,29 @@
   bias effect → max resolution ~45% at any M), but the architecture is confirmed
   by the aggregate hero-direction signal (+3.4/+3.6σ), 94% differentiation among
   resolved pairs, and a non-degenerate menu.
+- **B1c sub-step 2 — Stage G (Q11 Level 2 decision-level stub ablation) CLOSED** via
+  SUBSTANTIVE_PASS_AGGREGATE (session 18, `cb82072`→`b4f85dd`;
+  `docs/sessions/session_18_summary.md`). **Sub-step 2 is now complete.** The M=16
+  gate was a clean 2–3σ near-miss (value_suppression +2.45σ, policy_divergence
+  sig@~99.5%); the one design-sanctioned M=32 escalation cleared both load-bearing
+  bars (value_suppression +3.07σ; policy_divergence significant, obs L1 0.330 > null
+  p99.7 0.297; differentiation 71.4%, 6 distinct shifted actions). Finding: the
+  "BR is flatter" prior was **wrong** (BR −0.29σ on entropy — BR *shifts mass*, does
+  not flatten); entropy was correctly demoted to non-load-bearing before the run.
 
 ## In progress
-- B1c sub-step 2 closure — **Stage G (Q11 Level 2, decision-level stub ablation)**
-  is the one remaining gate.
+- B1c **sub-step 3 — the real subgame CFR loop** (replaces the Stage-G one-iteration
+  root stub). Sub-step 2 (leaf evaluator + Stages F/G ablation gates) is closed.
 
-## Next up (sub-step 2 closure + handoff)
-1. **Stage G (Q11 Level 2):** stub one-iteration root regret update around the leaf
-   evaluator; measure hero's root action distribution under BR vs PROFILE_SAMPLE.
-   **Design the gate around the regime where the architecture predicts effects**
-   (late-street / bias-active root decisions), not a uniform per-decision
-   expectation — the Stage-F structural-intractability lesson. Reuse the Stage-F
-   split-metric pattern (resolution / differentiation / SUBSTANTIVE_PASS_AGGREGATE).
+## Next up (sub-step 3 + handoff)
+1. **Sub-step 3 (Q11 Level 2 → 3 handoff):** multi-iteration external-sampling CFR
+   over the depth-limited subgame tree, leaf values from the now-confirmed BR
+   evaluator. Carry the Stage-F/G methodology: late-street/decision-latitude is where
+   the BR effect lives; the split-metric + SUBSTANTIVE_PASS_AGGREGATE pattern fits
+   this shallow SNG; do **not** design around a "BR flatter" expectation.
 2. View/discretize fast path is shipped (`src/nlhe/fast_view.py`); fold into the
-   canonical path AFTER sub-step 2 closes (see NEXT_SESSION.md tracked deliverable).
+   canonical path now that sub-step 2 has closed (see NEXT_SESSION.md tracked
+   deliverable + acceptance criteria).
 
 ## Then (later B1c sub-steps)
 - Sub-step 3: subgame CFR loop. Sub-step 4: policy extraction.
