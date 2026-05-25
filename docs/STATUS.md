@@ -1,8 +1,8 @@
 # Project Status
 
-**Last updated:** 2026-05-25 (Session 18)
-**Current phase:** B1c — depth-limited subgame solving (real-time), sub-step 3
-(sub-step 2 CLOSED)
+**Last updated:** 2026-05-25 (Session 19)
+**Current phase:** B1c — depth-limited subgame solving (real-time), sub-step 4
+(sub-step 3 CLOSED)
 
 > Note: this file was badly stale before Session 13 (it still read "Pre-Phase-1
 > setup, 2026-05-21"). Rewritten from git history + the docs. Cross-check
@@ -46,26 +46,36 @@
   p99.7 0.297; differentiation 71.4%, 6 distinct shifted actions). Finding: the
   "BR is flatter" prior was **wrong** (BR −0.29σ on entropy — BR *shifts mass*, does
   not flatten); entropy was correctly demoted to non-load-bearing before the run.
+- **B1c sub-step 3 — the real subgame CFR solver CLOSED** (session 19,
+  `3ef06e4`→`10f7e45`; `src/nlhe/subgame_solver.py`, `docs/SUBSTEP_3_DESIGN.md`,
+  `docs/sessions/session_19_summary.md`). Vanilla weighted multi-iteration CFR over
+  the depth-limited tree (Decision 2, approved): opponents fixed at blueprint, chance
+  weighted by `chance_prob`, hero accumulates RM+ regret, linear-LCFR average root
+  policy. Stages 3-A scaffold/warm-up/K=0 → 3-B K=1 bit-identical to the Stage-G stub
+  → 3-C K>1 loop → 3-D diagnostics (`summarize_solve_result`) → 3-E **production
+  K=1000** locked. Closed by execution-and-measurement (implementation stages), not
+  an ablation gate. Measured: K=1000 loop 0.109 s (~15× under estimate, ~250× under
+  the 27 s budget); convergence `converged_l1_tail` 4.4e-2→4.4e-8 over K=10→1000.
+  Safety = BR leaf mode, no CFV gadget (Decision 6, approved).
 
 ## In progress
-- B1c **sub-step 3 — the real subgame CFR loop** (replaces the Stage-G one-iteration
-  root stub). Sub-step 2 (leaf evaluator + Stages F/G ablation gates) is closed.
+- B1c **sub-step 4 — policy extraction** (turn `SubgameSolveResult.root_policy` into a
+  played action). Sub-step 3 (the CFR solver) is closed.
 
-## Next up (sub-step 3 + handoff)
-1. **Sub-step 3 (Q11 Level 2 → 3 handoff):** multi-iteration vanilla weighted CFR
-   over the depth-limited subgame tree, leaf values from the now-confirmed BR
-   evaluator. Carry the Stage-F/G methodology: late-street/decision-latitude is where
-   the BR effect lives; the split-metric + SUBSTANTIVE_PASS_AGGREGATE pattern fits
-   this shallow SNG; do **not** design around a "BR flatter" expectation.
+## Next up (sub-step 4 + handoff)
+1. **Sub-step 4 — policy extraction:** map the refined `root_policy` 7-vector to a
+   played action (argmax / sampling), and handle the `DiscreteAction.ALLIN` → CALL(1)
+   translation when ALLIN maps to the chip-0 fold alias (`b2dded5`). Small follow-up.
 2. View/discretize fast path is shipped (`src/nlhe/fast_view.py`); fold into the
-   canonical path now that sub-step 2 has closed (see NEXT_SESSION.md tracked
+   canonical path now that sub-step 2/3 have closed (see NEXT_SESSION.md tracked
    deliverable + acceptance criteria).
 
 ## Then (later B1c sub-steps)
-- Sub-step 3: subgame CFR loop. Sub-step 4: policy extraction.
-- Sub-step 5: SubgamePolicy wrapper — must map `DiscreteAction.ALLIN` → CALL(1)
-  when facing a shove with no re-raise room (the chip-0 alias, `b2dded5`).
-- Sub-step 6: Level-3 pool ablation (BR vs PROFILE_SAMPLE vs blueprint).
+- Sub-step 5: SubgamePolicy wrapper (conform to `eval_pool.Policy`) — carries the
+  `DiscreteAction.ALLIN` → CALL(1) translation when facing a shove with no re-raise
+  room (the chip-0 alias, `b2dded5`).
+- Sub-step 6: Level-3 pool ablation (BR vs PROFILE_SAMPLE vs blueprint) — the first
+  measured strength delta from subgame solving.
 
 ## Known issues / open questions
 - The ~0.9 ms/step state-prep floor is `_build_view_6max` (0.64 ms) + `discretize`

@@ -572,5 +572,52 @@ class TestDiagnosticEnrichment(unittest.TestCase):
         self.assertEqual(r1.convergence_history, r2.convergence_history)
 
 
+# ============================================================
+# Stage 3-E: production K locked at 1000
+# ============================================================
+
+class TestProductionK(unittest.TestCase):
+    def test_default_k_is_1000(self):
+        from src.nlhe.icm import sng_payouts_6max_double_up
+        from src.nlhe.subgame_solver import SubgameSolveContext
+        ctx = SubgameSolveContext(blueprint=object(), starting_stacks=[10000] * 6,
+                                  payouts=sng_payouts_6max_double_up(), hero_seat=0)
+        self.assertEqual(ctx.n_iterations, 1000)
+
+
+@unittest.skipUnless(_HAS_OPEN_SPIEL, "Requires open_spiel")
+class TestProductionKGated(unittest.TestCase):
+    def _tree(self, depth, seed=42):
+        from src.nlhe.subgame import build_subgame_tree
+        t = build_subgame_tree(_first_decision_state(seed=seed),
+                               max_action_depth=depth, rng=random.Random(seed + 1))
+        _set_all_leaf_values(t, seed=seed + 50)
+        return t
+
+    def test_production_k_convergence_locked(self):
+        # Locks convergence quality at the production K — a regression in the
+        # average-strategy accumulator would push this back up.
+        from src.nlhe.subgame_solver import solve_subgame
+        tree = self._tree(depth=2)
+        res = solve_subgame(tree, _make_ctx(tree, n_iterations=1000))
+        self.assertLess(res.converged_l1_tail, 1e-5,
+                        f"converged_l1_tail={res.converged_l1_tail:.2e} at K=1000")
+
+    def test_production_k_cost_gate_loop_under_1s(self):
+        # Locks that no expensive work (e.g. a network forward) leaks into the loop:
+        # the CFR loop itself must stay well under 1s (measured ~0.1s in Stage 3-C).
+        import random as _r
+        import time
+        from src.nlhe.subgame_solver import _build_warmup, _run_cfr
+        tree = self._tree(depth=3)
+        ctx = _make_ctx(tree, n_iterations=1000)
+        cache = _build_warmup(tree, ctx, _r.Random(0))  # warm-up excluded from the gate
+        t0 = time.perf_counter()
+        _run_cfr(tree, ctx, cache)
+        dt = time.perf_counter() - t0
+        self.assertLess(dt, 1.0,
+                        f"CFR loop took {dt:.3f}s at K=1000 on a {len(tree.all_nodes)}-node tree")
+
+
 if __name__ == "__main__":
     unittest.main()

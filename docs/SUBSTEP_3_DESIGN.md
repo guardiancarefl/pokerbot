@@ -1,7 +1,9 @@
 # Sub-step 3 — Subgame CFR Loop — Design Proposal (B1c)
 
-**Status:** PROPOSAL (review gate). No implementation lands with this doc. Every
-decision below is grounded in code already in the repo; line numbers cite files as
+**Status:** IMPLEMENTED & CLOSED (session 19) — see the Stage 3-E closure section at
+the end. Proposal approved at review gate (both flagged deviations signed off);
+implemented in `src/nlhe/subgame_solver.py` (commits `3ef06e4`→`10f7e45` + the 3-E
+locking commit). The body below is the as-approved design; line numbers cite files as
 read on 2026-05-25 (session 19). Predecessors: tree builder (`subgame.py`, sub-step
 1.5, `2be87df`), leaf evaluator (`subgame_leaf.py`, sub-step 2, Stages A–E + Stage
 F/G ablation closed via `SUBSTANTIVE_PASS_AGGREGATE`). The Stage-G one-iteration
@@ -223,20 +225,18 @@ proved Z fits. The old W=2 s real-time sub-budget (Q4) is superseded by Q13's 27
 |---|---|---|---|
 | Tree build | Y | ~0.1–0.5 s | `state.child()` calls only; not separately measured (Q4 budgeted 0.5 s) |
 | **Leaf eval (one `evaluate_leaves`)** | **Z** | **~10–14 s (BR M=5) / ~20 s (BR M=8), depth-3 CPU** | subgame_leaf.py:151-160; Q13 (`STAGE_E_BUDGET_REDERIVATION.md`) |
-| CFR loop (K iterations) | W | **~0.6–2 s at K=1000** (HYPOTHESIS — measured in 3-E) | this doc |
+| CFR loop (K iterations) | W | **0.109 s at K=1000** (MEASURED, Stage 3-C) | warm-up 1.2 ms + loop 0.109 ms/iter, 216-node depth-3 tree |
 | Policy extraction | — | ~0 (accumulated in-loop; one normalise) | — |
-| **Total** | X | **~16 s (M=5) / ~22 s (M=8)** | < 27 s with margin |
+| **Total** | X | **~10–14 s (M=5) / ~20 s (M=8)** | < 27 s with wide margin |
 
-**W derivation.** Per iteration = one full traversal of the built tree
-(~150 nodes at the measured depth-3 / ~64-leaf shape). Each node touch is a handful
-of length-7 numpy ops + dict lookup + Python call overhead ≈ **~10 µs/node**, so
-**~1.5–2 ms/iteration**, and **K=1000 ≈ ~2 s**. No network forwards or rollouts occur
-in the loop (all in warm-up; Decision 1), which is what makes W small. Per the
-project's measurement rule (every gating number re-measured before code lands against
-it, SUBGAME_LEAF_DESIGN.md:246-283), **the ~10 µs/node figure is a hypothesis Stage
-3-E must confirm**; if it is, say, 3× higher, K drops to ~300 (near the convergence
-knee anyway) and W stays ~2 s. The budget does **not** push sub-step 3 outside 27 s
-at any reasonable K — Z dominates, and Z already fits (Finding 4).
+**W — measured (Stage 3-C), supersedes the design hypothesis.** The design guessed
+~0.6–2 s at K=1000 (~10 µs/node). Measured on a real 216-node depth-3 production tree:
+**warm-up (all blueprint forwards) 1.2 ms; CFR loop K=1000 = 0.109 s (0.109 ms/iter,
+≈0.5 µs/node) — ~15× UNDER the design estimate.** The loop is pure arithmetic over
+cached values (no network forwards / rollouts; Decision 1), so it is far cheaper than
+the per-node guess assumed. W is therefore a non-factor: Z (leaf eval) dominates the
+27 s budget by ~100×, and Z already fits (Q13 / Finding 4). The measurement is locked
+by `tests/test_subgame_solver.py::TestProductionKGated::test_production_k_cost_gate_loop_under_1s`.
 
 ---
 
@@ -333,3 +333,35 @@ gate (not designed around): **Decision 2** (vanilla full-traversal CFR instead o
 documented external-sampling CFR) and **Decision 6** (no CFV gadget; Pluribus-style
 safety is the already-shipped BR leaf mechanism). The remaining findings (1, 4, 7, 8)
 are reported for awareness; none blocks the design.
+
+---
+
+## Stage 3-E closure — sub-step 3 COMPLETE (session 19)
+
+**Production K = 1000.** Chosen from the Stage-3-C measurements, not a fresh sweep
+(Stage 3-C already produced both signals): convergence — `converged_l1_tail` falls
+4.4e-2 → 4.4e-5 → 4.4e-8 across K=10/100/1000 (the average root policy is stable at
+K=1000, ~6 orders of magnitude below any reasonable threshold); cost — the CFR loop
+is 0.109 s at K=1000 (§D), negligible against the ~10–20 s leaf-eval Z and ~250×
+under the 27 s/decision budget. K=1000 gives comfortable convergence margin, and the
+loop is linear in K so escalation is essentially free (K=10000 ≈ 1 s) — the choice is
+a convergence-quality decision, not a cost one. Locked by three tests
+(`TestProductionK*`): default K=1000, `converged_l1_tail < 1e-5` at K=1000, and the
+CFR loop < 1 s at K=1000.
+
+Both review-gate deviations were **approved** in session 19: Decision 2 (vanilla
+weighted CFR — methodologically stronger than the documented external-sampling spec,
+same pattern as Stage F/G's approved deviations) and Decision 6 (no HUNL CFV gadget;
+BR-as-safety, confirmed by Stage G's +3.07σ). One additional resolution: the
+`converged_l1_tail` metric tracks the **average (output) root-policy** movement, not
+the current strategy — under fixed opponents (Decision 4) the subgame is a
+best-response problem and the current strategy collapses to its pure BR in ~7
+iterations, so only the average-policy movement is a usable convergence signal.
+
+**This closes sub-step 3** (the real subgame CFR solver: `src/nlhe/subgame_solver.py`,
+Stages 3-A scaffold → 3-B K=1 stub-identity → 3-C K>1 loop → 3-D diagnostics → 3-E
+K-locking). **Next: sub-step 4 — policy extraction** (turn `SubgameSolveResult.root_policy`
+into a played action: argmax / sampling, and the `ALLIN→CALL(1)` translation when
+the chosen `DiscreteAction` maps to the chip-0 fold alias), then sub-step 5
+(`SubgamePolicy` `eval_pool.Policy` wrapper) and sub-step 6 (the Level-3 pool ablation
+— the first measured strength delta from subgame solving).

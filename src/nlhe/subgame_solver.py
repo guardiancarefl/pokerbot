@@ -95,9 +95,14 @@ class SubgameSolveContext:
             `tree.root.current_player` (the root is hero's decision).
 
     Optional:
-        n_iterations: K (design Decision 1). K=0 → blueprint passthrough (Stage
-            3-A). K>=1 lands in Stage 3-B/3-C. Default 1000 (the design baseline;
-            the real number is set by the Stage 3-E convergence curve).
+        n_iterations: K (design Decision 1). K=0 → blueprint passthrough; K=1 →
+            single regret update (Stage-G-stub-identical); K>1 → the CFR loop.
+            Production default chosen in Stage 3-E based on Stage 3-C measurements:
+            converged_l1_tail at K=1000 is ~4.4e-8 (far below any stabilization
+            threshold), and the CFR loop costs ~0.1s at this K (negligible against
+            the ~10-20s leaf-eval cost per decision, Q13). K=1000 was selected for
+            comfortable convergence margin; the loop scales linearly in K so
+            escalation is essentially free if ever needed (K=10000 ≈ 1s loop).
         rng: random source. Vanilla CFR itself is deterministic; the rng exists for
             any future tie-break / sampling and to seed the warm-up encoder. None →
             a fresh `random.Random()`.

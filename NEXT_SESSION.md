@@ -16,7 +16,7 @@ hardware surprise: this evaluator runs **faster on CPU than GPU** (single-row
 `[64,64]` forward is launch-bound), so a GPU pod is not required — many CPU cores
 are what help. Full reasoning: `docs/STAGE_E_BUDGET_REDERIVATION.md`.
 
-## Where the project stands (start of session 19)
+## Where the project stands (start of session 20)
 
 B1c (depth-limited subgame solving):
 
@@ -42,28 +42,36 @@ B1c (depth-limited subgame solving):
   demonstrably moves hero's *root decision*, not just leaf values. Finding: the
   "BR flatter" prior was wrong (BR shifts mass, does not flatten) — entropy was
   correctly demoted to non-load-bearing before the run.
-- **Path: Path A (confirmation-first). Sub-step 2 is CLOSED** (leaf evaluator +
-  Stages F & G). Next is sub-step 3.
+- **Sub-step 3 — subgame CFR solver: CLOSED** (session 19, `3ef06e4`→`10f7e45`;
+  `src/nlhe/subgame_solver.py`, `docs/SUBSTEP_3_DESIGN.md` Stage-3-E closure,
+  `docs/sessions/session_19_summary.md`). Vanilla weighted multi-iteration CFR over
+  the depth-limited tree: opponents fixed at blueprint, chance weighted by
+  `chance_prob`, hero accumulates RM+ regret, output = linear-LCFR average root
+  policy. **Production K=1000.** Closed by execution-and-measurement (implementation
+  Stages 3-A…3-E), not an ablation gate. Both flagged decisions approved: vanilla
+  CFR (Decision 2) and BR-as-safety / no CFV gadget (Decision 6).
+- **Path: Path A (confirmation-first). Sub-steps 2 & 3 are CLOSED.** Next is sub-step 4.
 
-## Current deliverable — Sub-step 3 (subgame CFR loop)
+## Current deliverable — Sub-step 4 (policy extraction)
 
-Replace the Stage-G one-iteration root **stub** with the **real multi-iteration
-vanilla weighted CFR over the depth-limited subgame tree** (`subgame.build_subgame_tree`),
-leaf values supplied by the now-confirmed `BEST_RESPONSE` evaluator
-(`subgame_leaf.evaluate_leaf`). Reuse the production regret/RM+ math (`cfr6.py`,
-`solver._strategy_from_advantages`); the stub already wired the root-level pieces, so
-this is the traversal + multi-iteration accumulation the stub deliberately skipped.
+Turn `SubgameSolveResult.root_policy` (the refined masked 7-vector from
+`subgame_solver.solve_subgame`) into a **played action**. Scope:
+- Map the 7-vector `DiscreteAction` distribution to a chosen action — support both
+  argmax (eval/exploit) and sampling (mixed-strategy play) modes, mirroring the
+  blueprint's own action-selection (`eval_6max_self_play._sample_action_from_policy`,
+  `eval_pool` `mode` arg).
+- Translate the chosen `DiscreteAction` back to an OpenSpiel chip action via the same
+  `discretize_legal_actions` map the solver/tree used — and handle the
+  **`DiscreteAction.ALLIN` → chip-0 FOLD alias**: when ALLIN is selected facing a
+  shove with no re-raise room, emit **CALL (1)**, not the chip-0 fold (`b2dded5`).
+  (This is the carry-forward formerly filed under sub-step 5; it surfaces here at the
+  extraction boundary.)
+- Keep it a thin, pure-ish function over `SubgameSolveResult` + the root state; the
+  `eval_pool.Policy` wrapper that *calls* build→evaluate_leaves→solve→extract is
+  sub-step 5.
 
-**Carry the validated Stage-F/G methodology forward (load-bearing):**
-- The BR effect is **absent in most states** and **concentrated late-street /
-  bias-active** — design any sub-step-3 acceptance around that regime, never a uniform
-  expectation. The split-metric + `SUBSTANTIVE_PASS_AGGREGATE` pattern is the right
-  instrument for this shallow SNG.
-- **Do NOT design around a "BR flatter" expectation.** Stage G showed BR *shifts
-  mass without flattening* (entropy −0.29σ). Any flatness-direction criterion must be
-  soft/reported, not a gate (the Addition-2 lesson).
-- The full BR-vs-PROFILE-vs-blueprint go/no-go is the **Level-3 pool ablation**
-  (sub-step 6), not sub-step 3.
+Sub-step 3's diagnostic fields (`summarize_solve_result`) are available for the
+extraction layer / sub-step 6 to log.
 
 ## Ablation gate reference (Stages F & G methodology, for sub-step 3 / Level 3 to reuse)
 
@@ -85,10 +93,11 @@ for the resolution-intractable-but-aggregate-confirmed case this SNG produces:
 1. **Sub-step 2 — leaf evaluator — CLOSED** (Stages A–E DONE; **Stage F CLOSED**
    session 17, **Stage G CLOSED** session 18, both via SUBSTANTIVE_PASS_AGGREGATE).
 2. ~~Stage E.5 — bucket-MC precompute~~ — **SHELVED (Q13)**, no longer on the path.
-3. **Sub-step 3 — subgame CFR loop (replaces the Stage-G Level-2 stub) — NEXT.**
-4. Sub-step 4 — policy extraction (hero's refined root action distribution).
-5. Sub-step 5 — SubgamePolicy wrapper (conform to `eval_pool.py` `Policy`;
-   handle the ALLIN→CALL translation below).
+3. **Sub-step 3 — subgame CFR solver — CLOSED** (session 19, vanilla weighted CFR,
+   production K=1000; `src/nlhe/subgame_solver.py`).
+4. **Sub-step 4 — policy extraction (root_policy → action; ALLIN→CALL alias) — NEXT.**
+5. Sub-step 5 — SubgamePolicy wrapper (conform to `eval_pool.py` `Policy`; calls
+   build→evaluate_leaves→solve→extract).
 6. Sub-step 6 — Level-3 pool ablation (BR vs PROFILE_SAMPLE vs blueprint),
    the full `league-v2-600` pool × 5,000 hands (Q13: ~10.5 h at Y≈24, feasible).
 
