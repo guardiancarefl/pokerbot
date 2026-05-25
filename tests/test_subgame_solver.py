@@ -434,7 +434,7 @@ class TestKMultiIteration(unittest.TestCase):
         ctx1 = _make_ctx(tree, n_iterations=1)
         special = solve_subgame(tree, ctx1).root_policy  # K==1 special branch
         cache = _build_warmup(tree, ctx1, _r.Random(0))
-        general_k1, _l1, _deg = _run_cfr(tree, ctx1, cache)
+        general_k1 = _run_cfr(tree, ctx1, cache)["root_policy"]
         np.testing.assert_allclose(general_k1, special, atol=1e-6)
 
     def test_convergence_l1_tail_decreases(self):
@@ -477,12 +477,99 @@ class TestVanillaWeightingAnalytical(unittest.TestCase):
         ctx = SubgameSolveContext(
             blueprint=_MockBlueprint(), starting_stacks=[10000] * 6,
             payouts=sng_payouts_6max_double_up(), hero_seat=hero, n_iterations=1000)
-        policy, l1_tail, degraded = _run_cfr(tree, ctx, cache)
+        out = _run_cfr(tree, ctx, cache)
+        policy, degraded = out["root_policy"], out["degraded"]
         # q[0]=0.9 (=0.9*1.0+0.1*0.0, correct chance weighting) > q[1]=0.7 ⇒ pure on 0
         self.assertGreater(policy[0], 0.99, f"policy={policy}")
         self.assertLess(policy[1], 0.01, f"policy={policy}")
         self.assertAlmostEqual(float(policy.sum()), 1.0, places=5)
         self.assertFalse(degraded)
+
+
+# ============================================================
+# Stage 3-D: diagnostic enrichment
+# ============================================================
+
+@unittest.skipUnless(_HAS_OPEN_SPIEL, "Requires open_spiel")
+class TestDiagnosticEnrichment(unittest.TestCase):
+    def _tree(self, depth=2, tseed=42, lseed=92):
+        from src.nlhe.subgame import build_subgame_tree
+        t = build_subgame_tree(_first_decision_state(seed=tseed),
+                               max_action_depth=depth, rng=random.Random(tseed + 1))
+        _set_all_leaf_values(t, seed=lseed)
+        return t
+
+    def test_diagnostic_fields_populated_and_serializable(self):
+        import json
+        from src.nlhe.subgame_solver import solve_subgame, summarize_solve_result
+        res = solve_subgame(self._tree(), _make_ctx(self._tree(), n_iterations=100))
+        # all Stage-3-D fields present, right types/shapes
+        self.assertEqual(res.n_iterations_run, 100)
+        self.assertIsInstance(res.convergence_history, tuple)
+        self.assertGreater(len(res.convergence_history), 0)
+        for arr in (res.root_q_values, res.root_advantages_blueprint,
+                    res.root_advantages_refined):
+            self.assertIsNotNone(arr)
+            self.assertEqual(np.asarray(arr).shape, (7,))
+        # JSON-serializable summary
+        summary = summarize_solve_result(res)
+        json.dumps(summary)  # raises if not serializable
+        self.assertIn("policy_shift_l1", summary)
+        self.assertEqual(len(summary["convergence_history"]), len(res.convergence_history))
+
+    def test_convergence_history_monotonic(self):
+        from src.nlhe.subgame_solver import solve_subgame
+        res = solve_subgame(self._tree(), _make_ctx(self._tree(), n_iterations=100))
+        l1s = [l1 for _, l1 in res.convergence_history]
+        self.assertGreaterEqual(len(l1s), 2)
+        # non-increasing (allow a tiny relative uptick for float noise)
+        for a, b in zip(l1s, l1s[1:]):
+            self.assertLessEqual(b, a * (1.0 + 1e-6) + 1e-12,
+                                 f"convergence history rose: {l1s}")
+
+    def test_q_values_advantages_consistency(self):
+        from src.nlhe.subgame_solver import solve_subgame
+        res = solve_subgame(self._tree(), _make_ctx(self._tree(), n_iterations=100))
+        legal = np.where(res.legal_mask == 1)[0]
+        q = np.asarray(res.root_q_values)[legal]
+        refined = np.asarray(res.root_advantages_refined)
+        # RM+ clamp: refined advantages are non-negative everywhere
+        self.assertTrue(np.all(refined >= 0.0))
+        # the highest-value legal action also carries the most refined regret
+        self.assertEqual(int(legal[np.argmax(q)]),
+                         int(legal[np.argmax(refined[legal])]))
+
+    def test_k1_bit_identity_preserved_with_diagnostics(self):
+        from scripts.ablation_decision_level import stub_root_policy
+        from src.nlhe.subgame_solver import solve_subgame, _mask_from_children
+        tree = _depth1_tree(seed=42)
+        self.assertGreaterEqual(len(tree.root.children), 3)
+        _set_leaf_values(tree, hero_entry_fn=lambda a: 0.05 * a - 0.1)
+        ctx = _make_ctx(tree, n_iterations=1)
+        res = solve_subgame(tree, ctx)
+        hero = tree.root.current_player
+        adv = _MockNets().predict_advantages(hero, None)
+        mask = _mask_from_children(tree.root)
+        q = _independent_q(tree, ctx)
+        sigma_stub, _ = stub_root_policy(adv, q, mask)
+        # Stage-3-D enrichment did NOT perturb the K=1 output
+        self.assertTrue(np.array_equal(res.root_policy, sigma_stub))
+        # and the K=1 path populates diagnostics too
+        self.assertEqual(res.n_iterations_run, 1)
+        self.assertTrue(np.array_equal(np.asarray(res.root_q_values), q))
+
+    def test_diagnostics_reproducible(self):
+        from src.nlhe.subgame_solver import solve_subgame
+        r1 = solve_subgame(self._tree(), _make_ctx(self._tree(), n_iterations=100,
+                                                   rng=random.Random(3)))
+        r2 = solve_subgame(self._tree(), _make_ctx(self._tree(), n_iterations=100,
+                                                   rng=random.Random(3)))
+        self.assertTrue(np.array_equal(r1.root_policy, r2.root_policy))
+        self.assertTrue(np.array_equal(np.asarray(r1.root_q_values),
+                                       np.asarray(r2.root_q_values)))
+        self.assertTrue(np.array_equal(np.asarray(r1.root_advantages_refined),
+                                       np.asarray(r2.root_advantages_refined)))
+        self.assertEqual(r1.convergence_history, r2.convergence_history)
 
 
 if __name__ == "__main__":

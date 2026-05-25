@@ -38,13 +38,17 @@ K progression (n_iterations):
   - K > 1  → the full vanilla weighted CFR loop with the running average strategy.
             (Stage 3-C/3-D.)
 
-STATUS: STAGE 3-C — full solver. K=0 passthrough, K=1 single-iteration regret update
-(bit-identical to the Stage-G stub), and K>1 the multi-iteration vanilla weighted CFR
-loop (`_run_cfr`) with deeper tree descent and linear-LCFR average-strategy output.
+STATUS: STAGE 3-D — full solver + diagnostic enrichment. K=0 passthrough, K=1
+single-iteration regret update (bit-identical to the Stage-G stub), and K>1 the
+multi-iteration vanilla weighted CFR loop (`_run_cfr`) with deeper tree descent and
+linear-LCFR average-strategy output. SubgameSolveResult carries diagnostic fields
+(convergence_history, root_q_values, blueprint/refined advantages) and
+`summarize_solve_result` produces a JSON-serializable summary for sub-step 5/6.
 """
 from __future__ import annotations
 
 import logging
+import math
 import random
 from dataclasses import dataclass, field
 from typing import Optional, Sequence
@@ -156,6 +160,32 @@ class SubgameSolveResult:
             "root-policy L1 change"). NaN for K<2. Not the current-strategy
             consecutive L1, which collapses to 0 in ~1-2 iterations here (the subgame
             is a best response to fixed opponents; see _run_cfr).
+
+    Stage-3-D diagnostic fields (supplementary to root_policy; for sub-step 5/6
+    introspection — see `summarize_solve_result`). Interpretation, normal-vs-
+    pathological:
+        n_iterations_run: CFR iterations actually executed. Equals `n_iterations`
+            today (no early-stop); a future stage may stop early at convergence.
+        convergence_history: tuple of (iteration, avg-policy-L1) pairs sampled every
+            10 iterations (and the last). NORMAL: values decrease toward 0
+            (monotone-ish, design doc D). PATHOLOGICAL: flat or rising → the solve is
+            not converging (check leaf values / regret accumulation).
+        root_q_values: hero's per-action Q at the root from the FINAL iteration (the
+            q that drove the last regret update). NORMAL: spread across actions, the
+            argmax aligns with where root_policy puts mass. All-equal q ⇒ no signal
+            (bias-inactive root) ⇒ root_policy ≈ root_blueprint. NaN/garbage ⇒ a
+            degraded leaf leaked in (`degraded` should then be True).
+        root_advantages_blueprint: the warm-up advantage vector RM+ turns into
+            root_blueprint (the network's raw O(1) advantages, the warm-start). Can
+            be negative.
+        root_advantages_refined: the hero root's cumulative regret accumulator after
+            K iterations (RM+-clamped, >= 0). NORMAL: mass concentrates on the
+            best-response action(s); argmax aligns with root_q_values' argmax. NOTE:
+            this GROWS ~linearly with K (it is accumulated regret, not a one-shot
+            advantage), so it is on a DIFFERENT scale than root_advantages_blueprint
+            — read the *direction* (which actions gained mass), and use root_policy
+            vs root_blueprint (or summarize's policy_shift_l1) for the *magnitude* of
+            the pull off blueprint.
     """
     root_policy: np.ndarray
     root_blueprint: np.ndarray
@@ -165,6 +195,11 @@ class SubgameSolveResult:
     n_decision_nodes_cached: int
     degraded: bool = False
     converged_l1_tail: float = float("nan")
+    n_iterations_run: int = 0
+    convergence_history: tuple = ()
+    root_q_values: Optional[np.ndarray] = None
+    root_advantages_blueprint: Optional[np.ndarray] = None
+    root_advantages_refined: Optional[np.ndarray] = None
 
 
 # ============================================================
@@ -353,7 +388,7 @@ def _leaf_terminal_hero_values(tree: SubgameTree,
 
 
 def _run_cfr(tree: SubgameTree, ctx: SubgameSolveContext,
-             cache: _WarmupCache) -> tuple[np.ndarray, float, bool]:
+             cache: _WarmupCache) -> dict:
     """The K-iteration vanilla weighted CFR loop (Decisions 2 & 4).
 
     Vanilla, NOT external sampling: every iteration visits every node, weighting
@@ -369,10 +404,12 @@ def _run_cfr(tree: SubgameTree, ctx: SubgameSolveContext,
     Warm-start R[I] = blueprint advantages (cache.adv[I]), so K=1 reduces to the
     Stage-G stub (RM+(adv + r)); K>1 accumulates further iterations.
 
-    Returns (root_policy: (7,) float32 average strategy, converged_l1_tail, degraded).
-    converged_l1_tail = L1 between the AVERAGE root policy at iterations K-1 and K
-    (NaN if K<2) — the Stage-3-E convergence diagnostic (see the SubgameSolveResult
-    field note on why the average, not the current strategy).
+    Returns a dict of diagnostics: root_policy ((7,) float32 average strategy),
+    converged_l1_tail (L1 between the AVERAGE root policy at iters K-1 and K, NaN if
+    K<2 — see the SubgameSolveResult field note on why the average, not the current
+    strategy), degraded, n_run, convergence_history (sampled (t, l1) pairs),
+    root_q_values (hero's per-action Q at the root from the final iteration), and
+    root_advantages_refined (the hero root's cumulative regret accumulator).
 
     Per-node regret/strategy tables are keyed by id(node): this single-deal subgame's
     hero infosets are singletons (subgame.py:158-162 — chance subsampling keeps
@@ -390,6 +427,9 @@ def _run_cfr(tree: SubgameTree, ctx: SubgameSolveContext,
             nid = id(node)
             R[nid] = cache.adv[nid].astype(np.float64)
             S[nid] = np.zeros(_N_ACTIONS, dtype=np.float64)
+
+    root_id = id(tree.root)
+    root_q_holder = [np.zeros(_N_ACTIONS, dtype=np.float64)]  # last-iter root Q
 
     def traverse(node, w: float) -> float:
         if node.is_leaf or node.is_terminal:
@@ -419,6 +459,8 @@ def _run_cfr(tree: SubgameTree, ctx: SubgameSolveContext,
         for child in node.children:
             q[int(child.action_from_parent)] = traverse(child, w)
         ev = float((sigma_pre * q * mask).sum())
+        if nid == root_id:
+            root_q_holder[0] = q  # capture the final iteration's root Q (overwritten each iter)
         R[nid] = np.maximum(Rn + (q - ev) * mask, 0.0)  # RM+ clamp
         sigma_post = _strategy_from_advantages(R[nid].astype(np.float32), mask)
         S[nid] += w * sigma_post
@@ -431,17 +473,27 @@ def _run_cfr(tree: SubgameTree, ctx: SubgameSolveContext,
     # drives the current strategy to its (pure) BR in ~1-2 iterations, so its
     # consecutive L1 collapses to 0 immediately and cannot inform K. The average
     # output keeps moving ~1/K and is what "has the solve converged" actually means.
-    root_id = id(tree.root)
     prev_avg = None
     l1_tail = float("nan")
+    history: list = []
     for t in range(1, K + 1):
         traverse(tree.root, float(t))
         avg_t = S[root_id] / (t * (t + 1) / 2.0)  # running linear-weighted average
         if prev_avg is not None:
             l1_tail = float(np.abs(avg_t - prev_avg).sum())
+            if t % 10 == 0 or t == K:
+                history.append((t, l1_tail))
         prev_avg = avg_t
 
-    return prev_avg.astype(np.float32), l1_tail, degraded
+    return {
+        "root_policy": prev_avg.astype(np.float32),
+        "converged_l1_tail": l1_tail,
+        "degraded": degraded,
+        "n_run": K,
+        "convergence_history": tuple(history),
+        "root_q_values": root_q_holder[0].astype(np.float64),
+        "root_advantages_refined": R[root_id].astype(np.float64),
+    }
 
 
 # ============================================================
@@ -454,9 +506,10 @@ def solve_subgame(tree: SubgameTree, ctx: SubgameSolveContext) -> SubgameSolveRe
     Pre-condition: `subgame_leaf.evaluate_leaves(tree, leaf_ctx)` has populated
     every LEAF's `leaf_value` (the K>=1 loop reads them; the K=0 path does not).
 
-    Stage 3-A scope: builds the warm-up cache and serves the K=0 passthrough
-    (return the blueprint's masked root policy unchanged). K>=1 raises
-    NotImplementedError until Stage 3-B/3-C.
+    Builds the warm-up cache, then: K=0 returns the blueprint's masked root policy
+    unchanged; K=1 applies one regret update (bit-identical to the Stage-G stub);
+    K>1 runs the multi-iteration vanilla weighted CFR loop. All paths populate the
+    Stage-3-D diagnostic fields (see SubgameSolveResult / `summarize_solve_result`).
     """
     root = tree.root
     if root is None or not root.is_decision:
@@ -474,8 +527,12 @@ def solve_subgame(tree: SubgameTree, ctx: SubgameSolveContext) -> SubgameSolveRe
     root_mask = cache.mask[nid]
     root_sigma0 = cache.sigma[nid]  # blueprint masked policy at the root
 
+    root_adv = cache.adv[nid]
+
     if ctx.n_iterations == 0:
         # K=0 — no refinement: hero plays the blueprint's own action distribution.
+        # No leaves are read, so root_q_values is not meaningful (reported as zeros)
+        # and the refined advantages equal the blueprint warm-start.
         return SubgameSolveResult(
             root_policy=root_sigma0.copy(),
             root_blueprint=root_sigma0.copy(),
@@ -484,6 +541,11 @@ def solve_subgame(tree: SubgameTree, ctx: SubgameSolveContext) -> SubgameSolveRe
             n_iterations=0,
             n_decision_nodes_cached=len(cache.adv),
             degraded=False,
+            n_iterations_run=0,
+            convergence_history=(),
+            root_q_values=np.zeros(_N_ACTIONS, dtype=np.float64),
+            root_advantages_blueprint=root_adv.copy(),
+            root_advantages_refined=root_adv.astype(np.float64),
         )
 
     if ctx.n_iterations == 1:
@@ -491,8 +553,11 @@ def solve_subgame(tree: SubgameTree, ctx: SubgameSolveContext) -> SubgameSolveRe
         # to the Stage-G stub (the seed-to-plant continuity gate). Uses only the
         # root's immediate children; no deeper traversal (that is Stage 3-C).
         q, degraded = _hero_action_values(root, ctx)
-        root_adv = cache.adv[nid]
-        sigma_m, _sigma0 = _regret_matched_policy(root_adv, q, root_mask)
+        sigma_m, sigma0 = _regret_matched_policy(root_adv, q, root_mask)
+        # Diagnostics: the refined accumulator after one RM+ update (matches _run_cfr
+        # R[root] at K=1): max(adv + (q - ev)*mask, 0), ev under the blueprint σ0.
+        ev = float((sigma0 * q * root_mask).sum())
+        refined = np.maximum(root_adv.astype(np.float64) + (q - ev) * root_mask, 0.0)
         return SubgameSolveResult(
             root_policy=sigma_m,
             root_blueprint=root_sigma0.copy(),
@@ -501,19 +566,71 @@ def solve_subgame(tree: SubgameTree, ctx: SubgameSolveContext) -> SubgameSolveRe
             n_iterations=1,
             n_decision_nodes_cached=len(cache.adv),
             degraded=degraded,
+            n_iterations_run=1,
+            convergence_history=(),
+            root_q_values=q,
+            root_advantages_blueprint=root_adv.copy(),
+            root_advantages_refined=refined,
         )
 
     # K>1 — the full multi-iteration vanilla weighted CFR loop (Stage 3-C). Deeper
     # tree descent: opponents fixed at blueprint, chance weighted by chance_prob,
     # hero accumulates regret; output is the linearly-weighted average root strategy.
-    root_policy, l1_tail, degraded = _run_cfr(tree, ctx, cache)
+    out = _run_cfr(tree, ctx, cache)
     return SubgameSolveResult(
-        root_policy=root_policy,
+        root_policy=out["root_policy"],
         root_blueprint=root_sigma0.copy(),
         legal_mask=root_mask.copy(),
         hero_seat=ctx.hero_seat,
         n_iterations=ctx.n_iterations,
         n_decision_nodes_cached=len(cache.adv),
-        degraded=degraded,
-        converged_l1_tail=l1_tail,
+        degraded=out["degraded"],
+        converged_l1_tail=out["converged_l1_tail"],
+        n_iterations_run=out["n_run"],
+        convergence_history=out["convergence_history"],
+        root_q_values=out["root_q_values"],
+        root_advantages_blueprint=root_adv.copy(),
+        root_advantages_refined=out["root_advantages_refined"],
     )
+
+
+# ============================================================
+# Diagnostic summary (Stage 3-D) — for logging / sub-step 6 eval output
+# ============================================================
+
+def summarize_solve_result(result: SubgameSolveResult) -> dict:
+    """JSON-serializable diagnostic summary of a solve (logging / sub-step 6 eval).
+
+    6 decimal places on policies / advantages / Q-values (not load-bearing math),
+    finer (9) on the tiny convergence L1s. NaN/None-safe: converged_l1_tail is NaN
+    for K<2 → serialized as null. Adds `policy_shift_l1` = L1(root_policy,
+    root_blueprint) — the clean "how far CFR pulled hero off the blueprint" MAGNITUDE
+    (read root_advantages_refined for the direction; it is on a K-scaled magnitude).
+    """
+    def r6(arr):
+        return None if arr is None else [round(float(x), 6)
+                                         for x in np.asarray(arr).ravel()]
+
+    def fnum(x, nd):
+        return (round(float(x), nd)
+                if (x is not None and math.isfinite(float(x))) else None)
+
+    policy_shift = float(np.abs(np.asarray(result.root_policy)
+                                - np.asarray(result.root_blueprint)).sum())
+    return {
+        "hero_seat": int(result.hero_seat),
+        "n_iterations": int(result.n_iterations),
+        "n_iterations_run": int(result.n_iterations_run),
+        "n_decision_nodes_cached": int(result.n_decision_nodes_cached),
+        "degraded": bool(result.degraded),
+        "converged_l1_tail": fnum(result.converged_l1_tail, 9),
+        "policy_shift_l1": round(policy_shift, 6),
+        "root_policy": r6(result.root_policy),
+        "root_blueprint": r6(result.root_blueprint),
+        "legal_mask": [int(x) for x in np.asarray(result.legal_mask).ravel()],
+        "root_q_values": r6(result.root_q_values),
+        "root_advantages_blueprint": r6(result.root_advantages_blueprint),
+        "root_advantages_refined": r6(result.root_advantages_refined),
+        "convergence_history": [[int(t), fnum(l, 9)]
+                                for t, l in result.convergence_history],
+    }
