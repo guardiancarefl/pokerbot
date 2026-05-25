@@ -327,8 +327,13 @@ def _option_a(node: SubgameNode, ctx: LeafEvalContext):
     try:
         parsed = parse_state_6max(node.state)
         current = list(parsed["money"])
-        e_cur = icm_equity(current, list(ctx.payouts))
-        e_start = icm_equity(list(ctx.starting_stacks), list(ctx.payouts))
+        starting = list(ctx.starting_stacks)
+        # Exclude pre-busted seats (entered at stack 0) from both ICM endpoints,
+        # consistent with icm_adjust_returns; otherwise busted-seat placeholders
+        # in `current` would draw spurious equity (see icm.py `eligible`).
+        eligible = [i for i in range(len(starting)) if starting[i] > 0]
+        e_cur = icm_equity(current, list(ctx.payouts), eligible=eligible)
+        e_start = icm_equity(starting, list(ctx.payouts), eligible=eligible)
         val = [float(e_cur[i] - e_start[i]) for i in range(len(e_cur))]
         if len(val) != _NUM_SEATS or not all(math.isfinite(x) for x in val):
             return [0.0] * _NUM_SEATS, False

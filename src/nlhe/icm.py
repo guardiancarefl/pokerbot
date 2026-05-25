@@ -35,103 +35,120 @@ from itertools import permutations
 from typing import Sequence
 
 
-def icm_equity(stacks: Sequence[float], payouts: Sequence[float]) -> list[float]:
+def icm_equity(stacks: Sequence[float], payouts: Sequence[float],
+               eligible: Sequence[int] | None = None) -> list[float]:
     """Compute per-player ICM equity via Malmuth-Harville.
 
     Args:
         stacks: Per-player chip counts (or stack sizes). Length N. All
-            entries must be >= 0. Players with stack 0 are "busted" and
-            get 0 equity.
+            entries must be >= 0.
         payouts: Prize pool per finish position. Length K, where K is
             the number of paid positions. payouts[0] is 1st-place prize,
             payouts[1] is 2nd-place prize, etc. K can be <= N (the rest
             of the field gets nothing).
+        eligible: optional list of seat indices that are "in the running"
+            for this calculation. **This is how a stack-0 seat's meaning is
+            disambiguated:**
+
+              - eligible=None (default): every seat is in the running. A
+                stack-0 seat is treated as a player who JUST busted and is
+                locked into a bottom payout (split equally among the stack-0
+                seats). This is the correct single-hand-terminal semantics and
+                is backward-compatible.
+              - eligible given: only those seats participate; seats NOT in
+                `eligible` are PRE-BUSTED (entered already eliminated, out of
+                the money) and get EXACTLY 0. Among the eligible seats, a
+                stack-0 one is a NEWLY busted finisher and still claims a
+                bottom payout. Callers that know which seats entered at stack 0
+                (e.g. icm_returns.icm_adjust_returns, from starting_stacks) pass
+                this to avoid handing pre-busted seats spurious bottom-payout
+                equity.
 
     Returns:
-        Per-player ICM equity, length N. Sum equals sum of payouts
-        (the entire prize pool is distributed).
+        Per-player ICM equity, length N. With eligible=None the sum equals the
+        prize pool; with an eligible set smaller than the number of paid
+        positions the sum is the prize awardable among the eligible seats
+        (the rest belongs to already-finished players not represented here).
 
     Examples:
         >>> # Equal stacks, equal payouts: each gets prize_pool/N
         >>> icm_equity([100, 100, 100], [50, 30, 20])
         [33.333..., 33.333..., 33.333...]
 
-        >>> # One player dominates: gets close to 1st prize
-        >>> icm_equity([10000, 1, 1], [50, 30, 20])
-        # First player ~50, others split ~50 between 2nd and 3rd
+        >>> # Pre-busted seats excluded: 3 alive lock the top-3, the rest get 0
+        >>> icm_equity([4000, 4000, 4000, 0, 0, 0], [2, 2, 2], eligible=[0, 1, 2])
+        [2.0, 2.0, 2.0, 0.0, 0.0, 0.0]
     """
     n = len(stacks)
     if n == 0:
         return []
     if any(s < 0 for s in stacks):
         raise ValueError(f"stacks must be non-negative, got {stacks}")
-    total_chips = sum(stacks)
-    if total_chips == 0:
-        # No chips in play — equity is 0 for everyone.
-        return [0.0] * n
     k = len(payouts)
     if k == 0:
         # No payouts — equity is 0 for everyone.
         return [0.0] * n
     if k > n:
-        # More paid positions than players — pad payouts to N by
-        # ignoring the extras. (Common scenario: K = N for full ITM.)
+        # More paid positions than players — ignore the extras.
         payouts = list(payouts[:n])
         k = n
 
-    # Identify active players (stack > 0).
-    active_idx = [i for i, s in enumerate(stacks) if s > 0]
-    n_active = len(active_idx)
-    busted_idx = [i for i, s in enumerate(stacks) if s == 0]
-    n_busted = len(busted_idx)
-
-    # Convert stacks to fractions of the active chip pool (so active fractions sum to 1).
-    fractions = [s / total_chips for s in stacks]
+    # Eligible seats = those "in the running" for this calculation. Default: all
+    # seats (a stack-0 seat is a just-busted finisher; backward-compatible). When
+    # given, seats NOT in `eligible` are PRE-BUSTED (already out) and get 0.
+    if eligible is None:
+        elig = list(range(n))
+    else:
+        elig = sorted({int(i) for i in eligible if 0 <= int(i) < n})
 
     equity = [0.0] * n
+    if not elig:
+        return equity
 
-    # Busted players lock in the BOTTOM payouts (they've already finished).
-    # If 2 players busted and there are 3 payouts, payouts[1] and payouts[2]
-    # are taken by the busted players (sum split equally — we don't track
-    # bust order). The remaining active players compete for payouts[0..n_active-1].
-    if n_busted > 0 and k > n_active:
-        # The bottom (k - n_active) payouts go to the busted players, split equally.
-        bottom_payouts = payouts[n_active:k]
-        bottom_total = sum(bottom_payouts)
-        per_busted = bottom_total / n_busted if n_busted > 0 else 0.0
-        for bi in busted_idx:
-            equity[bi] = per_busted
+    # Within the eligible set: `live` seats (stack > 0) compete via Malmuth-
+    # Harville for the TOP positions; `zero` seats (stack == 0) are just-busted
+    # finishers who split the BOTTOM contested payouts equally. Pre-busted seats
+    # (not eligible) keep 0.
+    live = [i for i in elig if stacks[i] > 0]
+    zero = [i for i in elig if stacks[i] == 0]
+    if not live:
+        # No chips among the eligible seats — no equity to distribute.
+        return equity
 
-    # Active players compete for the top payouts.
-    payouts = list(payouts[:n_active])
-    k_effective = len(payouts)
+    a = len(elig)                       # eligible finishing positions: 1..a
+    contested = list(payouts[:a])       # payouts awardable among the eligible
+    n_live = len(live)
+    top = contested[:n_live]            # competed for by live seats
+    bottom = contested[n_live:]         # locked by just-busted (zero) seats
 
-    # For each ordering of active players into the first k_effective
-    # finish positions, compute P(this specific ordering) and accumulate
-    # each player's contribution to their equity in that position.
-    for perm in permutations(active_idx, k_effective):
-        # P(perm[0] finishes 1st, perm[1] finishes 2nd, ..., perm[k-1] finishes kth)
-        # Numerator: product of chip fractions of players in this order.
-        # Denominator: each successive denom is (1 - sum of fractions removed so far).
+    if zero:
+        per_zero = sum(bottom) / len(zero)
+        for i in zero:
+            equity[i] = per_zero
+
+    k_top = len(top)
+    if k_top == 0:
+        return equity
+
+    # Malmuth-Harville over the LIVE seats only; fractions are over live chips.
+    total_live = sum(stacks[i] for i in live)
+    fractions = {i: stacks[i] / total_live for i in live}
+    for perm in permutations(live, k_top):
+        # P(perm[0] finishes 1st among live, perm[1] 2nd, ...).
         prob = 1.0
         removed_sum = 0.0
         for pos, player_idx in enumerate(perm):
             if pos == 0:
-                # First place: P(this player wins) = x_i / 1
                 prob *= fractions[player_idx]
             else:
-                # Conditional probability given previous players removed.
                 denom = 1.0 - removed_sum
                 if denom <= 0:
-                    # Should never happen with active players, but guard.
                     prob = 0.0
                     break
                 prob *= fractions[player_idx] / denom
             removed_sum += fractions[player_idx]
-
-        # Each player in this ordering contributes their payout × probability.
         for pos, player_idx in enumerate(perm):
-            equity[player_idx] += prob * payouts[pos]
+            equity[player_idx] += prob * top[pos]
 
     return equity
 

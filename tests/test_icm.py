@@ -335,3 +335,54 @@ def test_more_payouts_than_players_truncates():
     eq = icm_equity(stacks, payouts)
     # Truncated to first 3 payouts → sum should equal 100 (50+30+20), not 125.
     assert math.isclose(sum(eq), 100.0, rel_tol=1e-9)
+
+
+# ---------- Pre-busted exclusion via `eligible` (load-bearing fix) ----------
+
+def test_eligible_excludes_pre_busted_zero_equity():
+    """Pre-busted seats (not in `eligible`) get exactly 0; the alive seats lock
+    the top payouts. The realistic double-up ITM case (3 alive, 3 pre-busted)."""
+    eq = icm_equity([4000, 4000, 4000, 0, 0, 0], [2.0, 2.0, 2.0], eligible=[0, 1, 2])
+    for got, exp in zip(eq, [2.0, 2.0, 2.0, 0.0, 0.0, 0.0]):
+        assert math.isclose(got, exp, abs_tol=1e-9), f"{eq}"
+
+
+def test_eligible_newly_busted_claims_bottom_pre_busted_zero():
+    """A seat that is 0 at call time BUT eligible (newly busted this hand) still
+    claims a bottom payout; pre-busted seats (not eligible) stay 0. This is the
+    case the old bottom-split bug mishandled (it split the in-money bottom payout
+    among ALL stack-0 seats, enriching the pre-busted ones)."""
+    # seats 0,1 alive; seat 2 newly busted (eligible); seats 3,4,5 pre-busted.
+    eq = icm_equity([8000, 4000, 0, 0, 0, 0], [2.0, 2.0, 2.0], eligible=[0, 1, 2])
+    for got, exp in zip(eq, [2.0, 2.0, 2.0, 0.0, 0.0, 0.0]):
+        assert math.isclose(got, exp, abs_tol=1e-9), f"{eq}"
+
+
+def test_eligible_excludes_even_with_chips():
+    """A seat omitted from `eligible` is excluded even if it has chips (it does
+    not compete and gets 0); the eligible seats compete among themselves."""
+    eq = icm_equity([1000, 1000, 1000], [50, 30, 20], eligible=[0, 1])
+    assert math.isclose(eq[2], 0.0, abs_tol=1e-12)
+    assert math.isclose(eq[0], 40.0, rel_tol=1e-9)  # 0,1 split 50+30
+    assert math.isclose(eq[1], 40.0, rel_tol=1e-9)
+
+
+def test_default_eligible_preserves_busted_lump():
+    """Default (eligible=None) keeps the single-hand semantics unchanged: a
+    stack-0 seat is a just-busted finisher locked into the bottom payout."""
+    eq = icm_equity([1000, 1000, 0], [50, 30, 20])
+    assert math.isclose(eq[2], 20.0, rel_tol=1e-9)
+    assert math.isclose(eq[0], 40.0, rel_tol=1e-9)
+    assert math.isclose(eq[1], 40.0, rel_tol=1e-9)
+
+
+def test_eligible_non_itm_four_alive_two_pre_busted():
+    """Non-ITM mid-tournament (4 alive, 2 pre-busted): the 2 pre-busted seats are
+    excluded; the 4 alive compute among themselves for the top-3 payouts."""
+    eq = icm_equity([3000, 3000, 3000, 3000, 0, 0], [2.0, 2.0, 2.0],
+                    eligible=[0, 1, 2, 3])
+    assert math.isclose(eq[4], 0.0, abs_tol=1e-12)
+    assert math.isclose(eq[5], 0.0, abs_tol=1e-12)
+    # 4 equal stacks, 3 equal payouts of 2.0 -> each alive seat 6.0/4 = 1.5.
+    for i in range(4):
+        assert math.isclose(eq[i], 1.5, rel_tol=1e-9), f"{eq}"

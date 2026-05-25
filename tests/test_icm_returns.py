@@ -162,3 +162,50 @@ def test_handles_floating_point_drift_in_returns():
     # Should not raise (icm.py would otherwise complain about negative stacks)
     icm = icm_adjust_returns(chip_returns, starting_stacks, payouts)
     assert len(icm) == 6
+
+
+# ---------- Pre-busted-seat handling (load-bearing icm.py fix) ----------
+
+def test_pre_busted_locked_itm_zero_delta():
+    """Realistic ITM: 3 alive + 3 PRE-busted, num_paid=3 (double-up). Every alive
+    seat is locked at the equal payout, so ANY hand outcome yields ~0 ICM delta,
+    and pre-busted seats are never enriched. Regression for the icm.py busted-seat
+    bug: pre-fix, a mid-hand bust split the in-money bottom payout among all
+    stack-0 seats, giving the 3 pre-busted seats spurious +equity and the
+    newly-busted seat a spurious -loss."""
+    starting = [4000, 4000, 4000, 0, 0, 0]
+    payouts = sng_payouts_6max_double_up()  # [2, 2, 2]
+    for cr in (
+        [+4000, 0, -4000, 0, 0, 0],      # seat 2 busts to seat 0
+        [+2000, +2000, -4000, 0, 0, 0],  # seat 2 busts, split pot
+        [-2000, +1000, +1000, 0, 0, 0],  # seat 0 loses but survives
+        [+8000, -4000, -4000, 0, 0, 0],  # seats 1 AND 2 both bust this hand
+    ):
+        delta = icm_adjust_returns(cr, starting, payouts)
+        for i, x in enumerate(delta):
+            assert math.isclose(x, 0.0, abs_tol=1e-9), f"cr={cr} seat={i} delta={delta}"
+
+
+def test_pre_busted_not_enriched_on_bubble_bust():
+    """Bubble (4 alive + 2 pre-busted, num_paid=3): when an alive seat busts it
+    finishes 4th (unpaid) and loses equity; the 2 PRE-busted seats stay at 0
+    delta (not enriched), and the pool is conserved."""
+    starting = [3000, 3000, 3000, 3000, 0, 0]
+    payouts = sng_payouts_6max_double_up()
+    cr = [+3000, +1000, -1000, -3000, 0, 0]  # seat 3 busts (finishes 4th)
+    delta = icm_adjust_returns(cr, starting, payouts)
+    assert math.isclose(delta[4], 0.0, abs_tol=1e-9), f"{delta}"  # pre-busted
+    assert math.isclose(delta[5], 0.0, abs_tol=1e-9), f"{delta}"  # pre-busted
+    assert delta[3] < -0.5, f"newly-busted seat should lose equity: {delta}"
+    assert math.isclose(sum(delta), 0.0, abs_tol=1e-9)  # conserved
+
+
+def test_all_alive_hand_unchanged_by_fix():
+    """Normal all-alive hand: eligible = all seats, so the fix is a no-op vs the
+    single-hand semantics (the busted seat locks the bottom payout). Conserved."""
+    starting = [1500] * 6
+    payouts = sng_payouts_6max_double_up()
+    cr = [+1500, 0, 0, 0, 0, -1500]  # seat 5 busts to seat 0
+    delta = icm_adjust_returns(cr, starting, payouts)
+    assert len(delta) == 6
+    assert math.isclose(sum(delta), 0.0, abs_tol=1e-9)

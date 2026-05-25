@@ -62,8 +62,19 @@ def icm_adjust_returns(
     # slightly below zero (e.g. -1e-9). Clamp to zero before ICM.
     end_stacks = [max(0.0, float(s)) for s in end_stacks]
 
-    e_start = icm_equity(starting_stacks, payouts)
-    e_end = icm_equity(end_stacks, payouts)
+    # Eligible = seats that ENTERED the hand with chips. Seats starting at 0 are
+    # PRE-BUSTED (already eliminated, out of the money) and must be excluded from
+    # the ICM map for BOTH endpoints — otherwise, when an alive player busts during
+    # the hand, the in-money bottom payout gets split among ALL stack-0 seats
+    # (pre-busted included), spuriously enriching already-finished seats and
+    # mis-pricing the newly-busted one. Passing `eligible` keeps pre-busted seats
+    # at 0 and lets the newly-busted seat (eligible but 0 at end) correctly claim
+    # its finishing payout. For a normal all-alive hand, eligible = all seats and
+    # this is a no-op (behavior unchanged).
+    eligible = [i for i in range(n) if starting_stacks[i] > 0]
+
+    e_start = icm_equity(starting_stacks, payouts, eligible=eligible)
+    e_end = icm_equity(end_stacks, payouts, eligible=eligible)
 
     return [e_end[i] - e_start[i] for i in range(n)]
 

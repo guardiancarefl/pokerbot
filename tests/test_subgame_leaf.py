@@ -468,23 +468,17 @@ class TestProfileSampleMode(unittest.TestCase):
     # ---- Addition 3: realistic busted-seat ITM (documents an icm.py limitation) ----
 
     def test_itm_short_circuit_realistic(self):
-        """Realistic ITM (num_paid=3, 3 busted + 3 alive) — the regime that fires in
-        production. FINDING (surfaced, not silently skipped): the Q5 'Option-A approx
-        Option-B in ITM' claim does NOT hold here. is_itm fires and the short-circuit
-        (Option-A) correctly returns ~0 (the 3 alive are locked at the equal payout),
-        but the full rollout (Option-B) diverges by a lot. Root cause: icm.py splits
-        the BOTTOM payouts among ALL stack-0 seats (icm.py:97-104) rather than modeling
-        already-eliminated, out-of-the-money players, so when an alive player busts
-        mid-rollout the 3 pre-busted seats spuriously gain equity. The short-circuit
-        AVOIDS this artifact (returns the locked-equity value); the rollout inherits it.
-        Resolution (keep short-circuit / disable / fix icm.py busted-handling) is flagged
-        for review — see the Stage D report. This test pins the discrepancy so it is not
-        lost; if icm.py is later fixed to model out-of-money players, this test will flag
-        (rollout would also -> 0) and should be revisited.
-        """
+        """Realistic ITM (num_paid=3, 3 PRE-busted + 3 alive) — the regime that fires
+        in production. After the icm.py pre-busted fix (eligible-set in
+        icm_adjust_returns), Option-A (short-circuit) and Option-B (full rollout)
+        AGREE: both are ~0. The 3 alive are locked at the equal payout, a mid-rollout
+        bust keeps the newly-busted seat at its in-money finish (delta 0), and
+        pre-busted seats are excluded rather than spuriously enriched. (Pre-fix this
+        test documented a large discrepancy; the fix removes it — see test_icm /
+        test_icm_returns for the unit-level coverage.)"""
         import random
-        from src.nlhe.subgame_leaf import evaluate_leaf, LeafEvalMode
-        from src.nlhe.icm import is_itm
+        from src.nlhe.subgame_leaf import evaluate_leaf, LeafEvalMode, LeafEvalContext
+        from src.nlhe.icm import is_itm, sng_payouts_6max_double_up
         from src.nlhe.subgame import SubgameNode, NodeKind
         stacks_itm = [4000, 4000, 4000, 0, 0, 0]
         self.assertTrue(is_itm(stacks_itm, 3))  # fixture genuinely fires
@@ -493,8 +487,6 @@ class TestProfileSampleMode(unittest.TestCase):
                            current_player=st.current_player())
 
         def ev(sc, seed):
-            from src.nlhe.icm import sng_payouts_6max_double_up
-            from src.nlhe.subgame_leaf import LeafEvalContext
             return evaluate_leaf(leaf, LeafEvalContext(
                 blueprint=self.solver, biased_blueprint=self.biased,
                 starting_stacks=stacks_itm, payouts=list(sng_payouts_6max_double_up()),
@@ -503,18 +495,14 @@ class TestProfileSampleMode(unittest.TestCase):
 
         r_on = ev(True, 1)
         r_off = ev(False, 1)
-        # short-circuit fires and returns the (correct) ~locked-equity value
         self.assertTrue(r_on.short_circuited)
-        self.assertLess(max(abs(x) for x in r_on.value), 0.05)
-        self.assertLess(abs(sum(r_on.value)), 1e-6)
-        # rollout is finite/conserved and produced samples
         self.assertGreater(r_off.n_completed, 0)
-        self.assertLess(abs(sum(r_off.value)), 1e-6)
-        # DOCUMENTED DISCREPANCY: they do NOT agree (icm.py busted-handling artifact)
+        # Both ~0 (locked ITM), and they AGREE — the Q5 short-circuit accuracy claim
+        # now holds in the realistic busted-seat regime after the icm.py fix.
+        self.assertLess(max(abs(x) for x in r_on.value), 1e-6)
+        self.assertLess(max(abs(x) for x in r_off.value), 1e-6)
         max_gap = max(abs(r_on.value[i] - r_off.value[i]) for i in range(6))
-        self.assertGreater(max_gap, 0.1,
-                           "expected the documented icm.py busted-handling discrepancy; "
-                           "if gone, icm.py may have been fixed — revisit this test")
+        self.assertLess(max_gap, 1e-6)
 
 
 @unittest.skipUnless(_HAS_OPEN_SPIEL, "Requires open_spiel")
