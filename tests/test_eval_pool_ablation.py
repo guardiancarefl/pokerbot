@@ -180,5 +180,80 @@ class TestAblationSmoke(unittest.TestCase):
         self.assertGreater(agg["stats"]["sg-br"]["n_decisions_total"], 0)
 
 
+# ============================================================
+# Stage 6-B: verdict branches (pure) + orchestration/JSON smoke
+# ============================================================
+
+class TestVerdict(unittest.TestCase):
+    def _v(self, **kw):
+        from scripts.eval_pool_ablation import compute_verdict
+        base = dict(L=0.006, sigma_L=2.5, ordering_ok=True, n_opp_positive=5,
+                    n_opp=5, L_brvsp=0.003, sigma_brvsp=2.0)
+        base.update(kw)
+        return compute_verdict(**base)["status"]
+
+    def test_pass_strict(self):
+        self.assertEqual(self._v(), "PASS")
+
+    def test_substantive_pass(self):
+        self.assertEqual(self._v(L=0.003, sigma_L=1.7, n_opp_positive=4,
+                                 L_brvsp=0.002, sigma_brvsp=1.6), "SUBSTANTIVE_PASS")
+
+    def test_br_equivalent_to_profile_when_indistinguishable(self):
+        # meets strict BR-vs-blueprint, but BR not distinguishable from PROFILE
+        self.assertEqual(self._v(L_brvsp=0.0004, sigma_brvsp=0.8),
+                         "PASS_BR_EQUIVALENT_TO_PROFILE")
+
+    def test_br_equivalent_when_profile_significantly_better(self):
+        from scripts.eval_pool_ablation import compute_verdict
+        r = compute_verdict(L=0.006, sigma_L=2.5, ordering_ok=True, n_opp_positive=5,
+                            n_opp=5, L_brvsp=-0.004, sigma_brvsp=2.2)
+        self.assertEqual(r["status"], "PASS_BR_EQUIVALENT_TO_PROFILE")
+        self.assertIn("PROFILE significantly", r["recommendation"])
+
+    def test_ambiguous(self):
+        self.assertEqual(self._v(L=0.001, sigma_L=1.0), "AMBIGUOUS")     # <0.002
+        self.assertEqual(self._v(L=0.003, sigma_L=1.2, n_opp_positive=3),
+                         "AMBIGUOUS")                                     # sigma<1.5
+
+    def test_fail(self):
+        self.assertEqual(self._v(L=-0.002, sigma_L=2.5), "FAIL")
+        self.assertEqual(self._v(L=0.0), "FAIL")
+
+    def test_substantive_needs_4of5_opponents(self):
+        # L/sigma meet substantive but only 3/5 opponents positive -> not substantive
+        self.assertEqual(self._v(L=0.003, sigma_L=1.7, n_opp_positive=3,
+                                 L_brvsp=0.002, sigma_brvsp=1.6), "AMBIGUOUS")
+
+
+@unittest.skipUnless(_HAS_OPEN_SPIEL, "needs open_spiel")
+class TestThreeWayOrchestration(unittest.TestCase):
+    def test_three_way_smoke_and_json_schema(self):
+        art = _find_artifacts()
+        if art is None:
+            self.skipTest("solver artifacts not present")
+        import json
+        from scripts.eval_pool_ablation import run_three_way, _build_output, \
+            BLUEPRINT, SG_PROFILE, SG_BR, PolicySpec
+        abstr_path, ckpt_path, struct_path = art
+        opp = [PolicySpec("opp", "checkpoint", ckpt=ckpt_path)]
+        small = dict(n_samples=2, max_action_depth=2, n_iterations=10)
+        agg = run_three_way(ckpt_path, opp, abstr_path, struct_path, hands=50,
+                            base_seed=7, workers=1, mode="sample", solve_kw=small)
+        out = _build_output(agg, ckpt_path, abstr_path, struct_path, wall_clock_s=1.0)
+        # schema: required top-level keys
+        for k in ("blueprint", "challengers", "config", "git_rev", "per_matchup",
+                  "pooled_diff", "lifts", "stats", "verdict", "wall_clock_s"):
+            self.assertIn(k, out)
+        self.assertEqual(out["challengers"], [BLUEPRINT, SG_PROFILE, SG_BR])
+        self.assertEqual(len(out["per_matchup"]), 3)            # 3 challengers x 1 opp
+        self.assertIn("sg-br_minus_blueprint", out["lifts"])
+        self.assertIn(out["verdict"]["status"],
+                      {"PASS", "SUBSTANTIVE_PASS", "PASS_BR_EQUIVALENT_TO_PROFILE",
+                       "AMBIGUOUS", "FAIL"})
+        self.assertGreater(out["stats"][SG_BR]["n_decisions_total"], 0)
+        json.dumps(out, default=float)                          # serializable
+
+
 if __name__ == "__main__":
     unittest.main()
