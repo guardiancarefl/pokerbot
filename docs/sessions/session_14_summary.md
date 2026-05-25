@@ -50,6 +50,15 @@ Q4/Q4.5/Q12 and the commit bodies.)
 - **Default `n_samples` 8 → 5.** Measured BR M=8 = ~44 s / M=5 = ~30 s per 64-leaf
   tree (>> the 1.5 s budget). Per the Stage-E rule (M=8 > 12 s), dropped to 5. M is
   NOT the budget lever; Stage E.5 is.
+  > **CORRECTION (session 16) — both clauses are wrong.** Q13's decomposition shows
+  > the network forward dominates BR (~45%) and scales linearly in M, so **M *is* a
+  > real budget lever** — it multiplies the dominant cost. And **Stage E.5 is not
+  > the lever either**: it's shelved entirely (bucket-MC is only ~15% of BR, 99.3%
+  > cache hit). The real lever is **parallelism** (sub-step 6 is throughput-bound;
+  > CPU workers scale near-linearly). The default was **restored 5 → 8** in session
+  > 16 for measurement quality (M=5 carries ~26% more MC stderr). The "1.5 s budget"
+  > premise itself was superseded — sub-step 6 needs throughput, not real-time
+  > latency. See `docs/STAGE_E_BUDGET_REDERIVATION.md` (Q13) + design-doc Q13.
 - **Cache-sharing is the shipped Stage-E lever** (3× PROFILE, ~10× single-leaf BR).
   It does not fully close the budget — that needs Stage E.5.
 - **`partial_eval_degraded`** named distinctly from the per-leaf `degraded` (a value
@@ -125,6 +134,17 @@ under `bucket_runouts=20` noise, not a bug; batch values are self-consistent).
 > The `test_subgame_leaf.py` docstring at the `test_evaluate_leaves_matches_*`
 > test carries the same misattribution; left as a follow-up (it does not affect
 > the assertion, which tolerates the variance).
+
+> **CORRECTION (session 16) — the GPU framing is wrong on the hardware.** The
+> "GPU IS available … but irrelevant" line above understates it: Q13 measured the
+> GPU to be **slower than CPU** for this evaluator (BR M=5 d3 = 13.8 s GPU vs
+> 10.0 s CPU). The single-row `[64,64]` network forward is kernel-launch/
+> host-transfer-bound, so the GPU only helps if forwards are *batched* (which the
+> rollout loop does not do). CPU 1-thread workers also parallelize near-linearly
+> (23.7× of 32) while the shared GPU partially serializes (2.98× of 4). So the
+> "BEST_RESPONSE is the production / GPU target" framing (design doc Q4 /
+> `LeafEvalMode` docstring) is wrong: **production should run on CPU.** See
+> `docs/STAGE_E_BUDGET_REDERIVATION.md` (Q13).
 
 Tests at close: leaf evaluator 24 + 10 subtests; no regression across
 icm/icm_returns/subgame/fast_view/cfr6 (95/95).
