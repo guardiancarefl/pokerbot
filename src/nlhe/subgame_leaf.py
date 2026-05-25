@@ -5,11 +5,17 @@ same units `cfr6.traverse_6max` backs up at true terminals — so sub-step 3's C
 loop can treat LEAF and TERMINAL nodes uniformly. Full design and rationale:
 `docs/SUBGAME_LEAF_DESIGN.md` (the contract this module conforms to).
 
-STATUS: STAGE E — PROFILE_SAMPLE and BEST_RESPONSE modes plus the
-`evaluate_leaves` batch path (shared-cache) are implemented. The design budget
-Z=1.5 s is NOT yet closed: the dominant cost is the encoder bucket-MC, not the
-network forward (see evaluate_leaves and design doc Q4/Q12). The budget-closing
-encoder bucket-MC precompute is the Stage E.5 follow-up.
+STATUS: STAGE E COMPLETE + Q13-CLOSED — PROFILE_SAMPLE and BEST_RESPONSE modes
+plus the `evaluate_leaves` batch path (shared-cache) are implemented, and the
+budget question is RESOLVED. The arbitrary Z=1.5 s real-time premise is superseded
+(design doc Q13 / docs/STAGE_E_BUDGET_REDERIVATION.md): sub-step 6 is an *offline*
+throughput-bound ablation, and the current evaluator at the M=8 default meets that
+target with ~2.7× headroom (no further optimization needed; Stage E.5/E.6 shelved).
+Bottlenecks are MODE-DEPENDENT (measured, session 16): the network forward
+dominates BEST_RESPONSE (~45%, it makes ~30k forwards/64-leaf tree), while the
+encoder bucket-MC dominates PROFILE_SAMPLE (~52%, far fewer network calls). The
+evaluator is production-ready for sub-step 6 (runs on CPU — faster than GPU at
+single-row forward sizes).
 
 Cost model (validated provenance, for future readers — not buried in the doc):
   Per-decision-step cost ≈ 0.4 ms CPU / 0.13 ms GPU INCLUDING the network
@@ -17,9 +23,11 @@ Cost model (validated provenance, for future readers — not buried in the doc):
   end-to-end EXCLUDING the network (commit 994b587; gate ≤0.30 ms cleared ~3.5×).
   The earlier "~0.9 ms parse floor" was a mis-attribution — corrected to
   view/discretize over the ~9,803-element fullgame legal_actions (commit dc09617).
-  Stage E's *batched* cost is the gate that actually closes the full Z = 1.5 s
-  leaf-eval budget; this scaffold ships at the design's M = 8 (LeafEvalContext
-  default) with a measured fallback to M = 5 per Stage E results (see n_samples).
+  Per Q13 (session 16): the per-decision cost (one `evaluate_leaves` call, cached
+  across CFR iterations) is ~10 s for BR M=5 depth-3 on CPU (M=8 ≈ 1.6× that, since
+  network forwards scale linearly in M), and the sub-step 6 budget is closed by
+  PARALLELISM across decisions (throughput, not single-decision latency), so M=8 is
+  the default (M is a real budget lever; M=5 is a cost-saving knob, see n_samples).
 
 This module reuses, rather than re-implements:
   - `biased_policy.BiasedBlueprint` — the k=4 continuation strategies (Q2).

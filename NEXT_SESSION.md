@@ -16,45 +16,52 @@ hardware surprise: this evaluator runs **faster on CPU than GPU** (single-row
 `[64,64]` forward is launch-bound), so a GPU pod is not required — many CPU cores
 are what help. Full reasoning: `docs/STAGE_E_BUDGET_REDERIVATION.md`.
 
-## Where the project stands at end of session 13
+## Where the project stands (start of session 17)
 
-B1c (depth-limited subgame solving) is mid-build:
+B1c (depth-limited subgame solving):
 
-- **Sub-step 1.5 — tree builder: DONE and correct** (`2be87df`). Enumerates the
-  `DiscreteAction` set via the same path as `cfr6.traverse_6max`; 20/20 tests
-  pass against the production game `six_max_sng(starting_stack=10000)`.
-- **Sub-step 2 — leaf evaluator: DESIGN APPROVED, not yet implemented.** Full
-  design in `docs/SUBGAME_LEAF_DESIGN.md` (commits 89ec957 → 4029757 → 98edf14).
+- **Sub-step 1.5 — tree builder: DONE** (`2be87df`). Production-game tested.
+- **Sub-step 2 — leaf evaluator: IMPLEMENTATION COMPLETE** (Stages A–E,
+  `994b587`→`fd7fb88`) plus the load-bearing ICM busted-seat fix (`ae8e1b5`) and
+  the post-Q13 cleanups (`db89145` restore M=8; `3109fb0` cache-reset guard). The
+  evaluator is correct, tested, and production-ready.
+- **Q13 — budget RESOLVED** (`b092480`, session 16). No optimization needed;
+  Stage E.5/E.6 **shelved**. The current evaluator meets sub-step 6's offline
+  throughput target with ~2.7× headroom. (`docs/STAGE_E_BUDGET_REDERIVATION.md`.)
+- **Path chosen: Path A (confirmation-first).** Run the Q11 leaf/decision
+  ablations (Stages F, G) to confirm the BR mechanism fires before building the
+  real CFR loop.
 
-## Sub-step 2 is the next deliverable — implement `src/nlhe/subgame_leaf.py`
+## Current deliverable — Stage F (Q11 Level 1, leaf-level ablation)
 
-Build to the approved design. Load-bearing points:
+`scripts/ablation_leaf_eval.py`: on ~50 sampled production-game leaf states,
+compare BR vs PROFILE_SAMPLE(uniform) vs blueprint-baseline leaf values and
+confirm the Q10 #9 ordering (opponent-own-value `max_b ≥ mean_b`; hero value
+under BR ≤ under uniform PROFILE). **Note (session-14 finding):** the raw
+per-leaf hero-value gap is noise-dominated (~0.05 vs ~2.0 ICM variance); the
+robust gate is the opponent-own-value `max ≥ mean` under CRN, plus the sign of
+the aggregate hero delta across leaves. Directional confirmation only — not a
+final-quality measurement.
 
-1. **BEST_RESPONSE is the production form**; PROFILE_SAMPLE is the fallback /
-   ablation mode (`LeafEvalContext.mode`). Both must be implementable; default is
-   BEST_RESPONSE. Leaf value = 6-vector ICM-equity deltas (drop-in for
-   `SubgameNode.terminal_returns`, stored on a new `SubgameNode.leaf_value` field).
-2. **Best-response is computed vs hero's BLUEPRINT at the root** (Brown/Sandholm
-   2018 single-pass approximation), NOT vs hero's iteration-k subgame strategy —
-   this is what keeps leaf values cacheable-exact across CFR iterations
-   (compute once per decision, not Z×W).
-3. **View/discretize fast path is IN SCOPE** (Q4.5). The ~0.9 ms/step floor is
-   `_build_view_6max` (0.64 ms) + `discretize` (0.10–0.24 ms) doing O(n) Python ops
-   over the ~9,803-element fullgame `legal_actions()` — **not** the regex parse
-   (0.008 ms; the earlier attribution was wrong, corrected in the design doc).
-   Build `src/nlhe/fast_view.py`: exploit the sorted-ascending `legal_actions()`
-   (head/tail `min_bet`/`max_bet`, bisect membership), call `legal_actions()` once
-   shared between view and discretize, with field-identical output to the canonical
-   path. Gate ≤ 0.30 ms/step. If it lands above, apply the Q4.5(c) fallback **in
-   order** (cut L 50→30, then M 8→5, then raise X 6→8 s) and **record the chosen
-   knob in the implementation commit message.**
-4. **Q11 two-level ablation gates sub-step 2 completion.** Level 1 (leaf-only) and
-   Level 2 (decision-level via a **stub one-iteration root regret update** — itself
-   a sub-step 2 deliverable; checks BR yields a flatter / more-mixed root policy
-   than PROFILE_SAMPLE on ~50 root decisions). Level 3 (full league-v2-600 pool,
-   5,000 hands) waits until after sub-step 5.
-5. **ICM Option B** (rollout → `state.returns()` → `icm_adjust_returns`) with the
-   `is_itm()` Option-A short-circuit. **BR ties → lowest bias index.**
+## Then Stage G (Q11 Level 2, decision-level ablation)
+
+Wrap the **simplest possible CFR around the leaf evaluator: a one-iteration
+regret update at the root infoset only** (no full tree traversal). Measure hero's
+root action distribution under each leaf-eval mode across ~50 root decisions.
+Hypothesis: BR yields a flatter / more-mixed root policy than PROFILE_SAMPLE. This
+stub is a **sub-step 2 deliverable**, superseded by the real solver in sub-step 3.
+
+## B1c roadmap (post-Q13)
+
+1. **Sub-step 2 — leaf evaluator** (Stages A–E DONE; **Stage F in progress**,
+   **Stage G remains** — these gate the formal sub-step 2 close).
+2. ~~Stage E.5 — bucket-MC precompute~~ — **SHELVED (Q13)**, no longer on the path.
+3. Sub-step 3 — subgame CFR loop (replaces the Stage-G Level-2 stub).
+4. Sub-step 4 — policy extraction (hero's refined root action distribution).
+5. Sub-step 5 — SubgamePolicy wrapper (conform to `eval_pool.py` `Policy`;
+   handle the ALLIN→CALL translation below).
+6. Sub-step 6 — Level-3 pool ablation (BR vs PROFILE_SAMPLE vs blueprint),
+   the full `league-v2-600` pool × 5,000 hands (Q13: ~10.5 h at Y≈24, feasible).
 
 ## Carry-forward for sub-step 5 (SubgamePolicy)
 
@@ -63,36 +70,14 @@ Build to the approved design. Load-bearing points:
   back to a game action in that state, it must map to **CALL (1)**, not the chip-0
   fold. Do not let the alias ship a fold where the policy meant all-in.
 
-## Stage E.5 (encoder bucket-MC precompute) — MUST land before sub-step 6
-
-Stage E.5 (encoder bucket-MC precompute, design doc Q12) must land before sub-step 6
-evaluation. The slow Stage-E evaluator (`evaluate_leaves`, cache-shared) is usable
-for sub-step 3 development but won't scale to sub-step 6's pool evaluation (many
-subgame solves required): BR M=5 is ~30 s per 64-leaf tree because the encoder
-bucket-MC (10.77 ms/distinct-board) dominates. E.5 precomputes board→bucket once
-per `evaluate_leaves` (~400× target on the encoder path). The design budget Z=1.5 s
-is NOT closed until E.5 lands; lockstep network batching from the original Q4 plan
-is a non-bottleneck and was not built.
-
-## Remaining B1c roadmap
-
-1. **Sub-step 2 — leaf evaluator** (Stages A–E DONE; Stages F, G remain).
-2. Stage E.5 — encoder bucket-MC precompute (budget-closing; before sub-step 6).
-3. Sub-step 3 — subgame CFR loop (replaces the Level-2 stub with the real solver).
-4. Sub-step 4 — policy extraction (hero's refined root action distribution).
-5. Sub-step 5 — SubgamePolicy wrapper (conform to `eval_pool.py` `Policy`;
-   handle the ALLIN→CALL translation above).
-6. Sub-step 6 — Level-3 pool ablation (BR vs PROFILE_SAMPLE vs blueprint).
-
-## TRACKED DELIVERABLE — opens the session immediately after sub-step 2 closes: fold fast_view into the canonical path
+## TRACKED DELIVERABLE — fold fast_view into the canonical path (after sub-step 2 closes)
 
 Sub-step 2 ships the view/discretize optimization as a parallel `src/nlhe/fast_view.py`
-to contain blast radius (Stage A, commit below). Measured 6× faster
-(0.046 vs 0.28 ms/step) with field-identical output. The **next session after
-sub-step 2 closes opens with** folding it into the canonical
-`cfr6._build_view_6max` + `actions.discretize_legal_actions` and re-pointing all
-consumers: `traverse_6max` (TRAINING hot path), `subgame.py`, `pushfold_policy.py`,
-`scripted_bots/policy.py`, `solver.py`, `policy_adapter.py`,
+to contain blast radius (Stage A). Measured 6× faster (0.046 vs 0.28 ms/step) with
+field-identical output. After sub-step 2 closes (Stages F/G done), fold it into the
+canonical `cfr6._build_view_6max` + `actions.discretize_legal_actions` and re-point
+all consumers: `traverse_6max` (TRAINING hot path), `subgame.py`,
+`pushfold_policy.py`, `scripted_bots/policy.py`, `solver.py`, `policy_adapter.py`,
 `scripts/eval_pool.py`, `scripts/eval_6max_self_play.py`.
 
 **Acceptance for the fold-in (not optional):**
@@ -101,16 +86,18 @@ consumers: `traverse_6max` (TRAINING hot path), `subgame.py`, `pushfold_policy.p
 2. **Reproducibility against `dcfr-overnight-3000`:** run a small fixed training
    step (same seed, same data) on the blueprint *before* and *after* the swap and
    confirm the produced advantages / network outputs are identical to
-   floating-point tolerance. The CFR walker uses `_build_view_6max` on its hot
-   path, so the fold-in must not perturb training even at the bit/fp level. If
-   outputs diverge beyond tolerance, the fold-in is wrong — do not land it.
+   floating-point tolerance. If outputs diverge beyond tolerance, the fold-in is
+   wrong — do not land it.
 
-(The old "Path A parse rewrite" idea is dropped: `parse_state_6max` is 0.008 ms,
-not worth optimizing at any priority.)
+## Also still queued (unchanged by Q13)
+
+- Decide the `dcfr-overnight-3000` ICM-retrain after sub-step 6 measures the
+  practical impact of the busted-seat bias (`ae8e1b5`).
 
 ## Docs map
 
-- `docs/SUBGAME_LEAF_DESIGN.md` — the approved sub-step 2 design (read first).
-- `docs/sessions/session_13_summary.md` — this session.
+- `docs/SUBGAME_LEAF_DESIGN.md` — the sub-step 2 design + Q13 resolution (read first).
+- `docs/STAGE_E_BUDGET_REDERIVATION.md` — full Q13 budget reasoning + measurements.
+- `docs/sessions/session_16_summary.md` — most recent session (Q13).
 - `docs/sessions/README.md` — the per-session-summary convention.
 - `docs/STATUS.md` — current snapshot. `docs/DECISIONS.md` — locked choices.
