@@ -157,6 +157,11 @@ def _worker(args) -> dict:
     hand) in the shard with each challenger (CRN: same hand seed), and returns the
     per-hand challenger contributions + per-challenger SubgamePolicy.stats() counters.
     A raised exception propagates to the parent -> the run fails (no silent drop)."""
+    # Pin intra-op threads to 1: with `workers` processes on a many-core box, torch's
+    # default unbounded intra-op pool oversubscribes (workers x ~ncores threads), and
+    # the contention dominates wall-clock. One thread/worker = no oversubscription.
+    import torch
+    torch.set_num_threads(1)
     (shard, challenger_specs, opponent_specs, abstr_path, struct_path,
      base_seed, mode, num_paid) = args
     # Abstraction is only needed by checkpoint/subgame policies; random policies don't
