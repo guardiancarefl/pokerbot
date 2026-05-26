@@ -16,7 +16,7 @@ hardware surprise: this evaluator runs **faster on CPU than GPU** (single-row
 `[64,64]` forward is launch-bound), so a GPU pod is not required — many CPU cores
 are what help. Full reasoning: `docs/STAGE_E_BUDGET_REDERIVATION.md`.
 
-## Where the project stands (start of session 21)
+## Where the project stands (start of session 22)
 
 B1c (depth-limited subgame solving):
 
@@ -59,33 +59,85 @@ B1c (depth-limited subgame solving):
   f≈0.27) → SKIP/SOLVE → degraded→blueprint. Two foundational findings caught + fixed
   (chance-leaf parse crash `03576eb`; tree-builder leaf explosion `9ff106d`). Per-solve
   ~6.7 s blended; sub-step-6 ~3.8 h Contabo-parallel — feasible.
-- **Path: Path A (confirmation-first). Sub-steps 2–5 are CLOSED.** Next is sub-step 6.
+- **Sub-step 6 — Stages 6-A & 6-B LANDED, 6-C smoke validated** (session 21,
+  `455df14`→`b0dfa11`; `scripts/eval_pool_ablation.py`, `docs/SUBSTEP_6_DESIGN.md`,
+  `docs/sessions/session_21_summary.md`). Parallel CRN harness (per-hand SHA256 seeding,
+  worker-count bit-identity, fail-loud), 3-challenger CLI, locked four-branch verdict.
+  6-C smoke: 492 s, gate 0.31/0.32, 0 degraded, FAIL=noise-as-predicted at 100 hands.
+- **Path: Path A (confirmation-first). Sub-steps 2–5 CLOSED; sub-step 6 harness ready.**
+  Next is **Stage 6-D — the real run + verdict.**
 
-## Current deliverable — Sub-step 6 (Level-3 pool ablation: the strength go/no-go)
+## Current deliverable — Stage 6-D (the real Level-3 eval run + verdict)
 
-Measure the strength delta from subgame solving: three challengers — **subgame-BR**
-(`SubgamePolicy(leaf_mode=BEST_RESPONSE)`), **subgame-PROFILE**
-(`leaf_mode=PROFILE_SAMPLE`), and **blueprint** (plain `CheckpointPolicy`) — over the
-`league-v2-600` pool × 5,000 hands/matchup, reporting the ICM-equity-delta diff ± σ.
-Success criterion (Q11 Level 3): subgame-BR ≥ subgame-PROFILE ≥ blueprint with the
-**BR-vs-blueprint gap σ > 2**; if BR doesn't beat PROFILE by more than noise, revert
-to PROFILE (or revisit α/k).
+The harness is built and validated. Stage 6-D runs the full 3-way ablation at scale and
+applies the **locked verdict** mechanically. **Run on a QUIET box, under `tmux`, with NO
+concurrent compute** (the carried-over contention discipline — session 21 lost a clean
+timing read to a concurrent job).
 
-**Two load-bearing prerequisites / context (do NOT skip):**
-1. **`eval_pool.py` is SEQUENTIAL** — the ~3.8 h Contabo-parallel projection assumes
-   **hand-level multiprocessing** (independent hands/matchups, each with its own
-   `SubgamePolicy`). Sub-step 6 must add this wrapper or the run is ~38 h+ sequential.
-2. **REGIME ASYMMETRY (interpretation).** Deployment is **98% preflop**; chance leaves
-   are blueprint-only / 88% bias-inactive; round-closing solves are shallow. So the BR
-   architecture's measurable lift in deployment concentrates in the **minority of
-   chance-free decision-bearing solves** — a **different mix** than Stage F/G measured
-   (+3.4σ / +3.07σ). Sub-step 6's bb/100 may be **substantially below** the naive Stage
-   F/G projection. This is not a defect; read the number through this lens. Full
-   reasoning: `docs/SUBSTEP_5_DESIGN.md` Stage-5-C closure.
+**Procedure (in order):**
+
+1. **Verify quiet-box state.** No other heavy jobs (`ps`/`top`); on shared infra,
+   confirm no other tenant is hammering CPU. The per-solve cost is CPU-bound and
+   contention doubles it.
+
+2. **Re-measure per-solve on the quiet box** (the 13.7 h vs 5.8 h question). Quick:
+   ```
+   python -m scripts.eval_pool_ablation \
+     --blueprint-ckpt runs/six_max_20260524_014344_phase4f_dcfr_linear_overnight/checkpoints/ckpt_iter_3000.pt \
+     --abstraction runs/abstraction_20260521_223018/abstraction.pkl \
+     --opponents dcfr-shake-200=runs/six_max_20260524_005853_phase4f_dcfr_linear_shakedown/checkpoints/ckpt_iter_0200.pt \
+     --hands 100 --workers <cpu-2> --base-seed 7 --output evals/subgame_6d_calibration.json
+   ```
+   - **If ≈ design (~5 s/solve, smoke ≈ 250–300 s at workers≈10 → 6-D ≈ 5.8 h at Y=10):**
+     launch full-scale, expect a ~6 h window.
+   - **If ≈ box-loaded (~10 s/solve, smoke ≈ 490 s → 6-D ≈ 13.7 h at Y=10):** still
+     launch, but plan the longer window (or use a many-core box: ~5.7 h at Y=24).
+
+3. **Launch the real run** (5,000 hands × 5 opponents × 3 challengers) under `tmux`:
+   ```
+   python -m scripts.eval_pool_ablation \
+     --blueprint-ckpt runs/six_max_20260524_014344_phase4f_dcfr_linear_overnight/checkpoints/ckpt_iter_3000.pt \
+     --abstraction runs/abstraction_20260521_223018/abstraction.pkl \
+     --opponents \
+       vanilla-200=runs/six_max_20260523_224646_phase4f_overnight/checkpoints/ckpt_iter_0200.pt \
+       vanilla-400=runs/six_max_20260523_224646_phase4f_overnight/checkpoints/ckpt_iter_0400.pt \
+       dcfr-shake-100=runs/six_max_20260524_005853_phase4f_dcfr_linear_shakedown/checkpoints/ckpt_iter_0100.pt \
+       dcfr-shake-200=runs/six_max_20260524_005853_phase4f_dcfr_linear_shakedown/checkpoints/ckpt_iter_0200.pt \
+       dcfr-overnight-600=runs/six_max_20260524_014344_phase4f_dcfr_linear_overnight/checkpoints/ckpt_iter_0600.pt \
+     --hands 5000 --workers <cpu-2> --base-seed 2026 \
+     --output evals/subgame_ablation_v1_5000.json
+   ```
+   These are the **baseline `league-v2-600` pool's 5 opponents**, paths verified present
+   (vanilla-200/400 from `eval_overnight.sh`; dcfr-shake-100/200 + dcfr-overnight-600
+   from `configs/league/registry.json`). Monitoring: the CLI prints a header then the
+   final verdict; `tail` the tmux pane / the run's stdout. No per-matchup progress log
+   yet — if a progress heartbeat is wanted, add one before launch (small).
+
+4. **Apply the LOCKED verdict** (computed automatically by the harness; in
+   `docs/SUBSTEP_6_DESIGN.md` Decision 6.3, on the CRN-paired lift in ICM-equity-delta):
+   - **PASS:** L ≥ +0.005 AND σ(L) ≥ 2.0 AND ordering BR ≥ PROFILE ≥ blueprint AND
+     σ(L_BRvsP) ≥ 1.5.
+   - **SUBSTANTIVE_PASS:** L ≥ +0.002 AND σ(L) ≥ 1.5 AND ≥ 4/5 opponents positive AND
+     σ(L_BRvsP) ≥ 1.5.
+   - **PASS_BR_EQUIVALENT_TO_PROFILE:** BR-vs-blueprint passes strict/substantive but
+     σ(L_BRvsP) < 1.5 → recommend PROFILE for production.
+   - **AMBIGUOUS:** L > 0 but σ(L) < 1.5 OR L < +0.002 → re-run with more hands.
+   - **FAIL:** L ≤ 0 → surface for diagnosis (Path A), do not lock.
+   Read off mechanically; do **not** retune thresholds to the result.
+
+**REGIME-ASYMMETRY LENS (load-bearing for interpretation).** Deployment is **98%
+preflop**; chance leaves are blueprint-only / 88% bias-inactive; round-closing solves
+are shallow. The BR lift concentrates in the **minority of chance-free decision-bearing
+solves** — a different mix than Stage F/G's +3.4σ / +3.07σ. **The measured ICM-equity-
+delta lift is expected ~+0.002 to +0.005, NOT a Stage-F/G-scaled large effect.**
+SUBSTANTIVE_PASS (+0.002) is genuine validation; PASS (+0.005) is strong; AMBIGUOUS
+(positive, σ<1.5) means the architecture lifts in a smaller regime than projected — a
+real finding, not a failure. Full reasoning: `docs/SUBSTEP_5_DESIGN.md` Stage-5-C
+closure.
 
 The full stack (build_subgame_tree → evaluate_leaves → solve_subgame → extract_action
-→ SubgamePolicy) routes through `eval_pool` unchanged; `summarize_solve_result` and
-`SubgamePolicy.stats()` are available for per-matchup diagnostics.
+→ SubgamePolicy) routes through `eval_pool_ablation` unchanged; `summarize_solve_result`
+and `SubgamePolicy.stats()` (in the JSON) supply per-challenger diagnostics.
 
 ## Ablation gate reference (Stages F & G methodology, for sub-step 3 / Level 3 to reuse)
 
@@ -113,9 +165,12 @@ for the resolution-intractable-but-aggregate-confirmed case this SNG produces:
    `extract_action`, ALLIN→CALL alias).
 5. **Sub-step 5 — SubgamePolicy wrapper — CLOSED** (session 20, `6ab60be`→`9ff106d`;
    + chance-leaf fix `03576eb` and tree-builder cost mitigation `9ff106d`).
-6. **Sub-step 6 — Level-3 pool ablation (BR vs PROFILE_SAMPLE vs blueprint) — NEXT.**
-   `league-v2-600` × 5,000 hands; ~3.8 h Contabo-parallel at the measured ~6.7 s/solve
-   and f≈0.27 — needs hand-level multiprocessing (eval_pool is sequential).
+6. **Sub-step 6 — Level-3 pool ablation (BR vs PROFILE_SAMPLE vs blueprint).**
+   Harness LANDED + validated (Stages 6-A/6-B, session 21, `455df14`→`b0dfa11`;
+   `scripts/eval_pool_ablation.py` — hand-level multiprocessing, CRN, locked verdict;
+   6-C smoke clean at 492 s). **NEXT: Stage 6-D — the real run + verdict** (5,000 hands ×
+   5 opponents × 3 challengers; ~5.8–13.7 h at Y=10, re-measure per-solve on a quiet box
+   first). See "Current deliverable — Stage 6-D" above.
 
 ## Carry-forward for sub-step 5 (SubgamePolicy)
 
