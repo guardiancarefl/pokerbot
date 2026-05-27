@@ -28,20 +28,21 @@ Mirrors the HUNL pattern with these intentional 6-max-specific differences:
      consumers select it over the regret-matched current strategy on v2
      checkpoints (Step E).
 
-  3. No DCFR weighting yet. Vanilla CFR (uniform sample weights). DCFR
-     for 6-max is mechanical to add once the baseline trains and we see
-     a baseline trajectory.
+  3. DCFR weighting wired in. _dcfr_weights (cfr_variant vanilla|linear|
+     discounted) applies to both advantage-net (line ~393) and strategy-
+     net (line ~444) training. The dcfr-overnight-3000 baseline used
+     cfr_variant="linear", dcfr_exponent=1.0.
 
   4. No archetype mix yet. Archetype framework (src/nlhe/archetypes.py)
      uses HUNL-specific position derivation; porting to 6-max is a
      separate subphase.
 
-  5. Uniform starting stacks per traversal. Real SNG hands have evolving
-     stacks across hands. First-cut 6-max training treats every traversal
-     as a fresh hand with equal stacks ([cfg.starting_stack] * 6). ICM
-     transformation still computes correctly per terminal, but the bot
-     won't see bubble-pressure asymmetry from differing stacks. Stack
-     distribution sampling is its own future subphase.
+  5. Tournament-aware stack sampling wired in. When tournament_structure_
+     path is set, stack_sampler.sample_starting_state supplies per-traversal
+     stacks/blind-level/dealer (lines ~518-551) and ICM uses the sampled
+     stacks. The uniform [cfg.starting_stack] * 6 path remains as the
+     fallback when tournament_structure is unset (e.g. six_max_smoke for
+     development).
 
   6. Regrets NOT divided by starting_stack (see cfr6.py docstring): ICM
      utilities are already on O(1) equity scale.

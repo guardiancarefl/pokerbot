@@ -38,43 +38,56 @@ Step 4 opens with.
 - ✓ **Step 1 — Sub-step 6 close** (`0bbdb86`) — PASS_BR_EQUIVALENT_TO_PROFILE; ship PROFILE_SAMPLE.
 - ✓ **Step 2 — fast_view fold-in** (`4046caf`) — canonical `_build_view_6max` + `discretize_legal_actions` delegate to `fast_view`; training output bit-identical.
 - ✓ **Step 3 — Strategy net for 6-max** (`78917f8` + `e144092`) — single shared strat net, v2 checkpoint schema, two-tier load, two-signal SubgamePolicy.
-- → **Step 4 — Stack-distribution sampling** — *next pickup* (see §5).
-- **Step 5 — Archetype mix for 6-max** — port HUNL archetype framework (position derivation for all 6 seats).
-- **Step 6 — League v2 config + execution.**
-- **Step 7 — Multi-day production blueprint training** (24–72h GPU) — produces the v2-era checkpoints; must beat `dcfr-overnight-3000` head-to-head.
-- **Step 8+ — Within-match observation framework, Slumbot HUNL bridge, 42 shanky bots.**
+- ✓ **Step 4 — Stack-distribution sampling** — discovered already in production (commit `4739c1a`, 2026-05-23). See the DECISIONS.md audit entry dated 2026-05-27.
+- → **Step 5 — Archetype mix for 6-max** — genuinely open (HUNL code exists in `archetypes.py`, not ported to `solver6`/`cfr6` training loop). See §4.
+- **Step 6 — REVISED.** League play infrastructure already exists; league-v2 config exists; a 900-iter shakedown was completed (`league-v2-600` in active eval-pool use). The remaining league work is now bundled into step 7's production training run as v2-schema league play (the existing shakedown is v1-schema).
+- **Step 7 — Multi-day production blueprint training** (24–72h GPU). Trains v2-schema (strategy net) blueprint with archetype mix + league play at production scale. THIS is the meaningful capstone of Scenario 3; must beat `dcfr-overnight-3000` head-to-head.
+- **Step 8+ — Within-match observation framework (Layer 4), Slumbot HUNL bridge, 42 shanky bots integration.**
 
-**3 of 7 core steps complete.**
+**3 of 7 core steps complete; Step 4 found already-done in production. Genuinely-open implementation work: Steps 5 and 7 (Step 6 folds into 7).**
 
 ---
 
-## 4. Step 4 design surface (what Session 23 opens with)
+## 3.5 Naming clarification: "v2" is overloaded
 
-**Goal:** replace the uniform `[cfg.starting_stack] * 6` per-traversal stacks with
-sampled stack distributions representing real mid-tournament states (chip leader,
-short stack, bubble asymmetry). This is **deferral #4** of the Session-9
-"6-max blueprint training: minimum-viable first cut" entry (`docs/DECISIONS.md:339`;
-deferral #1 was resolved this session, #2 DCFR / #3 archetypes still open).
+- **"League v2"** = the second league config (vs league v1). Currently means
+  `configs/six_max_phase4f_dcfr_league_v2.yaml`, the 900-iter shakedown's config.
+- **"v2-schema" / "v2_with_strategy"** = the strategy-net checkpoint schema
+  introduced in commit `78917f8` (Session 22).
+
+These are unrelated. The existing league-v2 shakedown is a v1-schema run (it predates
+the strategy net by 3 days). Step 7's "produces v2-schema checkpoints with league
+play" means strategy-net schema + league mechanism, not "league v3."
+
+---
+
+## 4. Step 5 design surface (what Session 23 opens with)
+
+**Goal:** port the HUNL archetype framework (`src/nlhe/archetypes.py` — maniac, nit,
+station, LAG) into 6-max training. Currently 6-max gets opponent diversity from the
+league pool + `scripted_bots/`, but the in-traversal archetype framework that forces
+the bot to see specific style profiles during training has never been ported from HUNL.
 
 **Design questions outstanding — each needs a decision before code:**
 
-- **(a) Distribution shape:** uniform-over-plausible / late-stage-weighted /
-  empirical-trajectory / hybrid.
-- **(b) Sampling cadence:** per-traversal / per-iteration / per-N-iterations.
-- **(c) Constraints:** reachable-state-only or unconstrained positive 6-vector
-  (sum = 6 × starting_stack, or free?).
-- **(d) ICM payout interaction:** does the existing `src/nlhe/icm.py` handle
-  arbitrary positive 6-vectors, or does it need updating? (Recon item.)
-- **(e) Acceptance gate:** **no bit-identity** — we are changing the stack
-  distribution by design, so the advantage-net trajectory *will* change. The gate
-  is "training still converges sensibly" (loss trajectory healthy, no divergence)
-  **plus** a head-to-head: stack-sampled training vs the uniform-stack baseline.
+- **(a) Dispatch granularity:** where archetype dispatch happens in
+  `cfr6.traverse_6max` — at root (whole hand is one archetype) or per-seat (each opp
+  seat may have a different archetype)?
+- **(b) Archetype mix ratio:** what fraction of training hands use archetype opponents
+  vs pure self-play (HUNL precedent + SESSION_LOG findings suggest 0.2–0.7; at mix=1.0
+  the strategy buffer never fills — `DECISIONS.md:216`).
+- **(c) Strategy-buffer interaction:** archetype decisions must NOT be written to the
+  strategy buffer (that would teach imitation of the archetype rather than the bot's
+  own policy). Load-bearing constraint mirroring HUNL `solver.py:316-318`.
+- **(d) ICM-awareness:** do the HUNL archetypes need any adjustment for 6-max ICM
+  dynamics (chip-EV vs equity-EV decisions)?
+- **(e) Acceptance gate:** bit-identity gate for the pure-self-play path (when
+  `archetype_mix=0.0`, behavior is unchanged); functional gate for the archetype path
+  (archetypes act per their style, strategy buffer fills correctly).
 
-**Open with a read-only recon prompt** (drafted in the Session-22 transcript):
-inspect `state6.py` / stack-handling in `solver6.py`, `icm.py`'s 6-vector support,
-the config knobs (`TrainConfig6Max`), and any prior art (`sample_starting_state`
-already exists in `scripts/eval_6max_self_play.py` / `eval_pool.py` for eval-time
-state sampling — check whether it's reusable for training-time stack sampling).
+**Recon-first opener:** read `src/nlhe/archetypes.py` and the HUNL `solver.py` wiring
+(around line 316), then map the modification surface in `solver6.py` /
+`cfr6.traverse_6max`.
 
 ---
 
@@ -109,8 +122,12 @@ state sampling — check whether it's reusable for training-time stack sampling)
 - **Bit-identity acceptance gate** via fixed-seed smoke training + tensor-hash
   extraction is the load-bearing safety net for any change in the training hot
   path. Use again for archetype-mix integration (Step 5) if it touches
-  `cfr6.traverse_6max`. (Note: Step 4 deliberately changes the trajectory, so it
-  uses the convergence + head-to-head gate instead — see §4(e).)
+  `cfr6.traverse_6max`. (Note: Some Scenario 3 steps deliberately change the
+  training trajectory by design — e.g. Step 5's archetype-mix path. For those,
+  the bit-identity gate applies only to the pure-self-play branch where
+  archetype_mix=0.0 is bit-equivalent to the prior implementation; the archetype
+  path itself uses a functional gate. See §4(e) for the Step 5 specific
+  acceptance gate.)
 - **`.copy()` on numpy arrays before buffer writes** is non-negotiable (the
   strategy write mirrored the adv-buffer convention).
 - **Independent RNG instances for new buffers** prevent unintended perturbation of
