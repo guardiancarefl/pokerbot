@@ -28,6 +28,7 @@ from dataclasses import dataclass, field
 import numpy as np
 import pyspiel
 import pytest
+import torch
 
 from src.nlhe.cfr6 import (
     CFR6MaxContext,
@@ -483,3 +484,83 @@ def test_traverse_with_real_abstraction(real_abstraction, fresh_game):
     assert isinstance(v, float)
     assert -3.0 <= v <= 3.0
     assert len(nets.buffer_for(0)) > 0
+
+
+# ===== Strategy-net writes (v2 schema, Phase C) =====
+
+
+def _hash_adv_buffers(policy_nets) -> str:
+    """Stable hash of all 6 advantage buffers' contents (features, targets,
+    legal_masks, iters, n_seen). Used to assert the advantage trajectory is
+    unaffected by strategy writes."""
+    h = hashlib.sha256()
+    for seat in range(NUM_SEATS_6MAX):
+        b = policy_nets.buffer_for(seat)
+        h.update(str(b.n_seen).encode())
+        h.update(str(len(b)).encode())
+        for arr in b.features:
+            h.update(np.ascontiguousarray(arr).tobytes())
+        for arr in b.targets:
+            h.update(np.ascontiguousarray(arr).tobytes())
+        for arr in b.legal_masks:
+            h.update(np.ascontiguousarray(arr).tobytes())
+        h.update(np.asarray(b.iters, dtype=np.int64).tobytes())
+    return h.hexdigest()
+
+
+def test_strat_buffer_fills_during_traversal(fresh_game, ctx_double_up):
+    """Non-traverser opp-node visits write the bot's current policy to the
+    shared strategy buffer. After traversals across all seats it's non-empty."""
+    assert len(ctx_double_up.policy_nets.strat_buffer) == 0
+    rng = random.Random(2026)
+    for trav in range(NUM_SEATS_6MAX):
+        state = fresh_game.new_initial_state()
+        traverse_6max(state, traversing_player=trav, ctx=ctx_double_up, rng=rng)
+    # Every traversal samples 5 opponent seats, so opp nodes are guaranteed.
+    assert len(ctx_double_up.policy_nets.strat_buffer) > 0
+
+
+def test_advantage_buffer_bit_identical_with_strategy_writes(fresh_game):
+    """Strategy writes are a pure side-effect: the advantage buffers are
+    bit-identical whether or not the opp-node strategy write executes. This is
+    the unit-level lock on the F1 advantage-net bit-identity gate — it proves
+    the write neither consumes the traversal rng nor reorders existing draws."""
+
+    def run(disable_strat_write: bool) -> str:
+        # Seed torch's GLOBAL rng identically for both runs so the two
+        # containers get identical net initialization — otherwise the second
+        # run() would start net-init from an advanced global-rng state and the
+        # advantage nets would differ for a reason unrelated to the strategy
+        # write. (The production F1 gate seeds torch via train_6max.)
+        torch.manual_seed(1234)
+        pn = PlayerNetworks6Max(
+            input_dim=236, hidden=[32, 32], buffer_capacity=10_000,
+            rng=random.Random(2026), strat_rng=random.Random(99), device="cpu",
+        )
+        if disable_strat_write:
+            # Simulate the pre-edit code path: the strategy write is a no-op.
+            pn.strat_buffer.add = lambda *a, **k: None
+        ctx = CFR6MaxContext(
+            policy_nets=pn,
+            encoder=InfosetEncoder6Max(
+                abstraction=_StubAbstraction(),
+                starting_stack=STARTING_STACK,
+                max_bucket_dim=200,
+                bucket_runouts=50,
+            ),
+            starting_stacks=[STARTING_STACK] * NUM_SEATS_6MAX,
+            payouts=sng_payouts_6max_double_up(buy_in=1.0),
+            iteration=0,
+        )
+        rng = random.Random(7)
+        for trav in range(NUM_SEATS_6MAX):
+            state = fresh_game.new_initial_state()
+            traverse_6max(state, traversing_player=trav, ctx=ctx, rng=rng)
+        return _hash_adv_buffers(pn)
+
+    with_writes = run(disable_strat_write=False)
+    without_writes = run(disable_strat_write=True)
+    assert with_writes == without_writes, (
+        "advantage buffers diverged when the strategy write was toggled — "
+        "the write is NOT a pure side-effect (RNG-neutrality broken)"
+    )

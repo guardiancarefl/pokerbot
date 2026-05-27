@@ -97,6 +97,11 @@ class SubgamePolicy:
             legal_mask[int(da)] = 1.0
         feat = np.asarray(self.solver.encoder.encode_from_parsed(parsed, rng=rng),
                           dtype=np.float32)
+        # TWO-SIGNAL design (Step E): the GATE stays on the adv-net RM+ policy
+        # regardless of checkpoint schema, preserving sub-step-6 gate calibration
+        # (f≈0.27). The PLAYED action goes through inference_policy, which uses
+        # the v2 strategy net when available. Gate = WHEN to solve; inference =
+        # WHAT to play. Do NOT route this read through inference_policy.
         adv = np.asarray(self.solver.policy_nets.predict_advantages(cp, feat),
                          dtype=np.float32)
         probs = _strategy_from_advantages(adv, legal_mask)  # RM+ masked blueprint policy

@@ -391,3 +391,143 @@ def test_checkpoint_dir_autocreate_during_train(tiny_config, fresh_game, stub_ab
     assert ckpt_dir.exists()
     ckpts = list(ckpt_dir.glob("ckpt_iter_*.pt"))
     assert len(ckpts) == 2, f"expected 2 checkpoints, found {len(ckpts)}: {ckpts}"
+
+
+# ===== Strategy net (v2 schema, Step D) =====
+
+
+def test_strategy_loss_descends_over_iterations(tiny_config, fresh_game, stub_abstraction):
+    """Over 50 iterations the shared strategy net's KL loss trends down."""
+    cfg = TrainConfig6Max(**{**tiny_config.__dict__, "n_iterations": 50})
+    solver = _make_solver(fresh_game, stub_abstraction, cfg)
+    metrics = solver.train()
+    finite = [x for x in metrics["strat_loss"] if not np.isnan(x)]
+    assert len(finite) >= 2, "strategy net never trained (buffer never reached batch_size)"
+    assert finite[-1] < finite[0], (
+        f"strategy loss did not descend: first={finite[0]:.4f} last={finite[-1]:.4f}"
+    )
+
+
+def test_strategy_output_sums_to_one_on_legal_mask(tiny_config, fresh_game, stub_abstraction):
+    """The strategy net's masked softmax is a valid distribution over the legal
+    actions (sums to 1, zero on illegal) — holds for any weights, no training."""
+    from src.nlhe.networks6 import N_DISCRETE_ACTIONS
+    solver = _make_solver(fresh_game, stub_abstraction, tiny_config)
+    legal = (0, 1, 6)  # FOLD, CALL, ALLIN
+    feat = torch.zeros(1, 236)
+    mask = torch.zeros(1, N_DISCRETE_ACTIONS)
+    for i in legal:
+        mask[0, i] = 1.0
+    with torch.no_grad():
+        logits = solver.policy_nets.strat_net(feat.to(solver.device))
+    logits = logits - logits.max(dim=1, keepdim=True).values
+    exp_l = torch.exp(logits) * mask.to(solver.device)
+    probs = (exp_l / exp_l.sum(dim=1, keepdim=True).clamp(min=1e-8)).cpu().numpy()[0]
+    assert abs(probs[list(legal)].sum() - 1.0) < 1e-5, f"legal sum {probs[list(legal)].sum()}"
+    illegal = [i for i in range(N_DISCRETE_ACTIONS) if i not in legal]
+    assert all(probs[i] == 0.0 for i in illegal), "illegal action has nonzero prob"
+
+
+def test_strategy_output_differs_from_regret_matched(tiny_config, fresh_game, stub_abstraction):
+    """The strategy net learns a policy distinct from the current regret-matched
+    strategy off the advantage net — otherwise there'd be no point training it."""
+    from src.nlhe.solver import _strategy_from_advantages
+    cfg = TrainConfig6Max(**{**tiny_config.__dict__, "n_iterations": 50})
+    solver = _make_solver(fresh_game, stub_abstraction, cfg)
+    solver.train()
+    buf = solver.policy_nets.strat_buffer
+    assert len(buf) >= 8
+    feats, targets, masks, iters = buf.sample_batch(min(32, len(buf)))
+    # Strategy-net masked-softmax policy on these infosets.
+    with torch.no_grad():
+        logits = solver.policy_nets.strat_net(feats.to(solver.device))
+    logits = logits - logits.max(dim=1, keepdim=True).values
+    exp_l = torch.exp(logits) * masks.to(solver.device)
+    strat_probs = (exp_l / exp_l.sum(dim=1, keepdim=True).clamp(min=1e-8)).cpu().numpy()
+    # Regret-matched CURRENT strategy from the seat-0 advantage net, same infosets.
+    feats_np = feats.cpu().numpy()
+    masks_np = masks.cpu().numpy()
+    rm = np.array([
+        _strategy_from_advantages(
+            solver.policy_nets.predict_advantages(seat=0, features=feats_np[i]),
+            masks_np[i],
+        )
+        for i in range(feats_np.shape[0])
+    ])
+    l1 = np.abs(strat_probs - rm).sum(axis=1)
+    assert l1.max() > 0.05, (
+        f"strategy net output indistinguishable from regret-matched "
+        f"(max L1 {l1.max():.4f}) — strategy net may not be learning a distinct policy"
+    )
+
+
+def test_checkpoint_v2_save_load_roundtrip(tiny_config, fresh_game, stub_abstraction, tmp_path):
+    """Non-slim v2 checkpoint roundtrips the strategy net params + buffer."""
+    solver1 = _make_solver(fresh_game, stub_abstraction, tiny_config)
+    solver1.train()
+    assert len(solver1.policy_nets.strat_buffer) > 0
+    ckpt = tmp_path / "v2.pt"
+    solver1.save_checkpoint(ckpt)  # non-slim
+
+    cfg2 = TrainConfig6Max(**{**tiny_config.__dict__, "seed": tiny_config.seed + 1000})
+    solver2 = _make_solver(fresh_game, stub_abstraction, cfg2)
+    solver2.load_checkpoint(ckpt)
+
+    # Strategy net params bit-identical.
+    for a, b in zip(solver1.policy_nets.strat_net.parameters(),
+                    solver2.policy_nets.strat_net.parameters()):
+        assert (a - b).abs().max().item() == 0.0, "strat_net params not bit-identical"
+    # Strategy buffer contents match.
+    sb1, sb2 = solver1.policy_nets.strat_buffer, solver2.policy_nets.strat_buffer
+    assert len(sb1) == len(sb2) > 0
+    assert sb1.n_seen == sb2.n_seen
+    for f1, f2 in zip(sb1.features, sb2.features):
+        assert np.array_equal(f1, f2)
+    for t1, t2 in zip(sb1.targets, sb2.targets):
+        assert np.array_equal(t1, t2)
+    assert sb1.iters == sb2.iters
+
+
+def test_checkpoint_slim_drops_strat_buffer(tiny_config, fresh_game, stub_abstraction, tmp_path):
+    """Slim checkpoint carries no buffer contents (adv or strat); load is clean."""
+    solver = _make_solver(fresh_game, stub_abstraction, tiny_config)
+    solver.train()
+    assert len(solver.policy_nets.strat_buffer) > 0
+    ckpt = tmp_path / "slim.pt"
+    solver.save_checkpoint(ckpt, slim=True)
+
+    d = torch.load(ckpt, weights_only=False)
+    assert "strat_buffer" not in d
+    assert "buffers" not in d
+
+    cfg2 = TrainConfig6Max(**{**tiny_config.__dict__, "seed": tiny_config.seed + 1000})
+    solver2 = _make_solver(fresh_game, stub_abstraction, cfg2)
+    solver2.load_checkpoint(ckpt)  # must not raise
+    assert len(solver2.policy_nets.strat_buffer) == 0
+
+
+def test_v1_solver_load_succeeds(tiny_config, fresh_game, stub_abstraction, tmp_path):
+    """REVISED (Step E): a v1-shape checkpoint (policy_nets payload lacking
+    schema_version, and no strategy buffer — a genuine pre-strategy-net save)
+    LOADS at the solver level without raising. Advantage nets are restored, the
+    container is marked v1, and the strategy net is left fresh. The refusal moved
+    from the load boundary to deployment (inference_policy)."""
+    solver = _make_solver(fresh_game, stub_abstraction, tiny_config)
+    solver.train()
+    ckpt = tmp_path / "downgraded_v1.pt"
+    solver.save_checkpoint(ckpt)
+    # Downgrade to a genuine v1 shape: strip schema_version + the strategy buffer.
+    d = torch.load(ckpt, weights_only=False)
+    del d["policy_nets"]["schema_version"]
+    d.pop("strat_buffer", None)
+    torch.save(d, ckpt)
+
+    cfg2 = TrainConfig6Max(**{**tiny_config.__dict__, "seed": tiny_config.seed + 1000})
+    solver2 = _make_solver(fresh_game, stub_abstraction, cfg2)
+    solver2.load_checkpoint(ckpt)  # must NOT raise
+    assert solver2.policy_nets.loaded_schema_version == "v1"
+    # Advantage nets restored bit-identically from the v1 checkpoint.
+    for seat in range(NUM_SEATS_6MAX):
+        for a, b in zip(solver.policy_nets.net_for(seat).parameters(),
+                        solver2.policy_nets.net_for(seat).parameters()):
+            assert (a - b).abs().max().item() == 0.0, f"seat {seat} adv params not restored"

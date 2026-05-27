@@ -20,9 +20,11 @@ What this module IS:
 
 What this module IS NOT:
   - A training loop. That's Phase 4e.3c.
-  - A strategy / average-policy net. PlayerNetworks6Max only carries
-    advantage nets right now; average-strategy approximation comes in
-    a later 4e.3 sub-phase.
+  - A strategy-net trainer or deployment path. PlayerNetworks6Max now carries
+    a single shared strategy net + buffer (v2 schema); this module WRITES
+    strategy samples into that buffer at non-traverser opp nodes (see note 6),
+    but training the net and serving the average policy live in the solver
+    (solver6.py) and the deployment consumers.
   - A subgame solver (B1) or within-match adaptation (C1).
   - HUNL-compatible. HUNL has its own solver.py and infoset.py.
 
@@ -56,9 +58,15 @@ Important correctness notes (re-read before modifying):
      normalization. HUNL needed the divide because chip-EV regrets ran into
      the thousands.
 
-  6. Sample addition is restricted to the traverser's buffer at the
-     traverser's own decision nodes. Opponent nodes write nothing to any
-     buffer in this module — that's the future strategy-net's job, not 4e.3b's.
+  6. Regret samples are added to the traverser's advantage buffer at the
+     traverser's own decision nodes. Strategy samples (the acting seat's
+     current regret-matched policy) are ALSO written at non-traverser opp
+     nodes, into ctx.policy_nets.strat_buffer — the single shared strategy
+     buffer (v2 schema). That buffer is seeded by an INDEPENDENT rng
+     (strat_rng, Step B C2 contract), so strategy writes never perturb the
+     advantage-side rng stream: the advantage-net trajectory is bit-identical
+     to pre-strategy-net training. League-override opponents short-circuit
+     before this point and are never written (DECISIONS.md:207).
 """
 from __future__ import annotations
 
@@ -360,6 +368,23 @@ def traverse_6max(
         # Opponent node: sample ONE action from their current strategy, recurse.
         # _strategy_from_advantages guarantees strat is zero on illegal
         # actions when legal_count > 0, so the sample is always legal.
+        #
+        # Strategy-net training signal: this acting (non-traverser) seat's
+        # CURRENT regret-matched policy is the sample the shared strategy net
+        # averages over iterations (mirrors HUNL solver.py:322). RNG-NEUTRAL —
+        # reuses feat/strat/legal_mask already computed above, runs BEFORE the
+        # rng.choices sampling below, and add() draws only the INDEPENDENT
+        # strat_buffer rng (never the traversal `rng`), so the advantage-net
+        # trajectory stays bit-identical. League-override opponents short-circuit
+        # at the top of this function and never reach here, so only the bot's
+        # own self-play policy is written (DECISIONS.md:207).
+        ctx.policy_nets.strat_buffer.add(
+            feat.copy(),
+            strat.copy(),
+            legal_mask.copy(),
+            ctx.iteration,
+        )
+
         s = float(strat.sum())
         if s <= 0:
             # Defensive: this can only happen if legal_mask.sum() == 0,

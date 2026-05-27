@@ -20,10 +20,13 @@ Mirrors the HUNL pattern with these intentional 6-max-specific differences:
      seat (cycling: traverser = (it - 1) % 6). Only that seat's net trains
      per iteration. After 6 iterations, every seat has trained once.
 
-  2. No strategy net yet. PlayerNetworks6Max (4e.3a) carries only advantage
-     nets; average-strategy approximation is a Phase 4e.4 concern. At
-     deployment time the policy is the regret-matched current strategy
-     from the latest advantage net.
+  2. Strategy net trained. PlayerNetworks6Max carries a single shared strategy
+     net + buffer (v2 schema). cfr6.traverse_6max writes the acting seat's
+     current regret-matched policy to the shared buffer at non-traverser opp
+     nodes; _train_strategy_net trains the net on it each iteration (KL,
+     _dcfr_weights). The strategy net is the deployment-quality average policy;
+     consumers select it over the regret-matched current strategy on v2
+     checkpoints (Step E).
 
   3. No DCFR weighting yet. Vanilla CFR (uniform sample weights). DCFR
      for 6-max is mechanical to add once the baseline trains and we see
@@ -239,6 +242,7 @@ class DeepCFR6MaxSolver:
             learning_rate=config.learning_rate,
             buffer_capacity=config.buffer_capacity,
             rng=random.Random(config.seed + 1),
+            strat_rng=random.Random(config.seed + 100),
             device=self.device,
         )
 
@@ -397,6 +401,57 @@ class DeepCFR6MaxSolver:
         net.eval()
         return total_loss / self.cfg.train_steps_per_iter
 
+    def _train_strategy_net(self) -> float:
+        """One iteration of training the single shared strategy net.
+
+        Trains on the shared strategy buffer (samples written at non-traverser
+        opp nodes in cfr6.traverse_6max). Returns mean KL loss across
+        `train_steps_per_iter` batches, or NaN if the buffer is smaller than
+        batch_size (matches the advantage-net / HUNL convention).
+
+        Mirrors HUNL src/nlhe/solver.py::_train_strategy_net: KL between the
+        buffered regret-matched policy target and the net's masked softmax
+        (softmax-then-mask-and-renormalize), per-sample then DCFR-weighted via
+        the SAME _dcfr_weights as the advantage side (vanilla -> None ->
+        unweighted mean). ONE shared net, so no seat argument — position is in
+        the feature vector. The buffer samples via strat_rng, independent of the
+        traversal rng (Step B C2), so this never perturbs the advantage path.
+        """
+        buf = self.policy_nets.strat_buffer
+        if len(buf) < self.cfg.batch_size:
+            return float("nan")
+
+        net = self.policy_nets.strat_net
+        opt = self.policy_nets.strat_optimizer
+        net.train()
+
+        total_loss = 0.0
+        for _ in range(self.cfg.train_steps_per_iter):
+            feats, targets, masks, iters = buf.sample_batch(self.cfg.batch_size)
+            feats = feats.to(self.device)
+            targets = targets.to(self.device)
+            masks = masks.to(self.device)
+            iters = iters.to(self.device)
+
+            # Masked softmax over actions; KL(target || probs). Softmax-then-
+            # mask-and-renormalize, matching HUNL solver.py exactly.
+            logits = net(feats)
+            logits = logits - logits.max(dim=1, keepdim=True).values  # numerical stability
+            exp_l = torch.exp(logits) * masks
+            denom = exp_l.sum(dim=1, keepdim=True).clamp(min=1e-8)
+            probs = exp_l / denom
+            per_sample = -(targets * torch.log(probs + 1e-8) * masks).sum(dim=1)
+            weights = self._dcfr_weights(iters)
+            loss = (weights * per_sample).mean() if weights is not None else per_sample.mean()
+
+            opt.zero_grad()
+            loss.backward()
+            opt.step()
+            total_loss += float(loss.item())
+
+        net.eval()
+        return total_loss / self.cfg.train_steps_per_iter
+
     # ---- Training loop ----
 
     def train(
@@ -413,7 +468,9 @@ class DeepCFR6MaxSolver:
 
         Returns:
             Metrics dict with per-iteration lists: iter, time, traverser,
-            adv_loss (for the traversed seat), per-seat buffer sizes.
+            adv_loss (for the traversed seat), strat_loss (shared strategy
+            net), per-seat advantage buffer sizes, and strat_buf (shared
+            strategy buffer size).
         """
         if checkpoint_dir is not None:
             checkpoint_dir = Path(checkpoint_dir)
@@ -422,6 +479,7 @@ class DeepCFR6MaxSolver:
         start_iter = self.iteration + 1
         metrics: dict = {
             "iter": [], "time": [], "traverser": [], "adv_loss": [],
+            "strat_loss": [], "strat_buf": [],
         }
         for s in range(NUM_SEATS_6MAX):
             metrics[f"buf_{s}"] = []
@@ -495,11 +553,18 @@ class DeepCFR6MaxSolver:
             # Train the traverser's advantage net.
             adv_loss = self._train_advantage_net(traverser)
 
+            # Train the single shared strategy net on the shared strategy
+            # buffer (samples written at opp nodes during the traversals above).
+            # Mirrors HUNL ordering: strategy training follows advantage training.
+            strat_loss = self._train_strategy_net()
+
             elapsed = time.time() - t_it
             metrics["iter"].append(it)
             metrics["time"].append(elapsed)
             metrics["traverser"].append(traverser)
             metrics["adv_loss"].append(adv_loss)
+            metrics["strat_loss"].append(strat_loss)
+            metrics["strat_buf"].append(len(self.policy_nets.strat_buffer))
             for s in range(NUM_SEATS_6MAX):
                 metrics[f"buf_{s}"].append(len(self.policy_nets.buffer_for(s)))
 
@@ -507,7 +572,9 @@ class DeepCFR6MaxSolver:
                 f"iter {it:>4}/{self.cfg.n_iterations}  "
                 f"trav={traverser}  "
                 f"adv={'nan' if math.isnan(adv_loss) else f'{adv_loss:.4f}':>8}  "
+                f"strat={'nan' if math.isnan(strat_loss) else f'{strat_loss:.4f}':>8}  "
                 f"bufs=({', '.join(str(len(self.policy_nets.buffer_for(s))) for s in range(NUM_SEATS_6MAX))})  "
+                f"sbuf={len(self.policy_nets.strat_buffer)}  "
                 f"{elapsed:.1f}s"
             )
 
@@ -528,8 +595,10 @@ class DeepCFR6MaxSolver:
         """Persist solver state for bit-identical resumable training.
 
         Saves:
-          - PlayerNetworks6Max.state_dict() (all 6 nets + optimizers)
-          - per-seat buffer state (features, targets, masks, iters, n_seen, rng)
+          - PlayerNetworks6Max.state_dict() (6 advantage nets + the shared
+            strategy net + optimizers; v2 schema)
+          - per-seat advantage buffer state AND the shared strategy buffer
+            state (features, targets, masks, iters, n_seen, rng) — non-slim only
           - current iteration
           - Python RNG state + torch RNG state
           - config dict (for verification on resume)
@@ -555,6 +624,17 @@ class DeepCFR6MaxSolver:
                 }
                 for b in self.policy_nets.buffers
             ]
+            # Shared strategy buffer (C1 contract: persisted here, alongside the
+            # advantage buffers, so it respects slim mode). Same dict shape.
+            sb = self.policy_nets.strat_buffer
+            ckpt["strat_buffer"] = {
+                "features": list(sb.features),
+                "targets": list(sb.targets),
+                "legal_masks": list(sb.legal_masks),
+                "iters": list(sb.iters),
+                "n_seen": sb.n_seen,
+                "rng_state": sb.rng.getstate(),
+            }
         torch.save(ckpt, str(path))
 
     def load_checkpoint(self, path: str | Path) -> None:
@@ -581,6 +661,25 @@ class DeepCFR6MaxSolver:
                 buf.iters = list(b_data["iters"])
                 buf.n_seen = b_data["n_seen"]
                 buf.rng.setstate(b_data["rng_state"])
+
+        # Shared strategy buffer (C1). On a slim checkpoint there are no buffer
+        # contents at all (adv or strat) — leave it empty, no warning (slim
+        # contract). On a non-slim checkpoint that unexpectedly lacks it, warn.
+        if not ckpt.get("slim", False):
+            if "strat_buffer" in ckpt:
+                sb_data = ckpt["strat_buffer"]
+                sb = self.policy_nets.strat_buffer
+                sb.features = list(sb_data["features"])
+                sb.targets = list(sb_data["targets"])
+                sb.legal_masks = list(sb_data["legal_masks"])
+                sb.iters = list(sb_data["iters"])
+                sb.n_seen = sb_data["n_seen"]
+                sb.rng.setstate(sb_data["rng_state"])
+            else:
+                self.log(
+                    "Note: v2 checkpoint loaded with no strat_buffer contents — "
+                    "strategy net will train from an empty buffer."
+                )
 
         self.rng.setstate(ckpt["rng_state"])
         try:

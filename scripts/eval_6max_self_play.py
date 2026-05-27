@@ -136,27 +136,23 @@ def _sample_action_from_policy(
 
     encoded = solver.encoder.encode_from_parsed(parsed, rng=rng)
     features = np.asarray(encoded, dtype=np.float32)
-    advantages = solver.policy_nets.predict_advantages(cp, features)
 
-    # RM+ strategy: positive part of advantages, masked, normalized.
-    positive_adv = np.maximum(advantages, 0.0) * legal_mask
-    total = float(positive_adv.sum())
+    # Deployment policy distribution (masked, sums to 1 on legal). The schema
+    # dispatch lives in inference_policy: v2 checkpoints play the shared strategy
+    # net (average policy); v1 checkpoints fall back to the regret-matched
+    # current strategy off the advantage net (the legacy behavior). For the
+    # common v1 weighted case this is the identical distribution + rng.choices
+    # call as before, so sample-mode behavior is preserved.
+    policy = solver.policy_nets.inference_policy(cp, features, legal_mask)
 
     if mode == "argmax":
-        # Pick the argmax over legal discrete actions
-        masked_adv = np.where(legal_mask > 0, advantages, -np.inf)
-        chosen_da_idx = int(np.argmax(masked_adv))
-    elif total > 0.0:
-        probs = positive_adv / total
+        chosen_da_idx = int(np.argmax(policy))
+    else:
         chosen_da_idx = rng.choices(
             range(N_DISCRETE_ACTIONS),
-            weights=probs.tolist(),
+            weights=policy.tolist(),
             k=1,
         )[0]
-    else:
-        # All-zero advantages: uniform over legal discrete actions.
-        legal_indices = [int(da) for da in discrete_to_chip]
-        chosen_da_idx = rng.choice(legal_indices)
 
     da = DiscreteAction(chosen_da_idx)
     chip_action = discrete_to_chip.get(da)
