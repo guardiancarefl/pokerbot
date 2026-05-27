@@ -86,3 +86,50 @@ locked four-branch criterion mechanically. Expected route: **PROFILE-favors** (P
 > BR statistically significant; PROFILE > blueprint at σ ≥ 1.5). This is the first
 measured strength delta from subgame solving — the milestone the whole B1c line has
 built toward.
+
+## Stage 6-D — full ablation verdict
+
+- **Wall-clock: 19h29m at workers=64** (after the 126-way MooseFS metadata stall;
+  see Findings). 75,000 hands total (5000 × 5 opponents × 3 challengers, base_seed=2026).
+- **Verdict: `PASS_BR_EQUIVALENT_TO_PROFILE`** — read off mechanically per
+  `docs/SUBSTEP_6_DESIGN.md` Decision 6.3 (locked pre-data).
+- **Pooled diffs:** blueprint **+0.0331**, sg-profile **+0.0427**, sg-br **+0.0418**.
+- **Lifts:** **L(BR−blueprint) = +0.0087 σ=4.56** (subgame solving demonstrably lifts
+  strength); **L(BR−PROFILE) = −0.0009 σ=0.56** (BR not statistically distinguishable
+  from PROFILE).
+- **n_opp_positive = 5/5** — every opponent positive, per-matchup σ ranging **4.95–11.08**.
+- **ordering_ok = False** — sub-clinical: PROFILE pooled 0.0009 *above* BR, but the
+  BR-vs-PROFILE comparison is only σ=0.56, well under the 1.5σ bar. Consistent with the
+  two being indistinguishable; the flag is an artifact of the pooled point estimates, not
+  a real ordering signal.
+- **Recommendation: ship PROFILE_SAMPLE leaf-eval for production; retire BR at decision
+  time** (BR code retained for future regime testing).
+- **Diagnostic vs full-run reconciliation:** the H5 argmax-collapse mechanism is **real**
+  but **smaller in net magnitude** than the 200-hand calibration suggested. Calibration
+  read BR−PROFILE at σ=2.05 (n=193, single opponent — variance-inflated); at full power
+  (n≈4830/matchup, 5-opponent pool) the effect averages to **noise, σ=0.56**. The
+  mechanism flips individual close-EV preflop argmaxes but nets to zero across the pool.
+
+### Findings
+
+- **MooseFS metadata-contention ceiling.** workers=126 stalls — ~756 concurrent file
+  opens (126 workers × 6 checkpoints) against the MooseFS master saturate the metadata
+  server; workers=64 (~384 concurrent opens) runs cleanly. Filesystem
+  `mfs#euro.runpod.net:9421`. The concrete ceiling lives somewhere between 64 and 126;
+  future harness runs at >64 workers on this filesystem need either an in-main
+  checkpoint-load-and-broadcast refactor (load once, broadcast to workers) or empirical
+  worker-count tuning. workers=64 is the validated configuration for now.
+- **Workflow trap — `pkill -f` self-match.** `pkill -f "eval_pool_ablation"` matches its
+  own command line and SIGKILLs the wrapper shell. Use `pgrep -P <parent-PID>` identification
+  instead — never string-pattern kill on the eval command name.
+- **Schema gaps in `subgame_ablation_v1_5000.json`.** `paired_lifts` and `per_challenger`
+  blocks are empty though the verdict applied correctly internally. Worth populating for
+  downstream analysis (separate cleanup).
+- **Recurring heartbeat log not persisted.** `/tmp/heartbeat_recurring.log` never landed
+  on disk. Re-arming the heartbeat needs `--output` redirect verification before the next
+  long run.
+- **Wall-clock projection drift.** The 2–5 hour estimate became 19h29m actual.
+  Calibration-naive linear extrapolation was systematically optimistic: calibration
+  sampled preflop-heavy decisions, while the full run hit the real-game postflop
+  distribution where solves are more expensive (larger trees, deeper rollouts). Future
+  runs should benchmark on a real-distribution decision mix before projecting wall-clock.

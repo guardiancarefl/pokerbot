@@ -1,0 +1,278 @@
+{
+  "ablation": "B1c sub-step 6 \u2014 Level-3 pool ablation (3-way)",
+  "blueprint": {
+    "path": "runs/six_max_20260524_014344_phase4f_dcfr_linear_overnight/checkpoints/ckpt_iter_3000.pt",
+    "md5": "795d713ef23224c1283db512deb6761a"
+  },
+  "abstraction": "runs/abstraction_20260521_223018/abstraction.pkl",
+  "structure": "configs/ignition_double_up_6max_turbo.yaml",
+  "challengers": [
+    "blueprint",
+    "sg-profile",
+    "sg-br"
+  ],
+  "config": {
+    "hands": 5000,
+    "base_seed": 2026,
+    "workers": 64,
+    "mode": "sample",
+    "n_opponents": 5
+  },
+  "git_rev": "308b2b67a32bd2be4c0aaa65cfaf0c61037a7ac9",
+  "wall_clock_s": 70145.7,
+  "per_matchup": [
+    {
+      "challenger": "blueprint",
+      "opponent": "vanilla-200",
+      "n_hands": 4860,
+      "diff": 0.04015426776696053,
+      "stderr": 0.004572617747627085,
+      "sigma": 8.781461732242585
+    },
+    {
+      "challenger": "blueprint",
+      "opponent": "vanilla-400",
+      "n_hands": 4831,
+      "diff": 0.03202253603924152,
+      "stderr": 0.004339857259083081,
+      "sigma": 7.3787072079894145
+    },
+    {
+      "challenger": "blueprint",
+      "opponent": "dcfr-shake-100",
+      "n_hands": 4842,
+      "diff": 0.03948968451409907,
+      "stderr": 0.004302762080560084,
+      "sigma": 9.177752284402107
+    },
+    {
+      "challenger": "blueprint",
+      "opponent": "dcfr-shake-200",
+      "n_hands": 4833,
+      "diff": 0.03261129456097317,
+      "stderr": 0.004338726173509225,
+      "sigma": 7.51632927657121
+    },
+    {
+      "challenger": "blueprint",
+      "opponent": "dcfr-overnight-600",
+      "n_hands": 4848,
+      "diff": 0.021107284453041244,
+      "stderr": 0.0042639199703112815,
+      "sigma": 4.950206523576083
+    },
+    {
+      "challenger": "sg-profile",
+      "opponent": "vanilla-200",
+      "n_hands": 4860,
+      "diff": 0.054493538254733916,
+      "stderr": 0.004920012827192,
+      "sigma": 11.075893532951422
+    },
+    {
+      "challenger": "sg-profile",
+      "opponent": "vanilla-400",
+      "n_hands": 4831,
+      "diff": 0.038077079110881096,
+      "stderr": 0.004868562550693446,
+      "sigma": 7.821010557922821
+    },
+    {
+      "challenger": "sg-profile",
+      "opponent": "dcfr-shake-100",
+      "n_hands": 4842,
+      "diff": 0.049098575583877285,
+      "stderr": 0.00490250294114944,
+      "sigma": 10.015001759971538
+    },
+    {
+      "challenger": "sg-profile",
+      "opponent": "dcfr-shake-200",
+      "n_hands": 4833,
+      "diff": 0.044569229371058956,
+      "stderr": 0.004673302963363118,
+      "sigma": 9.536986949158747
+    },
+    {
+      "challenger": "sg-profile",
+      "opponent": "dcfr-overnight-600",
+      "n_hands": 4848,
+      "diff": 0.027441164529810047,
+      "stderr": 0.004735857810132501,
+      "sigma": 5.794338772397031
+    },
+    {
+      "challenger": "sg-br",
+      "opponent": "vanilla-200",
+      "n_hands": 4860,
+      "diff": 0.049793309695631734,
+      "stderr": 0.004955131167318476,
+      "sigma": 10.048837864079779
+    },
+    {
+      "challenger": "sg-br",
+      "opponent": "vanilla-400",
+      "n_hands": 4831,
+      "diff": 0.038982837876435375,
+      "stderr": 0.004921805821371079,
+      "sigma": 7.920433940560425
+    },
+    {
+      "challenger": "sg-br",
+      "opponent": "dcfr-shake-100",
+      "n_hands": 4842,
+      "diff": 0.048144690455471276,
+      "stderr": 0.004921196659788629,
+      "sigma": 9.783126703483365
+    },
+    {
+      "challenger": "sg-br",
+      "opponent": "dcfr-shake-200",
+      "n_hands": 4833,
+      "diff": 0.04453354949032298,
+      "stderr": 0.0046845862325194405,
+      "sigma": 9.506399771484658
+    },
+    {
+      "challenger": "sg-br",
+      "opponent": "dcfr-overnight-600",
+      "n_hands": 4848,
+      "diff": 0.02757939328035645,
+      "stderr": 0.004749898314501293,
+      "sigma": 5.806312357499825
+    }
+  ],
+  "pooled_diff": {
+    "blueprint": 0.033077013466863106,
+    "sg-profile": 0.042735917370072256,
+    "sg-br": 0.04180675615964356
+  },
+  "lifts": {
+    "sg-br_minus_blueprint": {
+      "lift": 0.008729476434513972,
+      "stderr": 0.0019163105913866676,
+      "sigma": 4.5553557308250365,
+      "n_hands": 24214,
+      "per_opponent": [
+        {
+          "opponent": "vanilla-200",
+          "lift": 0.00963904192867122
+        },
+        {
+          "opponent": "vanilla-400",
+          "lift": 0.00696030183719388
+        },
+        {
+          "opponent": "dcfr-shake-100",
+          "lift": 0.008655005941372215
+        },
+        {
+          "opponent": "dcfr-shake-200",
+          "lift": 0.011922254929349731
+        },
+        {
+          "opponent": "dcfr-overnight-600",
+          "lift": 0.006472108827315157
+        }
+      ],
+      "n_opponents_positive": 5
+    },
+    "sg-profile_minus_blueprint": {
+      "lift": 0.009662342126821455,
+      "stderr": 0.0019104674263276645,
+      "sigma": 5.057580146966749,
+      "n_hands": 24214,
+      "per_opponent": [
+        {
+          "opponent": "vanilla-200",
+          "lift": 0.01433927048777341
+        },
+        {
+          "opponent": "vanilla-400",
+          "lift": 0.006054543071639587
+        },
+        {
+          "opponent": "dcfr-shake-100",
+          "lift": 0.00960889106977824
+        },
+        {
+          "opponent": "dcfr-shake-200",
+          "lift": 0.011957934810085743
+        },
+        {
+          "opponent": "dcfr-overnight-600",
+          "lift": 0.006333880076768774
+        }
+      ],
+      "n_opponents_positive": 5
+    },
+    "sg-br_minus_sg-profile": {
+      "lift": -0.0009328656923075087,
+      "stderr": 0.0016686316150964842,
+      "sigma": 0.5590603005886162,
+      "n_hands": 24214,
+      "per_opponent": [
+        {
+          "opponent": "vanilla-200",
+          "lift": -0.004700228559102191
+        },
+        {
+          "opponent": "vanilla-400",
+          "lift": 0.0009057587655543112
+        },
+        {
+          "opponent": "dcfr-shake-100",
+          "lift": -0.0009538851284060105
+        },
+        {
+          "opponent": "dcfr-shake-200",
+          "lift": -3.567988073601421e-05
+        },
+        {
+          "opponent": "dcfr-overnight-600",
+          "lift": 0.00013822875054637557
+        }
+      ],
+      "n_opponents_positive": 2
+    }
+  },
+  "stats": {
+    "blueprint": null,
+    "sg-profile": {
+      "n_degraded": 0,
+      "n_decisions_total": 78524,
+      "n_gated_skip": 56518,
+      "n_gated_solve": 22006,
+      "gate_skip_rate": 0.7197544699709643,
+      "gate_solve_rate": 0.2802455300290357,
+      "degraded_rate": 0.0
+    },
+    "sg-br": {
+      "n_degraded": 0,
+      "n_decisions_total": 78414,
+      "n_gated_skip": 56538,
+      "n_gated_solve": 21876,
+      "gate_skip_rate": 0.7210192057540745,
+      "gate_solve_rate": 0.2789807942459255,
+      "degraded_rate": 0.0
+    }
+  },
+  "verdict": {
+    "status": "PASS_BR_EQUIVALENT_TO_PROFILE",
+    "recommendation": "use PROFILE for production: BR is NOT statistically distinguishable from PROFILE at this sample size, so BR's v\u00d7k complexity is not justified by the data (not a confident 'PROFILE is better')",
+    "L_br_vs_blueprint": 0.008729476434513972,
+    "sigma_L": 4.5553557308250365,
+    "ordering_ok": false,
+    "n_opponents_positive": 5,
+    "n_opponents": 5,
+    "L_br_vs_profile": -0.0009328656923075087,
+    "sigma_br_vs_profile": 0.5590603005886162,
+    "thresholds": {
+      "PASS_L": 0.005,
+      "PASS_SIGMA": 2.0,
+      "SUBSTANTIVE_L": 0.002,
+      "SUBSTANTIVE_SIGMA": 1.5,
+      "BRVSP_SIGMA": 1.5
+    }
+  }
+}
