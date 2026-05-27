@@ -235,6 +235,7 @@ class TestSamplingViaSolverHelper:
         f = Fake()
         f.cfg = TrainConfig6Max(league_mix=league_mix)
         f.league_pool = league_pool
+        f.archetype_pool = None  # league-only fixture: no archetype source
         f.rng = random.Random(2026)
         f._maybe_sample_league_opponent = (
             DeepCFR6MaxSolver._maybe_sample_league_opponent.__get__(f, Fake)
@@ -356,6 +357,7 @@ class TestCombinedSamplerBitIdentity:
         f = Fake()
         f.cfg = TrainConfig6Max(archetype_mix=archetype_mix, league_mix=league_mix)
         f.league_pool = league_pool
+        f.archetype_pool = None  # bit-identity fixture: archetype_mix=0 → no pool
         f.rng = random.Random(seed)
         f._maybe_sample_league_opponent = (
             DeepCFR6MaxSolver._maybe_sample_league_opponent.__get__(f, Fake)

@@ -198,6 +198,13 @@ class TrainConfig6Max:
     # archetype_mix + league_mix must be <= 1.0; the remainder is self-play.
     # Defaults to 0.0 → bit-identical to pre-Phase-5-A behavior.
     archetype_mix: float = 0.0
+    # Path to the 6-max EquityCalibration JSON (Phase 5-pre artifact). Required
+    # when archetype_mix > 0 (validated in the solver __init__, mirroring the
+    # league_mix>0 requires registry pattern). Default None → no archetype pool.
+    archetype_calibration_path: Optional[str] = None
+    # Subset of archetype profiles to sample from. None → all five
+    # (NIT, TAG, LAG, STATION, MANIAC). Validated as a subset in __post_init__.
+    archetype_profiles: Optional[list] = None
 
     seed: int = 2026
 
@@ -222,6 +229,17 @@ class TrainConfig6Max:
                 f"league_mix={self.league_mix}, "
                 f"sum={self.archetype_mix + self.league_mix}"
             )
+        # archetype_profiles, when given, must be a subset of the named
+        # archetypes. Config-only check (no runtime objects) → __post_init__.
+        if self.archetype_profiles is not None:
+            from src.nlhe.archetype6 import VALID_ARCHETYPE_NAMES
+            bad = [p for p in self.archetype_profiles
+                   if p not in VALID_ARCHETYPE_NAMES]
+            if bad:
+                raise ValueError(
+                    f"archetype_profiles {bad} not in valid archetype names "
+                    f"{VALID_ARCHETYPE_NAMES}"
+                )
 
 
 # ===== Solver =====
@@ -338,6 +356,30 @@ class DeepCFR6MaxSolver:
                 f"mix={config.league_mix:.3f}"
             )
 
+        # Archetype play (Pillar 3 — style diversity). Symmetric with league:
+        # build the pool when a calibration path is set; archetype_mix > 0 with
+        # no path is a configuration error. archetype_mix == 0 with a path is
+        # allowed (pool built but never sampled) — useful for the F2 gate.
+        self.archetype_pool = None
+        if config.archetype_mix > 0.0 and not config.archetype_calibration_path:
+            raise ValueError(
+                "archetype_mix > 0 requires archetype_calibration_path to be "
+                f"set; got archetype_mix={config.archetype_mix}, "
+                f"archetype_calibration_path={config.archetype_calibration_path!r}"
+            )
+        if config.archetype_calibration_path:
+            from src.nlhe.archetype6 import ArchetypePool
+            self.archetype_pool = ArchetypePool(
+                calibration_path=config.archetype_calibration_path,
+                abstraction=abstraction,
+                profile_names=config.archetype_profiles,
+                bucket_runouts=config.bucket_runouts,
+            )
+            self.log(
+                f"  archetype pool: {len(self.archetype_pool)} profiles, "
+                f"mix={config.archetype_mix:.3f}"
+            )
+
         self.iteration = 0
 
         self.log(
@@ -359,12 +401,14 @@ class DeepCFR6MaxSolver:
             self-play  [archetype_mix + league_mix, 1)   → None
 
         Returns:
-            A Policy (CheckpointPolicy / ShankyProfilePolicy per LeaguePool)
-            when the league band fires, or None for the self-play band.
+            An ArchetypePolicy (archetype band, Phase 5-B), a Policy
+            (CheckpointPolicy / ShankyProfilePolicy, league band per LeaguePool),
+            or None (self-play band).
 
-        PLACEHOLDER (Phase 5-A): the archetype band returns None — the
-        archetype-as-Policy port lands in Phase 5-B. Until then, archetype_mix
-        mass behaves like self-play (returns None) but still consumes the roll.
+        Both pools expose sample_opponent(rng) with NO internal mix gate — this
+        roll owns the mix decision. Archetype opponents reach training via the
+        cfr6 NON-traverser short-circuit, so their decisions are never written
+        to the strategy buffer (DECISIONS.md:216).
 
         Bit-identity at the default: when no override source is active (no
         archetype mass AND no usable league pool/mix), we short-circuit with
@@ -374,7 +418,7 @@ class DeepCFR6MaxSolver:
         condition, consuming the identical rng draw. The override remains
         per-traversal-shared across all opponent seats (unchanged semantics).
         """
-        archetype_active = self.cfg.archetype_mix > 0.0
+        archetype_active = self.archetype_pool is not None and self.cfg.archetype_mix > 0.0
         league_active = self.league_pool is not None and self.cfg.league_mix > 0.0
         if not archetype_active and not league_active:
             # No override source → self-play, no rng draw (preserves
@@ -383,9 +427,12 @@ class DeepCFR6MaxSolver:
 
         r = self.rng.random()
         if r < self.cfg.archetype_mix:
-            # Archetype band — Phase 5-A placeholder (returns None). The
-            # archetype Policy will be returned here in Phase 5-B.
-            return None
+            # Archetype band (Phase 5-B): sample a style profile as an override
+            # Policy. The pool has no internal mix gate — the roll above already
+            # placed us in this band.
+            if self.archetype_pool is None:
+                return None
+            return self.archetype_pool.sample_opponent(self.rng)
         if r < self.cfg.archetype_mix + self.cfg.league_mix:
             # League band.
             if self.league_pool is None:
