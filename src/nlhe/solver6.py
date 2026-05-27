@@ -190,7 +190,38 @@ class TrainConfig6Max:
     league_weights: Optional[dict] = None
     league_tag_filter: Optional[list] = None
 
+    # Archetype-opponent mix (Pillar 3 — style diversity). Probability per
+    # traversal that the opp override comes from the archetype pool instead
+    # of the league pool. PLACEHOLDER in Phase 5-A: the archetype band returns
+    # None until the archetype Policy is ported in Phase 5-B. Combined with
+    # league_mix via a single three-way roll in _maybe_sample_league_opponent:
+    # archetype_mix + league_mix must be <= 1.0; the remainder is self-play.
+    # Defaults to 0.0 → bit-identical to pre-Phase-5-A behavior.
+    archetype_mix: float = 0.0
+
     seed: int = 2026
+
+    def __post_init__(self):
+        # Config-vs-config invariants (first validation hook on this dataclass).
+        # Individual mix bounds keep the dataclass self-consistent; the sum
+        # bound is the new cross-field constraint introduced by the combined
+        # archetype+league override slot (Phase 5-A). The override probability
+        # mass cannot exceed 1.0 — the remainder is self-play.
+        if not 0.0 <= self.archetype_mix <= 1.0:
+            raise ValueError(
+                f"archetype_mix must be in [0.0, 1.0], got {self.archetype_mix}"
+            )
+        if not 0.0 <= self.league_mix <= 1.0:
+            raise ValueError(
+                f"league_mix must be in [0.0, 1.0], got {self.league_mix}"
+            )
+        if self.archetype_mix + self.league_mix > 1.0:
+            raise ValueError(
+                "archetype_mix + league_mix must be <= 1.0 (the remainder is "
+                f"self-play); got archetype_mix={self.archetype_mix}, "
+                f"league_mix={self.league_mix}, "
+                f"sum={self.archetype_mix + self.league_mix}"
+            )
 
 
 # ===== Solver =====
@@ -318,23 +349,50 @@ class DeepCFR6MaxSolver:
     # ---- Network training ----
 
     def _maybe_sample_league_opponent(self):
-        """Sample a league opponent for this traversal, or None.
+        """Sample this traversal's opponent override, or None (self-play).
+
+        Combined three-way override-slot sampling (Phase 5-A). One uniform
+        roll r on self.rng partitions the unit interval into three bands:
+
+            archetype  [0, archetype_mix)
+            league     [archetype_mix, archetype_mix + league_mix)
+            self-play  [archetype_mix + league_mix, 1)   → None
 
         Returns:
-            A Policy (CheckpointPolicy per LeaguePool) when the per-traversal
-            league mix coin flip fires, or None when self-play should be used.
+            A Policy (CheckpointPolicy / ShankyProfilePolicy per LeaguePool)
+            when the league band fires, or None for the self-play band.
 
-        Defaults preserve pre-league behavior: league_mix=0.0 (and/or
-        league_pool=None) means this returns None on every call, so the
-        downstream traverse_6max sees opponent_policy_override=None.
+        PLACEHOLDER (Phase 5-A): the archetype band returns None — the
+        archetype-as-Policy port lands in Phase 5-B. Until then, archetype_mix
+        mass behaves like self-play (returns None) but still consumes the roll.
+
+        Bit-identity at the default: when no override source is active (no
+        archetype mass AND no usable league pool/mix), we short-circuit with
+        NO rng draw — exactly matching the pre-Phase-5-A behavior. And at
+        archetype_mix=0.0 the archetype band [0, 0) is empty, so the league
+        band collapses to [0, league_mix) — the original single-gate
+        condition, consuming the identical rng draw. The override remains
+        per-traversal-shared across all opponent seats (unchanged semantics).
         """
-        if self.league_pool is None:
+        archetype_active = self.cfg.archetype_mix > 0.0
+        league_active = self.league_pool is not None and self.cfg.league_mix > 0.0
+        if not archetype_active and not league_active:
+            # No override source → self-play, no rng draw (preserves
+            # bit-identity with the pre-Phase-5-A short-circuit).
             return None
-        if self.cfg.league_mix <= 0.0:
+
+        r = self.rng.random()
+        if r < self.cfg.archetype_mix:
+            # Archetype band — Phase 5-A placeholder (returns None). The
+            # archetype Policy will be returned here in Phase 5-B.
             return None
-        if self.rng.random() >= self.cfg.league_mix:
-            return None
-        return self.league_pool.sample_opponent(self.rng)
+        if r < self.cfg.archetype_mix + self.cfg.league_mix:
+            # League band.
+            if self.league_pool is None:
+                return None
+            return self.league_pool.sample_opponent(self.rng)
+        # Self-play band.
+        return None
 
     def _dcfr_weights(self, iters):
         """Per-sample DCFR weights for a batch.

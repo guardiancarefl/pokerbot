@@ -285,3 +285,141 @@ class TestSamplingViaSolverHelper:
         rate = hits / N
         # 3-stderr binomial window for p=0.5, n=10k is ~0.015.
         assert 0.485 < rate < 0.515
+
+
+# ============================================================
+# Phase 5-A: combined archetype + league three-way override sampling.
+# ============================================================
+
+def _classify(r, archetype_mix, league_mix):
+    """Pure mirror of the three-way band logic in
+    _maybe_sample_league_opponent. Band ordering (load-bearing):
+        archetype  [0, archetype_mix)
+        league     [archetype_mix, archetype_mix + league_mix)
+        self_play  [archetype_mix + league_mix, 1)
+    """
+    if r < archetype_mix:
+        return "archetype"
+    if r < archetype_mix + league_mix:
+        return "league"
+    return "self_play"
+
+
+class TestCombinedSampling:
+    def test_classify_band_ordering(self):
+        A, L = 0.3, 0.2
+        assert _classify(0.0, A, L) == "archetype"
+        assert _classify(0.29, A, L) == "archetype"
+        assert _classify(0.30, A, L) == "league"      # boundary: r==A → league band
+        assert _classify(0.49, A, L) == "league"
+        assert _classify(0.50, A, L) == "self_play"   # boundary: r==A+L → self-play
+        assert _classify(0.999, A, L) == "self_play"
+
+    def test_classify_at_specific_band_point(self):
+        # Explicit ordering test: at A=0.3, L=0.2, r=0.25 lands in the
+        # ARCHETYPE band, not league. Catches a future band-reorder bug.
+        assert _classify(0.25, 0.3, 0.2) == "archetype"
+
+    def test_classify_archetype_zero_collapses_to_league_gate(self):
+        # archetype_mix=0.0 → empty archetype band → league band is [0, L),
+        # exactly the pre-Phase-5-A single-gate condition.
+        A, L = 0.0, 0.5
+        assert _classify(0.0, A, L) == "league"
+        assert _classify(0.49, A, L) == "league"
+        assert _classify(0.50, A, L) == "self_play"
+
+    def test_monte_carlo_three_way_proportions(self):
+        A, L = 0.3, 0.2
+        rng = random.Random(2026)
+        N = 10_000
+        counts = {"archetype": 0, "league": 0, "self_play": 0}
+        for _ in range(N):
+            counts[_classify(rng.random(), A, L)] += 1
+        # 3-stderr binomial windows (~0.014 for p~0.3 at n=10k); ±0.02 is safe.
+        assert abs(counts["archetype"] / N - 0.3) < 0.02
+        assert abs(counts["league"] / N - 0.2) < 0.02
+        assert abs(counts["self_play"] / N - 0.5) < 0.02
+
+
+class TestCombinedSamplerBitIdentity:
+    """At archetype_mix=0.0 the combined sampler must consume rng and emit
+    Policy/None outcomes byte-for-byte identically to the pre-Phase-5-A
+    league-only gate. This is the structural guard for the bit-identity smoke.
+    """
+
+    def _make_fake(self, archetype_mix, league_mix, league_pool, seed):
+        from src.nlhe.solver6 import DeepCFR6MaxSolver, TrainConfig6Max
+
+        class Fake:
+            pass
+
+        f = Fake()
+        f.cfg = TrainConfig6Max(archetype_mix=archetype_mix, league_mix=league_mix)
+        f.league_pool = league_pool
+        f.rng = random.Random(seed)
+        f._maybe_sample_league_opponent = (
+            DeepCFR6MaxSolver._maybe_sample_league_opponent.__get__(f, Fake)
+        )
+        return f
+
+    def test_bit_identity_at_archetype_zero(self):
+        try:
+            from src.nlhe.solver6 import TrainConfig6Max  # noqa: F401
+        except ImportError as e:
+            pytest.skip(f"solver6 import failed: {e}")
+
+        L = 0.5
+        # A sample_opponent that consumes exactly one rng draw, so old/new
+        # streams stay in lockstep when the league band fires.
+        def sample(rng):
+            return ("league", rng.random())
+
+        # "Old" reference: single self.rng.random() < L gate (pre-Phase-5-A).
+        old_rng = random.Random(777)
+        old_out = []
+        for _ in range(1000):
+            if old_rng.random() < L:
+                old_out.append(sample(old_rng))
+            else:
+                old_out.append(None)
+
+        # "New" combined sampler at archetype_mix=0.0, same pool/seed.
+        new_pool = MagicMock()
+        new_pool.sample_opponent = MagicMock(side_effect=sample)
+        f = self._make_fake(archetype_mix=0.0, league_mix=L,
+                            league_pool=new_pool, seed=777)
+        new_out = [f._maybe_sample_league_opponent() for _ in range(1000)]
+
+        assert new_out == old_out
+        # Identical rng state after N calls → no extra/missing draws.
+        assert f.rng.getstate() == old_rng.getstate()
+
+    def test_no_source_active_does_not_draw_rng(self):
+        # archetype_mix=0, league_mix=0, no pool → short-circuit, NO draw.
+        f = self._make_fake(archetype_mix=0.0, league_mix=0.0,
+                            league_pool=None, seed=1234)
+        before = f.rng.getstate()
+        for _ in range(100):
+            assert f._maybe_sample_league_opponent() is None
+        assert f.rng.getstate() == before  # rng untouched
+
+
+class TestArchetypeConfig:
+    def test_archetype_mix_defaults_zero(self):
+        from src.nlhe.solver6 import TrainConfig6Max
+        assert TrainConfig6Max().archetype_mix == 0.0
+
+    def test_sum_constraint_raises(self):
+        from src.nlhe.solver6 import TrainConfig6Max
+        with pytest.raises(ValueError, match=r"archetype_mix \+ league_mix"):
+            TrainConfig6Max(archetype_mix=0.6, league_mix=0.6)
+
+    def test_sum_constraint_boundary_ok(self):
+        from src.nlhe.solver6 import TrainConfig6Max
+        cfg = TrainConfig6Max(archetype_mix=0.5, league_mix=0.5)  # sum == 1.0 OK
+        assert cfg.archetype_mix == 0.5 and cfg.league_mix == 0.5
+
+    def test_archetype_mix_out_of_range_raises(self):
+        from src.nlhe.solver6 import TrainConfig6Max
+        with pytest.raises(ValueError, match="archetype_mix must be in"):
+            TrainConfig6Max(archetype_mix=1.5)
