@@ -481,3 +481,18 @@ First-cut scope is "the smallest 6-max thing that trains without diverging, in t
 - ICM-aware archetypes (adjust thresholds for bubble pressure): rejected as first cut — archetypes are deliberately suboptimal; ICM-aware archetypes converge toward equilibrium. The league/Shanky path provides realistic-ICM-aware-but-flawed diversity; `archetypes.py` provides deliberately-flawed-style-extreme diversity. They complement.
 
 **Implication for remaining Scenario 3 work:** only Step 7 (multi-day production training) remains as genuine implementation work. Step 7's training run exercises the full v2-schema stack (strategy net + DCFR + stack sampling + archetype mix + league play) at production scale (24–72h GPU).
+
+## Integration testing required for cross-module wiring (Phase 5-B post-mortem)
+**Dated:** 2026-05-27 (Session 23, Step 7 pre-flight)
+
+Phase 5-B (commit 48b5eae) shipped the archetype Policy adapter with the `dealer_seat` fallback as a defensive safety net. The Phase 5-B test suite included unit tests that hand-fed `dealer_seat` to `_in_position` and verified the contract, and a separate test that deliberately removed `dealer_seat` and verified the fallback fired with a warning. Both passed.
+
+What the tests did not cover: running archetype dispatch through the actual training path (`parse_state_6max` in tournament mode) and verifying `dealer_seat` reaches the adapter. The Step 7 benchmark (real production path) found that `parse_state_6max` never produces `dealer_seat`, so the defensive fallback fired for every archetype hand in production training, silently degrading archetype behavior to "always out of position."
+
+The Phase 5-B recon assumed `parse_state_repeated_6max` was the training path (which DOES carry `dealer_seat`). The actual training path uses `parse_state_6max` (which does NOT — the tournament-mode inner games are single-hand `universal_poker` states with no `dealer_seat()` method). The unit tests validated the contract by hand-feeding the input the real wiring never supplied.
+
+**Lesson:** contract-mocking unit tests can pass while integration wiring is broken. Future practice for any cross-module wiring change requires at least one end-to-end integration test that exercises the actual production path, not just hand-fed input/output contracts.
+
+This commit (Step 7-fix) restores the intended Phase 5-B behavior by threading `dealer_seat` through `CFR6MaxContext` into the parsed dict at the cfr6 parse site, and adds the integration tests Phase 5-B should have had (`test_dealer_seat_reaches_adapter_in_tournament_path`, `test_seat_indexing_alignment_in_tournament_path`).
+
+**Seat-indexing crux, empirically confirmed:** `current_player()` uses the same original-seat numbering as `sample_starting_state`'s `dealer_seat` — verified on full-ring hands (first preflop actor == `(dealer+3) % 6` = UTG, 16/16). So `position_for_seat_with_dealer(current_player, dealer_seat)` is consistent. Known approximation retained: on busted-seat hands (alive < 6, ~60% of sampled states) the full-ring position helper gives an approximate position — already-documented behavior driving only `archetype_policy`'s 10% in-position nudge, not a correctness defect. The ~60% busted-seat prevalence observed in tournament-mode sampling (Step 7 fix verification, 2026-05-27) is higher than 'edge case' implies and suggests busted-seat-aware position semantics could be a meaningful Phase C/D investment if archetype-mix style differentiation becomes a strength bottleneck. Recorded but not addressed here — the 10% in_position nudge is small enough that approximate positions on multi-bust hands don't block Step 7's strength claim.

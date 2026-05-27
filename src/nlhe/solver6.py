@@ -649,6 +649,7 @@ class DeepCFR6MaxSolver:
                         iteration=it,
                         max_depth=self.cfg.max_traversal_depth,
                         num_paid=self.cfg.num_paid,
+                        dealer_seat=sampled["dealer_seat"],
                     )
                     opp_override = self._maybe_sample_league_opponent()
                     traverse_6max(

@@ -118,6 +118,12 @@ class CFR6MaxContext:
     iteration: int = 0
     max_depth: int = 500
     num_paid: int = 3
+    # Button seat for this traversal's hand (0-indexed, original seat numbering).
+    # Set in tournament mode from sample_starting_state's dealer_seat; injected
+    # into the parsed dict so the archetype adapter can derive in_position
+    # (the inner universal_poker state does not expose dealer_seat()). None in
+    # legacy fixed-game mode → archetype in_position falls back to False.
+    dealer_seat: Optional[int] = None
 
     def __post_init__(self) -> None:
         if len(self.starting_stacks) != NUM_SEATS_6MAX:
@@ -289,6 +295,15 @@ def traverse_6max(
         parsed = parse_state_repeated_6max(state)
     else:
         parsed = parse_state_6max(state)
+
+    # Tournament-mode inner games are single-hand universal_poker states that
+    # don't expose dealer_seat(), so parse_state_6max omits it. Inject the
+    # button seat from the context (set from sample_starting_state) so the
+    # archetype adapter can derive in_position. Inert for self-play/league —
+    # only ArchetypePolicy reads parsed["dealer_seat"]. Skipped when the parse
+    # already supplied it (repeated_poker) or the context has none (legacy mode).
+    if "dealer_seat" not in parsed and ctx.dealer_seat is not None:
+        parsed["dealer_seat"] = ctx.dealer_seat
 
     # ---- League-play short-circuit: at NON-traverser nodes with an override,
     # the opponent's action comes from the override policy. We skip the

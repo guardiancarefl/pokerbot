@@ -306,3 +306,140 @@ class TestStratBufferSuppression:
         )
         solver.train()
         assert len(solver.policy_nets.strat_buffer) > 0
+
+
+# ===== Step 7-fix: dealer_seat threading through the production path =====
+#
+# Phase 5-B's unit tests hand-fed dealer_seat to _in_position and verified the
+# contract, but never ran archetype dispatch through the real tournament-mode
+# training path (parse_state_6max, which omits dealer_seat). The Step 7
+# benchmark caught that the defensive fallback fired for every archetype hand.
+# These integration tests close that gap (see DECISIONS.md Phase-5-B post-mortem).
+
+TOURNAMENT_STRUCTURE = Path("configs/ignition_double_up_6max_turbo.yaml")
+
+
+class TestDealerSeatProductionPath:
+    def _tournament_config(self, archetype_mix, tournament=True):
+        from src.nlhe.solver6 import TrainConfig6Max
+        return TrainConfig6Max(
+            starting_stack=1500, big_blind=100, small_blind=50,
+            payout_mode="double_up", hidden_dim=[16, 16],
+            n_iterations=2, traversals_per_iter=6, train_steps_per_iter=2,
+            batch_size=4, learning_rate=1e-3, buffer_capacity=2000,
+            bucket_runouts=10, max_traversal_depth=200, seed=2026,
+            archetype_mix=archetype_mix,
+            archetype_calibration_path=str(CALIB_6MAX),
+            tournament_structure_path=(str(TOURNAMENT_STRUCTURE) if tournament else None),
+        )
+
+    def test_dealer_seat_reaches_adapter_in_tournament_path(self, calibration, real_abstraction):
+        """The integration test Phase 5-B lacked: run archetype dispatch through
+        the REAL tournament training path and confirm dealer_seat reaches the
+        adapter (no fallback warning fires). archetype_mix=1.0 forces an
+        archetype at every opponent node, so dispatch definitely happens
+        (strat_buffer stays empty — DECISIONS.md:216 — proving non-vacuity)."""
+        import pyspiel
+        from src.nlhe.game_strings import six_max_sng
+        from src.nlhe.solver6 import DeepCFR6MaxSolver
+
+        if not TOURNAMENT_STRUCTURE.exists():
+            pytest.skip(f"tournament structure not found at {TOURNAMENT_STRUCTURE}")
+
+        # Reset the one-time fallback latch so this test observes the real path.
+        ArchetypePolicy._warned_no_dealer = False
+        game = pyspiel.load_game(six_max_sng(1500))  # placeholder; tournament mode builds inner games
+        solver = DeepCFR6MaxSolver(
+            game=game, abstraction=real_abstraction,
+            config=self._tournament_config(archetype_mix=1.0), logger=lambda s: None,
+        )
+        solver.train()
+        # Non-vacuity: every opponent was an archetype → no self-play strat writes.
+        assert len(solver.policy_nets.strat_buffer) == 0
+        # The fix: dealer_seat reached the adapter on every archetype dispatch,
+        # so the missing-dealer fallback warning never fired.
+        assert ArchetypePolicy._warned_no_dealer is False, (
+            "dealer_seat fallback fired in tournament mode — dealer_seat is not "
+            "reaching the archetype adapter through the production path"
+        )
+
+    def test_seat_indexing_alignment_in_tournament_path(self):
+        """Empirical crux (Step 7-fix workflow rule): current_player()'s seat
+        index must align with sample_starting_state's dealer_seat index, else
+        in_position would be 'correct-looking-but-wrong'. On full-ring hands the
+        first preflop actor must be UTG = (dealer+3) % 6."""
+        import random, pyspiel
+        from src.nlhe.game_strings import TournamentStructure
+        from src.nlhe.stack_sampler import sample_starting_state
+
+        if not TOURNAMENT_STRUCTURE.exists():
+            pytest.skip(f"tournament structure not found at {TOURNAMENT_STRUCTURE}")
+        ts = TournamentStructure.from_yaml(str(TOURNAMENT_STRUCTURE))
+
+        def first_decision(state, rng):
+            while state.is_chance_node() and not state.is_terminal():
+                o = state.chance_outcomes()
+                state.apply_action(rng.choices([x[0] for x in o],
+                                               weights=[x[1] for x in o])[0])
+            return state
+
+        checked = 0
+        for seed in range(40):
+            rng = random.Random(seed)
+            s = sample_starting_state(ts, rng, num_paid=3)
+            if sum(1 for x in s["stacks"] if x > 0) != 6:
+                continue  # busted-seat hands: first actor != dealer+3, full-ring rule N/A
+            gs = ts.to_inner_game_string_for_state(
+                blind_level=s["blind_level"], stacks=s["stacks"],
+                dealer_seat=s["dealer_seat"])
+            st = first_decision(pyspiel.load_game(gs).new_initial_state(), rng)
+            if st.is_terminal():
+                continue
+            checked += 1
+            assert st.current_player() == (s["dealer_seat"] + 3) % 6, (
+                f"seat-indexing misalignment: dealer={s['dealer_seat']} "
+                f"first_actor={st.current_player()} expected_UTG={(s['dealer_seat']+3)%6}"
+            )
+        assert checked >= 5, f"too few full-ring hands sampled to verify ({checked})"
+
+    def test_in_position_indexing_matches_seat_convention(self):
+        """Named-case check: _in_position matches position_for_seat_with_dealer
+        for specific (dealer, current_player, street) tuples. Expected values
+        derived from the helper (not hand-labelled) to stay robust."""
+        policy = ArchetypePolicy(
+            profile=_by_name(ArchetypeName.NIT),
+            abstraction=object(), calibration=object(), bucket_runouts=30,
+        )
+        cases = [
+            # (dealer, current_player, street_idx)
+            (0, 2, 0),  # preflop
+            (3, 3, 1),  # postflop, BTN acting
+            (5, 0, 1),  # postflop
+            (2, 5, 0),  # preflop
+        ]
+        for dealer, cp, street in cases:
+            pos = position_for_seat_with_dealer(cp, dealer, 6)
+            expected = (pos == _BTN) if street > 0 else (pos == _BB)
+            parsed = {"dealer_seat": dealer, "current_player": cp, "street_idx": street}
+            assert policy._in_position(parsed, street) == expected, (
+                f"dealer={dealer} cp={cp} street={street} pos={POSITIONS_6MAX[pos]}: "
+                f"expected in_position={expected}"
+            )
+
+    def test_legacy_path_keeps_fallback(self, calibration, real_abstraction):
+        """Legacy (non-tournament) mode leaves ctx.dealer_seat=None → archetype
+        in_position falls back to False (existing behavior preserved). We assert
+        the CFR6MaxContext default is None and the adapter's fallback path holds.
+        """
+        from src.nlhe.cfr6 import CFR6MaxContext
+        import inspect
+        # ctx default is None → legacy path never injects dealer_seat.
+        sig = inspect.signature(CFR6MaxContext)
+        assert sig.parameters["dealer_seat"].default is None
+        # Adapter fallback on a dealer_seat-less parsed dict (the legacy shape).
+        ArchetypePolicy._warned_no_dealer = False
+        policy = ArchetypePolicy(
+            profile=_by_name(ArchetypeName.NIT),
+            abstraction=object(), calibration=object(), bucket_runouts=30,
+        )
+        assert policy._in_position({"current_player": 0, "street_idx": 1}, 1) is False
