@@ -73,6 +73,7 @@ from src.nlhe.actions import (
     GameStateView,
     discretize_legal_actions,
 )
+from src.nlhe.fast_view import fast_build_view
 from src.nlhe.icm_returns import icm_adjust_returns
 from src.nlhe.infoset6 import InfosetEncoder6Max, parse_state_6max, parse_state_repeated_6max
 from src.nlhe.networks6 import PlayerNetworks6Max, N_DISCRETE_ACTIONS, NUM_SEATS_6MAX
@@ -136,44 +137,15 @@ def _build_view_6max(state: Any, parsed: dict) -> GameStateView:
     opponent, not "the one other player". For action discretization
     (the actual consumer of this view), only pot/min_bet/max_bet/legal_*
     are read; to_call and effective_stack are informational.
+
+    FOLD-IN: the body now delegates to fast_view.fast_build_view, which
+    produces a byte-identical GameStateView via bisect over the sorted
+    legal-action list instead of set()/list-comp/min/max over ~9,803 elements.
+    Signature and return type are unchanged; the only added assumption is that
+    state.legal_actions() is sorted ascending (always true under
+    universal_poker). See NEXT_SESSION.md / the fast_view fold-in commit.
     """
-    cp = parsed["current_player"]
-    money = parsed["money"]
-    contribution = parsed["contribution"]
-    pot = parsed["pot"]
-
-    my_money = money[cp] if cp < len(money) else 0
-    max_contrib = max(contribution) if contribution else 0
-    my_contrib = contribution[cp] if cp < len(contribution) else 0
-    to_call = max(0, max_contrib - my_contrib)
-
-    # Effective stack: hero vs largest active opponent. "Active" here is
-    # approximated by stack > 0; folded-but-not-busted players still appear
-    # active by this test, but their committed chips are still in the pot
-    # so the bet sizing math is unaffected.
-    opp_stacks = [money[i] for i in range(len(money))
-                  if i != cp and money[i] > 0]
-    if opp_stacks:
-        effective_stack = min(my_money, max(opp_stacks))
-    else:
-        effective_stack = my_money
-
-    legal = state.legal_actions()
-    legal_set = set(legal)
-    # OpenSpiel universal_poker: 0=fold, 1=call/check, N>=2=bet-to-N-chips.
-    bet_actions = [a for a in legal if a >= 2]
-    min_bet = min(bet_actions) if bet_actions else 0
-    max_bet = max(bet_actions) if bet_actions else 0
-
-    return GameStateView(
-        pot=pot,
-        to_call=to_call,
-        effective_stack=effective_stack,
-        min_bet=min_bet,
-        max_bet=max_bet,
-        legal_fold=(0 in legal_set),
-        legal_call=(1 in legal_set),
-    )
+    return fast_build_view(parsed, state.legal_actions())
 
 
 

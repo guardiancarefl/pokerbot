@@ -11,6 +11,7 @@ hand-rolled gamedef.
 """
 from __future__ import annotations
 
+import inspect
 import random
 import time
 import unittest
@@ -303,6 +304,139 @@ class TestFastViewBenchmark(unittest.TestCase):
         self.assertLessEqual(
             res["fast_min"], 0.30,
             f"fast path {res['fast_min']:.4f} ms/step exceeds 0.30 ms gate")
+
+
+@unittest.skipUnless(_HAS_OPEN_SPIEL, "Requires open_spiel")
+class TestCanonicalDelegatesToFast(unittest.TestCase):
+    """Post-fold-in: the canonical functions must delegate to the fast path.
+
+    Guards against indirection bugs the delegation could introduce (wrong
+    argument order, a dropped legal_actions() call, signature drift) — distinct
+    from TestFastViewEqualsCanonical, which asserts the fast path is correct in
+    the first place.
+    """
+
+    def test_build_view_6max_calls_fast_path(self):
+        from src.nlhe.infoset6 import parse_state_6max
+        from src.nlhe.cfr6 import _build_view_6max
+        from src.nlhe.fast_view import fast_build_view
+        for seed in range(8):
+            state = _first_decision(seed)
+            parsed = parse_state_6max(state)
+            self.assertEqual(
+                _build_view_6max(state, parsed),
+                fast_build_view(parsed, state.legal_actions()),
+                f"_build_view_6max diverged from fast_build_view at seed {seed}",
+            )
+
+    def test_discretize_calls_fast_path(self):
+        from src.nlhe.infoset6 import parse_state_6max
+        from src.nlhe.cfr6 import _build_view_6max
+        from src.nlhe.actions import discretize_legal_actions
+        from src.nlhe.fast_view import fast_discretize
+        for seed in range(8):
+            state = _first_decision(seed)
+            parsed = parse_state_6max(state)
+            view = _build_view_6max(state, parsed)
+            legal = list(state.legal_actions())
+            self.assertEqual(
+                discretize_legal_actions(legal, view),
+                fast_discretize(legal, view),
+                f"discretize_legal_actions diverged from fast_discretize at seed {seed}",
+            )
+
+    def test_canonical_signatures_unchanged(self):
+        # Both modules use `from __future__ import annotations`, so the
+        # annotations come back as strings. Reference expected sigs verbatim.
+        from src.nlhe.cfr6 import _build_view_6max
+        from src.nlhe.actions import discretize_legal_actions
+
+        sig_v = inspect.signature(_build_view_6max)
+        self.assertEqual(list(sig_v.parameters.keys()), ["state", "parsed"])
+        self.assertEqual(sig_v.parameters["state"].annotation, "Any")
+        self.assertEqual(sig_v.parameters["parsed"].annotation, "dict")
+        self.assertIs(sig_v.parameters["state"].default, inspect.Parameter.empty)
+        self.assertIs(sig_v.parameters["parsed"].default, inspect.Parameter.empty)
+        self.assertEqual(sig_v.return_annotation, "GameStateView")
+
+        sig_d = inspect.signature(discretize_legal_actions)
+        self.assertEqual(list(sig_d.parameters.keys()), ["legal_chip_actions", "view"])
+        self.assertEqual(sig_d.parameters["legal_chip_actions"].annotation, "Sequence[int]")
+        self.assertEqual(sig_d.parameters["view"].annotation, "GameStateView")
+        self.assertIs(sig_d.parameters["legal_chip_actions"].default, inspect.Parameter.empty)
+        self.assertIs(sig_d.parameters["view"].default, inspect.Parameter.empty)
+        self.assertEqual(sig_d.return_annotation, "dict[DiscreteAction, int]")
+
+
+class TestDiscretizeHUNLCoverage(unittest.TestCase):
+    """Gap-3 mitigation: discretize_legal_actions is shared with the HUNL
+    consumers (solver.py, policy_adapter.py), which the 6-max training smoke
+    gate does NOT exercise. These tests construct HUNL-shaped GameStateViews
+    directly (no checkpoint / no OpenSpiel game needed) and check the delegated
+    discretizer against an independent oracle that inlines the PRE-fold-in
+    canonical logic (set membership + _legal_discrete_bet_sizes). No skip guard:
+    this runs even where OpenSpiel is unavailable.
+    """
+
+    @staticmethod
+    def _canonical_oracle(legal_chip_actions, view):
+        """Pre-delegation canonical discretize_legal_actions body, inlined.
+
+        Uses set membership (the original mechanism) rather than the fast path's
+        bisect, so a divergence flags a real delegation regression.
+        _legal_discrete_bet_sizes is unchanged by the fold-in and is the shared
+        bet-size source for both paths.
+        """
+        from src.nlhe.actions import DiscreteAction, _legal_discrete_bet_sizes
+        legal_set = set(legal_chip_actions)
+        out = {}
+        if 0 in legal_set:
+            out[DiscreteAction.FOLD] = 0
+        if 1 in legal_set:
+            out[DiscreteAction.CALL] = 1
+        for action, chips in _legal_discrete_bet_sizes(view):
+            if chips in legal_set:
+                out[action] = chips
+        return out
+
+    def _check(self, legal_chip_actions, view):
+        from src.nlhe.actions import discretize_legal_actions
+        self.assertEqual(
+            discretize_legal_actions(legal_chip_actions, view),
+            self._canonical_oracle(legal_chip_actions, view),
+        )
+
+    def test_facing_no_bet(self):
+        # HUNL ~200bb: actor can check (no bet to fold to) and has bet options.
+        from src.nlhe.actions import GameStateView
+        view = GameStateView(
+            pot=200, to_call=0, effective_stack=19900,
+            min_bet=200, max_bet=20000, legal_fold=False, legal_call=True,
+        )
+        # sorted ascending: check(1) + bet range incl computed sizes (200, 400, 20000)
+        legal = [1, 200, 201, 400, 800, 20000]
+        self._check(legal, view)
+
+    def test_facing_pot_sized_bet(self):
+        # Mid-hand: facing a pot bet, can fold / call / raise.
+        from src.nlhe.actions import GameStateView
+        view = GameStateView(
+            pot=600, to_call=200, effective_stack=19800,
+            min_bet=400, max_bet=20000, legal_fold=True, legal_call=True,
+        )
+        legal = [0, 1, 400, 600, 1200, 5000, 20000]
+        self._check(legal, view)
+
+    def test_facing_all_in_no_raise_room(self):
+        # Facing a shove with no re-raise room: legal == {fold, call} and
+        # min_bet == max_bet == 0 (the documented ALLIN/chip-0 alias edge).
+        from src.nlhe.actions import GameStateView
+        view = GameStateView(
+            pot=40000, to_call=20000, effective_stack=20000,
+            min_bet=0, max_bet=0, legal_fold=True, legal_call=True,
+        )
+        legal = [0, 1]
+        self._check(legal, view)
 
 
 if __name__ == "__main__":

@@ -271,17 +271,16 @@ def discretize_legal_actions(
     Used at decision time: query this dict to know which discrete actions are
     actually playable, then map our policy's softmax over discrete actions onto
     only the legal subset.
+
+    FOLD-IN: delegates to fast_view.fast_discretize, which performs the
+    membership tests with bisect over the sorted legal-action list instead of
+    building a ~9,803-element set(). Output (keys, values, insertion order) is
+    identical. PRECONDITION: legal_chip_actions must be sorted ascending — this
+    holds for every caller (all pass state.legal_actions() under
+    universal_poker, which is sorted). The import is function-local to break the
+    actions <-> fast_view circular import (fast_view imports DiscreteAction /
+    GameStateView / _legal_discrete_bet_sizes from this module). See the
+    fast_view fold-in commit.
     """
-    legal_set = set(legal_chip_actions)
-    out: dict[DiscreteAction, int] = {}
-
-    if 0 in legal_set:
-        out[DiscreteAction.FOLD] = 0
-    if 1 in legal_set:
-        out[DiscreteAction.CALL] = 1
-
-    # For each discrete bet action, compute its target and check it's in legal_set.
-    for action, chips in _legal_discrete_bet_sizes(view):
-        if chips in legal_set:
-            out[action] = chips
-    return out
+    from src.nlhe.fast_view import fast_discretize
+    return fast_discretize(legal_chip_actions, view)
