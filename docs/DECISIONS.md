@@ -330,7 +330,7 @@ So: 6-max regret samples are added to the buffer in their natural equity-space s
 **Decided:** 2026-05-23 (Session 9, Phase 4e.3c)
 **Why:** Four enhancements that exist in the HUNL pipeline are intentionally OUT of the 6-max first cut in `src/nlhe/solver6.py`:
 
-  1. **No strategy net / no average-strategy approximation.** `PlayerNetworks6Max` (Phase 4e.3a) only carries advantage nets. At deployment time, the deployed policy is the regret-matched current strategy from the most recent advantage net — not the average strategy across iterations. Average-strategy approximation is its own subphase (likely Phase 4e.4) and only worth doing once the baseline trains. **(SUPERSEDED 2026-05-27, Session 22: the strategy net was added — see "Strategy net for 6-max: single shared net with seat in features" below. Deferral #3 (archetype mix for 6-max) remains open; deferrals #1, #2, #4 SUPERSEDED 2026-05-27 — see entries dated 2026-05-27 in this file and the audit-findings entry.)**
+  1. **No strategy net / no average-strategy approximation.** `PlayerNetworks6Max` (Phase 4e.3a) only carries advantage nets. At deployment time, the deployed policy is the regret-matched current strategy from the most recent advantage net — not the average strategy across iterations. Average-strategy approximation is its own subphase (likely Phase 4e.4) and only worth doing once the baseline trains. **(SUPERSEDED 2026-05-27, Session 22: the strategy net was added — see "Strategy net for 6-max: single shared net with seat in features" below. All four deferrals SUPERSEDED 2026-05-27 — see entries dated 2026-05-27 in this file and the Step 5 design-decisions entry below. The Session-9 'minimum-viable first cut' restriction is fully retired.)**
 
   2. **No DCFR weighting yet (vanilla CFR only).** DCFR (Brown & Sandholm 2019) was added to HUNL in Phase 3 Track A1 (commit 41e2fa3). It provides faster convergence by per-sample iteration weighting. For 6-max first-cut, vanilla CFR (uniform weights) is the baseline. Mechanical to add later once the vanilla loss trajectory is established. **(SUPERSEDED 2026-05-27: DCFR weighting is wired in — `cfr_variant`/`_dcfr_weights` apply to both advantage-net (`solver6.py:393`) and strategy-net (`solver6.py:444`) training; the `dcfr-overnight-3000` production baseline used `cfr_variant="linear"`, `dcfr_exponent=1.0`. Implementation predates Session 22; the docs never propagated. See the 2026-05-27 audit-findings entry below.)**
 
@@ -431,3 +431,53 @@ First-cut scope is "the smallest 6-max thing that trains without diverging, in t
 **Process finding:** the recon-first discipline saved ~1-2 weeks of redundant work on stack sampling. Future sessions should not trust DECISIONS.md "deferred" claims without code verification.
 
 **Alternative considered:** (a) silently update the planning docs without an audit entry — rejected on the durability argument (this kind of doc-vs-code drift will recur, and a recorded audit makes the next investigation cheaper). (b) skip the audit and just supersede deferrals #2 and #4 — rejected because that wouldn't preserve the league-v2 / v2-schema overloading clarification or the process finding.
+
+## Archetype mix for 6-max: wrap-not-port via ArchetypePolicy + ArchetypePool
+**Dated:** 2026-05-27 (Session 23)
+**Supersedes:** Session-9 "minimum-viable first cut" deferral #3 (archetype mix).
+
+**Why:** 6-max training needs in-traversal style diversity beyond what the league pool (Shanky bots) provides. League diversity is rich-but-realistic; archetype diversity is parametric-and-extreme (NIT/TAG/LAG/STATION/MANIAC span style space deliberately). Both contribute different shapes of opponent variety to the strategy net's learned average.
+
+**Decision:** wrap HUNL's `archetype_policy` (`archetypes.py`, unmodified) as a 6-max `ArchetypePolicy` adapter rather than porting. Recon confirmed `archetype_policy` is game-agnostic (zero 2-player assumptions; `in_position` is the only positional input, used as a bool for a 10% nudge). Adapter lives in `src/nlhe/archetype6.py` following the project's HUNL-paired-module naming convention.
+
+**Mechanism:**
+- `ArchetypePolicy.select_action(parsed, state, rng, mode)` mirrors `ShankyProfilePolicy`'s view+discretize+evaluate pipeline.
+- `ArchetypePool.sample_opponent(rng)` mirrors `LeaguePool` — no internal mix gate; the three-way roll already decided we're in the archetype band.
+- Per-hand-shared dispatch: one archetype profile per traversal, used across all opp seats (matches league override semantics).
+- Strategy-buffer write-suppression is automatic via the existing cfr6 short-circuit at line ~299 (returns before `strat_buffer.add` at line ~381).
+
+**6-max-specific adaptations (in the adapter only, `archetype_policy` untouched):**
+- `in_position` derivation: binary (postflop BTN=in; preflop BB=in) via `infoset6.position_for_seat_with_dealer`.
+- `dealer_seat` sourced from `parsed['dealer_seat']` (present in `parse_state_repeated_6max`, the tournament training path).
+- Defensive fallback if `dealer_seat` missing: `in_position=False` with one-time warning log.
+- `bucket_of` called with `cfg.bucket_runouts` (small MC noise on postflop, by-design per the noise-tolerant archetype framework).
+- Loads `runs/archetype_design/bucket_equity_analysis_6max.json` (Phase 5-pre artifact, commit d093abd).
+
+**Three-way combined override-slot sampler (Phase 5-A, commit 470beb7):**
+- Roll uniform `r` on shared `self.rng` once per traversal.
+- Band ordering: `r in [0, archetype_mix)` → archetype; `r in [archetype_mix, archetype_mix + league_mix)` → league; `r >= total` → self-play.
+- Constraint: `archetype_mix + league_mix <= 1.0` (validated in `TrainConfig6Max.__post_init__`).
+- Bit-identity by construction at `archetype_mix=0.0`: archetype band `[0, 0.0)` never fires; league band reduces to the exact pre-Phase-5 condition `r < league_mix`.
+
+**Implementation phases:**
+- Phase 5-pre (d093abd): regenerated EquityCalibration for the 6-max abstraction.
+- Phase 5-A (470beb7): three-way sampler scaffolding (archetype band placeholder).
+- Phase 5-B (48b5eae): `ArchetypePolicy` + `ArchetypePool`, archetype band filled.
+- Phase 5-C (this commit): closure + documentation reconciliation.
+
+**Acceptance gates passed (Phase 5-B):**
+- F1 bit-identity at `archetype_mix=0.0`: byte-identical to `/tmp/fast_view_smoke_pre` baseline.
+- F2 pool-built-but-unused: zero side effects from pool construction at `archetype_mix=0.0`.
+- F3 functional at `archetype_mix=0.5`: `strat_buffer ≈ 0.59×` baseline (DECISIONS.md:216 invariant verified).
+- F4 full project test suite: 167 passed across 10 modules.
+
+**Findings recorded for Step 7:**
+- Passive archetypes (STATION, NIT) produce longer hands than self-play due to more calling, so adv-buffer growth scales with hand-decision count, not trajectory count. Effective sample efficiency at `archetype_mix>0` differs from pure self-play.
+- Phase 5-pre's calibration regeneration surfaced a recon-quality finding: `analyze_bucket_equity.py` uses a shared rng across preflop+postflop sampling, so deterministic preflop bucketing shifts postflop sampling position. Postflop quantiles differ from HUNL by 0.01–0.03 MC noise (provably bit-identical bucketing). By-design; noise-tolerant framework.
+
+**Alternatives considered:**
+- Option 2 (port `archetype_policy` as 6-max-native): rejected — recon confirmed `archetype_policy` is game-agnostic; wrapping is minimum risk.
+- Per-seat archetype dispatch (different archetype per opp seat per hand): rejected — mechanism cost (per-seat policy map vs single override slot) doesn't justify the marginal coverage gain. Across many trajectories, per-hand-shared still sees every archetype at every seat.
+- ICM-aware archetypes (adjust thresholds for bubble pressure): rejected as first cut — archetypes are deliberately suboptimal; ICM-aware archetypes converge toward equilibrium. The league/Shanky path provides realistic-ICM-aware-but-flawed diversity; `archetypes.py` provides deliberately-flawed-style-extreme diversity. They complement.
+
+**Implication for remaining Scenario 3 work:** only Step 7 (multi-day production training) remains as genuine implementation work. Step 7's training run exercises the full v2-schema stack (strategy net + DCFR + stack sampling + archetype mix + league play) at production scale (24–72h GPU).

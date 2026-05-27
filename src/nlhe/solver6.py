@@ -33,9 +33,12 @@ Mirrors the HUNL pattern with these intentional 6-max-specific differences:
      net (line ~444) training. The dcfr-overnight-3000 baseline used
      cfr_variant="linear", dcfr_exponent=1.0.
 
-  4. No archetype mix yet. Archetype framework (src/nlhe/archetypes.py)
-     uses HUNL-specific position derivation; porting to 6-max is a
-     separate subphase.
+  4. Archetype mix wired in. src/nlhe/archetype6.py wraps HUNL's
+     archetype_policy as an ArchetypePolicy + ArchetypePool, sampled by
+     the three-way combined override-slot roll in
+     _maybe_sample_league_opponent. Controlled by archetype_mix +
+     archetype_calibration_path + archetype_profiles. Off (mix=0.0) by
+     default → bit-identical to pre-archetype behavior.
 
   5. Tournament-aware stack sampling wired in. When tournament_structure_
      path is set, stack_sampler.sample_starting_state supplies per-traversal

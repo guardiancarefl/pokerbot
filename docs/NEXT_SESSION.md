@@ -39,12 +39,13 @@ Step 4 opens with.
 - ✓ **Step 2 — fast_view fold-in** (`4046caf`) — canonical `_build_view_6max` + `discretize_legal_actions` delegate to `fast_view`; training output bit-identical.
 - ✓ **Step 3 — Strategy net for 6-max** (`78917f8` + `e144092`) — single shared strat net, v2 checkpoint schema, two-tier load, two-signal SubgamePolicy.
 - ✓ **Step 4 — Stack-distribution sampling** — discovered already in production (commit `4739c1a`, 2026-05-23). See the DECISIONS.md audit entry dated 2026-05-27.
-- → **Step 5 — Archetype mix for 6-max** — genuinely open (HUNL code exists in `archetypes.py`, not ported to `solver6`/`cfr6` training loop). See §4.
-- **Step 6 — REVISED.** League play infrastructure already exists; league-v2 config exists; a 900-iter shakedown was completed (`league-v2-600` in active eval-pool use). The remaining league work is now bundled into step 7's production training run as v2-schema league play (the existing shakedown is v1-schema).
-- **Step 7 — Multi-day production blueprint training** (24–72h GPU). Trains v2-schema (strategy net) blueprint with archetype mix + league play at production scale. THIS is the meaningful capstone of Scenario 3; must beat `dcfr-overnight-3000` head-to-head.
-- **Step 8+ — Within-match observation framework (Layer 4), Slumbot HUNL bridge, 42 shanky bots integration.**
+- ✓ **Step 5 — Archetype mix for 6-max** (`d093abd` + `470beb7` + `48b5eae` + Phase 5-C closure commit) — wrap-not-port `ArchetypePolicy` + `ArchetypePool`, three-way combined sampler, bit-identity-validated at default. See the DECISIONS.md Step 5 design-decisions entry.
+- → **Step 7 — Multi-day production blueprint training** (24–72h GPU) — the capstone. **ONLY genuinely-open implementation work remaining.** See §4.
+- **Step 8+ — Within-match observation framework (Layer 4), Slumbot HUNL bridge, 42 shanky bots integration evaluation.**
 
-**3 of 7 core steps complete; Step 4 found already-done in production. Genuinely-open implementation work: Steps 5 and 7 (Step 6 folds into 7).**
+**Note:** Step 6 (league play) is folded into Step 7 — `league_mix` is a config knob, no longer a separate step.
+
+**6 of 7 core steps complete (Steps 1–5 + the Step-6-into-7 fold). Genuinely-open implementation work: Step 7 only.**
 
 ---
 
@@ -59,35 +60,45 @@ These are unrelated. The existing league-v2 shakedown is a v1-schema run (it pre
 the strategy net by 3 days). Step 7's "produces v2-schema checkpoints with league
 play" means strategy-net schema + league mechanism, not "league v3."
 
+**Step 5 closure (2026-05-27):** v2-schema is now fully capable. Strategy net
+(`v2_with_strategy` checkpoint schema), DCFR weighting (`cfr_variant='linear'`),
+stack-distribution sampling (`tournament_structure_path`), archetype mix
+(`archetype_mix` + `archetype_calibration_path`), and league play (`league_mix` +
+`league_registry_path`) are all wired, unit-tested, and bit-identity-validated at
+their respective zero/default settings. Step 7's production training run exercises
+the full stack.
+
 ---
 
-## 4. Step 5 design surface (what Session 23 opens with)
+## 4. Step 7 — multi-day production blueprint training (the capstone)
 
-**Goal:** port the HUNL archetype framework (`src/nlhe/archetypes.py` — maniac, nit,
-station, LAG) into 6-max training. Currently 6-max gets opponent diversity from the
-league pool + `scripted_bots/`, but the in-traversal archetype framework that forces
-the bot to see specific style profiles during training has never been ported from HUNL.
+**Goal:** train a v2-schema blueprint at production scale, with the full diversity
+stack active (self-play + archetype mix + league play). This is the bot whose strength
+claim Scenario 3 has been building toward.
 
-**Design questions outstanding — each needs a decision before code:**
+**Open design questions for Step 7's recon:**
 
-- **(a) Dispatch granularity:** where archetype dispatch happens in
-  `cfr6.traverse_6max` — at root (whole hand is one archetype) or per-seat (each opp
-  seat may have a different archetype)?
-- **(b) Archetype mix ratio:** what fraction of training hands use archetype opponents
-  vs pure self-play (HUNL precedent + SESSION_LOG findings suggest 0.2–0.7; at mix=1.0
-  the strategy buffer never fills — `DECISIONS.md:216`).
-- **(c) Strategy-buffer interaction:** archetype decisions must NOT be written to the
-  strategy buffer (that would teach imitation of the archetype rather than the bot's
-  own policy). Load-bearing constraint mirroring HUNL `solver.py:316-318`.
-- **(d) ICM-awareness:** do the HUNL archetypes need any adjustment for 6-max ICM
-  dynamics (chip-EV vs equity-EV decisions)?
-- **(e) Acceptance gate:** bit-identity gate for the pure-self-play path (when
-  `archetype_mix=0.0`, behavior is unchanged); functional gate for the archetype path
-  (archetypes act per their style, strategy buffer fills correctly).
+- **(a) Training duration target:** 24h / 48h / 72h. Trades off compute cost vs
+  convergence quality. The `dcfr-overnight-3000` baseline ran ~12h.
+- **(b) Configuration choices:** `archetype_mix` value (0.2–0.7 recommended per
+  `DECISIONS.md:216`), `league_mix` value (`PHASE4F_LEAGUE_V1_FINDINGS.md` suggested
+  0.15), profile subset (all 5 or weighted), league registry anchors (peak vs
+  peak+archetype tags).
+- **(c) Checkpoint cadence:** every N iterations. `dcfr-overnight-3000` used
+  `checkpoint_every=300`. Tradeoffs: smaller N = more granular eval-pool members, more
+  storage; larger N = faster training, fewer checkpoints.
+- **(d) Validation gates during the run:** heartbeat logging, periodic eval against
+  `dcfr-overnight-3000` (the v1 baseline the v2 run must beat), strat-loss monitoring.
+- **(e) Compute provisioning:** GPU type (RTX 4090 vs H100), worker count (`workers=64`
+  confirmed safe on this MooseFS filesystem), nohup + tmux pattern.
+- **(f) Acceptance:** head-to-head vs `dcfr-overnight-3000` in the eval pool (target:
+  positive lift at σ > 2.0). What other measurements (Slumbot bridge if available,
+  Shanky pool comparison)?
 
-**Recon-first opener:** read `src/nlhe/archetypes.py` and the HUNL `solver.py` wiring
-(around line 316), then map the modification surface in `solver6.py` /
-`cfr6.traverse_6max`.
+**Recon-first opener:** read `scripts/train_6max.py` for the runtime API,
+`configs/six_max_phase4f_dcfr_linear_overnight.yaml` for the baseline config shape, and
+`PHASE4F_LEAGUE_V1_FINDINGS.md` + the sub-step 6 verdict JSON for the strength
+references the v2 run must clear.
 
 ---
 
