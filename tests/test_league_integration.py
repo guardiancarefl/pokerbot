@@ -240,6 +240,12 @@ class TestSamplingViaSolverHelper:
         f._maybe_sample_league_opponent = (
             DeepCFR6MaxSolver._maybe_sample_league_opponent.__get__(f, Fake)
         )
+        # Dashboard (Step 7-pre): _maybe_sample_league_opponent now calls
+        # self._count_override. A real solver always has it + _override_counts
+        # (set in __init__); bind them on the fake so the control flow runs.
+        # Counting draws no rng, so these tests still validate bit-identity.
+        f._override_counts = {"archetype": 0, "league": 0, "self_play": 0}
+        f._count_override = DeepCFR6MaxSolver._count_override.__get__(f, Fake)
         return f
 
     def test_pool_none_returns_none(self):
@@ -362,6 +368,12 @@ class TestCombinedSamplerBitIdentity:
         f._maybe_sample_league_opponent = (
             DeepCFR6MaxSolver._maybe_sample_league_opponent.__get__(f, Fake)
         )
+        # Dashboard (Step 7-pre): _maybe_sample_league_opponent now calls
+        # self._count_override. A real solver always has it + _override_counts
+        # (set in __init__); bind them on the fake so the control flow runs.
+        # Counting draws no rng, so these tests still validate bit-identity.
+        f._override_counts = {"archetype": 0, "league": 0, "self_play": 0}
+        f._count_override = DeepCFR6MaxSolver._count_override.__get__(f, Fake)
         return f
 
     def test_bit_identity_at_archetype_zero(self):

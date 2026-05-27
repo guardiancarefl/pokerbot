@@ -83,6 +83,17 @@ from src.nlhe.networks6 import (
 )
 
 
+# ===== Helpers =====
+
+
+def _fmt_hms(seconds: float) -> str:
+    """Format a duration in seconds as H:MM:SS (Step 7 dashboard ETA/elapsed)."""
+    seconds = int(max(0.0, seconds))
+    h, rem = divmod(seconds, 3600)
+    m, s = divmod(rem, 60)
+    return f"{h}:{m:02d}:{s:02d}"
+
+
 # ===== Payout-mode resolution =====
 
 
@@ -209,6 +220,15 @@ class TrainConfig6Max:
     # (NIT, TAG, LAG, STATION, MANIAC). Validated as a subset in __post_init__.
     archetype_profiles: Optional[list] = None
 
+    # --- Step 7 dashboard (Pieces A + B). All default OFF → bit-identical to
+    # pre-dashboard behavior. Pure observability; no training-trajectory effect.
+    enhanced_logging: bool = False          # Piece A: ETA + rolling avgs + override-mix
+    mini_eval_enabled: bool = False         # Piece B: periodic head-to-head vs anchors
+    mini_eval_every: int = 200              # mini-eval cadence (iters)
+    mini_eval_n_hands: int = 200            # hands per anchor per snapshot
+    mini_eval_anchors: Optional[list] = None         # "name=path" specs (or bare paths) to anchor .pt
+    mini_eval_shanky_rotation: Optional[list] = None  # Shanky profile specs, cycled one per snapshot
+
     seed: int = 2026
 
     def __post_init__(self):
@@ -242,6 +262,22 @@ class TrainConfig6Max:
                 raise ValueError(
                     f"archetype_profiles {bad} not in valid archetype names "
                     f"{VALID_ARCHETYPE_NAMES}"
+                )
+        # Step 7 dashboard config-only invariants. Anchor-file existence is a
+        # runtime check (solver __init__), mirroring league_mix>0 requires path.
+        if self.mini_eval_enabled:
+            if not self.mini_eval_anchors:
+                raise ValueError(
+                    "mini_eval_enabled requires mini_eval_anchors (non-empty "
+                    "list of 'name=path' specs or checkpoint paths)"
+                )
+            if self.mini_eval_every < 1:
+                raise ValueError(
+                    f"mini_eval_every must be >= 1, got {self.mini_eval_every}"
+                )
+            if self.mini_eval_n_hands < 1:
+                raise ValueError(
+                    f"mini_eval_n_hands must be >= 1, got {self.mini_eval_n_hands}"
                 )
 
 
@@ -383,6 +419,28 @@ class DeepCFR6MaxSolver:
                 f"mix={config.archetype_mix:.3f}"
             )
 
+        # Step 7 dashboard state. Override-mix counters (Piece A) — reset each
+        # iter in train(); incremented in _maybe_sample_league_opponent. Pure
+        # observability (no rng draw → bit-identity-inert).
+        self._override_counts = {"archetype": 0, "league": 0, "self_play": 0}
+        # Mini-eval (Piece B): per-snapshot result history + anchor policy cache.
+        self._mini_eval_history: list = []
+        self._mini_eval_anchor_cache: dict = {}
+        if config.mini_eval_enabled:
+            import os as _os
+            specs = list(config.mini_eval_anchors or []) + list(
+                config.mini_eval_shanky_rotation or [])
+            for spec in specs:
+                path = spec.split("=", 1)[1] if "=" in spec else spec
+                if not _os.path.exists(path):
+                    raise ValueError(f"mini_eval anchor/profile not found: {path}")
+            self.log(
+                f"  mini-eval enabled: {len(config.mini_eval_anchors)} anchors"
+                f"{' + shanky rotation' if config.mini_eval_shanky_rotation else ''}"
+                f", every {config.mini_eval_every} iters, "
+                f"{config.mini_eval_n_hands} hands/anchor"
+            )
+
         self.iteration = 0
 
         self.log(
@@ -426,6 +484,7 @@ class DeepCFR6MaxSolver:
         if not archetype_active and not league_active:
             # No override source → self-play, no rng draw (preserves
             # bit-identity with the pre-Phase-5-A short-circuit).
+            self._count_override("self_play")
             return None
 
         r = self.rng.random()
@@ -434,15 +493,28 @@ class DeepCFR6MaxSolver:
             # Policy. The pool has no internal mix gate — the roll above already
             # placed us in this band.
             if self.archetype_pool is None:
+                self._count_override("self_play")
                 return None
+            self._count_override("archetype")
             return self.archetype_pool.sample_opponent(self.rng)
         if r < self.cfg.archetype_mix + self.cfg.league_mix:
             # League band.
             if self.league_pool is None:
+                self._count_override("self_play")
                 return None
+            self._count_override("league")
             return self.league_pool.sample_opponent(self.rng)
         # Self-play band.
+        self._count_override("self_play")
         return None
+
+    def _count_override(self, band: str) -> None:
+        """Increment the per-iter override-mix counter (Piece A). Defensive:
+        no-op when the counter is absent (e.g. duck-typed test fakes). Never
+        draws rng — bit-identity-inert."""
+        counts = getattr(self, "_override_counts", None)
+        if counts is not None:
+            counts[band] = counts.get(band, 0) + 1
 
     def _dcfr_weights(self, iters):
         """Per-sample DCFR weights for a batch.
@@ -588,7 +660,7 @@ class DeepCFR6MaxSolver:
         start_iter = self.iteration + 1
         metrics: dict = {
             "iter": [], "time": [], "traverser": [], "adv_loss": [],
-            "strat_loss": [], "strat_buf": [],
+            "strat_loss": [], "strat_buf": [], "mini_eval": [],
         }
         for s in range(NUM_SEATS_6MAX):
             metrics[f"buf_{s}"] = []
@@ -598,6 +670,8 @@ class DeepCFR6MaxSolver:
             self.iteration = it
             traverser = (it - 1) % NUM_SEATS_6MAX
             t_it = time.time()
+            # Reset the per-iter override-mix counter (Piece A). No rng draw.
+            self._override_counts = {"archetype": 0, "league": 0, "self_play": 0}
 
             # Reset the encoder's per-game bucket cache to bound memory.
             self.encoder.reset_cache()
@@ -678,15 +752,25 @@ class DeepCFR6MaxSolver:
             for s in range(NUM_SEATS_6MAX):
                 metrics[f"buf_{s}"].append(len(self.policy_nets.buffer_for(s)))
 
-            self.log(
-                f"iter {it:>4}/{self.cfg.n_iterations}  "
-                f"trav={traverser}  "
-                f"adv={'nan' if math.isnan(adv_loss) else f'{adv_loss:.4f}':>8}  "
-                f"strat={'nan' if math.isnan(strat_loss) else f'{strat_loss:.4f}':>8}  "
-                f"bufs=({', '.join(str(len(self.policy_nets.buffer_for(s))) for s in range(NUM_SEATS_6MAX))})  "
-                f"sbuf={len(self.policy_nets.strat_buffer)}  "
-                f"{elapsed:.1f}s"
-            )
+            if self.cfg.enhanced_logging:
+                self._log_enhanced(it, traverser, adv_loss, strat_loss,
+                                   elapsed, t_start, metrics)
+            else:
+                # Default path — BYTE-IDENTICAL to pre-dashboard behavior.
+                self.log(
+                    f"iter {it:>4}/{self.cfg.n_iterations}  "
+                    f"trav={traverser}  "
+                    f"adv={'nan' if math.isnan(adv_loss) else f'{adv_loss:.4f}':>8}  "
+                    f"strat={'nan' if math.isnan(strat_loss) else f'{strat_loss:.4f}':>8}  "
+                    f"bufs=({', '.join(str(len(self.policy_nets.buffer_for(s))) for s in range(NUM_SEATS_6MAX))})  "
+                    f"sbuf={len(self.policy_nets.strat_buffer)}  "
+                    f"{elapsed:.1f}s"
+                )
+
+            # Mini-eval (Piece B): periodic strength heartbeat. Uses an isolated
+            # eval seed (cfg.seed+200+it) — never touches self.rng.
+            if self.cfg.mini_eval_enabled and it % self.cfg.mini_eval_every == 0:
+                self._maybe_run_mini_eval(it, metrics)
 
             if checkpoint_dir is not None and (
                 it % checkpoint_every == 0 or it == self.cfg.n_iterations
@@ -698,6 +782,70 @@ class DeepCFR6MaxSolver:
         total = time.time() - t_start
         self.log(f"=== total: {total/60:.1f} min ===")
         return metrics
+
+    # ---- Step 7 dashboard (Pieces A + B) ----
+
+    def _log_enhanced(self, it, traverser, adv_loss, strat_loss, elapsed,
+                      t_start, metrics) -> None:
+        """Piece A: enhanced per-iter log — ETA, rolling avg10, override-mix,
+        per-iter wall. Pure observability; no rng draw, no training change."""
+        def avg10(key):
+            xs = [x for x in metrics[key][-10:] if not (isinstance(x, float) and math.isnan(x))]
+            return sum(xs) / len(xs) if xs else float("nan")
+
+        def fnum(x):
+            return "nan" if (isinstance(x, float) and math.isnan(x)) else f"{x:.4f}"
+
+        wall_elapsed = time.time() - t_start
+        wall_avg10 = avg10("time")
+        remaining = self.cfg.n_iterations - it
+        eta = remaining * wall_avg10 if wall_avg10 == wall_avg10 else 0.0  # nan-guard
+
+        c = self._override_counts
+        tot = max(sum(c.values()), 1)
+        mix = (f"arch={100*c['archetype']/tot:.1f}% "
+               f"league={100*c['league']/tot:.1f}% "
+               f"self={100*c['self_play']/tot:.1f}%")
+
+        self.log(
+            f"iter {it:>4}/{self.cfg.n_iterations}  "
+            f"[elapsed {_fmt_hms(wall_elapsed)}, ETA {_fmt_hms(eta)}]\n"
+            f"    trav={traverser}  "
+            f"adv-loss {fnum(adv_loss)} (avg10 {fnum(avg10('adv_loss'))})  "
+            f"strat-loss {fnum(strat_loss)} (avg10 {fnum(avg10('strat_loss'))})\n"
+            f"    adv-bufs ({', '.join(str(len(self.policy_nets.buffer_for(s))) for s in range(NUM_SEATS_6MAX))})  "
+            f"strat-buf {len(self.policy_nets.strat_buffer)}\n"
+            f"    override-mix: {mix} (this iter)  "
+            f"iter-wall {elapsed:.1f}s (avg10 {wall_avg10:.1f}s)"
+        )
+
+    def _maybe_run_mini_eval(self, it, metrics) -> None:
+        """Piece B: run the periodic mini-eval and log + record results."""
+        from src.nlhe import mini_eval
+        t0 = time.time()
+        results = mini_eval.run_mini_eval(self, it)
+        dt = time.time() - t0
+
+        prev = self._mini_eval_history[-1] if self._mini_eval_history else None
+        lines = [f"  === EVAL @ iter {it} (n={self.cfg.mini_eval_n_hands} hands/opponent, {dt:.1f}s) ==="]
+        for name, r in results.items():
+            lines.append(
+                f"    vs {name:<24} ICM lift {r['lift']:>+7.4f} +/- {r['std']:.4f}  "
+                f"sigma={r['sigma']:.2f}"
+            )
+        if prev is not None:
+            deltas = []
+            for name, r in results.items():
+                if name in prev:
+                    deltas.append(f"{name} {r['lift'] - prev[name]['lift']:+.4f}")
+            if deltas:
+                lines.append("    rolling delta vs last eval: " + ", ".join(deltas))
+        lines.append("  " + "=" * 42)
+        self.log("\n".join(lines))
+
+        record = {"iter": it, "wall_s": dt, "results": results}
+        self._mini_eval_history.append(results)
+        metrics["mini_eval"].append(record)
 
     # ---- Checkpoint ----
 
