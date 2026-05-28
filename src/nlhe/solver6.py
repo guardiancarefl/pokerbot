@@ -69,6 +69,12 @@ from typing import Any, Callable, Optional, Sequence
 import numpy as np
 import torch
 
+# Pin BLAS to single-threaded across the codebase. Determinism under mp.fork() is a
+# project-wide property: forked workers inherit MKL/OpenMP thread-pool state from the
+# parent and can deadlock on the first BLAS call if multi-threaded BLAS was initialized
+# in the parent. The orchestrator gets parallelism from processes, not intra-op threads.
+torch.set_num_threads(1)
+
 from src.nlhe.abstraction import Abstraction
 from src.nlhe.cfr6 import CFR6MaxContext, traverse_6max
 from src.nlhe.icm import (
