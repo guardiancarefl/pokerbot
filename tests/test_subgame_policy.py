@@ -44,6 +44,11 @@ class _MockNets:
     def predict_advantages(self, seat, features):
         return self._adv.copy()
 
+    def inference_policy(self, seat, features, legal_mask):
+        from src.nlhe.solver import _strategy_from_advantages
+        adv = self.predict_advantages(seat, features)
+        return _strategy_from_advantages(adv, np.asarray(legal_mask))
+
 
 class _MockSolver:
     def __init__(self, adv):
