@@ -123,6 +123,14 @@ def _resolve_payouts(payout_mode: str, buy_in: float, first_share: float) -> lis
     )
 
 
+# Knuth's odd-constant mixing salt — independent stream offset for override sampling.
+# Combined with the (seed, iter, traversal_id) per-traversal fork formula, this gives a
+# second deterministic stream statistically independent of the traversal rng, used by
+# _maybe_sample_league_opponent so override band/pool sampling doesn't cascade into the
+# traversal stream (which would break parallel bit-identity at mix > 0).
+OVERRIDE_SALT = 0x9E3779B97F4A7C15
+
+
 # ===== Config =====
 
 
@@ -457,11 +465,12 @@ class DeepCFR6MaxSolver:
 
     # ---- Network training ----
 
-    def _maybe_sample_league_opponent(self):
+    def _maybe_sample_league_opponent(self, rng: Optional[random.Random] = None):
         """Sample this traversal's opponent override, or None (self-play).
 
         Combined three-way override-slot sampling (Phase 5-A). One uniform
-        roll r on self.rng partitions the unit interval into three bands:
+        roll r on the supplied rng (or self.rng if not provided) partitions
+        the unit interval into three bands:
 
             archetype  [0, archetype_mix)
             league     [archetype_mix, archetype_mix + league_mix)
@@ -484,7 +493,15 @@ class DeepCFR6MaxSolver:
         band collapses to [0, league_mix) — the original single-gate
         condition, consuming the identical rng draw. The override remains
         per-traversal-shared across all opponent seats (unchanged semantics).
+
+        Phase 1 override-fork: callers that need parallel bit-identity at
+        mix>0 supply an independent per-traversal rng (derived via the
+        OVERRIDE_SALT formula in train()), so override-band sampling never
+        perturbs the traversal stream. When rng is None, falls back to
+        self.rng to preserve callers (e.g. mid-migration paths) that haven't
+        adopted the explicit fork yet.
         """
+        rng = rng or self.rng
         archetype_active = self.archetype_pool is not None and self.cfg.archetype_mix > 0.0
         league_active = self.league_pool is not None and self.cfg.league_mix > 0.0
         if not archetype_active and not league_active:
@@ -493,7 +510,7 @@ class DeepCFR6MaxSolver:
             self._count_override("self_play")
             return None
 
-        r = self.rng.random()
+        r = rng.random()
         if r < self.cfg.archetype_mix:
             # Archetype band (Phase 5-B): sample a style profile as an override
             # Policy. The pool has no internal mix gate — the roll above already
@@ -502,14 +519,14 @@ class DeepCFR6MaxSolver:
                 self._count_override("self_play")
                 return None
             self._count_override("archetype")
-            return self.archetype_pool.sample_opponent(self.rng)
+            return self.archetype_pool.sample_opponent(rng)
         if r < self.cfg.archetype_mix + self.cfg.league_mix:
             # League band.
             if self.league_pool is None:
                 self._count_override("self_play")
                 return None
             self._count_override("league")
-            return self.league_pool.sample_opponent(self.rng)
+            return self.league_pool.sample_opponent(rng)
         # Self-play band.
         self._count_override("self_play")
         return None
@@ -699,8 +716,12 @@ class DeepCFR6MaxSolver:
                         (self.cfg.seed * 1_000_003 + it * 9_973 + t)
                         & 0x7FFFFFFFFFFFFFFF
                     )
+                    rng_override_t = random.Random(
+                        (self.cfg.seed * 1_000_003 + it * 9_973 + t + OVERRIDE_SALT)
+                        & 0x7FFFFFFFFFFFFFFF
+                    )
                     state = self.game.new_initial_state()
-                    opp_override = self._maybe_sample_league_opponent()
+                    opp_override = self._maybe_sample_league_opponent(rng=rng_override_t)
                     traverse_6max(
                         state,
                         traversing_player=traverser,
@@ -715,6 +736,10 @@ class DeepCFR6MaxSolver:
                 for t in range(self.cfg.traversals_per_iter):
                     rng_t = random.Random(
                         (self.cfg.seed * 1_000_003 + it * 9_973 + t)
+                        & 0x7FFFFFFFFFFFFFFF
+                    )
+                    rng_override_t = random.Random(
+                        (self.cfg.seed * 1_000_003 + it * 9_973 + t + OVERRIDE_SALT)
                         & 0x7FFFFFFFFFFFFFFF
                     )
                     sampled = sample_starting_state(
@@ -739,7 +764,7 @@ class DeepCFR6MaxSolver:
                         num_paid=self.cfg.num_paid,
                         dealer_seat=sampled["dealer_seat"],
                     )
-                    opp_override = self._maybe_sample_league_opponent()
+                    opp_override = self._maybe_sample_league_opponent(rng=rng_override_t)
                     traverse_6max(
                         state,
                         traversing_player=traverser,
