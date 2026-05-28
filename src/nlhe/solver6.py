@@ -688,21 +688,29 @@ class DeepCFR6MaxSolver:
                     max_depth=self.cfg.max_traversal_depth,
                     num_paid=self.cfg.num_paid,
                 )
-                for _ in range(self.cfg.traversals_per_iter):
+                for t in range(self.cfg.traversals_per_iter):
+                    rng_t = random.Random(
+                        (self.cfg.seed * 1_000_003 + it * 9_973 + t)
+                        & 0x7FFFFFFFFFFFFFFF
+                    )
                     state = self.game.new_initial_state()
                     opp_override = self._maybe_sample_league_opponent()
                     traverse_6max(
                         state,
                         traversing_player=traverser,
                         ctx=ctx,
-                        rng=self.rng,
+                        rng=rng_t,
                         opponent_policy_override=opp_override,
                     )
             else:
                 # Tournament-aware mode: sample state + build game per trajectory.
                 from src.nlhe.stack_sampler import sample_starting_state
                 import pyspiel
-                for _ in range(self.cfg.traversals_per_iter):
+                for t in range(self.cfg.traversals_per_iter):
+                    rng_t = random.Random(
+                        (self.cfg.seed * 1_000_003 + it * 9_973 + t)
+                        & 0x7FFFFFFFFFFFFFFF
+                    )
                     sampled = sample_starting_state(
                         self.tournament_structure,
                         self.rng,
@@ -730,7 +738,7 @@ class DeepCFR6MaxSolver:
                         state,
                         traversing_player=traverser,
                         ctx=ctx,
-                        rng=self.rng,
+                        rng=rng_t,
                         opponent_policy_override=opp_override,
                     )
 
