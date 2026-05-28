@@ -21,8 +21,11 @@ import pyspiel
 import torch
 
 from src.nlhe.abstraction import Abstraction
+from src.nlhe.archetype6 import ArchetypePool
 from src.nlhe.cfr6 import CFR6MaxContext, traverse_6max
+from src.nlhe.checkpoint_registry import CheckpointRegistry
 from src.nlhe.infoset6 import InfosetEncoder6Max
+from src.nlhe.league_pool import LeaguePool
 from src.nlhe.networks6 import N_DISCRETE_ACTIONS
 from src.nlhe.parallel.protocol import (
     TraversalSample,
@@ -30,6 +33,7 @@ from src.nlhe.parallel.protocol import (
     WorkerOutput,
 )
 from src.nlhe.solver import MLP
+from src.nlhe.solver6 import OVERRIDE_SALT
 
 
 class _CollectorBuffer:
@@ -97,6 +101,17 @@ def _fork_rng(seed: int, iteration: int, t: int) -> random.Random:
     return random.Random(s)
 
 
+def _fork_rng_override(seed: int, iteration: int, t: int) -> random.Random:
+    """Per-traversal override-RNG fork. Statistically independent stream from
+    _fork_rng via OVERRIDE_SALT offset (imported from solver6). Worker side and
+    orchestrator side derive identical rng_override_t values from the same
+    (seed, iteration, t), so the band roll + pool sample agree without any
+    cross-process communication.
+    """
+    s = (seed * 1_000_003 + iteration * 9_973 + t + OVERRIDE_SALT) & 0x7FFFFFFFFFFFFFFF
+    return random.Random(s)
+
+
 def _build_nets(
     state_dicts: list[dict], input_dim: int, hidden_dim: list[int]
 ) -> list:
@@ -107,6 +122,64 @@ def _build_nets(
         net.eval()
         nets.append(net)
     return nets
+
+
+def _sample_override_worker(
+    rng: random.Random,
+    league_pool,
+    archetype_pool,
+    archetype_mix: float,
+    league_mix: float,
+):
+    """Worker-side band-roll + pool sampling. Mirrors solver6
+    _maybe_sample_league_opponent's logic EXACTLY (same branches, same draw
+    count per branch, same order) — bit-identity at mix>0 depends on this
+    parity. Counter bookkeeping stays orchestrator-side (workers have no
+    access to solver._override_counts across the fork boundary).
+    """
+    archetype_active = archetype_pool is not None and archetype_mix > 0.0
+    league_active = league_pool is not None and league_mix > 0.0
+    if not archetype_active and not league_active:
+        return None
+    r = rng.random()
+    if r < archetype_mix:
+        if archetype_pool is None:
+            return None
+        return archetype_pool.sample_opponent(rng)
+    if r < archetype_mix + league_mix:
+        if league_pool is None:
+            return None
+        return league_pool.sample_opponent(rng)
+    return None
+
+
+def _build_pools(wi: WorkerInput, abstraction):
+    """Reconstruct league_pool and archetype_pool locally from WorkerInput.
+    None paths → None pools (mix=0 short-circuit). Pools are constructed
+    once per run_traversals call (= once per worker per iter); per-traversal
+    sampling reuses them via their internal lazy caches.
+    """
+    league_pool = None
+    if wi.league_registry_path is not None:
+        registry = CheckpointRegistry.load(wi.league_registry_path)
+        league_pool = LeaguePool(
+            registry=registry,
+            abstraction=abstraction,
+            structure=None,  # Phase 2 stays legacy-mode-only
+            sample_strategy=wi.league_sample_strategy,
+            weights=wi.league_weights,
+            recency_halflife=wi.league_recency_halflife,
+            tag_filter=wi.league_tag_filter,
+        )
+    archetype_pool = None
+    if wi.archetype_calibration_path is not None:
+        archetype_pool = ArchetypePool(
+            calibration_path=wi.archetype_calibration_path,
+            abstraction=abstraction,
+            profile_names=wi.archetype_profile_names,
+            bucket_runouts=wi.encoder_bucket_runouts,
+        )
+    return league_pool, archetype_pool
 
 
 def run_traversals(wi: WorkerInput) -> list[WorkerOutput]:
@@ -127,6 +200,7 @@ def run_traversals(wi: WorkerInput) -> list[WorkerOutput]:
         bucket_runouts=wi.encoder_bucket_runouts,
     )
     nets = _build_nets(wi.adv_state_dicts, wi.input_dim, wi.hidden_dim)
+    league_pool, archetype_pool = _build_pools(wi, abstraction)
 
     outputs: list[WorkerOutput] = []
     for t in wi.traversal_ids:
@@ -142,12 +216,21 @@ def run_traversals(wi: WorkerInput) -> list[WorkerOutput]:
             dealer_seat=wi.dealer_seat,
         )
         rng_t = _fork_rng(wi.seed, wi.iteration, t)
+        rng_override_t = _fork_rng_override(wi.seed, wi.iteration, t)
+        opp_override = _sample_override_worker(
+            rng_override_t,
+            league_pool,
+            archetype_pool,
+            wi.archetype_mix,
+            wi.league_mix,
+        )
         state = game.new_initial_state()
         traverse_6max(
             state,
             traversing_player=wi.traverser,
             ctx=ctx,
             rng=rng_t,
+            opponent_policy_override=opp_override,
         )
         outputs.append(WorkerOutput(
             traversal_id=t,

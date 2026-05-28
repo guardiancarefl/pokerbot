@@ -71,6 +71,22 @@ class WorkerInput:
     num_paid: int
     dealer_seat: Optional[int] = None
 
+    # ---- Phase 2: override pool construction (picklable scalars/strings) ----
+    # Workers reconstruct league_pool / archetype_pool locally from these and
+    # sample the override deterministically per (seed, iter, t) using the
+    # same OVERRIDE_SALT-keyed rng_override_t the orchestrator uses for the
+    # counter bookkeeping. None paths → pool stays None → mix=0 callers
+    # are bit-identical to Phase 1 (no override sampling, no rng draw).
+    league_registry_path: Optional[str] = None
+    league_sample_strategy: str = "uniform"
+    league_weights: Optional[dict] = None
+    league_recency_halflife: float = 5.0
+    league_tag_filter: Optional[list] = None
+    league_mix: float = 0.0
+    archetype_calibration_path: Optional[str] = None
+    archetype_profile_names: Optional[list] = None
+    archetype_mix: float = 0.0
+
 
 @dataclass
 class WorkerOutput:

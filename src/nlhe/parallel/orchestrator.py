@@ -34,7 +34,7 @@ from src.nlhe.parallel.protocol import (
     WorkerOutput,
 )
 from src.nlhe.parallel.worker import run_traversals
-from src.nlhe.solver6 import DeepCFR6MaxSolver
+from src.nlhe.solver6 import DeepCFR6MaxSolver, OVERRIDE_SALT
 
 
 def _extract_adv_state_dicts(solver: DeepCFR6MaxSolver) -> list[dict]:
@@ -83,6 +83,15 @@ def _build_worker_input(
     max_depth: int,
     num_paid: int,
     dealer_seat: Optional[int],
+    league_registry_path: Optional[str] = None,
+    league_sample_strategy: str = "uniform",
+    league_weights: Optional[dict] = None,
+    league_recency_halflife: float = 5.0,
+    league_tag_filter: Optional[list] = None,
+    league_mix: float = 0.0,
+    archetype_calibration_path: Optional[str] = None,
+    archetype_profile_names: Optional[list] = None,
+    archetype_mix: float = 0.0,
 ) -> WorkerInput:
     return WorkerInput(
         seed=seed,
@@ -102,6 +111,15 @@ def _build_worker_input(
         max_depth=max_depth,
         num_paid=num_paid,
         dealer_seat=dealer_seat,
+        league_registry_path=league_registry_path,
+        league_sample_strategy=league_sample_strategy,
+        league_weights=league_weights,
+        league_recency_halflife=league_recency_halflife,
+        league_tag_filter=league_tag_filter,
+        league_mix=league_mix,
+        archetype_calibration_path=archetype_calibration_path,
+        archetype_profile_names=archetype_profile_names,
+        archetype_mix=archetype_mix,
     )
 
 
@@ -131,11 +149,15 @@ def _merge_outputs_into_buffers(
     traverser: int,
     T: int,
     group_outputs: list[list[WorkerOutput]],
+    seed: int,
+    iteration: int,
 ) -> None:
     """Replay worker outputs into the real reservoir buffers in strict
     ASCENDING traversal_id order, interleaved with the orchestrator-side
-    override-sampler call so override counts (and self.rng at mix>0)
-    advance in lock-step with sequential train().
+    override-counter call so override counts advance in lock-step with
+    sequential train(). Phase 2: count_only=True keeps the orchestrator
+    off the pool-sampling cost (workers do the actual override sampling
+    using the same deterministic rng_override_t derivation).
     """
     # Flatten across groups, then sort by traversal_id. Worker outputs
     # within a group are already in ascending t order (run_traversals
@@ -160,10 +182,17 @@ def _merge_outputs_into_buffers(
     strat_buf = solver.policy_nets.strat_buffer
 
     for t in range(T):
-        # MUST happen even at mix=0: advances solver._override_counts so
-        # the post-iter tally matches sequential's. At mix>0 (out of scope
-        # v1) it also draws from self.rng and would need its own fork.
-        solver._maybe_sample_league_opponent()
+        # Counter bookkeeping: workers sampled the actual override using
+        # rng_override_t locally; we derive the SAME rng here and call
+        # _maybe_sample_league_opponent(rng=..., count_only=True) to
+        # advance solver._override_counts deterministically without paying
+        # the pool-sample cost (the Policy is discarded anyway since the
+        # worker already traversed with its own override).
+        rng_override_t = random.Random(
+            (seed * 1_000_003 + iteration * 9_973 + t + OVERRIDE_SALT)
+            & 0x7FFFFFFFFFFFFFFF
+        )
+        solver._maybe_sample_league_opponent(rng=rng_override_t, count_only=True)
 
         out = by_id[t]
         for s in out.adv_samples:
@@ -267,6 +296,15 @@ def parallel_train(
                 max_depth=cfg.max_traversal_depth,
                 num_paid=cfg.num_paid,
                 dealer_seat=None,
+                league_registry_path=cfg.league_registry_path,
+                league_sample_strategy=cfg.league_sample_strategy,
+                league_weights=cfg.league_weights,
+                league_recency_halflife=cfg.league_recency_halflife,
+                league_tag_filter=cfg.league_tag_filter,
+                league_mix=cfg.league_mix,
+                archetype_calibration_path=cfg.archetype_calibration_path,
+                archetype_profile_names=cfg.archetype_profiles,
+                archetype_mix=cfg.archetype_mix,
             )
             for group in groups
         ]
@@ -275,7 +313,10 @@ def parallel_train(
         else:
             group_outputs = _run_workers_inproc(worker_inputs)
 
-        _merge_outputs_into_buffers(solver, traverser, T, group_outputs)
+        _merge_outputs_into_buffers(
+            solver, traverser, T, group_outputs,
+            seed=cfg.seed, iteration=it,
+        )
 
         # ---- Steps 8-14: identical to solver6.train() ----
         adv_loss = solver._train_advantage_net(traverser)

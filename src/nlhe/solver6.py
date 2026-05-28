@@ -465,7 +465,11 @@ class DeepCFR6MaxSolver:
 
     # ---- Network training ----
 
-    def _maybe_sample_league_opponent(self, rng: Optional[random.Random] = None):
+    def _maybe_sample_league_opponent(
+        self,
+        rng: Optional[random.Random] = None,
+        count_only: bool = False,
+    ):
         """Sample this traversal's opponent override, or None (self-play).
 
         Combined three-way override-slot sampling (Phase 5-A). One uniform
@@ -479,7 +483,9 @@ class DeepCFR6MaxSolver:
         Returns:
             An ArchetypePolicy (archetype band, Phase 5-B), a Policy
             (CheckpointPolicy / ShankyProfilePolicy, league band per LeaguePool),
-            or None (self-play band).
+            or None (self-play band). When count_only=True, returns None in
+            every band (the caller only wants the counter increment and the
+            deterministic rng draw, not a Policy object).
 
         Both pools expose sample_opponent(rng) with NO internal mix gate — this
         roll owns the mix decision. Archetype opponents reach training via the
@@ -500,6 +506,14 @@ class DeepCFR6MaxSolver:
         perturbs the traversal stream. When rng is None, falls back to
         self.rng to preserve callers (e.g. mid-migration paths) that haven't
         adopted the explicit fork yet.
+
+        Phase 2 count_only: at mix>0 the parallel orchestrator's merge phase
+        needs to advance the override counter (and the rng draw, if rng is
+        self.rng) without paying the cost of sampling a Policy from the pool
+        — workers do the actual sampling on their side using the same
+        deterministic rng_override_t. count_only=True produces the same
+        rng draws and the same _count_override increments as count_only=False
+        but returns None instead of constructing a Policy.
         """
         rng = rng or self.rng
         archetype_active = self.archetype_pool is not None and self.cfg.archetype_mix > 0.0
@@ -519,6 +533,8 @@ class DeepCFR6MaxSolver:
                 self._count_override("self_play")
                 return None
             self._count_override("archetype")
+            if count_only:
+                return None
             return self.archetype_pool.sample_opponent(rng)
         if r < self.cfg.archetype_mix + self.cfg.league_mix:
             # League band.
@@ -526,6 +542,8 @@ class DeepCFR6MaxSolver:
                 self._count_override("self_play")
                 return None
             self._count_override("league")
+            if count_only:
+                return None
             return self.league_pool.sample_opponent(rng)
         # Self-play band.
         self._count_override("self_play")
