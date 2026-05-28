@@ -1,0 +1,30 @@
+# Smoke config for Phase 4e.3d: tiny 6-max NLHE training run.
+# Goal: confirm scripts/train_6max.py runs end-to-end and writes a valid
+# checkpoint + metrics file. Not for evaluating training quality.
+tag: six_max_smoke
+abstraction_path: runs/abstraction_20260521_223018_retrofit/abstraction.pkl
+
+# Game shape.
+starting_stack: 1500          # 6-max SNG default (15bb)
+big_blind: 100
+small_blind: 50
+payout_mode: double_up        # Ignition top-3 equal-payout
+buy_in: 1.0
+first_share: 0.65             # ignored for double_up mode
+
+# Training hyperparameters — sized for ~1 minute on Contabo CPU.
+hidden_dim: [32, 32]
+n_iterations: 16
+traversals_per_iter: 10
+train_steps_per_iter: 5
+batch_size: 8
+learning_rate: 0.001
+buffer_capacity: 2000
+
+# Encoder + solver behavior.
+bucket_runouts: 30
+max_traversal_depth: 200
+seed: 2026
+
+# Checkpoint cadence — every 2 iters (so we get checkpoints at it=2 and it=4).
+checkpoint_every: 4
