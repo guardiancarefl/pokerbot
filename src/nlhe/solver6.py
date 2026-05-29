@@ -336,10 +336,15 @@ class DeepCFR6MaxSolver:
 
         # Encoder shared across all seats. Reset its bucket cache between
         # iterations to bound memory.
+        # max_bucket_dim auto-derived from the abstraction so the feature/net
+        # dims match whatever k the abstraction was built with. Prevents silent
+        # one-hot truncation if a higher-k abstraction (e.g. k=500) is loaded
+        # without explicitly updating the encoder dimension.
+        max_bucket_dim = max(sa.k for sa in abstraction.streets.values())
         self.encoder = InfosetEncoder6Max(
             abstraction=abstraction,
             starting_stack=config.starting_stack,
-            max_bucket_dim=200,
+            max_bucket_dim=max_bucket_dim,
             bucket_runouts=config.bucket_runouts,
         )
 

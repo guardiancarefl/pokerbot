@@ -127,9 +127,19 @@ def main() -> None:
         default="preflop,flop,turn,river",
         help="comma-separated street list to train (default all four)",
     )
+    parser.add_argument(
+        "--k_postflop",
+        type=int,
+        default=None,
+        help="Override postflop k (flop/turn/river). Preflop stays at 20 (169 canonical classes).",
+    )
     args = parser.parse_args()
 
     cfg = DEFAULT_CONFIG
+    if args.k_postflop is not None:
+        for s in ("flop", "turn", "river"):
+            cfg[s]["k"] = args.k_postflop
+        log.info(f"overriding postflop k to {args.k_postflop} via --k_postflop")
     rng = random.Random(cfg["seed"])
 
     if args.out:
