@@ -116,10 +116,46 @@ def main() -> None:
         log.info(f"  resumed at iteration {solver.iteration}")
 
     t0 = time.time()
-    metrics = solver.train(checkpoint_dir=ckpt_dir, checkpoint_every=checkpoint_every)
+    interrupted = False
+    metrics = None
+    try:
+        metrics = solver.train(
+            checkpoint_dir=ckpt_dir, checkpoint_every=checkpoint_every
+        )
+    except KeyboardInterrupt:
+        # Ctrl+C from the tmux session (or any other SIGINT). solver.train()
+        # internal state is reachable via solver.iteration etc., so we can
+        # checkpoint at whatever iter we were on and exit cleanly. Subsequent
+        # work (loading the checkpoint, re-running eval, etc.) treats this run
+        # as ending at solver.iteration.
+        interrupted = True
+        log.info(f"=== INTERRUPTED at iter {solver.iteration} — saving final checkpoint ===")
+        final_ckpt = ckpt_dir / f"ckpt_iter_{solver.iteration:04d}.pt"
+        try:
+            solver.save_checkpoint(final_ckpt, slim=True)
+            log.info(f"  saved final checkpoint: {final_ckpt}")
+        except Exception as e:
+            log.warning(f"  final checkpoint save FAILED: {e}")
     total = time.time() - t0
-    log.info(f"=== Total training time: {total/60:.1f} min ===")
+    log.info(
+        f"=== Total training time: {total/60:.1f} min "
+        f"({'INTERRUPTED' if interrupted else 'completed'}) ==="
+    )
 
+    # Always write a metrics.json so downstream tooling can see how far the
+    # run got. On interrupt, metrics is None (solver.train() didn't return);
+    # write a stub with interrupted flag so a partial run is distinguishable
+    # from a successful one without reading checkpoint files.
+    if metrics is None:
+        metrics = {
+            "iter": [], "time": [], "traverser": [],
+            "adv_loss": [], "strat_loss": [], "strat_buf": [],
+            "mini_eval": [],
+        }
+        for s in range(6):
+            metrics[f"buf_{s}"] = []
+    metrics["interrupted"] = interrupted
+    metrics["last_iteration"] = solver.iteration
     with open(run_dir / "metrics.json", "w") as f:
         json.dump(metrics, f, indent=2)
     log.info(f"saved: {run_dir / 'metrics.json'}")
