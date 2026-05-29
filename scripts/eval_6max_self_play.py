@@ -53,6 +53,7 @@ from src.nlhe.actions import (
 )
 from src.nlhe.cfr6 import _build_view_6max
 from src.nlhe.icm_returns import icm_adjust_returns
+from src.nlhe.within_match import MatchObserver
 
 
 logging.basicConfig(
@@ -168,6 +169,7 @@ def play_one_hand(
     rng: random.Random,
     num_paid: int = 3,
     mode: str = "sample",
+    observer: Optional[MatchObserver] = None,
 ):
     """Play one hand from a sampled tournament state.
 
@@ -178,6 +180,9 @@ def play_one_hand(
         rng: random source.
         num_paid: ICM payout count.
         mode: 'sample' or 'argmax' for action selection.
+        observer: optional Layer-4 within-match observer; receives one
+            update() per opponent decision (C1a). None preserves prior behavior
+            bit-for-bit. C1b will add the consumer that reads observer state.
 
     Returns:
         dict with: seat_to_equity_delta (length 6), sampled_blind_level, alive_count
@@ -213,6 +218,17 @@ def play_one_hand(
         cp = parsed["current_player"]
         solver = seat_to_solver[cp]
         a = _sample_action_from_policy(solver, parsed, state, rng, mode=mode)
+        if observer is not None:
+            # C1a: feed the within-match observer the DiscreteAction integer.
+            # Reverse-look-up chip→DA from discretize_legal_actions; if the chip
+            # action isn't in the discrete map (rare degenerate case), skip
+            # the sample — the counter that matters for that case is n_actions,
+            # which we don't currently increment without a known DA.
+            view = _build_view_6max(state, parsed)
+            discrete_to_chip = discretize_legal_actions(list(state.legal_actions()), view)
+            da_int = next((int(d) for d, c in discrete_to_chip.items() if c == a), None)
+            if da_int is not None:
+                observer.update(state, parsed, da_int, cp)
         state.apply_action(a)
 
     if not state.is_terminal():
@@ -264,6 +280,17 @@ def main():
 
     rng = random.Random(args.seed)
 
+    # C1a: within-match opponent observer. This driver treats one hand as one
+    # match (each play_one_hand samples a fresh tournament state via
+    # sample_starting_state — there is no multi-hand SNG match concept here).
+    # Per-hand wipe is therefore the right boundary for this driver; C1b/d can
+    # revisit when a true multi-hand driver lands.
+    # NOTE: showdown wiring (observer.note_showdown) is intentionally deferred —
+    # C1a is the data layer; identifying who reached showdown vs folded requires
+    # tracking folds across the hand, which C1b will add together with the
+    # consumer that reads observer state.
+    observer = MatchObserver(num_seats=NUM_SEATS_6MAX)
+
     # Accumulate per-policy total equity delta across hands.
     a_total = 0.0
     a_squared = 0.0  # for stderr
@@ -288,7 +315,10 @@ def main():
             else:
                 b_seat_counts[s] += 1
 
-        result = play_one_hand(seat_to_solver, structure, rng, mode=args.mode)
+        observer.match_started()
+        result = play_one_hand(seat_to_solver, structure, rng, mode=args.mode,
+                               observer=observer)
+        observer.match_ended()
         if result["exceeded_cap"]:
             n_capped += 1
             continue
