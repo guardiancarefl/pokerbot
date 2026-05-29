@@ -1,8 +1,7 @@
 # Project Status
 
-**Last updated:** 2026-05-26 (Session 20)
-**Current phase:** B1c — depth-limited subgame solving (real-time), sub-step 6
-(sub-steps 4 & 5 CLOSED)
+**Last updated:** 2026-05-29 (Session 5 close)
+**Current phase:** Phase 5 closed with strategic pivot. Layer 3 (real-time subgame solving) is the next session's focus.
 
 > Note: this file was badly stale before Session 13 (it still read "Pre-Phase-1
 > setup, 2026-05-21"). Rewritten from git history + the docs. Cross-check
@@ -110,3 +109,25 @@
 - Fast-path fallback knob (cut L / cut M / raise X) — measure `fast_view.py` first.
 - α (bias strength, default 3.0) and k tuning — revisit if the Q11 Level-3 ablation
   underwhelms.
+
+## Session 5 close (2026-05-29)
+
+### What landed
+- Parallel framework wired into production training path (commit b2571aa). G=10 measured at 4.5x speedup, BLAS-pinned, parallel mode validated end-to-end with mini_eval support inside the orchestrator.
+- 24 Shanky profiles ingested at data/shanky_profiles/ (gitignored), curated 9-profile rotation, league registry at configs/league/registry_experiment.json.
+- Three experiment configs committed (anchor / control / treatment at 2000 iters each, k=200, parallel_groups=10). Configs remain in repo for future use.
+- Anchor run completed cleanly: runs/dcfr_anchor_2000 symlink → phase4f_dcfr_anchor_2000_20260529_061615/, iter 2000 checkpoint preserved.
+- 17 session commits, all pushed to origin/phase4f-league.
+
+### Pivot (mid-session)
+Anchor's lift trajectory revealed the bot plateaus around iter 500-1000 at k=200; mean self-anchor lift ≈ zero after iter 500, with strat_loss continuing to refine (0.945 → 0.815) but no measurable head-to-head strength gain. The bot loses to 15 of 19 sampled Shanky scripted bots. This is consistent with k=200 abstraction being the bottleneck, not training iterations. See DECISIONS.md for the full reasoning.
+
+### Decisions
+- Diversity-mix control + treatment runs shelved (configs preserved).
+- Layer 3 (real-time subgame solving) promoted to next session's focus.
+- Anchor checkpoint preserved as k=200 blueprint baseline for future blueprint-vs-blueprint+subgame comparison.
+
+### Queued for Session 6
+1. Layer 3 design recon: read the published subgame-solving literature relevant to our setup (CPU-only, 6-max not HUNL, ICM-adjusted value function). Pluribus's continual resolving, safe subgame solving, depth-limited solving — which variant fits us?
+2. Layer 3 implementation plan: integration points with the blueprint we already have, computational budget per decision, memory footprint, action abstraction during resolve.
+3. Decision: build Layer 3 on top of current k=200 blueprint (cheaper, faster), or train a k=500 blueprint first and add Layer 3 on top (longer overall but stronger). The right call depends on Layer 3's expected lift over blueprint alone.

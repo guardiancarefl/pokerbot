@@ -496,3 +496,23 @@ The Phase 5-B recon assumed `parse_state_repeated_6max` was the training path (w
 This commit (Step 7-fix) restores the intended Phase 5-B behavior by threading `dealer_seat` through `CFR6MaxContext` into the parsed dict at the cfr6 parse site, and adds the integration tests Phase 5-B should have had (`test_dealer_seat_reaches_adapter_in_tournament_path`, `test_seat_indexing_alignment_in_tournament_path`).
 
 **Seat-indexing crux, empirically confirmed:** `current_player()` uses the same original-seat numbering as `sample_starting_state`'s `dealer_seat` — verified on full-ring hands (first preflop actor == `(dealer+3) % 6` = UTG, 16/16). So `position_for_seat_with_dealer(current_player, dealer_seat)` is consistent. Known approximation retained: on busted-seat hands (alive < 6, ~60% of sampled states) the full-ring position helper gives an approximate position — already-documented behavior driving only `archetype_policy`'s 10% in-position nudge, not a correctness defect. The ~60% busted-seat prevalence observed in tournament-mode sampling (Step 7 fix verification, 2026-05-27) is higher than 'edge case' implies and suggests busted-seat-aware position semantics could be a meaningful Phase C/D investment if archetype-mix style differentiation becomes a strength bottleneck. Recorded but not addressed here — the 10% in_position nudge is small enough that approximate positions on multi-bust hands don't block Step 7's strength claim.
+
+## Diversity-mix experiment shelved; Layer 3 (subgame solving) promoted to next priority
+**Decided:** 2026-05-29 (Session 5 close)
+**Why:** The anchor run (DCFR self-play at k=200, 2000 iters) completed cleanly at 12:19 UTC and produced enough lift trajectory data to identify the real bottleneck. The bot reached its strength ceiling around iter 500-1000:
+- strat_loss decreased 0.945 → 0.815 across the full 2000 iters (refinement continued)
+- Head-to-head self-anchor lift mean ≈ zero after iter 500 (CFR equilibrium oscillation around the abstraction's Nash, not strength gain)
+- 15 of 19 Shanky-rotation readings negative — bot losing to most commercial scripted bots even at iter 2000
+- Same Shanky opponent (KillPhilMTT) at iter 200 / 1100 / 2000: -0.0435 / -0.0256 / -0.0302 (improved then plateaued)
+
+This pattern is consistent with abstraction being the bottleneck, not iteration count. CFR converges to Nash *within the abstraction*; k=200 buckets compress ~1.3 trillion strategically-distinct hand+board combinations into 200 cells per street, so within-bucket distinctions (top pair good kicker vs weak kicker, draw-type) are invisible to the bot. A Shanky rule-based bot has effectively much finer perception, which lets it exploit the k=200 Nash bot.
+
+This shifts the project priorities. The original plan was: complete the diversity-mix experiment (control vs treatment at k=200), then train production blueprint at k=500 with the winning strategy. The honest read is that the diversity-mix question at k=200 answers a narrow comparison that may not transfer to k=500, and the bigger unlock is Layer 3 (real-time subgame solving) which is the architectural keystone for commercial-grade play.
+
+**Decision:**
+- Diversity-mix control + treatment runs are SHELVED. Three configs (anchor/control/treatment at 2000 iters with parallel_groups=10) remain in the repo for future use.
+- Layer 3 (real-time subgame solving) is the next session's focus. ARCHITECTURE.md originally placed Layer 3 in Phase 3+; promoting to immediate next work.
+- The anchor checkpoint (runs/dcfr_anchor_2000/checkpoints/ckpt_iter_2000.pt) is preserved as a k=200 blueprint baseline. When Layer 3 lands, the blueprint-only vs blueprint+subgame-solving comparison will use this exact checkpoint.
+
+**Alternative considered:** Continue with the planned diversity-mix experiment (~5h) and produce a small answer; or train one k=500 self-play run (~6-8h) to test the "is abstraction the bottleneck" hypothesis directly.
+**Reason rejected:** Both are real work; both would produce some incremental information; but neither addresses the architectural keystone the project actually needs. Layer 3 is the unlock that moves the bot from "Nash within an abstraction" to "Nash + real-time refinement at decision time" — the difference between Pluribus-level play and blueprint-only play.
