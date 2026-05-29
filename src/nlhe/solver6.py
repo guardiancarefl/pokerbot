@@ -840,17 +840,25 @@ class DeepCFR6MaxSolver:
                     f"{elapsed:.1f}s"
                 )
 
-            # Mini-eval (Piece B): periodic strength heartbeat. Uses an isolated
-            # eval seed (cfg.seed+200+it) — never touches self.rng.
-            if self.cfg.mini_eval_enabled and it % self.cfg.mini_eval_every == 0:
-                self._maybe_run_mini_eval(it, metrics)
-
+            # Checkpoint BEFORE mini-eval so the most recent checkpoint exists
+            # on disk by the time mini-eval looks up the "self from prev cycle"
+            # anchor (the file is ckpt_iter_{it-mini_eval_every:04d}.pt, which
+            # was written `mini_eval_every` iters ago). Order swap from the
+            # original (eval then save) is mini-eval-only: at mix=0 + mini_eval
+            # disabled, the trajectory is bit-identical to pre-swap behavior
+            # because nothing observes the ordering except the self-anchor
+            # lookup inside _maybe_run_mini_eval.
             if checkpoint_dir is not None and (
                 it % checkpoint_every == 0 or it == self.cfg.n_iterations
             ):
                 ckpt_path = checkpoint_dir / f"ckpt_iter_{it:04d}.pt"
                 self.save_checkpoint(ckpt_path, slim=True)
                 self.log(f"  saved checkpoint: {ckpt_path}")
+
+            # Mini-eval (Piece B): periodic strength heartbeat. Uses an isolated
+            # eval seed (cfg.seed+200+it) — never touches self.rng.
+            if self.cfg.mini_eval_enabled and it % self.cfg.mini_eval_every == 0:
+                self._maybe_run_mini_eval(it, metrics, checkpoint_dir)
 
         total = time.time() - t_start
         self.log(f"=== total: {total/60:.1f} min ===")
@@ -892,29 +900,73 @@ class DeepCFR6MaxSolver:
             f"iter-wall {elapsed:.1f}s (avg10 {wall_avg10:.1f}s)"
         )
 
-    def _maybe_run_mini_eval(self, it, metrics) -> None:
-        """Piece B: run the periodic mini-eval and log + record results."""
+    def _maybe_run_mini_eval(self, it, metrics, checkpoint_dir=None) -> None:
+        """Piece B: run the periodic mini-eval and log + record results.
+
+        Tail-friendly single-line records (one per anchor) go to stdout via
+        self.log AND (if checkpoint_dir is set) to lift.log inside the run
+        dir for clean `tail -f` filtering. Format:
+            [iter NNNN] lift_vs_<anchor>: +X.XXXX ICM (+Y.Y bb/100) NNNh std=X.XXXX sigma=X.XX
+
+        Self-anchor (frozen self from one mini_eval_every ago) is added when
+        checkpoint_dir is set and the prior checkpoint exists. The first eval
+        cycle (no prior checkpoint) emits a placeholder line for log continuity.
+        """
         from src.nlhe import mini_eval
+
+        # Locate the "self from prev cycle" checkpoint, if any.
+        self_anchor_path = None
+        self_anchor_label = None
+        prev_iter = it - self.cfg.mini_eval_every
+        if checkpoint_dir is not None and prev_iter >= 1:
+            candidate = Path(checkpoint_dir) / f"ckpt_iter_{prev_iter:04d}.pt"
+            if candidate.exists():
+                self_anchor_path = str(candidate)
+                self_anchor_label = f"self_iter_{prev_iter:04d}"
+
         t0 = time.time()
-        results = mini_eval.run_mini_eval(self, it)
+        results = mini_eval.run_mini_eval(
+            self, it,
+            self_anchor_path=self_anchor_path,
+            self_anchor_label=self_anchor_label,
+        )
         dt = time.time() - t0
 
-        prev = self._mini_eval_history[-1] if self._mini_eval_history else None
-        lines = [f"  === EVAL @ iter {it} (n={self.cfg.mini_eval_n_hands} hands/opponent, {dt:.1f}s) ==="]
+        # Build single-line records. The intentional placeholder when the
+        # self-anchor is expected but missing keeps `grep lift_vs_self`
+        # producing one line per eval cycle from the very first cycle.
+        n_hands = self.cfg.mini_eval_n_hands
+        structure = self.tournament_structure
+        lift_lines: list = []
         for name, r in results.items():
-            lines.append(
-                f"    vs {name:<24} ICM lift {r['lift']:>+7.4f} +/- {r['std']:.4f}  "
-                f"sigma={r['sigma']:.2f}"
+            bb100 = mini_eval.icm_lift_to_bb_per_100(r["lift"], structure)
+            bb_part = f" ({bb100:+.1f} bb/100)" if bb100 is not None else ""
+            lift_lines.append(
+                f"[iter {it:>4}] lift_vs_{name}: "
+                f"{r['lift']:+.4f} ICM{bb_part}  "
+                f"{n_hands}h  std={r['std']:.4f} sigma={r['sigma']:.2f}"
             )
-        if prev is not None:
-            deltas = []
-            for name, r in results.items():
-                if name in prev:
-                    deltas.append(f"{name} {r['lift'] - prev[name]['lift']:+.4f}")
-            if deltas:
-                lines.append("    rolling delta vs last eval: " + ", ".join(deltas))
-        lines.append("  " + "=" * 42)
-        self.log("\n".join(lines))
+        if self_anchor_label is None and checkpoint_dir is not None and prev_iter >= 1:
+            # Expected self-anchor but the prior checkpoint isn't on disk
+            # (shouldn't happen given the reordered save above, but defensive).
+            lift_lines.append(
+                f"[iter {it:>4}] lift_vs_self_iter_{prev_iter:04d}: "
+                f"(no prior checkpoint)"
+            )
+        elif self_anchor_label is None and prev_iter < 1:
+            # First eval cycle: no prior checkpoint exists yet.
+            lift_lines.append(
+                f"[iter {it:>4}] lift_vs_self_iter_0000: (no prior checkpoint)"
+            )
+
+        # Emit to stdout (via solver.log) AND to lift.log in the run dir.
+        for line in lift_lines:
+            self.log(line)
+        if checkpoint_dir is not None:
+            lift_log_path = Path(checkpoint_dir).parent / "lift.log"
+            with open(lift_log_path, "a") as f:
+                for line in lift_lines:
+                    f.write(line + "\n")
 
         record = {"iter": it, "wall_s": dt, "results": results}
         self._mini_eval_history.append(results)

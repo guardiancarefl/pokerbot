@@ -24,12 +24,49 @@ archetype/mini_eval pools), so loading the challenger and anchors is cheap.
 from __future__ import annotations
 
 import os
-from typing import Any
+from typing import Any, Optional
 
 # Fixed path: assumes a single training run per host. Concurrent training
 # runs on the same host would clobber each other's challenger snapshot.
 # Add a PID/run-dir suffix if multi-run support becomes needed.
 CHALLENGER_TMP = "/tmp/step7_mini_eval_challenger.pt"
+
+
+def icm_lift_to_bb_per_100(
+    icm_lift_per_hand: float,
+    structure: Any,
+) -> Optional[float]:
+    """Convert ICM-equity-delta per hand to bb/100 (rule-of-thumb).
+
+    The CFR solver optimizes ICM-equity-delta (in normalized buy-in units).
+    bb/100 is a chip-EV reading used as a sanity-check secondary metric.
+    Formula:
+        bb/100 = icm_lift × (payout_per_buyin / buy_in_dollars)
+                          × (starting_chips / big_blind)
+                          × 100
+
+    The conversion assumes the structure exposes payouts_dollars (in $),
+    buy_in_dollars, starting_chips, and at least one BlindLevel in
+    blind_schedule (uses big_blind from blind_schedule[0] as the reference).
+    Returns None when the structure cannot provide a meaningful big_blind
+    (e.g., missing blind_schedule), so callers can omit the parenthetical
+    cleanly rather than print a nonsense number.
+    """
+    try:
+        payout_per_buyin = float(structure.payouts_dollars[0])
+        buy_in = float(structure.buy_in_dollars)
+        starting_chips = float(structure.starting_chips)
+        big_blind = float(structure.blind_schedule[0].big_blind)
+    except (AttributeError, IndexError, TypeError):
+        return None
+    if buy_in <= 0 or big_blind <= 0:
+        return None
+    return (
+        icm_lift_per_hand
+        * (payout_per_buyin / buy_in)
+        * (starting_chips / big_blind)
+        * 100.0
+    )
 
 
 def _parse_anchor_spec(spec: str) -> tuple[str, str]:
@@ -60,12 +97,26 @@ def _load_anchor_policy(solver: Any, spec: str, is_shanky: bool):
     return policy
 
 
-def run_mini_eval(solver: Any, iter_num: int) -> dict:
+def run_mini_eval(
+    solver: Any,
+    iter_num: int,
+    self_anchor_path: Optional[str] = None,
+    self_anchor_label: Optional[str] = None,
+) -> dict:
     """Snapshot the live solver and head-to-head it against the anchors.
 
     Returns {anchor_name: {"lift": float, "std": float, "sigma": float}}.
     `lift` is the challenger-minus-opponent ICM-equity-delta (evaluate_matchup's
     `diff`); positive = challenger ahead.
+
+    Self-anchor (Phase 3 dashboard extension): when self_anchor_path is set
+    AND the file exists, the challenger is also evaluated against a
+    CheckpointPolicy loaded from that path (a frozen earlier snapshot of the
+    solver — typically the checkpoint from `mini_eval_every` iters ago,
+    surfaced as `lift_vs_self_iter_XXXX`). self_anchor_label becomes the
+    result-dict key (e.g. "self_iter_0200"). Skipped silently when the
+    file is missing — the caller (solver._maybe_run_mini_eval) emits a
+    placeholder line for log continuity.
     """
     from scripts.eval_pool import CheckpointPolicy, evaluate_matchup
 
@@ -106,5 +157,21 @@ def run_mini_eval(solver: Any, iter_num: int) -> dict:
         r = evaluate_matchup(challenger, opp, structure, n_hands, seed=seed,
                              log_every=n_hands + 1)
         results[name] = {"lift": r["diff"], "std": r["stderr"], "sigma": r["sigma"]}
+
+    # Self-anchor: lift vs frozen self from a prior checkpoint.
+    if (
+        self_anchor_path is not None
+        and self_anchor_label is not None
+        and os.path.exists(self_anchor_path)
+    ):
+        self_opp = CheckpointPolicy(
+            self_anchor_label, self_anchor_path,
+            solver.abstraction, structure,
+        )
+        r = evaluate_matchup(challenger, self_opp, structure, n_hands, seed=seed,
+                             log_every=n_hands + 1)
+        results[self_anchor_label] = {
+            "lift": r["diff"], "std": r["stderr"], "sigma": r["sigma"],
+        }
 
     return results
