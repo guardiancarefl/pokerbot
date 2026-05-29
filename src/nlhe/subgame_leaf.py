@@ -196,6 +196,13 @@ class LeafEvalContext:
     time_budget_s: Optional[float] = None
     num_paid: int = 3
     manage_cache_externally: bool = False
+    # C1c: per-opponent-seat BiasedBlueprint override. When None (default), the
+    # singleton `biased_blueprint` above is used for every seat — byte-identical
+    # to pre-C1c behavior. When a dict, `_bias_dist_fn` looks up the per-seat
+    # BiasedBlueprint at every action; seats absent from the dict fall back to
+    # `biased_blueprint`. All per-seat BiasedBlueprints MUST have the same `.k`
+    # as `biased_blueprint` (BR enumeration iterates `range(k)`).
+    biased_blueprint_per_seat: Optional[dict] = None
 
 
 # ============================================================
@@ -422,12 +429,22 @@ def _past(deadline) -> bool:
 
 def _bias_dist_fn(ctx: LeafEvalContext, biases: dict):
     """action_dist_fn for `_rollout_once`: hero plays bias 0 (blueprint); each
-    opponent seat plays `biases.get(seat, 0)` (0 = blueprint default)."""
+    opponent seat plays `biases.get(seat, 0)` (0 = blueprint default).
+
+    C1c: when `ctx.biased_blueprint_per_seat` is set, look up the per-seat
+    BiasedBlueprint by `cp`; fall back to `ctx.biased_blueprint` for hero, for
+    seats absent from the dict, and for the None (pre-C1c) case. Index `bias_idx`
+    indexes into the per-seat menu (all per-seat BBs share `.k` with the default).
+    """
     hero = ctx.hero_seat
-    bb = ctx.biased_blueprint
+    bb_default = ctx.biased_blueprint
+    per_seat = ctx.biased_blueprint_per_seat
 
     def fn(probs7, mask7, cp):
         bias_idx = 0 if cp == hero else int(biases.get(cp, 0))
+        bb = bb_default
+        if per_seat is not None and cp != hero:
+            bb = per_seat.get(cp, bb_default)
         return bb.action_probs(probs7, mask7, bias_idx)
     return fn
 

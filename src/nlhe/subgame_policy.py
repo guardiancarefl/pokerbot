@@ -26,12 +26,12 @@ plus gate_skip_rate / gate_solve_rate / degraded_rate. Empirical f≈0.27, per-s
 from __future__ import annotations
 
 import logging
-from typing import Optional, Sequence
+from typing import Any, Callable, Optional, Sequence
 
 import numpy as np
 
 from src.nlhe.actions import DiscreteAction
-from src.nlhe.biased_policy import BiasedBlueprint
+from src.nlhe.biased_policy import BiasConfig, BiasedBlueprint
 from src.nlhe.icm import sng_payouts_6max_double_up
 from src.nlhe.solver import _strategy_from_advantages
 from src.nlhe.subgame import _discretize_at_decision, build_subgame_tree, iter_leaf_nodes
@@ -46,6 +46,49 @@ _N_ACTIONS = len(DiscreteAction)  # 7
 _NUM_SEATS = 6
 
 
+def build_per_seat_biased_blueprints(
+    bias_factory: Optional[Callable[[int], Sequence[BiasConfig]]],
+    hero_seat: int,
+    num_seats: int = _NUM_SEATS,
+) -> Optional[dict[int, BiasedBlueprint]]:
+    """Build the per-opponent-seat BiasedBlueprint dict for one select_action call.
+
+    Returns:
+        - None when `bias_factory` is None — the C1c == OFF case. Preserves
+          pre-C1c byte-identical behavior (LeafEvalContext.biased_blueprint_per_seat
+          stays None; the singleton biased_blueprint is used).
+        - None when every per-seat BiasedBlueprint's k entries are all-ones
+          (the identity short-circuit, locking the C1==0 bit-identity gate):
+          when C1b's confidence=0 path returns all-ones BiasConfigs for every
+          seat, the per-seat dispatch is observationally equivalent to using
+          the default singleton biased_blueprint, so we fall through to it.
+        - A dict[int, BiasedBlueprint] keyed by opponent seat (hero seat is
+          excluded — the factory is never called for hero) when at least one
+          seat's bias is non-identity.
+
+    The factory is invoked exactly once per non-hero seat per call. Different
+    select_action invocations rebuild from scratch (no cross-decision cache).
+    """
+    if bias_factory is None:
+        return None
+    per_seat: dict[int, BiasedBlueprint] = {}
+    for s in range(num_seats):
+        if s == hero_seat:
+            continue
+        cfgs = list(bias_factory(s))
+        per_seat[s] = BiasedBlueprint(bias_configs=cfgs)
+    # Identity short-circuit: when every per-seat BB's every k entry is all-ones,
+    # per-seat dispatch is a no-op vs the default biased_blueprint. Return None
+    # so LeafEvalContext takes the byte-identical pre-C1c path.
+    if all(
+        all(np.allclose(cfg.multipliers, 1.0, atol=1e-12)
+            for cfg in bb.bias_configs)
+        for bb in per_seat.values()
+    ):
+        return None
+    return per_seat
+
+
 class SubgamePolicy:
     """Subgame-solving challenger conforming to `eval_pool.Policy`."""
 
@@ -54,7 +97,8 @@ class SubgamePolicy:
                  n_samples: int = 8, n_iterations: int = 1000,
                  max_action_depth: int = 3, chance_samples_per_node: int = 8,
                  min_legal_actions: int = 3, max_blueprint_prob: float = 0.95,
-                 payouts: Optional[Sequence[float]] = None, num_paid: int = 3):
+                 payouts: Optional[Sequence[float]] = None, num_paid: int = 3,
+                 bias_factory: Optional[Callable[[int], Sequence[BiasConfig]]] = None):
         # Lazy import: src/ must not depend on scripts/ at module load (the project's
         # lazy-import pattern, mirroring subgame._discretize_at_decision -> cfr6).
         from scripts.eval_6max_self_play import _load_solver
@@ -62,6 +106,11 @@ class SubgamePolicy:
         self.ckpt_path = ckpt_path
         self.solver = _load_solver(ckpt_path, abstraction, structure)  # the BlueprintProvider
         self.biased = BiasedBlueprint()  # k=4 configs (Stage 5-B leaf eval)
+        # C1c: optional per-opponent-seat BiasedBlueprint factory. None means
+        # use the default `self.biased` for every seat — byte-identical to the
+        # pre-C1c process-level menu. When provided, called per non-hero seat
+        # at each select_action via `build_per_seat_biased_blueprints`.
+        self.bias_factory = bias_factory
         # config (Decision 5.4)
         self.leaf_mode = leaf_mode
         self.n_samples = n_samples
@@ -146,8 +195,14 @@ class SubgamePolicy:
         tree = build_subgame_tree(
             state, max_action_depth=self.max_action_depth,
             chance_samples_per_node=self.chance_samples_per_node, rng=rng)
+        # C1c: build per-opponent-seat BiasedBlueprint dict from MatchObserver
+        # readings. None when bias_factory is None OR when all-identity short-
+        # circuit fires — both cases preserve byte-identical pre-C1c behavior.
+        per_seat_biased = build_per_seat_biased_blueprints(
+            self.bias_factory, hero_seat=cp)
         batch = evaluate_leaves(tree, LeafEvalContext(
             blueprint=self.solver, biased_blueprint=self.biased,
+            biased_blueprint_per_seat=per_seat_biased,
             starting_stacks=starting_stacks, payouts=self.payouts, hero_seat=cp,
             mode=self.leaf_mode, n_samples=self.n_samples, rng=rng,
             num_paid=self.num_paid))
