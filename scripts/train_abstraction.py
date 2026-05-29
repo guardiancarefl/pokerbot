@@ -133,6 +133,12 @@ def main() -> None:
         default=None,
         help="Override postflop k (flop/turn/river). Preflop stays at 20 (169 canonical classes).",
     )
+    parser.add_argument(
+        "--n_hands_postflop",
+        type=int,
+        default=None,
+        help="Override n_hands per postflop street (flop/turn/river). Preflop ignores n_hands.",
+    )
     args = parser.parse_args()
 
     cfg = DEFAULT_CONFIG
@@ -140,6 +146,10 @@ def main() -> None:
         for s in ("flop", "turn", "river"):
             cfg[s]["k"] = args.k_postflop
         log.info(f"overriding postflop k to {args.k_postflop} via --k_postflop")
+    if args.n_hands_postflop is not None:
+        for s in ("flop", "turn", "river"):
+            cfg[s]["n_hands"] = args.n_hands_postflop
+        log.info(f"overriding postflop n_hands to {args.n_hands_postflop} via --n_hands_postflop")
     rng = random.Random(cfg["seed"])
 
     if args.out:
