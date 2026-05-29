@@ -1,69 +1,53 @@
-# Prompt for Session 6 (paste this verbatim at the start of the next conversation)
+# Session 6 starter prompt
+
+Paste this verbatim at the start of the next Claude conversation.
 
 ---
 
 Continuing the pokerbot project. Session 6.
 
-**Status:** Phase 2d closed in Session 5. The pipeline scaled from CPU to GPU successfully. GPU-trained ckpt_iter_0100 evaluated against Slumbot at **+31.45 baseline-adjusted bb/100** (1000 hands, seed 2026, 200bb), a +46 bb/100 improvement over the CPU baseline of -14.8. Bigger buffer was the lever, not bigger network — strategy loss plateau dropped from ~0.95 (100K buffer) to ~0.85 (500K buffer) at the same [512,512] network.
+**Status:** Session 5 closed with a strategic pivot. Phase 4f (parallel training + Shanky diversity-mix experiment) produced a working parallel framework (G=10 at ~4.5x speedup, BLAS-pinned) and a completed DCFR self-play anchor at k=200, iter 2000 — but the anchor's lift trajectory revealed the bot plateaus around iter 500-1000 at this abstraction level (strat_loss refines but head-to-head strength doesn't improve). The bot loses to 15 of 19 sampled commercial Shanky scripted bots. Honest conclusion: k=200 is the bottleneck, not training iters. Diversity-mix experiment shelved. See docs/DECISIONS.md for full reasoning.
 
-**Major shift in Session 5:** project goal sharpened from "specialized SNG bot" to "**strongest publicly-known 6-max NLHE SNG bot with correct ICM**." Targets include beating Slumbot in HUNL, decisive wins against the 42 bought bots, 70%+ top-3 finish rate in SNG simulations, sub-second decisions via subgame solving, and plausibly beating Pluribus head-to-head in 6-max cash. Architecture revised: subgame solving moves up from Phase 5-6 to Phase 3 as a parallel track. Within-match opponent modeling (continuous archetype + Bayesian updating) moves up from Phase 6 to Phase 3 as another parallel track. Estimated 6-10 weeks of focused work, $500-2000 in compute.
+**Session 6 focus: Layer 3 — real-time subgame solving.**
 
-**Runtime:** Contabo VPS, Ubuntu 24.04, 12 vCPU AMD EPYC, 48GB RAM, no GPU. Project at `~/pokerbot/` on Contabo. Python 3.10 venv with PyTorch 2.12 CPU + OpenSpiel 1.6.11 + treys. Repo at github.com/guardiancarefl/pokerbot (private).
+This is the architectural keystone of the project. The 4-layer stack in ARCHITECTURE.md places it as Phase 3+, but Session 5's findings promoted it to immediate priority. Layer 3 is the difference between "Nash within an abstraction" (what we have) and Pluribus-level play (Nash + real-time refinement at decision time).
 
-**Active resources:**
-- RunPod RTX PRO 4000 Blackwell pod ($0.57/hr Secure Cloud) at 213.173.107.11:46595 may still be running ckpt_iter_0100+. Check status with `ssh root@213.173.107.11 -p 46595 -i ~/.ssh/id_ed25519 'tail -5 /tmp/v2_run.log'` from Contabo.
-- ~$10 RunPod credit remaining
-- ~$93 Vultr credit reserved for Phase 4
+**Session 6 deliverables (design phase, no code yet):**
 
-**Session 6 priorities (from docs/PHASE3_PLAN.md):**
+1. **Literature recon.** Read the relevant published work on subgame solving for CFR-based poker bots. Key references: Pluribus (Brown & Sandholm 2019) for 6-max continual resolving and safe subgame solving; Libratus (HUNL precedent); DeepStack (continual resolving variant). Identify which variant best fits our constraints (CPU-only on Contabo, 6-max not HUNL, ICM-adjusted value function).
 
-1. **Decide whether the Phase 2d GPU training is worth continuing.**
-   - Check latest checkpoint on pod (probably ckpt_iter_0200 or 0300 by morning)
-   - If interesting, eval that checkpoint against Slumbot to chart the bb/100 trajectory
-   - Either way, terminate the pod once we have what we need — Phase 3 work is on Contabo CPU
+2. **Integration design.** Concrete plan for how Layer 3 plugs into the existing blueprint:
+   - Where in the play loop the subgame solver runs (at every decision, only certain streets, only when stack depth exceeds threshold?)
+   - How blueprint values are used at subgame boundaries (the "anchor" for the subgame)
+   - Action abstraction during resolve (finer than blueprint? same?)
+   - Card abstraction during resolve (finer? bucket-pinned to blueprint?)
+   - Computational budget per decision (target: sub-second; willing to spend more during evaluation)
 
-2. **Begin Track A1: Implement DCFR (Linear / Discounted CFR).**
-   - Add per-buffer-entry timestamp/iteration tracking to ReservoirBuffer
-   - Weight strategy training loss by iter index (linear) or configurable exponent (discounted)
-   - Validate on Leduc first (where exploitability is computable), then on HUNL smoke
-   - Expected outcome: 1.5-3x faster convergence to comparable Slumbot bb/100
+3. **Build vs blueprint-first decision.** The question is whether to:
+   - (a) Build Layer 3 on top of the current k=200 blueprint immediately (faster start, weaker base)
+   - (b) Train a k=500 blueprint first (we have the abstraction artifact already, ~6-8h compute) then build Layer 3
+   - (c) Train at even higher k (e.g. k=2000) for the production blueprint, then build Layer 3
+   The choice depends on Layer 3's expected lift over blueprint alone, which the literature recon should help estimate.
 
-3. **Begin Track A2: Hand-engineered archetype framework design.**
-   - 2D parameterization (tightness × aggression)
-   - Behavioral rule sets per region of the 2D space
-   - Plan integration into training opponent pool
-
-4. **Begin Track B1: Subgame extractor design.**
-   - OpenSpiel API research for subgame extraction
-   - Define depth-limit policy
-   - Sketch the data flow (state → subgame → solver → policy)
-
-5. **Begin Track C1: Continuous archetype belief representation design.**
-   - Gaussian or particle representation over tightness × aggression
-   - Action likelihood model (P(action | archetype, infoset))
-   - Bayesian update math
-
-Items 2-5 are design + first implementation. Don't try to complete all four in Session 6 — sketch each, pick one to develop in depth.
-
-**Key files to reference:**
-- `docs/STATUS.md` — current state
-- `docs/PHASE3_PLAN.md` — full Phase 3 plan (THE working document for next 6-10 weeks)
-- `docs/DECISIONS.md` — the goal-sharpening, three-track plan, and buffer-vs-network findings from Session 5
-- `docs/SESSION_LOG.md` — Session 5 entry has the full GPU validation story
-- `runs/gpu_phase2d_artifacts/` — preserved eval log and v2 config from Phase 2d GPU run
-- `src/nlhe/solver.py` — Deep CFR solver, now with GPU device support and RNG state try/except (touch carefully for DCFR)
-- `src/nlhe/policy_adapter.py` — Slumbot eval entry point with the device-aware `.cpu()` fix
+4. **Implementation skeleton.** Once the design is settled, sketch the code structure: new module locations (src/nlhe/subgame/?), key classes, integration with existing solver and policy adapter.
 
 **Workflow rules carrying over from previous sessions:**
-- Single-quoted heredoc delimiters with distinctive names for file writes
-- Verify file writes with wc -l / grep / head / tail
-- Verify each patch landed before moving to the next step
-- Benchmark before committing to long runs
-- Kill criterion: kill when the type of problem changes, not when "taking longer than hoped"
-- Probe APIs with curl/manual tests before writing client code
-- Files in /mnt/project/ are stale; trust live repo on Contabo
-- tmux for any long-running session
-- When patches touch device handling, smoke test the GPU inference path before committing — CPU unit tests don't catch GPU-only issues (Session 5 lesson)
-- One-liner status checks from Contabo (`ssh ... 'tail -5 /tmp/log'`) cheaper than full SSH attach
+- Diff-on-copy validation discipline (write to /tmp, validate, apply for real, only after gates green)
+- Two-SSH-session workflow on Contabo (one for long-running compute, one for editing/committing)
+- Verify file writes with wc/head/tail/grep rather than trusting terminal echo
+- Benchmark one iteration / one decision before committing to a long run
+- All commits include validation status; no "trust me" commits
+- When exact file contents are given between BEGIN/END markers, write them verbatim; concerns are questions before writing, not silent edits
 
-Please read the project knowledge docs (STATUS.md as entry point, then DECISIONS.md for the new decisions, then PHASE3_PLAN.md for the working plan, then SESSION_LOG.md Session 5 entry for the recent context). Confirm state matches what STATUS says. Then start with item 1: check the pod status and decide whether to continue Phase 2d GPU training.
+**Available infrastructure (don't rebuild):**
+- Contabo VPS at quant@80.241.219.63, project at ~/pokerbot/, repo github.com/guardiancarefl/pokerbot branch phase4f-league
+- Python 3.10 venv with PyTorch 2.12 CPU, OpenSpiel 1.6.11
+- Parallel training framework (parallel_train in src/nlhe/parallel/orchestrator.py), G=10 production operating point
+- k=200 blueprint with iter 2000 checkpoint at runs/dcfr_anchor_2000/checkpoints/ckpt_iter_2000.pt
+- k=500 abstraction artifact (untrained) at runs/abstraction_k500_20260529_013537/abstraction.pkl
+- 24-profile Shanky league pool at data/shanky_profiles/ + registry at configs/league/registry_experiment.json
+- Production runner: scripts/run_training.sh
+- Mini-eval dashboard with colored lift readings (lift.log.ansi)
+- All 25 gates passing on HEAD (b2571aa or later)
+
+**First step of Session 6:** read docs/STATUS.md, docs/DECISIONS.md (specifically the last entry about Layer 3 promotion), docs/ARCHITECTURE.md (Layer 3 description), and confirm state matches before starting design work.
