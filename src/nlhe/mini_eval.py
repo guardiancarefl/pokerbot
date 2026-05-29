@@ -32,6 +32,114 @@ from typing import Any, Optional
 CHALLENGER_TMP = "/tmp/step7_mini_eval_challenger.pt"
 
 
+# ANSI escape codes for the colored boxed format. Used only when the caller
+# passes colored=True to format_eval_block; the clean ASCII path stays
+# completely escape-free.
+_ANSI_RESET = "\033[0m"
+_ANSI_HDR = "\033[36m"        # cyan — header row
+_ANSI_POS = "\033[32m"        # green — positive ICM lift
+_ANSI_NEG = "\033[31m"        # red — negative ICM lift
+_ANSI_DIM = "\033[2m"         # dim — placeholder line
+
+
+def format_eval_block(
+    iter_num: int,
+    wall_s: float,
+    n_hands: int,
+    results: dict,
+    prev_results: Optional[dict],
+    structure: Any,
+    colored: bool,
+    placeholder_self_label: Optional[str] = None,
+) -> str:
+    """Format one mini-eval cycle's results as a multi-line string.
+
+    Two output flavors:
+      - colored=False: clean ASCII single-line records per anchor —
+        backward-compatible with the format test_dashboard_self_anchor.py
+        asserts. Format per line:
+            [iter NNNN] lift_vs_<anchor>: +X.XXXX ICM (+Y.Y bb/100)  NNNh
+            std=X.XXXX sigma=X.XX
+        Placeholder line (when placeholder_self_label is set):
+            [iter NNNN] lift_vs_<label>: (no prior checkpoint)
+      - colored=True: boxed multi-line block with ANSI color highlighting
+        for positive (green) / negative (red) ICM lift, cyan header, dim
+        gray placeholder. Wide ═ box-drawing borders. Anchor names
+        left-padded to a fixed width so values column-align.
+
+    Args:
+        iter_num, wall_s, n_hands: header metadata.
+        results: {anchor_name: {"lift", "std", "sigma"}} as produced by
+            run_mini_eval.
+        prev_results: previous cycle's results dict (used for the rolling-
+            delta column in the colored format; ignored when None or empty).
+        structure: tournament structure for the bb/100 conversion (None
+            disables the bb/100 column).
+        colored: select ASCII (False) or ANSI/box (True) output.
+        placeholder_self_label: when set, append a "(no prior checkpoint)"
+            line for that label after the real records. Used at the first
+            eval cycle when no prior checkpoint exists yet.
+
+    Returns:
+        Multi-line string. Each non-empty line is a complete log record
+        (the caller writes the string verbatim — no extra newlines added).
+    """
+    lines: list = []
+
+    if colored:
+        # Header band: cyan ═ borders, "iter NNNN — eval (X.Xmin, NNNNh/opp)"
+        header_inner = (
+            f" iter {iter_num} — eval "
+            f"({wall_s/60:.1f}min, {n_hands}h/opp) "
+        )
+        border = "═" * 3
+        lines.append(f"{_ANSI_HDR}{border}{header_inner}"
+                     + "═" * max(0, 71 - len(border) - len(header_inner))
+                     + _ANSI_RESET)
+
+    name_width = max([len(n) for n in results.keys()] + [16])
+    name_width = max(name_width, 20)
+
+    for name, r in results.items():
+        lift = r["lift"]
+        std = r["std"]
+        sigma = r["sigma"]
+        bb100 = icm_lift_to_bb_per_100(lift, structure)
+        if colored:
+            color = _ANSI_POS if lift >= 0 else _ANSI_NEG
+            arrow = "▲" if lift >= 0 else "▼"
+            bb_part = f"  {bb100:+7.1f} bb/100" if bb100 is not None else ""
+            lines.append(
+                f"  vs {name:<{name_width}}  "
+                f"{color}{lift:+8.4f} ICM{_ANSI_RESET}{bb_part}  "
+                f"sigma {sigma:5.2f}   {color}{arrow}{_ANSI_RESET}"
+            )
+        else:
+            bb_part = f" ({bb100:+.1f} bb/100)" if bb100 is not None else ""
+            lines.append(
+                f"[iter {iter_num:>4}] lift_vs_{name}: "
+                f"{lift:+.4f} ICM{bb_part}  "
+                f"{n_hands}h  std={std:.4f} sigma={sigma:.2f}"
+            )
+
+    if placeholder_self_label is not None:
+        if colored:
+            lines.append(
+                f"  vs {placeholder_self_label:<{name_width}}  "
+                f"{_ANSI_DIM}(no prior checkpoint){_ANSI_RESET}"
+            )
+        else:
+            lines.append(
+                f"[iter {iter_num:>4}] lift_vs_{placeholder_self_label}: "
+                f"(no prior checkpoint)"
+            )
+
+    if colored:
+        lines.append(f"{_ANSI_HDR}{'═' * 71}{_ANSI_RESET}")
+
+    return "\n".join(lines)
+
+
 def icm_lift_to_bb_per_100(
     icm_lift_per_hand: float,
     structure: Any,

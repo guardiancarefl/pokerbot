@@ -903,10 +903,13 @@ class DeepCFR6MaxSolver:
     def _maybe_run_mini_eval(self, it, metrics, checkpoint_dir=None) -> None:
         """Piece B: run the periodic mini-eval and log + record results.
 
-        Tail-friendly single-line records (one per anchor) go to stdout via
-        self.log AND (if checkpoint_dir is set) to lift.log inside the run
-        dir for clean `tail -f` filtering. Format:
-            [iter NNNN] lift_vs_<anchor>: +X.XXXX ICM (+Y.Y bb/100) NNNh std=X.XXXX sigma=X.XX
+        Two output flavors per cycle:
+        - lift.log (clean ASCII single-line per anchor) — for grep/post-
+          processing/test fixtures. Format asserted by
+          test_dashboard_self_anchor.py.
+        - lift.log.ansi (colored boxed multi-line block) — for live
+          operator viewing via `tail -f`. Also goes to stdout via self.log
+          so `tmux attach` shows the colored version.
 
         Self-anchor (frozen self from one mini_eval_every ago) is added when
         checkpoint_dir is set and the prior checkpoint exists. The first eval
@@ -932,41 +935,44 @@ class DeepCFR6MaxSolver:
         )
         dt = time.time() - t0
 
-        # Build single-line records. The intentional placeholder when the
-        # self-anchor is expected but missing keeps `grep lift_vs_self`
-        # producing one line per eval cycle from the very first cycle.
+        # When the self-anchor was expected but couldn't be loaded (file
+        # missing, first-cycle case), pass a placeholder label to the
+        # formatter so the operator still gets one log record per cycle
+        # for `grep lift_vs_self` continuity.
+        placeholder_label = None
+        if self_anchor_label is None and prev_iter >= 1:
+            placeholder_label = f"self_iter_{prev_iter:04d}"
+        elif self_anchor_label is None and prev_iter < 1:
+            placeholder_label = "self_iter_0000"
+
         n_hands = self.cfg.mini_eval_n_hands
         structure = self.tournament_structure
-        lift_lines: list = []
-        for name, r in results.items():
-            bb100 = mini_eval.icm_lift_to_bb_per_100(r["lift"], structure)
-            bb_part = f" ({bb100:+.1f} bb/100)" if bb100 is not None else ""
-            lift_lines.append(
-                f"[iter {it:>4}] lift_vs_{name}: "
-                f"{r['lift']:+.4f} ICM{bb_part}  "
-                f"{n_hands}h  std={r['std']:.4f} sigma={r['sigma']:.2f}"
-            )
-        if self_anchor_label is None and checkpoint_dir is not None and prev_iter >= 1:
-            # Expected self-anchor but the prior checkpoint isn't on disk
-            # (shouldn't happen given the reordered save above, but defensive).
-            lift_lines.append(
-                f"[iter {it:>4}] lift_vs_self_iter_{prev_iter:04d}: "
-                f"(no prior checkpoint)"
-            )
-        elif self_anchor_label is None and prev_iter < 1:
-            # First eval cycle: no prior checkpoint exists yet.
-            lift_lines.append(
-                f"[iter {it:>4}] lift_vs_self_iter_0000: (no prior checkpoint)"
-            )
+        prev_results = (
+            self._mini_eval_history[-1] if self._mini_eval_history else None
+        )
 
-        # Emit to stdout (via solver.log) AND to lift.log in the run dir.
-        for line in lift_lines:
+        clean_text = mini_eval.format_eval_block(
+            iter_num=it, wall_s=dt, n_hands=n_hands,
+            results=results, prev_results=prev_results,
+            structure=structure, colored=False,
+            placeholder_self_label=placeholder_label,
+        )
+        colored_text = mini_eval.format_eval_block(
+            iter_num=it, wall_s=dt, n_hands=n_hands,
+            results=results, prev_results=prev_results,
+            structure=structure, colored=True,
+            placeholder_self_label=placeholder_label,
+        )
+
+        # stdout gets the colored version (operator tmux attach view).
+        for line in colored_text.splitlines():
             self.log(line)
         if checkpoint_dir is not None:
-            lift_log_path = Path(checkpoint_dir).parent / "lift.log"
-            with open(lift_log_path, "a") as f:
-                for line in lift_lines:
-                    f.write(line + "\n")
+            run_dir = Path(checkpoint_dir).parent
+            with open(run_dir / "lift.log", "a") as f:
+                f.write(clean_text + "\n")
+            with open(run_dir / "lift.log.ansi", "a") as f:
+                f.write(colored_text + "\n")
 
         record = {"iter": it, "wall_s": dt, "results": results}
         self._mini_eval_history.append(results)
