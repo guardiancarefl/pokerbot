@@ -1,0 +1,48 @@
+tag: phase4f_dcfr_control_2000
+# Matched-compute pure DCFR self-play. Same shape as anchor but with
+# anchor's iter-2000 checkpoint added as an external mini_eval reference.
+# Symlink runs/dcfr_anchor_2000 -> runs/<actual-anchor-run-dir>/ is
+# created post-anchor as part of the runbook.
+
+abstraction_path: runs/abstraction_20260521_223018_retrofit/abstraction.pkl
+tournament_structure_path: configs/ignition_double_up_6max_turbo.yaml
+
+starting_stack: 1500
+big_blind: 100
+small_blind: 50
+payout_mode: double_up
+first_share: 0.65
+buy_in: 1.0
+num_paid: 3
+max_traversal_depth: 200
+
+n_iterations: 2000
+traversals_per_iter: 150
+train_steps_per_iter: 200
+batch_size: 64
+buffer_capacity: 500000
+learning_rate: 0.001
+hidden_dim: [256, 256]
+bucket_runouts: 30
+
+cfr_variant: linear
+dcfr_exponent: 1.0
+
+seed: 2031
+checkpoint_every: 100
+
+mini_eval_enabled: true
+mini_eval_every: 100
+mini_eval_n_hands: 1000
+mini_eval_anchors:
+  - dcfr_anchor_2000=runs/dcfr_anchor_2000/checkpoints/ckpt_iter_2000.pt
+mini_eval_shanky_rotation:
+  - data/shanky_profiles/modernmikecash.txt
+  - data/shanky_profiles/modernmikemtt.txt
+  - data/shanky_profiles/KillPhilMTT.txt
+  - data/shanky_profiles/kamakazi.txt
+  - data/shanky_profiles/Lucky1_6max.txt
+  - data/shanky_profiles/itmstrikeA.txt
+  - data/shanky_profiles/TheFixerSNG.txt
+  - data/shanky_profiles/GusHansenMTT.txt
+  - data/shanky_profiles/timidtom.txt

@@ -1,0 +1,269 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "name": "shanky-6pack__1_",
+      "path": "data/shanky_profiles/6pack__1_.txt",
+      "metadata": {
+        "policy_type": "shanky",
+        "big_blind_chips": 100
+      },
+      "tags": [
+        "shanky"
+      ]
+    },
+    {
+      "name": "shanky-GusHansenMTT",
+      "path": "data/shanky_profiles/GusHansenMTT.txt",
+      "metadata": {
+        "policy_type": "shanky",
+        "big_blind_chips": 100
+      },
+      "tags": [
+        "shanky"
+      ]
+    },
+    {
+      "name": "shanky-KillPhilMTT",
+      "path": "data/shanky_profiles/KillPhilMTT.txt",
+      "metadata": {
+        "policy_type": "shanky",
+        "big_blind_chips": 100
+      },
+      "tags": [
+        "shanky"
+      ]
+    },
+    {
+      "name": "shanky-LionMTTv.10",
+      "path": "data/shanky_profiles/LionMTTv.10.txt",
+      "metadata": {
+        "policy_type": "shanky",
+        "big_blind_chips": 100
+      },
+      "tags": [
+        "shanky"
+      ]
+    },
+    {
+      "name": "shanky-Loosenluckymtt",
+      "path": "data/shanky_profiles/Loosenluckymtt.txt",
+      "metadata": {
+        "policy_type": "shanky",
+        "big_blind_chips": 100
+      },
+      "tags": [
+        "shanky"
+      ]
+    },
+    {
+      "name": "shanky-Lucky1_6max",
+      "path": "data/shanky_profiles/Lucky1_6max.txt",
+      "metadata": {
+        "policy_type": "shanky",
+        "big_blind_chips": 100
+      },
+      "tags": [
+        "shanky"
+      ]
+    },
+    {
+      "name": "shanky-MillenniumMTTv.49",
+      "path": "data/shanky_profiles/MillenniumMTTv.49.txt",
+      "metadata": {
+        "policy_type": "shanky",
+        "big_blind_chips": 100
+      },
+      "tags": [
+        "shanky"
+      ]
+    },
+    {
+      "name": "shanky-MinestackerMTTv.7.3",
+      "path": "data/shanky_profiles/MinestackerMTTv.7.3.txt",
+      "metadata": {
+        "policy_type": "shanky",
+        "big_blind_chips": 100
+      },
+      "tags": [
+        "shanky"
+      ]
+    },
+    {
+      "name": "shanky-Sevenv.2",
+      "path": "data/shanky_profiles/Sevenv.2.txt",
+      "metadata": {
+        "policy_type": "shanky",
+        "big_blind_chips": 100
+      },
+      "tags": [
+        "shanky"
+      ]
+    },
+    {
+      "name": "shanky-TheFixerSNG",
+      "path": "data/shanky_profiles/TheFixerSNG.txt",
+      "metadata": {
+        "policy_type": "shanky",
+        "big_blind_chips": 100
+      },
+      "tags": [
+        "shanky"
+      ]
+    },
+    {
+      "name": "shanky-WebberMtt",
+      "path": "data/shanky_profiles/WebberMtt.txt",
+      "metadata": {
+        "policy_type": "shanky",
+        "big_blind_chips": 100
+      },
+      "tags": [
+        "shanky"
+      ]
+    },
+    {
+      "name": "shanky-beep__1_",
+      "path": "data/shanky_profiles/beep__1_.txt",
+      "metadata": {
+        "policy_type": "shanky",
+        "big_blind_chips": 100
+      },
+      "tags": [
+        "shanky"
+      ]
+    },
+    {
+      "name": "shanky-fixedlimitheadsup__1_",
+      "path": "data/shanky_profiles/fixedlimitheadsup__1_.txt",
+      "metadata": {
+        "policy_type": "shanky",
+        "big_blind_chips": 100
+      },
+      "tags": [
+        "shanky"
+      ]
+    },
+    {
+      "name": "shanky-itmstrikeA",
+      "path": "data/shanky_profiles/itmstrikeA.txt",
+      "metadata": {
+        "policy_type": "shanky",
+        "big_blind_chips": 100
+      },
+      "tags": [
+        "shanky"
+      ]
+    },
+    {
+      "name": "shanky-itmstrikeC",
+      "path": "data/shanky_profiles/itmstrikeC.txt",
+      "metadata": {
+        "policy_type": "shanky",
+        "big_blind_chips": 100
+      },
+      "tags": [
+        "shanky"
+      ]
+    },
+    {
+      "name": "shanky-kamakazi",
+      "path": "data/shanky_profiles/kamakazi.txt",
+      "metadata": {
+        "policy_type": "shanky",
+        "big_blind_chips": 100
+      },
+      "tags": [
+        "shanky"
+      ]
+    },
+    {
+      "name": "shanky-littlegreen",
+      "path": "data/shanky_profiles/littlegreen.txt",
+      "metadata": {
+        "policy_type": "shanky",
+        "big_blind_chips": 100
+      },
+      "tags": [
+        "shanky"
+      ]
+    },
+    {
+      "name": "shanky-littlegreen2",
+      "path": "data/shanky_profiles/littlegreen2.txt",
+      "metadata": {
+        "policy_type": "shanky",
+        "big_blind_chips": 100
+      },
+      "tags": [
+        "shanky"
+      ]
+    },
+    {
+      "name": "shanky-modernmikecash",
+      "path": "data/shanky_profiles/modernmikecash.txt",
+      "metadata": {
+        "policy_type": "shanky",
+        "big_blind_chips": 100
+      },
+      "tags": [
+        "shanky"
+      ]
+    },
+    {
+      "name": "shanky-modernmikemtt",
+      "path": "data/shanky_profiles/modernmikemtt.txt",
+      "metadata": {
+        "policy_type": "shanky",
+        "big_blind_chips": 100
+      },
+      "tags": [
+        "shanky"
+      ]
+    },
+    {
+      "name": "shanky-mtt",
+      "path": "data/shanky_profiles/mtt.txt",
+      "metadata": {
+        "policy_type": "shanky",
+        "big_blind_chips": 100
+      },
+      "tags": [
+        "shanky"
+      ]
+    },
+    {
+      "name": "shanky-ticketmaster",
+      "path": "data/shanky_profiles/ticketmaster.txt",
+      "metadata": {
+        "policy_type": "shanky",
+        "big_blind_chips": 100
+      },
+      "tags": [
+        "shanky"
+      ]
+    },
+    {
+      "name": "shanky-timidtom",
+      "path": "data/shanky_profiles/timidtom.txt",
+      "metadata": {
+        "policy_type": "shanky",
+        "big_blind_chips": 100
+      },
+      "tags": [
+        "shanky"
+      ]
+    },
+    {
+      "name": "shanky-wildbillmtt",
+      "path": "data/shanky_profiles/wildbillmtt.txt",
+      "metadata": {
+        "policy_type": "shanky",
+        "big_blind_chips": 100
+      },
+      "tags": [
+        "shanky"
+      ]
+    }
+  ]
+}
