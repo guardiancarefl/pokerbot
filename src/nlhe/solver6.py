@@ -130,6 +130,13 @@ def _resolve_payouts(payout_mode: str, buy_in: float, first_share: float) -> lis
 # traversal stream (which would break parallel bit-identity at mix > 0).
 OVERRIDE_SALT = 0x9E3779B97F4A7C15
 
+# MurmurHash2 64-bit mixer constant — third independent salted stream for per-traversal
+# stack sampling in tournament mode. Workers and the sequential train() loop both derive
+# rng_stack_t from (seed, it, t) + STACK_SAMPLE_SALT, so sample_starting_state's variable
+# rng-draw count never perturbs the traversal or override streams (preserves parallel
+# bit-identity at tournament_structure_path != None).
+STACK_SAMPLE_SALT = 0xC6A4A7935BD1E995
+
 
 # ===== Config =====
 
@@ -760,9 +767,13 @@ class DeepCFR6MaxSolver:
                         (self.cfg.seed * 1_000_003 + it * 9_973 + t + OVERRIDE_SALT)
                         & 0x7FFFFFFFFFFFFFFF
                     )
+                    rng_stack_t = random.Random(
+                        (self.cfg.seed * 1_000_003 + it * 9_973 + t + STACK_SAMPLE_SALT)
+                        & 0x7FFFFFFFFFFFFFFF
+                    )
                     sampled = sample_starting_state(
                         self.tournament_structure,
-                        self.rng,
+                        rng_stack_t,
                         num_paid=self.cfg.num_paid,
                     )
                     gs = self.tournament_structure.to_inner_game_string_for_state(

@@ -87,6 +87,12 @@ class WorkerInput:
     archetype_profile_names: Optional[list] = None
     archetype_mix: float = 0.0
 
+    # ---- Phase 3: tournament-mode structure (picklable string path) ----
+    # When set, workers load TournamentStructure from this path and sample
+    # per-traversal starting stacks/dealer via sample_starting_state. None
+    # → legacy fixed-game mode (the existing per-WorkerInput game_str path).
+    tournament_structure_path: Optional[str] = None
+
 
 @dataclass
 class WorkerOutput:

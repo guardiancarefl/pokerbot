@@ -92,6 +92,7 @@ def _build_worker_input(
     archetype_calibration_path: Optional[str] = None,
     archetype_profile_names: Optional[list] = None,
     archetype_mix: float = 0.0,
+    tournament_structure_path: Optional[str] = None,
 ) -> WorkerInput:
     return WorkerInput(
         seed=seed,
@@ -120,6 +121,7 @@ def _build_worker_input(
         archetype_calibration_path=archetype_calibration_path,
         archetype_profile_names=archetype_profile_names,
         archetype_mix=archetype_mix,
+        tournament_structure_path=tournament_structure_path,
     )
 
 
@@ -238,13 +240,13 @@ def parallel_train(
         Metrics dict with the same shape as solver.train()'s output.
     """
     cfg = solver.cfg
-    if solver.tournament_structure is not None:
-        # Tournament-mode parallelization is a follow-up; see DESIGN.md.
-        raise NotImplementedError(
-            "parallel_train currently supports only legacy fixed-game mode "
-            "(tournament_structure_path=None). Tournament-mode parallelism "
-            "requires forking sample_starting_state's rng too."
-        )
+    # Phase 3 (tournament mode): supported. When solver.tournament_structure
+    # is set, workers reload the TournamentStructure from
+    # tournament_structure_path and derive rng_stack_t per traversal (mirrors
+    # solver6's STACK_SAMPLE_SALT fork in the tournament branch of train()).
+    # Each worker computes its own per-traversal starting_stacks and
+    # dealer_seat; the WorkerInput.starting_stacks / dealer_seat fields are
+    # unused in this mode but harmless.
 
     if checkpoint_dir is not None:
         checkpoint_dir = Path(checkpoint_dir)
@@ -305,6 +307,7 @@ def parallel_train(
                 archetype_calibration_path=cfg.archetype_calibration_path,
                 archetype_profile_names=cfg.archetype_profiles,
                 archetype_mix=cfg.archetype_mix,
+                tournament_structure_path=cfg.tournament_structure_path,
             )
             for group in groups
         ]

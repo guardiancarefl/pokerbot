@@ -24,6 +24,7 @@ from src.nlhe.abstraction import Abstraction
 from src.nlhe.archetype6 import ArchetypePool
 from src.nlhe.cfr6 import CFR6MaxContext, traverse_6max
 from src.nlhe.checkpoint_registry import CheckpointRegistry
+from src.nlhe.game_strings import TournamentStructure
 from src.nlhe.infoset6 import InfosetEncoder6Max
 from src.nlhe.league_pool import LeaguePool
 from src.nlhe.networks6 import N_DISCRETE_ACTIONS
@@ -33,7 +34,8 @@ from src.nlhe.parallel.protocol import (
     WorkerOutput,
 )
 from src.nlhe.solver import MLP
-from src.nlhe.solver6 import OVERRIDE_SALT
+from src.nlhe.solver6 import OVERRIDE_SALT, STACK_SAMPLE_SALT
+from src.nlhe.stack_sampler import sample_starting_state
 
 
 class _CollectorBuffer:
@@ -109,6 +111,16 @@ def _fork_rng_override(seed: int, iteration: int, t: int) -> random.Random:
     cross-process communication.
     """
     s = (seed * 1_000_003 + iteration * 9_973 + t + OVERRIDE_SALT) & 0x7FFFFFFFFFFFFFFF
+    return random.Random(s)
+
+
+def _fork_rng_stack(seed: int, iteration: int, t: int) -> random.Random:
+    """Per-traversal stack-sample RNG fork (Phase 3, tournament mode).
+    Third independent stream via STACK_SAMPLE_SALT, matches solver6's
+    tournament-branch derivation exactly so sequential and parallel agree
+    on sample_starting_state's draws across the fork boundary.
+    """
+    s = (seed * 1_000_003 + iteration * 9_973 + t + STACK_SAMPLE_SALT) & 0x7FFFFFFFFFFFFFFF
     return random.Random(s)
 
 
@@ -191,6 +203,12 @@ def run_traversals(wi: WorkerInput) -> list[WorkerOutput]:
     (within-worker memoization is safe because bucket lookups are pure
     functions of (hero, board); see DESIGN.md).
     """
+    # Legacy-mode game is built once from wi.game_str. In tournament mode the
+    # game spec varies per traversal (sampled stacks + dealer), so we defer
+    # pyspiel.load_game to inside the per-traversal loop and build via
+    # structure.to_inner_game_string_for_state(...). Loading wi.game_str
+    # eagerly is harmless when tournament_structure is set (the result is
+    # simply unused), so we keep it for code simplicity.
     game = pyspiel.load_game(wi.game_str)
     abstraction = Abstraction.load(wi.abstraction_path)
     encoder = InfosetEncoder6Max(
@@ -201,20 +219,15 @@ def run_traversals(wi: WorkerInput) -> list[WorkerOutput]:
     )
     nets = _build_nets(wi.adv_state_dicts, wi.input_dim, wi.hidden_dim)
     league_pool, archetype_pool = _build_pools(wi, abstraction)
+    tournament_structure = None
+    if wi.tournament_structure_path is not None:
+        tournament_structure = TournamentStructure.from_yaml(
+            wi.tournament_structure_path
+        )
 
     outputs: list[WorkerOutput] = []
     for t in wi.traversal_ids:
         nets_stub = _NetsStub(nets)
-        ctx = CFR6MaxContext(
-            policy_nets=nets_stub,
-            encoder=encoder,
-            starting_stacks=wi.starting_stacks,
-            payouts=wi.payouts,
-            iteration=wi.iteration,
-            max_depth=wi.max_depth,
-            num_paid=wi.num_paid,
-            dealer_seat=wi.dealer_seat,
-        )
         rng_t = _fork_rng(wi.seed, wi.iteration, t)
         rng_override_t = _fork_rng_override(wi.seed, wi.iteration, t)
         opp_override = _sample_override_worker(
@@ -224,7 +237,45 @@ def run_traversals(wi: WorkerInput) -> list[WorkerOutput]:
             wi.archetype_mix,
             wi.league_mix,
         )
-        state = game.new_initial_state()
+        if tournament_structure is not None:
+            # Tournament mode: sample per-traversal starting state, rebuild
+            # the game from the sampled (stacks, dealer_seat, blind_level).
+            rng_stack_t = _fork_rng_stack(wi.seed, wi.iteration, t)
+            sampled = sample_starting_state(
+                tournament_structure,
+                rng_stack_t,
+                num_paid=wi.num_paid,
+            )
+            gs = tournament_structure.to_inner_game_string_for_state(
+                blind_level=sampled["blind_level"],
+                stacks=sampled["stacks"],
+                dealer_seat=sampled["dealer_seat"],
+            )
+            traversal_game = pyspiel.load_game(gs)
+            state = traversal_game.new_initial_state()
+            ctx = CFR6MaxContext(
+                policy_nets=nets_stub,
+                encoder=encoder,
+                starting_stacks=list(sampled["stacks"]),
+                payouts=wi.payouts,
+                iteration=wi.iteration,
+                max_depth=wi.max_depth,
+                num_paid=wi.num_paid,
+                dealer_seat=sampled["dealer_seat"],
+            )
+        else:
+            # Legacy mode: reuse the cached game + WorkerInput's static stacks.
+            state = game.new_initial_state()
+            ctx = CFR6MaxContext(
+                policy_nets=nets_stub,
+                encoder=encoder,
+                starting_stacks=wi.starting_stacks,
+                payouts=wi.payouts,
+                iteration=wi.iteration,
+                max_depth=wi.max_depth,
+                num_paid=wi.num_paid,
+                dealer_seat=wi.dealer_seat,
+            )
         traverse_6max(
             state,
             traversing_player=wi.traverser,
