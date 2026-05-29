@@ -279,7 +279,7 @@ def test_disabled_dashboard_preserves_bit_identity(tmp_path):
 
 
 def test_config_validation_post_init():
-    with pytest.raises(ValueError, match="requires mini_eval_anchors"):
+    with pytest.raises(ValueError, match="at least one of"):
         TrainConfig6Max(mini_eval_enabled=True)
     with pytest.raises(ValueError, match=r"mini_eval_every must be >= 1"):
         TrainConfig6Max(mini_eval_enabled=True,

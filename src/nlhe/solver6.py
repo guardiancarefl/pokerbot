@@ -287,10 +287,11 @@ class TrainConfig6Max:
         # Step 7 dashboard config-only invariants. Anchor-file existence is a
         # runtime check (solver __init__), mirroring league_mix>0 requires path.
         if self.mini_eval_enabled:
-            if not self.mini_eval_anchors:
+            if not self.mini_eval_anchors and not self.mini_eval_shanky_rotation:
                 raise ValueError(
-                    "mini_eval_enabled requires mini_eval_anchors (non-empty "
-                    "list of 'name=path' specs or checkpoint paths)"
+                    "mini_eval_enabled=True requires at least one of "
+                    "mini_eval_anchors or mini_eval_shanky_rotation to be "
+                    "non-empty."
                 )
             if self.mini_eval_every < 1:
                 raise ValueError(
@@ -460,9 +461,11 @@ class DeepCFR6MaxSolver:
                 path = spec.split("=", 1)[1] if "=" in spec else spec
                 if not _os.path.exists(path):
                     raise ValueError(f"mini_eval anchor/profile not found: {path}")
+            n_anchors = len(config.mini_eval_anchors or [])
+            n_shanky = len(config.mini_eval_shanky_rotation or [])
             self.log(
-                f"  mini-eval enabled: {len(config.mini_eval_anchors)} anchors"
-                f"{' + shanky rotation' if config.mini_eval_shanky_rotation else ''}"
+                f"  mini-eval enabled: {n_anchors} anchors"
+                f"{f' + {n_shanky} shanky' if n_shanky else ''}"
                 f", every {config.mini_eval_every} iters, "
                 f"{config.mini_eval_n_hands} hands/anchor"
             )
