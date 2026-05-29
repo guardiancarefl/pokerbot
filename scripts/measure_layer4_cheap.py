@@ -350,6 +350,11 @@ def main():
                          )),
         )
 
+        archetype_name = archetype_profile.name.name
+        t_match_start = time.time()
+        print(f"[match {match_idx+1}/{args.n_matches}] hero_seat={hero_seat} "
+              f"opp_archetype={archetype_name} starting", flush=True)
+
         match_record = {
             "match_idx": match_idx,
             "hero_seat": hero_seat,
@@ -368,8 +373,19 @@ def main():
             )
             cond_outcomes[condition].append(outcome)
             match_record["outcomes"][condition] = outcome
+            elapsed_match = time.time() - t_match_start
+            print(f"[match {match_idx+1}/{args.n_matches}] condition={condition} "
+                  f"outcome={outcome:+.4f}  elapsed={elapsed_match:.1f}s", flush=True)
 
         per_match_records.append(match_record)
+        b = match_record["outcomes"]["baseline"]
+        r = match_record["outcomes"]["raw"]
+        a = match_record["outcomes"]["archetype"]
+        dt = time.time() - t_match_start
+        tt = time.time() - t0
+        print(f"[match {match_idx+1}/{args.n_matches}] DONE  "
+              f"baseline={b:+.4f} raw={r:+.4f} arch={a:+.4f}  "
+              f"match_wall={dt:.1f}s  total={tt:.1f}s", flush=True)
         if (match_idx + 1) % max(1, args.n_matches // 20) == 0 or match_idx == args.n_matches - 1:
             elapsed = time.time() - t0
             done = match_idx + 1
