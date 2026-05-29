@@ -14,7 +14,7 @@ buy_in: 1.0
 num_paid: 3
 max_traversal_depth: 200
 
-n_iterations: 2000
+n_iterations: 1000
 traversals_per_iter: 150
 train_steps_per_iter: 200
 batch_size: 64
