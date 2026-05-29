@@ -51,3 +51,6 @@ league_sample_strategy: recency
 league_recency_halflife: 5.0
 league_tag_filter:
   - shanky
+
+parallel_groups: 10
+parallel_use_processes: true

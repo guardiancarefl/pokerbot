@@ -33,6 +33,7 @@ import yaml
 
 from src.nlhe.abstraction import Abstraction
 from src.nlhe.game_strings import PokerGameConfig
+from src.nlhe.parallel.orchestrator import parallel_train
 from src.nlhe.solver6 import DeepCFR6MaxSolver, TrainConfig6Max
 
 
@@ -51,13 +52,20 @@ def load_yaml_config(path: str) -> dict:
 
 def build_six_max_game(cfg: TrainConfig6Max) -> "pyspiel.Game":
     """Build the OpenSpiel 6-max universal_poker game from a TrainConfig6Max."""
+    return pyspiel.load_game(_six_max_game_str(cfg))
+
+
+def _six_max_game_str(cfg: TrainConfig6Max) -> str:
+    """The universal_poker string for a TrainConfig6Max — needed by
+    parallel_train so workers can re-load pyspiel.Game locally (Game does
+    not pickle)."""
     game_cfg = PokerGameConfig(
         num_players=6,
         starting_stack=cfg.starting_stack,
         big_blind=cfg.big_blind,
         small_blind=cfg.small_blind,
     )
-    return pyspiel.load_game(game_cfg.to_universal_poker_string())
+    return game_cfg.to_universal_poker_string()
 
 
 def main() -> None:
@@ -103,7 +111,8 @@ def main() -> None:
         log.info(f"  {street}: k={sa.k}, bins={sa.bins}")
 
     log.info("building 6-max game...")
-    game = build_six_max_game(tc)
+    game_str = _six_max_game_str(tc)
+    game = pyspiel.load_game(game_str)
     log.info(f"  num_players={game.num_players()}  max_length={game.max_game_length()}")
 
     solver = DeepCFR6MaxSolver(
@@ -119,9 +128,24 @@ def main() -> None:
     interrupted = False
     metrics = None
     try:
-        metrics = solver.train(
-            checkpoint_dir=ckpt_dir, checkpoint_every=checkpoint_every
-        )
+        if tc.parallel_groups > 0:
+            log.info(
+                f"parallel mode: G={tc.parallel_groups} "
+                f"use_processes={tc.parallel_use_processes}"
+            )
+            metrics = parallel_train(
+                solver,
+                game_str=game_str,
+                abstraction_path=abstraction_path,
+                n_workers=tc.parallel_groups,
+                use_processes=tc.parallel_use_processes,
+                checkpoint_dir=ckpt_dir,
+                checkpoint_every=checkpoint_every,
+            )
+        else:
+            metrics = solver.train(
+                checkpoint_dir=ckpt_dir, checkpoint_every=checkpoint_every
+            )
     except KeyboardInterrupt:
         # Ctrl+C from the tmux session (or any other SIGINT). solver.train()
         # internal state is reachable via solver.iteration etc., so we can

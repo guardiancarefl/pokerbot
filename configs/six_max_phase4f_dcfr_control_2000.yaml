@@ -46,3 +46,6 @@ mini_eval_shanky_rotation:
   - data/shanky_profiles/TheFixerSNG.txt
   - data/shanky_profiles/GusHansenMTT.txt
   - data/shanky_profiles/timidtom.txt
+
+parallel_groups: 10
+parallel_use_processes: true

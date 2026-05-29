@@ -250,6 +250,9 @@ class TrainConfig6Max:
     mini_eval_anchors: Optional[list] = None         # "name=path" specs (or bare paths) to anchor .pt
     mini_eval_shanky_rotation: Optional[list] = None  # Shanky profile specs, cycled one per snapshot
 
+    parallel_groups: int = 0                # 0 = sequential (legacy); >0 = orchestrator at G groups
+    parallel_use_processes: bool = True     # True = mp.fork workers; False = serial in-process (debug only)
+
     seed: int = 2026
 
     def __post_init__(self):
@@ -301,6 +304,10 @@ class TrainConfig6Max:
                 raise ValueError(
                     f"mini_eval_n_hands must be >= 1, got {self.mini_eval_n_hands}"
                 )
+        if self.parallel_groups < 0:
+            raise ValueError(
+                f"parallel_groups must be >= 0, got {self.parallel_groups}"
+            )
 
 
 # ===== Solver =====

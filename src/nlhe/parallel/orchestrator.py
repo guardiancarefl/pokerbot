@@ -346,23 +346,21 @@ def parallel_train(
             f"{elapsed:.1f}s"
         )
 
-        # mini_eval intentionally omitted for v1 — baseline_seq.yaml has
-        # mini_eval_enabled=False; the parallel layer should not silently
-        # exercise it. If it were enabled, mini_eval also needs its own
-        # determinism path (it uses seed+200+it on a fresh rng — already
-        # safe per solver6 comments, but out of scope for v1 testing).
-        if cfg.mini_eval_enabled and it % cfg.mini_eval_every == 0:
-            raise NotImplementedError(
-                "mini_eval is not yet wired in parallel_train; disable "
-                "mini_eval_enabled or extend the orchestrator first."
-            )
-
+        # Order mirrors sequential solver.train(): checkpoint first, then
+        # mini_eval. The self-anchor lookup inside _maybe_run_mini_eval reads
+        # the just-written checkpoint when it == mini_eval_every, so ordering
+        # is load-bearing — do not swap.
         if checkpoint_dir is not None and (
             it % checkpoint_every == 0 or it == cfg.n_iterations
         ):
             ckpt_path = checkpoint_dir / f"ckpt_iter_{it:04d}.pt"
             solver.save_checkpoint(ckpt_path, slim=True)
             solver.log(f"  saved checkpoint: {ckpt_path}")
+
+        # Mini-eval uses an isolated eval seed (seed+200+it) — does not touch
+        # solver.rng or worker rngs. Runs on the main process between iters.
+        if cfg.mini_eval_enabled and it % cfg.mini_eval_every == 0:
+            solver._maybe_run_mini_eval(it, metrics, checkpoint_dir)
 
     total = time.time() - t_start
     solver.log(f"=== total: {total/60:.1f} min ===")
