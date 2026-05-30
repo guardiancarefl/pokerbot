@@ -16,6 +16,10 @@ import unittest
 
 import numpy as np
 
+# Cand C: action-space cardinality auto-derived; was hardcoded 7 pre-Cand-C.
+from src.nlhe.actions import DiscreteAction
+_N = len(DiscreteAction)
+
 
 def _open_spiel_available() -> bool:
     try:
@@ -44,11 +48,16 @@ class _MockEncoder:
 
 
 class _MockNets:
-    """Advantage net stub: deterministic 7-vector per seat (some negative, so RM+
+    """Advantage net stub: deterministic N-vector per seat (some negative, so RM+
     zeros them and the resulting distribution is non-uniform — a meaningful sanity
-    check). Identical inputs → identical outputs, so the solve is reproducible."""
+    check). Identical inputs → identical outputs, so the solve is reproducible.
 
-    _BASE = np.array([0.5, -0.3, 0.2, 0.1, -0.1, 0.4, 0.05], dtype=np.float32)
+    Cand C: vector length tracks _N. Original length-7 values for indices [0..6]
+    retained; new indices [7]=BET_50 [8]=BET_150 take averages of fraction-
+    neighbors ([2]+[3])/2 = 0.15 and ([4]+[5])/2 = 0.15."""
+
+    _BASE = np.array([0.5, -0.3, 0.2, 0.1, -0.1, 0.4, 0.05, 0.15, 0.15],
+                     dtype=np.float32)[:_N]
 
     def predict_advantages(self, seat, features):
         return (self._BASE + np.float32(0.01) * np.float32(seat)).astype(np.float32)
@@ -132,9 +141,9 @@ class TestResultFields(unittest.TestCase):
     def test_result_constructs(self):
         from src.nlhe.subgame_solver import SubgameSolveResult
         res = SubgameSolveResult(
-            root_policy=np.zeros(7, dtype=np.float32),
-            root_blueprint=np.zeros(7, dtype=np.float32),
-            legal_mask=np.zeros(7, dtype=np.float32),
+            root_policy=np.zeros(_N, dtype=np.float32),
+            root_blueprint=np.zeros(_N, dtype=np.float32),
+            legal_mask=np.zeros(_N, dtype=np.float32),
             hero_seat=0, n_iterations=0, n_decision_nodes_cached=1,
         )
         self.assertFalse(res.degraded)
@@ -188,7 +197,7 @@ class TestK0BlueprintPassthrough(unittest.TestCase):
         tree = self._tree(depth=1)
         res = solve_subgame(tree, _make_ctx(tree, n_iterations=0))
         p, mask = res.root_policy, res.legal_mask
-        self.assertEqual(p.shape, (7,))
+        self.assertEqual(p.shape, (_N,))
         self.assertTrue(np.all(p >= 0.0))
         self.assertAlmostEqual(float(p.sum()), 1.0, places=5)
         # mass only on legal actions
@@ -253,7 +262,7 @@ def _independent_q(tree, ctx):
     """Recompute hero action values q[a] from the root children WITHOUT calling the
     solver's helper — the reference the bit-identity gate feeds to stub_root_policy."""
     from src.nlhe.icm_returns import icm_adjust_returns
-    q = np.zeros(7, dtype=np.float64)
+    q = np.zeros(_N, dtype=np.float64)
     hero = tree.root.current_player
     for child in tree.root.children:
         a = int(child.action_from_parent)
@@ -307,9 +316,14 @@ class TestK1RegretUpdate(unittest.TestCase):
     def test_mask_preservation_pure(self):
         """Masked actions stay 0 regardless of how large their adv/q are."""
         from src.nlhe.subgame_solver import _regret_matched_policy
-        adv = np.array([0.4, 0.1, -0.2, 0.3, 0.05, 9.9, 9.9], dtype=np.float64)
-        mask = np.array([1, 1, 1, 1, 1, 0, 0], dtype=np.float64)  # 5,6 illegal
-        q = np.array([1.0, 2.0, 3.0, 0.5, 0.1, 100.0, 100.0], dtype=np.float64)
+        # Cand C: indices 5, 6 still illegal; indices 7, 8 (BET_50, BET_150)
+        # are legal with neutral adv so the 5,6-illegal assertion remains the
+        # load-bearing check.
+        adv = np.array([0.4, 0.1, -0.2, 0.3, 0.05, 9.9, 9.9, 0.05, 0.05],
+                       dtype=np.float64)[:_N]
+        mask = np.array([1, 1, 1, 1, 1, 0, 0, 1, 1], dtype=np.float64)[:_N]
+        q = np.array([1.0, 2.0, 3.0, 0.5, 0.1, 100.0, 100.0, 0.4, 0.3],
+                     dtype=np.float64)[:_N]
         sigma_m, sigma0 = _regret_matched_policy(adv, q, mask)
         self.assertEqual(float(sigma_m[5]), 0.0)
         self.assertEqual(float(sigma_m[6]), 0.0)
@@ -395,10 +409,10 @@ def _synthetic_chance_tree():
 
     cache = _WarmupCache()
     nid = id(root)
-    mask = np.zeros(7, dtype=np.float32)
+    mask = np.zeros(_N, dtype=np.float32)
     mask[0] = 1.0
     mask[1] = 1.0
-    cache.adv[nid] = np.zeros(7, dtype=np.float32)  # uniform start
+    cache.adv[nid] = np.zeros(_N, dtype=np.float32)  # uniform start
     cache.mask[nid] = mask
     cache.sigma[nid] = _strategy_from_advantages(cache.adv[nid], mask)
     return tree, cache, hero
@@ -418,7 +432,7 @@ class TestKMultiIteration(unittest.TestCase):
         tree = self._tree(depth=2)
         res = solve_subgame(tree, _make_ctx(tree, n_iterations=100))
         p, mask = res.root_policy, res.legal_mask
-        self.assertEqual(p.shape, (7,))
+        self.assertEqual(p.shape, (_N,))
         self.assertTrue(np.all(p >= 0.0))
         self.assertAlmostEqual(float(p.sum()), 1.0, places=5)
         self.assertEqual(float(p[mask == 0].sum()), 0.0)
@@ -510,7 +524,7 @@ class TestDiagnosticEnrichment(unittest.TestCase):
         for arr in (res.root_q_values, res.root_advantages_blueprint,
                     res.root_advantages_refined):
             self.assertIsNotNone(arr)
-            self.assertEqual(np.asarray(arr).shape, (7,))
+            self.assertEqual(np.asarray(arr).shape, (_N,))
         # JSON-serializable summary
         summary = summarize_solve_result(res)
         json.dumps(summary)  # raises if not serializable
@@ -639,7 +653,7 @@ class TestExtractActionRealState(unittest.TestCase):
         self.state = _first_decision_state(seed=42)
         self.dmap = _discretize_at_decision(self.state)   # {DiscreteAction: chip}
         self.legal_idxs = sorted(int(da) for da in self.dmap)
-        self.mask = np.zeros(7, dtype=np.float32)
+        self.mask = np.zeros(_N, dtype=np.float32)
         for i in self.legal_idxs:
             self.mask[i] = 1.0
 
@@ -647,7 +661,7 @@ class TestExtractActionRealState(unittest.TestCase):
         from src.nlhe.actions import DiscreteAction
         from src.nlhe.subgame_solver import extract_action
         astar = self.legal_idxs[-1]
-        p = np.zeros(7)
+        p = np.zeros(_N)
         p[astar] = 0.8
         for i in self.legal_idxs:
             if i != astar:
@@ -661,7 +675,7 @@ class TestExtractActionRealState(unittest.TestCase):
         from src.nlhe.subgame_solver import extract_action
         self.assertIn(0, self.legal_idxs)  # FOLD legal, chip 0
         self.assertIn(1, self.legal_idxs)  # CALL legal, chip 1
-        p = np.zeros(7)
+        p = np.zeros(_N)
         p[0] = 0.6
         p[1] = 0.4
         res = _result_with_policy(p, self.mask)
@@ -678,11 +692,11 @@ class TestExtractActionRealState(unittest.TestCase):
     def test_masked_elements_never_selected(self):
         from src.nlhe.actions import DiscreteAction
         from src.nlhe.subgame_solver import extract_action
-        illegal = next(i for i in range(7) if i not in self.legal_idxs)
+        illegal = next(i for i in range(_N) if i not in self.legal_idxs)
         legal = self.legal_idxs[0]
         # deliberately put 0.3 mass on an ILLEGAL index — extract must mask it away,
         # leaving all weight on `legal` (so every draw returns legal's chip).
-        p = np.zeros(7)
+        p = np.zeros(_N)
         p[legal] = 0.7
         p[illegal] = 0.3
         res = _result_with_policy(p, self.mask)
@@ -700,7 +714,7 @@ class TestExtractActionRealState(unittest.TestCase):
             self.skipTest("ALLIN not legal at this root")
         allin_chip = self.dmap[DiscreteAction.ALLIN]
         self.assertGreater(allin_chip, 0)  # a real all-in (max_bet), not the chip-0 alias
-        p = np.zeros(7)
+        p = np.zeros(_N)
         p[int(DiscreteAction.ALLIN)] = 1.0
         res = _result_with_policy(p, self.mask)
         chip = extract_action(res, self.state, random.Random(0), mode="argmax")
@@ -708,7 +722,7 @@ class TestExtractActionRealState(unittest.TestCase):
 
     def test_degraded_still_returns_legal_action(self):
         from src.nlhe.subgame_solver import extract_action
-        p = np.zeros(7)
+        p = np.zeros(_N)
         for i in self.legal_idxs:
             p[i] = 1.0 / len(self.legal_idxs)
         res = _result_with_policy(p, self.mask, degraded=True)  # degraded -> no fallback here
@@ -717,7 +731,7 @@ class TestExtractActionRealState(unittest.TestCase):
 
     def test_reproducible_same_seed(self):
         from src.nlhe.subgame_solver import extract_action
-        p = np.zeros(7)
+        p = np.zeros(_N)
         for i in self.legal_idxs:
             p[i] = 1.0 / len(self.legal_idxs)
         res = _result_with_policy(p, self.mask)
@@ -735,9 +749,9 @@ class TestExtractActionAlias(unittest.TestCase):
     alias is map-driven, so injecting the map is the precise unit test)."""
 
     def _result_force_allin(self):
-        mask = np.zeros(7, dtype=np.float32)
+        mask = np.zeros(_N, dtype=np.float32)
         mask[0] = mask[1] = mask[6] = 1.0  # FOLD, CALL, ALLIN legal
-        p = np.zeros(7, dtype=np.float32)
+        p = np.zeros(_N, dtype=np.float32)
         p[6] = 1.0  # force ALLIN
         return _result_with_policy(p, mask)
 

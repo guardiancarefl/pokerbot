@@ -15,6 +15,10 @@ import unittest
 
 import numpy as np
 
+# Cand C: action-space cardinality auto-derived; was hardcoded 7 pre-Cand-C.
+from src.nlhe.actions import DiscreteAction
+_N = len(DiscreteAction)
+
 
 def _open_spiel_available() -> bool:
     try:
@@ -82,8 +86,8 @@ def _first_decision_state(starting_stack: int = 10000, seed: int = 42):
 
 @unittest.skipUnless(_HAS_OPEN_SPIEL, "Requires open_spiel")
 class TestSubgamePolicyGate(unittest.TestCase):
-    DECISIVE = [0.0, 10.0, 0.0, 0.0, 0.0, 0.0, 0.0]   # all mass on CALL -> max-prob ~1.0
-    MIXED = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]       # uniform over legal -> max-prob small
+    DECISIVE = [0.0, 10.0] + [0.0] * (_N - 2)         # all mass on CALL -> max-prob ~1.0
+    MIXED = [1.0] * _N                                # uniform over legal -> max-prob small
 
     def test_conformance_interface(self):
         from src.nlhe.subgame_policy import SubgamePolicy
@@ -215,8 +219,8 @@ class TestStartingStacksReconstruction(unittest.TestCase):
 
 @unittest.skipUnless(_HAS_OPEN_SPIEL, "Requires open_spiel")
 class TestSubgamePolicyPipeline(unittest.TestCase):
-    MIXED = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]       # -> gate SOLVE
-    DECISIVE = [0.0, 10.0, 0.0, 0.0, 0.0, 0.0, 0.0]   # -> gate SKIP
+    MIXED = [1.0] * _N                                # -> gate SOLVE
+    DECISIVE = [0.0, 10.0] + [0.0] * (_N - 2)         # -> gate SKIP
     SMALL = dict(n_samples=2, max_action_depth=2, n_iterations=10)  # fast mock solves
 
     def _parsed(self, state):
@@ -276,8 +280,8 @@ class TestSubgamePolicyPipeline(unittest.TestCase):
 
 @unittest.skipUnless(_HAS_OPEN_SPIEL, "Requires open_spiel")
 class TestSubgamePolicyStageC(unittest.TestCase):
-    MIXED = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
-    DECISIVE = [0.0, 10.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    MIXED = [1.0] * _N
+    DECISIVE = [0.0, 10.0] + [0.0] * (_N - 2)
     SMALL = dict(n_samples=2, max_action_depth=2, n_iterations=10)
 
     def _parsed(self, state):
@@ -313,8 +317,8 @@ class TestSubgamePolicyStageC(unittest.TestCase):
         state = _first_decision_state()
         parsed = self._parsed(state)
         p = _make_policy(self.MIXED, **self.SMALL)
-        pol = np.zeros(7, np.float32); pol[0] = 0.7; pol[1] = 0.3
-        mask = np.zeros(7, np.float32); mask[0] = 1.0; mask[1] = 1.0
+        pol = np.zeros(_N, np.float32); pol[0] = 0.7; pol[1] = 0.3
+        mask = np.zeros(_N, np.float32); mask[0] = 1.0; mask[1] = 1.0
         fixed = SubgameSolveResult(root_policy=pol, root_blueprint=pol, legal_mask=mask,
                                    hero_seat=parsed["current_player"], n_iterations=10,
                                    n_decision_nodes_cached=1, degraded=False)
@@ -335,8 +339,8 @@ class TestSubgamePolicyStageC(unittest.TestCase):
         parsed = self._parsed(state)
         p = _make_policy(self.MIXED, **self.SMALL)
         degraded = SubgameSolveResult(
-            root_policy=np.zeros(7, np.float32), root_blueprint=np.zeros(7, np.float32),
-            legal_mask=np.zeros(7, np.float32), hero_seat=parsed["current_player"],
+            root_policy=np.zeros(_N, np.float32), root_blueprint=np.zeros(_N, np.float32),
+            legal_mask=np.zeros(_N, np.float32), hero_seat=parsed["current_player"],
             n_iterations=10, n_decision_nodes_cached=1, degraded=True)
         with mock.patch("src.nlhe.subgame_policy.solve_subgame", return_value=degraded):
             with self.assertLogs("subgame_policy", level="WARNING") as cm:
