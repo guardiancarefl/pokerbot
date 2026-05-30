@@ -380,11 +380,14 @@ def _round_closing_decision(seed: int = 42):
 @unittest.skipUnless(_HAS_OPEN_SPIEL, "Requires open_spiel")
 class TestChanceCollapsesToLeaf(unittest.TestCase):
     def test_chance_becomes_leaf_no_expansion_no_explosion(self):
+        from src.nlhe.actions import DiscreteAction
         from src.nlhe.subgame import build_subgame_tree, iter_leaf_nodes
         s = _round_closing_decision()
         self.assertTrue(s.child(1).is_chance_node(),
                         "fixture: calling should close the round into a chance node")
-        tree = build_subgame_tree(s, max_action_depth=3, chance_samples_per_node=8)
+        max_action_depth = 3
+        tree = build_subgame_tree(s, max_action_depth=max_action_depth,
+                                  chance_samples_per_node=8)
         # Change A: chance is NEVER expanded into the tree -> no CHANCE-kind nodes,
         # and chance states appear only as LEAVES (current_player None).
         self.assertEqual(tree.n_chance_nodes, 0)
@@ -394,8 +397,19 @@ class TestChanceCollapsesToLeaf(unittest.TestCase):
             self.assertIsNone(lf.current_player)
         # No leaf explosion: bounded leaf count (was 2000+ when chance expanded x8
         # and compounded across streets within the depth budget).
-        self.assertLess(tree.n_leaf_nodes, 200,
-                        f"leaf explosion not bounded: {tree.n_leaf_nodes} leaves")
+        # The bound is the unpruned-tree leaf-count upper bound: at most N choices
+        # per decision node, branching to depth max_action_depth, gives N**depth
+        # leaves before any pruning. Real trees prune below this (terminals,
+        # sub-min bets, allin-aliasing), so the bound assertively means chance is
+        # NOT being re-expanded — re-expansion would push leaves past N**depth
+        # × chance_samples × streets. Scales automatically with action-space
+        # changes (pre-Cand-C N=7 → cap 343; Cand C N=9 → cap 729; future
+        # Cand A N=10 → cap 1000; chance re-expansion would still bust any).
+        expected_max = len(DiscreteAction) ** max_action_depth
+        self.assertLess(
+            tree.n_leaf_nodes, expected_max,
+            f"leaf explosion not bounded: {tree.n_leaf_nodes} leaves vs cap "
+            f"{expected_max} (N={len(DiscreteAction)}, depth={max_action_depth})")
 
 
 if __name__ == "__main__":
