@@ -229,10 +229,17 @@ def archetype_policy(
                 weights[int(DiscreteAction.CALL)] = call_prob
                 # Distribute raise mass across bet sizes. Larger sizings get
                 # less weight; aggression bumps the large-bet share.
-                weights[int(DiscreteAction.BET_33)] = raise_prob * (0.5 - 0.2 * aggro)
-                weights[int(DiscreteAction.BET_66)] = raise_prob * 0.3
-                weights[int(DiscreteAction.BET_100)] = raise_prob * (0.15 + 0.1 * aggro)
-                weights[int(DiscreteAction.BET_200)] = raise_prob * (0.05 + 0.1 * aggro)
+                # Cand C: BET_50 and BET_150 inserted with linear-interpolated
+                # weights between fraction-neighbors. Pre-normalization the
+                # six bet entries sum to 1.5 × raise_prob; the _BET_NORM=1.5
+                # divisor restores total raise mass to raise_prob.
+                _BET_NORM = 1.5
+                weights[int(DiscreteAction.BET_33)]  = raise_prob * (0.5  - 0.2 * aggro) / _BET_NORM
+                weights[int(DiscreteAction.BET_50)]  = raise_prob * (0.4  - 0.1 * aggro) / _BET_NORM
+                weights[int(DiscreteAction.BET_66)]  = raise_prob * 0.3                  / _BET_NORM
+                weights[int(DiscreteAction.BET_100)] = raise_prob * (0.15 + 0.1 * aggro) / _BET_NORM
+                weights[int(DiscreteAction.BET_150)] = raise_prob * (0.10 + 0.1 * aggro) / _BET_NORM
+                weights[int(DiscreteAction.BET_200)] = raise_prob * (0.05 + 0.1 * aggro) / _BET_NORM
         else:
             # Not facing a bet. Check vs bet split governed by aggression.
             bet_prob = aggro
@@ -250,10 +257,15 @@ def archetype_policy(
             else:
                 # CALL is the check action when nothing to call.
                 weights[int(DiscreteAction.CALL)] = check_prob
-                weights[int(DiscreteAction.BET_33)] = bet_prob * (0.5 - 0.2 * aggro)
-                weights[int(DiscreteAction.BET_66)] = bet_prob * 0.3
-                weights[int(DiscreteAction.BET_100)] = bet_prob * (0.15 + 0.1 * aggro)
-                weights[int(DiscreteAction.BET_200)] = bet_prob * (0.05 + 0.1 * aggro)
+                # Cand C: see facing-bet branch above for the BET_NORM=1.5
+                # rationale; identical six-size renormalization here.
+                _BET_NORM = 1.5
+                weights[int(DiscreteAction.BET_33)]  = bet_prob * (0.5  - 0.2 * aggro) / _BET_NORM
+                weights[int(DiscreteAction.BET_50)]  = bet_prob * (0.4  - 0.1 * aggro) / _BET_NORM
+                weights[int(DiscreteAction.BET_66)]  = bet_prob * 0.3                  / _BET_NORM
+                weights[int(DiscreteAction.BET_100)] = bet_prob * (0.15 + 0.1 * aggro) / _BET_NORM
+                weights[int(DiscreteAction.BET_150)] = bet_prob * (0.10 + 0.1 * aggro) / _BET_NORM
+                weights[int(DiscreteAction.BET_200)] = bet_prob * (0.05 + 0.1 * aggro) / _BET_NORM
 
     # In-position adjustment: in-position archetypes bet slightly more,
     # out-of-position they check more. Subtle nudge, not a structural change.

@@ -36,10 +36,16 @@ import numpy as np
 
 from src.nlhe.within_match import SeatStats
 from src.nlhe.biased_policy import BiasConfig
+from src.nlhe.actions import DiscreteAction
 from src.nlhe.archetypes import NAMED_ARCHETYPES, archetype_policy
 
 ALPHA_C1_DEFAULT = 2.0
-N_ACTIONS = 7  # FOLD, CALL, BET_33, BET_66, BET_100, BET_200, ALLIN
+# Cand C: action-space is N=9 (FOLD, CALL, BET_33, BET_66, BET_100, BET_200,
+# ALLIN, BET_50, BET_150). Vector entries below are indexed by
+# DiscreteAction integer value, NOT fraction order — indices 7/8 (BET_50,
+# BET_150) appear at the END of each row even though their fractions sit
+# inside the BET_33–BET_200 band.
+N_ACTIONS = len(DiscreteAction)
 
 # Blueprint-population reference values for raw-path stat z-scoring.
 # (mean, sd) per stat. Conservative midpoints; refine in C1d if calibration
@@ -52,42 +58,49 @@ BLUEPRINT_REF: dict[str, tuple[float, float]] = {
     "avg_bet_over_pot": (0.65, 0.20),
 }
 
-# Per-stat per-direction mapping matrix W[stat][direction] is a shape (7,)
-# vector. Each entry is small (~0.1–0.3) so exp(confidence × Σ |z| × W) stays
-# in a reasonable range before clipping to [1/alpha, alpha]. Semantics are
-# hero-defensive throughout: positive entries on FOLD when the observation
-# argues for tighter hero play (e.g. high opp aggression), etc.
+# Per-stat per-direction mapping matrix W[stat][direction] is a shape
+# (N_ACTIONS,) vector. Each entry is small (~0.1–0.3) so exp(confidence × Σ
+# |z| × W) stays in a reasonable range before clipping to [1/alpha, alpha].
+# Semantics are hero-defensive throughout: positive entries on FOLD when the
+# observation argues for tighter hero play (e.g. high opp aggression), etc.
+#
+# Cand C entry layout (DiscreteAction integer-value order):
+#   [0]=FOLD [1]=CALL [2]=BET_33 [3]=BET_66 [4]=BET_100 [5]=BET_200 [6]=ALLIN
+#   [7]=BET_50 [8]=BET_150
+# Indices 7 and 8 (the appended Cand C sizes) take the AVERAGE of their two
+# fraction-neighbors per row, preserving the row's monotone direction-of-
+# argument over bet sizings.
 RAW_STATS_W: dict[str, dict[str, np.ndarray]] = {
     "vpip": {
         # opp loose preflop → wider opp range → hero plays more pots
-        "high": np.array([-0.20, +0.20, +0.10, +0.10, +0.10, +0.05, +0.00]),
+        "high": np.array([-0.20, +0.20, +0.10, +0.10, +0.10, +0.05, +0.00, +0.10, +0.075]),
         # opp tight preflop → tight range → fold marginals, don't c-bet bluffs
-        "low":  np.array([+0.25, -0.10, -0.10, -0.10, -0.10, -0.05, +0.00]),
+        "low":  np.array([+0.25, -0.10, -0.10, -0.10, -0.10, -0.05, +0.00, -0.10, -0.075]),
     },
     "pfr": {
         # opp PFR high → polar 3-bets → hero defends slightly tighter
-        "high": np.array([+0.10, -0.05, -0.05, -0.05, -0.05, -0.05, -0.05]),
+        "high": np.array([+0.10, -0.05, -0.05, -0.05, -0.05, -0.05, -0.05, -0.05, -0.05]),
         # opp PFR low → limpers → hero exploits with raises
-        "low":  np.array([0.0, +0.10, +0.10, +0.10, +0.10, +0.05, 0.0]),
+        "low":  np.array([ 0.0,  +0.10, +0.10, +0.10, +0.10, +0.05,  0.0,  +0.10, +0.075]),
     },
     "aggression_freq": {
         # opp aggressive postflop → hero defends: fold more, call less, bluff
         # bet less (test 5 lock: FOLD multiplier > 1 in this case)
-        "high": np.array([+0.30, -0.20, -0.10, -0.10, -0.10, -0.05, +0.05]),
+        "high": np.array([+0.30, -0.20, -0.10, -0.10, -0.10, -0.05, +0.05, -0.10, -0.075]),
         # opp passive → hero bets more freely (no resistance)
-        "low":  np.array([-0.10, +0.10, +0.15, +0.20, +0.20, +0.15, +0.05]),
+        "low":  np.array([-0.10, +0.10, +0.15, +0.20, +0.20, +0.15, +0.05, +0.175, +0.175]),
     },
     "fold_to_bet": {
         # opp folds easily → hero exploits fold equity with more bets
-        "high": np.array([-0.10, -0.05, +0.15, +0.20, +0.20, +0.15, +0.10]),
+        "high": np.array([-0.10, -0.05, +0.15, +0.20, +0.20, +0.15, +0.10, +0.175, +0.175]),
         # opp calls down → hero only value-bets
-        "low":  np.array([+0.05, +0.20, -0.10, -0.10, -0.05, -0.05, -0.05]),
+        "low":  np.array([+0.05, +0.20, -0.10, -0.10, -0.05, -0.05, -0.05, -0.10, -0.05]),
     },
     "avg_bet_over_pot": {
         # opp bets large → hero defends tighter, marginals fold
-        "high": np.array([+0.20, -0.10, -0.05, 0.0, +0.05, +0.10, +0.05]),
+        "high": np.array([+0.20, -0.10, -0.05,  0.0,  +0.05, +0.10, +0.05, -0.025, +0.075]),
         # opp bets small → hero calls cheap, bets smaller in response
-        "low":  np.array([-0.10, +0.20, +0.05, 0.0, -0.05, -0.05, -0.05]),
+        "low":  np.array([-0.10, +0.20, +0.05,  0.0,  -0.05, -0.05, -0.05, +0.025, -0.05]),
     },
 }
 

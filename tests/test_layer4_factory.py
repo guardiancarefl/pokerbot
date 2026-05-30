@@ -9,10 +9,14 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
+from src.nlhe.actions import DiscreteAction
 from src.nlhe.archetypes import EquityCalibration
 from src.nlhe.biased_policy import BiasConfig
 from src.nlhe.layer4_factory import make_bias_factory
 from src.nlhe.within_match import MatchObserver
+
+# Cand C: action-space cardinality auto-derived; was hardcoded 7 pre-Cand-C.
+_N = len(DiscreteAction)
 
 
 # Hand-built parsed dicts mirror those used in test_within_match.py — the
@@ -57,7 +61,7 @@ def _stub_resolver(seat: int) -> dict:
             "contribution": [0] * 6,
             "money": [1000] * 6,
             "pot": 100,
-            "legal_mask": np.ones(7, dtype=np.float32),
+            "legal_mask": np.ones(_N, dtype=np.float32),
         },
         "state": None,
         "bucket_id": 0,
@@ -78,7 +82,7 @@ def test_raw_factory_zero_obs_returns_ones():
     assert len(cfgs) == 4
     for cfg in cfgs:
         assert isinstance(cfg, BiasConfig)
-        assert cfg.multipliers.shape == (7,)
+        assert cfg.multipliers.shape == (_N,)
         assert np.allclose(cfg.multipliers, 1.0, atol=1e-12)
 
 

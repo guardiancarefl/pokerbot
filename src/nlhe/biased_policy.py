@@ -59,8 +59,14 @@ def standard_bias_configs(alpha: float = _DEFAULT_ALPHA) -> list[BiasConfig]:
     n = len(DiscreteAction)
     # action indices
     F, C = DiscreteAction.FOLD, DiscreteAction.CALL
-    BETS = (DiscreteAction.BET_33, DiscreteAction.BET_66,
-            DiscreteAction.BET_100, DiscreteAction.BET_200, DiscreteAction.ALLIN)
+    # Cand C: BETS includes BET_50 and BET_150 alongside their
+    # fraction-neighbors. fold/call-biased configs down-weight every bet by
+    # 1/alpha (including the new pair); raise-biased leaves all bets at 1.0
+    # (only F and C are reduced) and so naturally treats the new entries
+    # identically to their neighbors.
+    BETS = (DiscreteAction.BET_33, DiscreteAction.BET_50, DiscreteAction.BET_66,
+            DiscreteAction.BET_100, DiscreteAction.BET_150, DiscreteAction.BET_200,
+            DiscreteAction.ALLIN)
 
     def mults(passive_up: list[DiscreteAction], aggressive_down: list[DiscreteAction]) -> np.ndarray:
         m = np.ones(n)

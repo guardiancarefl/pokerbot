@@ -141,11 +141,12 @@ def test_apply_bias_falls_back_when_bias_zeroes_all_mass():
     probs = np.zeros(n, dtype=np.float32)
     probs[2] = 0.5
     probs[3] = 0.5
-    # An artificial bias that zeros out the only legal actions
-    bad_bias = BiasConfig(
-        name="bad",
-        multipliers=np.array([1.0, 1.0, 1e-30, 1e-30, 1.0, 1.0, 1.0]),
-    )
+    # An artificial bias that zeros out the only legal actions (indices 2, 3).
+    # Cand C: shape tracks len(DiscreteAction); other entries stay at 1.0.
+    bad_mults = np.ones(n, dtype=np.float64)
+    bad_mults[2] = 1e-30
+    bad_mults[3] = 1e-30
+    bad_bias = BiasConfig(name="bad", multipliers=bad_mults)
     out = apply_bias(probs, mask, bad_bias)
     # Should fall back to uniform-over-legal (0.5 each on indices 2, 3)
     assert out[2] == pytest.approx(0.5)

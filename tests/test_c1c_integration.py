@@ -13,6 +13,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
+from src.nlhe.actions import DiscreteAction
 from src.nlhe.biased_policy import BiasConfig, BiasedBlueprint, standard_bias_configs
 from src.nlhe.subgame_policy import build_per_seat_biased_blueprints
 from src.nlhe.within_match import SeatStats
@@ -21,6 +22,9 @@ from src.nlhe.bias_configs import (
     stats_to_bias_configs_archetype,
 )
 
+# Cand C: action-space cardinality auto-derived; was hardcoded 7 pre-Cand-C.
+_N = len(DiscreteAction)
+
 
 # Default menu captured from Recon 1.4: BiasedBlueprint() == standard_bias_configs(3.0).
 # These literal values lock the bit-identity gate; any future change to either
@@ -28,16 +32,22 @@ from src.nlhe.bias_configs import (
 # break this test loudly.
 _DEFAULT_NAMES = ("blueprint", "fold-biased", "call-biased", "raise-biased")
 _DEFAULT_MULTS = (
-    np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]),
-    np.array([3.0, 1.0, 1/3, 1/3, 1/3, 1/3, 1/3]),
-    np.array([1.0, 3.0, 1/3, 1/3, 1/3, 1/3, 1/3]),
-    np.array([1/3, 1/3, 1.0, 1.0, 1.0, 1.0, 1.0]),
+    # Cand C: action layout is DiscreteAction integer-value order
+    #   [0]=FOLD [1]=CALL [2]=BET_33 [3]=BET_66 [4]=BET_100 [5]=BET_200
+    #   [6]=ALLIN [7]=BET_50 [8]=BET_150
+    # The blueprint is np.ones(_N); fold/call-biased down-weight every bet
+    # (indices 2-8 except FOLD/CALL) by 1/alpha=1/3; raise-biased only reduces
+    # F and C, leaves every bet at 1.0.
+    np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]),
+    np.array([3.0, 1.0, 1/3, 1/3, 1/3, 1/3, 1/3, 1/3, 1/3]),
+    np.array([1.0, 3.0, 1/3, 1/3, 1/3, 1/3, 1/3, 1/3, 1/3]),
+    np.array([1/3, 1/3, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]),
 )
 
 
 def _identity_factory(seat: int) -> list[BiasConfig]:
     """Factory that returns 4 all-ones BiasConfigs (the C1b confidence=0 shape)."""
-    return [BiasConfig(name=f"id_k{i}", multipliers=np.ones(7, dtype=np.float64))
+    return [BiasConfig(name=f"id_k{i}", multipliers=np.ones(_N, dtype=np.float64))
             for i in range(4)]
 
 
@@ -46,13 +56,13 @@ def _distinct_factory(seat: int) -> list[BiasConfig]:
     seat 2, FOLD=1.25 at others — distinctive enough for cross-seat isolation
     and reach-leaf-eval checks."""
     fold_mult = {1: 2.0, 2: 1.5}.get(seat, 1.25)
-    base = np.ones(7, dtype=np.float64)
+    base = np.ones(_N, dtype=np.float64)
     base[0] = fold_mult  # FOLD index
     # k=0 carries the distinctive multiplier; k=1..3 are near-identity perturbations
     # so the all-identity short-circuit doesn't fire.
     configs = [BiasConfig(name=f"dist_k0_seat{seat}", multipliers=base.copy())]
     for i in range(1, 4):
-        mults = np.ones(7, dtype=np.float64)
+        mults = np.ones(_N, dtype=np.float64)
         mults[0] = 1.0 + 0.01 * i  # tiny perturbation, avoids short-circuit
         configs.append(BiasConfig(name=f"dist_k{i}_seat{seat}", multipliers=mults))
     return configs
@@ -173,7 +183,7 @@ def test_archetype_factory_integration():
         "contribution": [0] * 6,
         "money": [1000] * 6,
         "pot": 100,
-        "legal_mask": np.ones(7, dtype=np.float32),
+        "legal_mask": np.ones(_N, dtype=np.float32),
     }
 
     def factory(seat: int) -> list[BiasConfig]:

@@ -25,7 +25,8 @@ from src.nlhe.archetypes import (
 )
 
 CALIBRATION_PATH = Path("runs/archetype_design/bucket_equity_analysis.json")
-N_DISCRETE_ACTIONS = 7  # FOLD, CALL, BET_33, BET_66, BET_100, BET_200, ALLIN
+N_DISCRETE_ACTIONS = len(DiscreteAction)  # Cand C: 9 (FOLD, CALL, BET_33,
+# BET_66, BET_100, BET_200, ALLIN, BET_50, BET_150)
 
 
 @pytest.fixture(scope="module")

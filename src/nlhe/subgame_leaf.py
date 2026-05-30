@@ -67,7 +67,7 @@ log = logging.getLogger("subgame_leaf")
 
 # 6-max; kept local so importing this module does not pull torch (networks6).
 _NUM_SEATS = 6
-_N_ACTIONS = len(DiscreteAction)  # 7
+_N_ACTIONS = len(DiscreteAction)  # 9 under Cand C (auto-derives)
 # Safety cap on rollout length, mirroring eval_pool.py:122. Healthy hands
 # terminate far below this; the cap only catches a pathological non-terminating
 # state (treated as a failed sample, Q8).

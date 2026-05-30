@@ -8,6 +8,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
+from src.nlhe.actions import DiscreteAction
 from src.nlhe.within_match import SeatStats
 from src.nlhe.bias_configs import (
     ALPHA_C1_DEFAULT,
@@ -18,6 +19,9 @@ from src.nlhe.bias_configs import (
     stats_to_bias_configs_archetype,
 )
 from src.nlhe.archetypes import EquityCalibration, NAMED_ARCHETYPES, ArchetypeName
+
+# Cand C: action-space cardinality auto-derived; was hardcoded 7 pre-Cand-C.
+_N = len(DiscreteAction)
 
 
 # ---------- helpers ----------
@@ -81,7 +85,7 @@ def _make_minimal_calibration() -> EquityCalibration:
 def _minimal_parsed_leaf(*, legal_mask: np.ndarray | None = None) -> dict:
     """A minimal parsed dict suitable for the archetype path's leaf context."""
     if legal_mask is None:
-        legal_mask = np.ones(7, dtype=np.float32)
+        legal_mask = np.ones(_N, dtype=np.float32)
     return {
         "street_idx": 1,           # flop
         "current_player": 0,
@@ -131,7 +135,7 @@ def test_raw_path_confidence_zero():
     configs = stats_to_bias_configs_raw(s, confidence=0.0)
     assert len(configs) == 4
     for cfg in configs:
-        assert cfg.multipliers.shape == (7,)
+        assert cfg.multipliers.shape == (_N,)
         assert np.allclose(cfg.multipliers, 1.0, atol=1e-12)
 
 
@@ -200,7 +204,7 @@ def test_archetype_path_confidence_zero():
     )
     assert len(configs) == 4
     for cfg in configs:
-        assert cfg.multipliers.shape == (7,)
+        assert cfg.multipliers.shape == (_N,)
         assert np.allclose(cfg.multipliers, 1.0, atol=1e-12)
 
 
@@ -240,7 +244,7 @@ def test_archetype_path_clipped_to_alpha():
     )
     lo, hi = 1.0 / alpha, alpha
     for cfg in configs:
-        assert cfg.multipliers.shape == (7,)
+        assert cfg.multipliers.shape == (_N,)
         assert cfg.multipliers.min() >= lo - 1e-12
         assert cfg.multipliers.max() <= hi + 1e-12
 
@@ -280,7 +284,7 @@ def test_both_paths_same_output_signature():
     assert len(raw_cfgs) == 4
     assert len(arch_cfgs) == 4
     for cfg in raw_cfgs + arch_cfgs:
-        assert cfg.multipliers.shape == (7,)
+        assert cfg.multipliers.shape == (_N,)
         assert cfg.multipliers.dtype == np.float64
         assert (cfg.multipliers > 0).all()
 

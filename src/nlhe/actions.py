@@ -1,7 +1,8 @@
 """Action abstraction for HUNL.
 
 Converts between:
-  - Our discrete policy action space: {fold, call, 0.33pot, 0.66pot, 1pot, 2pot, allin}
+  - Our discrete policy action space: {fold, call, 0.33pot, 0.5pot, 0.66pot,
+    1pot, 1.5pot, 2pot, allin}
   - OpenSpiel universal_poker's integer-chip action space (~20000 actions per node)
 
 Two-way translation:
@@ -31,6 +32,11 @@ class DiscreteAction(IntEnum):
     BET_100 = 4    # bet sized to 1.0x current pot ("pot")
     BET_200 = 5    # bet sized to 2.0x current pot ("overbet")
     ALLIN = 6
+    # Candidate C additions (appended; existing integer values unchanged so
+    # any vector indexed by DiscreteAction stays stable for slots 0-6). The
+    # ascending fraction order lives in BET_ACTIONS_IN_ORDER, not the enum.
+    BET_50 = 7     # bet sized to 0.5x current pot  (between BET_33 and BET_66)
+    BET_150 = 8    # bet sized to 1.5x current pot  (between BET_100 and BET_200)
 
     @property
     def label(self) -> str:
@@ -38,18 +44,27 @@ class DiscreteAction(IntEnum):
             DiscreteAction.FOLD: "fold",
             DiscreteAction.CALL: "call",
             DiscreteAction.BET_33: "0.33pot",
+            DiscreteAction.BET_50: "0.5pot",
             DiscreteAction.BET_66: "0.66pot",
             DiscreteAction.BET_100: "pot",
+            DiscreteAction.BET_150: "1.5pot",
             DiscreteAction.BET_200: "2xpot",
             DiscreteAction.ALLIN: "allin",
         }[self]
 
 
 # Ordered list of bet actions for translation lookup, ascending in pot-fraction.
+# NOTE: this ordering is the canonical iteration order for sizing logic and
+# the pseudo-harmonic inbound bracket-find. DiscreteAction integer values are
+# NOT contiguous in fraction order (BET_50=7 falls between BET_33=2 and
+# BET_66=3 by fraction); always iterate via this tuple, never via range() or
+# enum-integer sort.
 BET_ACTIONS_IN_ORDER = (
     DiscreteAction.BET_33,
+    DiscreteAction.BET_50,
     DiscreteAction.BET_66,
     DiscreteAction.BET_100,
+    DiscreteAction.BET_150,
     DiscreteAction.BET_200,
     DiscreteAction.ALLIN,
 )
@@ -57,8 +72,10 @@ BET_ACTIONS_IN_ORDER = (
 # Pot-fraction for each bet action (allin has no fixed fraction, handled separately).
 BET_FRACTIONS: dict[DiscreteAction, float] = {
     DiscreteAction.BET_33: 0.33,
+    DiscreteAction.BET_50: 0.50,
     DiscreteAction.BET_66: 0.66,
     DiscreteAction.BET_100: 1.00,
+    DiscreteAction.BET_150: 1.50,
     DiscreteAction.BET_200: 2.00,
 }
 
