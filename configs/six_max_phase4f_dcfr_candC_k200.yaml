@@ -62,3 +62,10 @@ seed: 2026
 # ~9 MB (slim mode); total disk ~150 MB. Granular trajectory tracking
 # without quota stress.
 checkpoint_every: 200
+
+# Parallel traversal: G=8 fork() workers per iter. Verified bit-identical
+# to serial (parallel_groups=0) at seed=2026 over 5 iters under
+# tournament_structure + N=9. Leaves 4 cores on the 12-vCPU box for the
+# main process + dashboard + OS. Expected speedup ~3-5x vs serial.
+parallel_groups: 8
+parallel_use_processes: true
