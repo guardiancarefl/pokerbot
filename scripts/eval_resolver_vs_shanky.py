@@ -162,12 +162,13 @@ _LEAF_MODE_MAP = {
 
 
 def _build_resolver(name, ckpt, abstraction, structure, gate_kw,
-                    leaf_mode: str = "profile", max_action_depth: int = 3):
+                    leaf_mode: str = "profile", max_action_depth: int = 3,
+                    n_samples: int = 8):
     from src.nlhe.subgame_policy import SubgamePolicy
     from src.nlhe.subgame_leaf import LeafEvalMode
     lm_enum = getattr(LeafEvalMode, _LEAF_MODE_MAP[leaf_mode])
     return SubgamePolicy(name, ckpt, abstraction, structure,
-                         leaf_mode=lm_enum,
+                         leaf_mode=lm_enum, n_samples=n_samples,
                          max_action_depth=max_action_depth, **gate_kw)
 
 
@@ -195,6 +196,16 @@ def main():
     ap.add_argument("--max-action-depth", type=int, default=3,
                     help="SubgamePolicy max_action_depth (default 3 = SubgamePolicy "
                          "ctor default, pre-shim behavior)")
+    ap.add_argument("--n-samples", type=int, default=8,
+                    help="LeafEvalContext n_samples (M); SubgamePolicy ctor default 8. "
+                         "X6 oracle-leaf probe uses 32 (4x production precision).")
+    ap.add_argument("--no-icm-short-circuit", action="store_true",
+                    help="Disable the leaf-eval ITM Option-A short-circuit so EVERY "
+                         "leaf rolls out (oracle-leaf precision). Implemented by "
+                         "monkeypatching subgame_leaf.is_itm -> False for this run "
+                         "only (same pattern as --players-remaining); src untouched. "
+                         "is_itm is used ONLY in the two short-circuit guards "
+                         "(subgame_leaf.py:564,623), so this is exact and side-effect-free.")
     ap.add_argument("--players-remaining", type=int, default=None,
                     help="bubble-slice ablation: force alive_count to this value "
                          "(typical 4 for the 3-paid bubble). Default None = "
@@ -232,6 +243,17 @@ def main():
         _ss.sample_starting_state = _forced_sampler
         _ep.sample_starting_state = _forced_sampler  # eval_pool imports by name
         log.info(f"BUBBLE SLICE: forcing alive_count = {args.players_remaining}")
+
+    # Oracle-leaf precision: disable the ITM short-circuit so every leaf rolls out.
+    # Monkeypatch subgame_leaf.is_itm -> False (it is consumed ONLY in the two
+    # short-circuit guards, subgame_leaf.py:564,623; terminal ICM uses
+    # icm_adjust_returns, not is_itm), so this exactly realizes
+    # LeafEvalContext.icm_short_circuit=False without touching src.
+    if args.no_icm_short_circuit:
+        from src.nlhe import subgame_leaf as _sl
+        _sl.is_itm = lambda *a, **k: False
+        log.info("ORACLE-LEAF: ITM short-circuit DISABLED (is_itm patched -> False); "
+                 "every leaf rolls out")
 
     log.info(f"loading abstraction {args.abstraction}")
     abstr = Abstraction.load(args.abstraction)
@@ -278,7 +300,8 @@ def main():
                 resolver = _build_resolver(f"resolver-{cond_key}", args.ckpt,
                                            abstr, structure, gate_kw,
                                            leaf_mode=args.leaf_mode,
-                                           max_action_depth=args.max_action_depth)
+                                           max_action_depth=args.max_action_depth,
+                                           n_samples=args.n_samples)
             wrapped = TimedResolver(resolver)
 
             for i, opp in enumerate(shanky):
@@ -312,6 +335,9 @@ def main():
                     "gate": (None if args.no_resolver else gate_kw),
                     "leaf_mode": (None if args.no_resolver else args.leaf_mode),
                     "max_action_depth": (None if args.no_resolver else args.max_action_depth),
+                    "n_samples": (None if args.no_resolver else args.n_samples),
+                    "icm_short_circuit": (None if args.no_resolver
+                                          else (not args.no_icm_short_circuit)),
                     "players_remaining": args.players_remaining,
                     "opponent": f"shanky:{opp.name}",
                     "hands": args.hands,
