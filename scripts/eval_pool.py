@@ -152,10 +152,16 @@ def play_one_hand_two_policies(
         starting_stacks=starting_stacks,
         payouts=payouts,
     )
+    # Per-hand regime metadata for bubble-slice analysis (benign for other callers).
+    alive_chips = [s for s in starting_stacks if s > 0]
+    eff_stack_bb = ((min(alive_chips) / sampled["blind_level"].big_blind)
+                    if alive_chips else 0.0)
     return {
         "seat_assignment": seat_assignment,
         "seat_to_equity_delta": equity_delta,
         "exceeded_cap": False,
+        "eff_stack_bb": eff_stack_bb,
+        "blind_level": sampled["blind_level"].level,
     }
 
 
@@ -169,6 +175,7 @@ def evaluate_matchup(
     seed: int,
     mode: str = "sample",
     log_every: int = 500,
+    record_per_hand: bool = False,
 ) -> dict:
     rng = random.Random(seed)
     a_total = 0.0
@@ -177,6 +184,7 @@ def evaluate_matchup(
     n_hands = 0
     n_capped = 0
     t0 = time.time()
+    per_hand_records = [] if record_per_hand else None
 
     for h in range(1, hands + 1):
         result = play_one_hand_two_policies(
@@ -198,6 +206,16 @@ def evaluate_matchup(
         if n_b > 0:
             b_total += b_hand / n_b
         n_hands += 1
+        if record_per_hand:
+            a_ps = (a_hand / n_a) if n_a > 0 else 0.0
+            b_ps = (b_hand / n_b) if n_b > 0 else 0.0
+            per_hand_records.append({
+                "eff_stack_bb": result.get("eff_stack_bb", 0.0),
+                "blind_level": result.get("blind_level", 0),
+                "a_per_seat": a_ps,
+                "b_per_seat": b_ps,
+                "diff": a_ps - b_ps,
+            })
 
         if h % log_every == 0 or h == hands:
             avg_a = a_total / n_hands if n_hands else 0.0
@@ -229,6 +247,7 @@ def evaluate_matchup(
         "diff": diff,
         "stderr": stderr_a,
         "sigma": sigma,
+        "per_hand": per_hand_records,
     }
 
 

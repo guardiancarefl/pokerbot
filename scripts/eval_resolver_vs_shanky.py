@@ -206,6 +206,10 @@ def main():
                          "construction entirely. Used for the bubble-vs-bubble baseline "
                          "(--players-remaining 4 --no-resolver). gate / leaf-mode / "
                          "depth / solver timing fields will be zero in the JSONL.")
+    ap.add_argument("--per-hand", action="store_true",
+                    help="Force per-hand record logging (eff_stack_bb, blind_level, "
+                         "diff). Auto-on when --players-remaining is set; this flag "
+                         "lets natural runs capture the regime split too.")
     ap.add_argument("--out", required=True, help="output JSONL path (appended)")
     args = ap.parse_args()
 
@@ -284,11 +288,16 @@ def main():
                 log.info("-" * 60)
                 log.info(f"[{done + 1}/{n_matchups}] cond={cond_key} "
                          f"resolver vs shanky:{opp.name}  (seed={seed})")
+                # Per-hand eff_stack logged when running a bubble slice (the regime-split
+                # consumer) OR when --per-hand is explicitly set. For all other invocations,
+                # record_per_hand=False -> identical evaluate_matchup return shape.
+                record_per_hand = args.per_hand or (args.players_remaining is not None)
                 try:
                     r = evaluate_matchup(
                         challenger=wrapped, opponent=opp, structure=structure,
                         hands=args.hands, seed=seed, mode=args.mode,
                         log_every=args.log_every,
+                        record_per_hand=record_per_hand,
                     )
                 except Exception as e:
                     log.exception(f"  matchup errored: {type(e).__name__}: {e}")
@@ -314,6 +323,7 @@ def main():
                     "avg_challenger": r["avg_challenger"],
                     "avg_opponent": r["avg_opponent"],
                     "matchup_wall_s": wall,
+                    "per_hand": r.get("per_hand"),  # None unless record_per_hand
                     **tsum,
                 }
                 fout.write(json.dumps(rec) + "\n")
