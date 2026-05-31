@@ -61,6 +61,54 @@ class AdaptivePolicyNet(nn.Module):
         return policy_raw, opp_logits, combined
 
 
+class AdaptivePolicyNetS2a(nn.Module):
+    """S2(a) variant: same trunk as AdaptivePolicyNet, plus a cell-classifier
+    head alongside the action-prediction head. Read primitive is derived from
+    `opp_head_action`'s output (KL vs anchor) — head-derived, no oracle.
+
+    Heads:
+      policy_head     : hero policy (Linear[d_model+32, NUM_ACTIONS]) — distill
+      opp_head_action : opp action prediction (Linear[d_model+32, NUM_ACTIONS])
+      opp_head_cell   : opp cell classifier (Linear[d_model+32, n_cells])
+
+    forward returns (policy_raw, cell_logits, action_logits, combined).
+    """
+
+    def __init__(self, d_model: int = 64, nhead: int = 4, num_layers: int = 2,
+                 dim_ff: int = 128, dropout: float = 0.0, max_seq: int = 128,
+                 n_cells: int = 9):
+        super().__init__()
+        self.d_model = d_model
+        self.max_seq = max_seq
+        self.n_cells = n_cells
+        self.token_proj = nn.Linear(F_RAW, d_model)
+        self.pos_embed = nn.Parameter(torch.zeros(max_seq, d_model))
+        nn.init.normal_(self.pos_embed, std=0.02)
+        layer = nn.TransformerEncoderLayer(
+            d_model=d_model, nhead=nhead, dim_feedforward=dim_ff,
+            dropout=dropout, batch_first=True, activation="relu",
+        )
+        self.encoder = nn.TransformerEncoder(layer, num_layers=num_layers)
+        self.stats_proj = nn.Linear(F_STATS, 32)
+        self.policy_head = nn.Linear(d_model + 32, NUM_ACTIONS)
+        self.opp_head_action = nn.Linear(d_model + 32, NUM_ACTIONS)
+        self.opp_head_cell = nn.Linear(d_model + 32, n_cells)
+
+    def forward(self, tokens, pad_mask, query_idx, legal_mask, opp_stats):
+        B, T, _ = tokens.shape
+        x = self.token_proj(tokens) + self.pos_embed[:T].unsqueeze(0)
+        h = self.encoder(x, src_key_padding_mask=pad_mask)
+        repr_ = h[torch.arange(B), query_idx]
+        s = self.stats_proj(opp_stats)
+        combined = torch.cat([repr_, s], dim=-1)
+        logits = self.policy_head(combined)
+        logits = logits.masked_fill(~legal_mask, NEG_INF)
+        policy_raw = F.softmax(logits, dim=-1)
+        action_logits = self.opp_head_action(combined)
+        cell_logits = self.opp_head_cell(combined)
+        return policy_raw, cell_logits, action_logits, combined
+
+
 # --------------------------------------------------------------------------
 # Batching: pack variable-length token sequences from tokenize_decision().
 # --------------------------------------------------------------------------

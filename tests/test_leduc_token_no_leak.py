@@ -308,3 +308,71 @@ def test_C_opp_stats_is_pure_function_of_actions_and_facing_bet():
     assert "public" not in src
     assert "hole" not in src
     assert "deal" not in src
+
+
+# --------------------------------------------------------------------------
+# Test D — S2(a) cell-label leakage guard
+# --------------------------------------------------------------------------
+# The S2(a) architecture adds a 9-way cell classifier head. The cell label is
+# a TRAINING TARGET only (CE supervision); it must never enter the model's
+# forward inputs at inference time. This test asserts that property by:
+#   (D1) forward() signature accepts only (tokens, pad_mask, query_idx,
+#        legal_mask, opp_stats) — no cell_label / cell_id parameter.
+#   (D2) forward() source contains no string referencing cell labels.
+#   (D3) Sentinel run: outputs are determined entirely by the 5 declared
+#        inputs (so a hypothetical cell label cannot affect them by side
+#        channel — e.g., via a global).
+
+def test_D_cell_label_not_in_forward_inputs():
+    import inspect
+    import torch
+    from src.leduc.adaptive.model import AdaptivePolicyNetS2a
+    from src.leduc.adaptive.tokens import F_RAW, F_STATS, NUM_ACTIONS
+
+    net = AdaptivePolicyNetS2a(n_cells=9)
+    net.eval()
+
+    # D1 — signature: only the 5 expected positional inputs.
+    sig = inspect.signature(net.forward)
+    params = list(sig.parameters.keys())
+    expected = ["tokens", "pad_mask", "query_idx", "legal_mask", "opp_stats"]
+    assert params == expected, (
+        f"forward() signature changed; expected {expected}, got {params}. "
+        "If a cell-label parameter has been added, the S2(a) read primitive's "
+        "no-oracle property has been broken at the architecture layer."
+    )
+
+    # D2 — source inspection: forward() body must not reference cell labels.
+    src = inspect.getsource(net.forward)
+    forbidden = ["cell_label", "cell_id", "cell_idx", "true_cell"]
+    for tok in forbidden:
+        assert tok not in src, (
+            f"forward() source contains forbidden token '{tok}'. "
+            "Cell identity must not flow into the forward pass.")
+
+    # D3 — sentinel: outputs reproduce bit-identically across calls with the
+    # same 5 inputs (no hidden state, no global cell label affecting outputs).
+    B, T = 2, 6
+    rng = np.random.default_rng(0)
+    tokens = torch.from_numpy(rng.standard_normal((B, T, F_RAW)).astype(np.float32))
+    pad_mask = torch.zeros((B, T), dtype=torch.bool)
+    query_idx = torch.tensor([2, 3], dtype=torch.long)
+    legal_mask = torch.ones((B, NUM_ACTIONS), dtype=torch.bool)
+    opp_stats = torch.from_numpy(rng.standard_normal((B, F_STATS)).astype(np.float32))
+
+    with torch.no_grad():
+        pol1, cell1, act1, comb1 = net(tokens, pad_mask, query_idx,
+                                        legal_mask, opp_stats)
+        # Run again — same inputs, must produce bit-identical outputs.
+        pol2, cell2, act2, comb2 = net(tokens, pad_mask, query_idx,
+                                        legal_mask, opp_stats)
+    assert torch.equal(pol1, pol2)
+    assert torch.equal(cell1, cell2)
+    assert torch.equal(act1, act2)
+    assert torch.equal(comb1, comb2)
+
+    # And: cell head produces 9-way logits (proves the head exists and is
+    # wired); the values are unconstrained — head has not seen the label.
+    assert cell1.shape == (B, 9)
+    assert act1.shape == (B, NUM_ACTIONS)
+    assert pol1.shape == (B, NUM_ACTIONS)

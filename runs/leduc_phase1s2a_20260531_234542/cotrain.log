@@ -1,0 +1,113 @@
+[preflight] running pytest tests/test_leduc_token_no_leak.py
+========================= 7 passed, 1 warning in 3.77s =========================
+[preflight] leakage tests GREEN — proceeding to model import
+Optional module pokerkit_wrapper was not importable: No module named 'pokerkit'
+out_dir = runs/leduc_phase1s2a_20260531_234542
+[distill] 3780 examples in 0.4s
+[cells] train=9 test=3 (held-out: ['always_fold@s0.50', 'over_folder@s0.50', 'over_caller@s0.50'])
+[cells] train cell ordering (for cell head):
+    idx 0: always_fold@s1.00
+    idx 1: always_call@s0.50
+    idx 2: always_call@s1.00
+    idx 3: always_raise@s0.50
+    idx 4: always_raise@s1.00
+    idx 5: over_folder@s1.00
+    idx 6: over_caller@s1.00
+    idx 7: random_uniform@s0.50
+    idx 8: random_uniform@s1.00
+[recipe A] cell sampling weights: {'always_raise@s1.00': 3.0, 'always_raise@s0.50': 2.0} (others default to 1.0)
+[aux pool] 4192 tuples from 2560 hands (ε=0.2) in 1.6s
+    cell hand count: always_raise@s1.00            617 (24.1%)
+    cell hand count: always_raise@s0.50            418 (16.3%)
+    cell hand count: random_uniform@s0.50          243 (9.5%)
+    cell hand count: always_call@s1.00             228 (8.9%)
+    cell hand count: random_uniform@s1.00          223 (8.7%)
+    cell hand count: always_call@s0.50             219 (8.6%)
+    cell hand count: always_fold@s1.00             209 (8.2%)
+    cell hand count: over_caller@s1.00             203 (7.9%)
+    cell hand count: over_folder@s1.00             200 (7.8%)
+[recipe B] aux action counts: fold=481 call=2154 raise=1557 (total=4192)
+[recipe B] cell class-balance OFF (recipe-A maniac oversample preserved)
+[aux pool cell-tuple distribution]:
+    idx 0 (always_fold@s1.00           ): 263 tuples (6.3%)
+    idx 1 (always_call@s0.50           ): 388 tuples (9.3%)
+    idx 2 (always_call@s1.00           ): 456 tuples (10.9%)
+    idx 3 (always_raise@s0.50          ): 660 tuples (15.7%)
+    idx 4 (always_raise@s1.00          ): 983 tuples (23.4%)
+    idx 5 (over_folder@s1.00           ): 296 tuples (7.1%)
+    idx 6 (over_caller@s1.00           ): 416 tuples (9.9%)
+    idx 7 (random_uniform@s0.50        ): 371 tuples (8.9%)
+    idx 8 (random_uniform@s1.00        ): 359 tuples (8.6%)
+[net] AdaptivePolicyNetS2a (78159 params, F_RAW=17, F_STATS=12, n_cells=9)
+[losses] L = L_distill + 0.3·L_cell + 0.3·L_action
+  [s2a ep   1/200] L_d=0.7889 L_c=2.1200 L_a=0.8131 acc_c=0.207 acc_a=0.561 lr=1.00e-03 (2.1s)
+  [s2a ep  10/200] L_d=0.2852 L_c=1.7913 L_a=0.7029 acc_c=0.315 acc_a=0.643 lr=9.94e-04 (2.2s)
+  [s2a ep  20/200] L_d=0.2567 L_c=1.7719 L_a=0.6880 acc_c=0.334 acc_a=0.665 lr=9.76e-04 (2.8s)
+  [s2a ep  30/200] L_d=0.2496 L_c=1.7549 L_a=0.6744 acc_c=0.329 acc_a=0.670 lr=9.46e-04 (1.9s)
+  [s2a ep  40/200] L_d=0.2521 L_c=1.7547 L_a=0.6884 acc_c=0.331 acc_a=0.652 lr=9.05e-04 (1.8s)
+  [s2a ep  50/200] L_d=0.2606 L_c=1.7347 L_a=0.6712 acc_c=0.343 acc_a=0.676 lr=8.54e-04 (1.9s)
+  [s2a ep  60/200] L_d=0.2594 L_c=1.7231 L_a=0.6607 acc_c=0.343 acc_a=0.677 lr=7.94e-04 (1.7s)
+  [s2a ep  70/200] L_d=0.2614 L_c=1.7265 L_a=0.6683 acc_c=0.353 acc_a=0.674 lr=7.27e-04 (1.7s)
+  [s2a ep  80/200] L_d=0.2604 L_c=1.7159 L_a=0.6728 acc_c=0.358 acc_a=0.671 lr=6.55e-04 (1.7s)
+  [s2a ep  90/200] L_d=0.2655 L_c=1.7198 L_a=0.6655 acc_c=0.350 acc_a=0.661 lr=5.78e-04 (1.9s)
+  [s2a ep 100/200] L_d=0.2627 L_c=1.7089 L_a=0.6664 acc_c=0.357 acc_a=0.676 lr=5.00e-04 (2.0s)
+  [s2a ep 110/200] L_d=0.2577 L_c=1.7267 L_a=0.6747 acc_c=0.343 acc_a=0.657 lr=4.22e-04 (1.7s)
+  [s2a ep 120/200] L_d=0.2563 L_c=1.7287 L_a=0.6731 acc_c=0.342 acc_a=0.671 lr=3.45e-04 (2.0s)
+  [s2a ep 130/200] L_d=0.2602 L_c=1.7229 L_a=0.6704 acc_c=0.340 acc_a=0.661 lr=2.73e-04 (1.9s)
+  [s2a ep 140/200] L_d=0.2577 L_c=1.7257 L_a=0.6660 acc_c=0.345 acc_a=0.668 lr=2.06e-04 (2.0s)
+  [s2a ep 150/200] L_d=0.2552 L_c=1.7136 L_a=0.6651 acc_c=0.337 acc_a=0.673 lr=1.46e-04 (2.0s)
+  [s2a ep 160/200] L_d=0.2552 L_c=1.7118 L_a=0.6767 acc_c=0.343 acc_a=0.662 lr=9.55e-05 (1.9s)
+  [s2a ep 170/200] L_d=0.2567 L_c=1.7017 L_a=0.6675 acc_c=0.350 acc_a=0.676 lr=5.45e-05 (2.3s)
+  [s2a ep 180/200] L_d=0.2544 L_c=1.7304 L_a=0.6729 acc_c=0.339 acc_a=0.666 lr=2.45e-05 (2.0s)
+  [s2a ep 190/200] L_d=0.2513 L_c=1.7052 L_a=0.6538 acc_c=0.351 acc_a=0.683 lr=6.16e-06 (2.0s)
+  [s2a ep 200/200] L_d=0.2589 L_c=1.6956 L_a=0.6739 acc_c=0.348 acc_a=0.668 lr=0.00e+00 (2.2s)
+[s2a cotrain] 200 epochs × 15 steps in 394.5s
+/home/quant/pokerbot/.venv/lib/python3.10/site-packages/torch/nn/modules/transformer.py:529: UserWarning: The PyTorch API of nested tensors is in prototype stage and will change in the near future. We recommend specifying layout=torch.jagged when constructing a nested tensor, as this layout receives active development, has better operator coverage, and works with torch.compile. (Triggered internally at /pytorch/aten/src/ATen/NestedTensorImpl.cpp:178.)
+  output = torch._nested_tensor_from_mask(
+
+[E0] 6.2440 mbb/g (bar ≤ 5.0) in 3.2s
+[E0 WARN] floor broken (E0 > 5.0); first lever per plan is lowering --lam-action (currently 0.3); not auto-acting — reporting verbatim.
+  [probe 1/9] always_fold@s1.00            D̄=0.2060 g=0.2032 cell_acc_dec=0.000 cell_acc_end=0.000 act_acc=0.582 (0.5s)
+  [probe 2/9] always_call@s0.50            D̄=0.3333 g=0.3215 cell_acc_dec=0.075 cell_acc_end=0.090 act_acc=0.570 (0.6s)
+  [probe 3/9] always_call@s1.00            D̄=0.5357 g=0.4897 cell_acc_dec=0.310 cell_acc_end=0.360 act_acc=0.848 (0.8s)
+  [probe 4/9] always_raise@s0.50           D̄=0.2769 g=0.2701 cell_acc_dec=0.081 cell_acc_end=0.230 act_acc=0.465 (0.6s)
+  [probe 5/9] always_raise@s1.00           D̄=0.5372 g=0.4909 cell_acc_dec=1.000 cell_acc_end=0.580 act_acc=0.700 (0.8s)
+  [probe 6/9] over_folder@s1.00            D̄=0.2198 g=0.2163 cell_acc_dec=0.006 cell_acc_end=0.010 act_acc=0.649 (0.4s)
+  [probe 7/9] over_caller@s1.00            D̄=0.4221 g=0.3987 cell_acc_dec=0.278 cell_acc_end=0.320 act_acc=0.766 (0.5s)
+  [probe 8/9] random_uniform@s0.50         D̄=0.4283 g=0.4039 cell_acc_dec=0.013 cell_acc_end=0.050 act_acc=0.439 (0.8s)
+  [probe 9/9] random_uniform@s1.00         D̄=0.2976 g=0.2891 cell_acc_dec=0.031 cell_acc_end=0.100 act_acc=0.446 (0.5s)
+[probe] done in 5.5s
+
+=== 9×9 cell confusion (rows=true, cols=predicted; MAP @ hand-end) ===
+  true \ pred               0    1    2    3    4    5    6    7    8
+  [0] always_fold@s1.00         0    9   31    0   22    3   34    0    1
+  [1] always_call@s0.50         0    9   23   13   17    3   16    8   11
+  [2] always_call@s1.00         0   12   36    0    0    6   46    0    0
+  [3] always_raise@s0.50        0    2    1   23   54    0    5   12    3
+  [4] always_raise@s1.00        0    0    0   32   58    0    0    9    1
+  [5] over_folder@s1.00         0   15   26    0   15    1   43    0    0
+  [6] over_caller@s1.00         0   13   37    3    7    2   32    0    6
+  [7] random_uniform@s0.50      0    8    6   24   38    0   12    5    7
+  [8] random_uniform@s1.00      0    7    9   22   32    0   14    6   10
+
+=== Maniac (always_raise@s1.00) misclassification breakdown ===
+  total maniac hands = 100
+    pred = always_raise@s1.00             58 (58.0%) (← true)
+    pred = always_raise@s0.50             32 (32.0%)
+    pred = random_uniform@s0.50            9 (9.0%)
+    pred = random_uniform@s1.00            1 (1.0%)
+
+=== S2(a) Separation gate ===
+  (i)   D̄_maniac=0.5372 vs D̄_uniform_max=0.4283 (@random_uniform@s0.50) => ratio 1.25 (>= 2.0) -> FAIL
+  (ii)  maniac g(κ=1.0)=0.4909 (>= 0.4) -> verdict=kappa_stands (κ_final=1.0) -> OK
+  (iii) maniac CELL-classification acc=0.580 (>= 0.85) -> FAIL
+  (iv)  E0=6.2440 mbb/g (<= 5.0) -> FAIL
+  OVERALL: FAIL
+
+=== DECISION BRANCH ===
+  FAIL — S1 CONFIRMED.
+  Even with the most direct identity supervision (cell-CE) on the trunk and a head-derived read, Leduc cannot per-hand-separate the maniac from uniform within the (i)/(ii)/(iii) bars.
+  → STOP proving on Leduc. Move to 6-max with this S2(a) negative as design input.
+
+[saved] runs/leduc_phase1s2a_20260531_234542/phase1_s2a.pt + metrics.json + train_log.json + aux_pool.pkl
+[STOP] decision branch reported. STOP for user review.
