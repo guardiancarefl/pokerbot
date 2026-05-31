@@ -1,0 +1,66 @@
+[preflight] running pytest tests/test_leduc_token_no_leak.py
+6 passed in 1.29s
+[preflight] leakage tests GREEN — proceeding to model import
+Optional module pokerkit_wrapper was not importable: No module named 'pokerkit'
+out_dir = runs/leduc_phase1cotrain_20260531_222313
+[distill] 3780 examples in 0.5s
+[cells] train=9 test=3 (held-out: ['always_fold@s0.50', 'over_folder@s0.50', 'over_caller@s0.50'])
+[recipe A] cell sampling weights: {'always_raise@s1.00': 3.0, 'always_raise@s0.50': 2.0} (others default to 1.0)
+[aux pool] 4192 tuples from 2560 hands (ε=0.2) in 2.1s
+    cell hand count: always_raise@s1.00            617 (24.1%)
+    cell hand count: always_raise@s0.50            418 (16.3%)
+    cell hand count: random_uniform@s0.50          243 (9.5%)
+    cell hand count: always_call@s1.00             228 (8.9%)
+    cell hand count: random_uniform@s1.00          223 (8.7%)
+    cell hand count: always_call@s0.50             219 (8.6%)
+    cell hand count: always_fold@s1.00             209 (8.2%)
+    cell hand count: over_caller@s1.00             203 (7.9%)
+    cell hand count: over_folder@s1.00             200 (7.8%)
+[recipe B] aux action counts: fold=481 call=2154 raise=1557 (total=4192)
+[recipe B] class weights: fold=2.905 call=0.649 raise=0.897  (class_balance=True)
+[net] AdaptivePolicyNet v2 (77286 params, F_RAW=17, F_STATS=12)
+  [cotrain ep   1/200] L_d=0.7797 L_a=0.8164 acc_a=0.460 lr=1.00e-03 (3.2s)
+  [cotrain ep  10/200] L_d=0.2831 L_a=0.7247 acc_a=0.578 lr=9.94e-04 (2.0s)
+  [cotrain ep  20/200] L_d=0.2542 L_a=0.7243 acc_a=0.581 lr=9.76e-04 (2.7s)
+  [cotrain ep  30/200] L_d=0.2496 L_a=0.7071 acc_a=0.572 lr=9.46e-04 (1.9s)
+  [cotrain ep  40/200] L_d=0.2519 L_a=0.6981 acc_a=0.587 lr=9.05e-04 (1.8s)
+  [cotrain ep  50/200] L_d=0.2597 L_a=0.6924 acc_a=0.583 lr=8.54e-04 (1.9s)
+  [cotrain ep  60/200] L_d=0.2592 L_a=0.6830 acc_a=0.596 lr=7.94e-04 (1.9s)
+  [cotrain ep  70/200] L_d=0.2605 L_a=0.6904 acc_a=0.608 lr=7.27e-04 (1.6s)
+  [cotrain ep  80/200] L_d=0.2598 L_a=0.6907 acc_a=0.572 lr=6.55e-04 (2.1s)
+  [cotrain ep  90/200] L_d=0.2649 L_a=0.6906 acc_a=0.597 lr=5.78e-04 (2.2s)
+  [cotrain ep 100/200] L_d=0.2620 L_a=0.6845 acc_a=0.600 lr=5.00e-04 (2.0s)
+  [cotrain ep 110/200] L_d=0.2571 L_a=0.6960 acc_a=0.582 lr=4.22e-04 (1.8s)
+  [cotrain ep 120/200] L_d=0.2558 L_a=0.6927 acc_a=0.607 lr=3.45e-04 (1.9s)
+  [cotrain ep 130/200] L_d=0.2600 L_a=0.6948 acc_a=0.586 lr=2.73e-04 (1.9s)
+  [cotrain ep 140/200] L_d=0.2573 L_a=0.6873 acc_a=0.593 lr=2.06e-04 (2.1s)
+  [cotrain ep 150/200] L_d=0.2549 L_a=0.6749 acc_a=0.611 lr=1.46e-04 (2.1s)
+  [cotrain ep 160/200] L_d=0.2550 L_a=0.6959 acc_a=0.588 lr=9.55e-05 (1.9s)
+  [cotrain ep 170/200] L_d=0.2565 L_a=0.6884 acc_a=0.591 lr=5.45e-05 (2.2s)
+  [cotrain ep 180/200] L_d=0.2541 L_a=0.6909 acc_a=0.587 lr=2.45e-05 (2.1s)
+  [cotrain ep 190/200] L_d=0.2511 L_a=0.6854 acc_a=0.596 lr=6.16e-06 (1.9s)
+  [cotrain ep 200/200] L_d=0.2587 L_a=0.6985 acc_a=0.588 lr=0.00e+00 (2.0s)
+[cotrain] 200 epochs × 15 steps in 405.0s
+/home/quant/pokerbot/.venv/lib/python3.10/site-packages/torch/nn/modules/transformer.py:529: UserWarning: The PyTorch API of nested tensors is in prototype stage and will change in the near future. We recommend specifying layout=torch.jagged when constructing a nested tensor, as this layout receives active development, has better operator coverage, and works with torch.compile. (Triggered internally at /pytorch/aten/src/ATen/NestedTensorImpl.cpp:178.)
+  output = torch._nested_tensor_from_mask(
+[E0] 4.0936 mbb/g (bar ≤ 5.0) in 3.9s
+  [probe 1/9] always_fold@s1.00            D̄_mean=0.3618 g=0.3468 acc=0.846 ce=0.5619 (0.7s)
+  [probe 2/9] always_call@s0.50            D̄_mean=0.4346 g=0.4091 acc=0.418 ce=1.0944 (1.2s)
+  [probe 3/9] always_call@s1.00            D̄_mean=0.5469 g=0.4982 acc=0.605 ce=0.8170 (1.2s)
+  [probe 4/9] always_raise@s0.50           D̄_mean=0.2884 g=0.2807 acc=0.485 ce=0.8441 (0.5s)
+  [probe 5/9] always_raise@s1.00           D̄_mean=0.5890 g=0.5292 acc=0.600 ce=0.5260 (0.7s)
+  [probe 6/9] over_folder@s1.00            D̄_mean=0.3992 g=0.3792 acc=0.737 ce=0.7000 (0.7s)
+  [probe 7/9] over_caller@s1.00            D̄_mean=0.4913 g=0.4553 acc=0.586 ce=0.8593 (1.1s)
+  [probe 8/9] random_uniform@s0.50         D̄_mean=0.5023 g=0.4639 acc=0.454 ce=0.9608 (0.5s)
+  [probe 9/9] random_uniform@s1.00         D̄_mean=0.3484 g=0.3349 acc=0.437 ce=1.0593 (0.7s)
+[probe] done in 7.4s
+
+=== Separation gate ===
+  (i)   D̄_maniac=0.5890 vs D̄_uniform_max=0.5023 (@random_uniform@s0.50) => ratio 1.17 (>= 2.0) -> FAIL
+  (ii)  maniac g(κ=1.0)=0.5292 (>= 0.4) -> verdict=kappa_stands (κ_final=1.0) -> OK
+  (iii) maniac acc=0.600 (>= 0.85) -> FAIL
+  (iv)  E0=4.0936 mbb/g (<= 5.0) -> OK
+  OVERALL: FAIL
+
+[saved] runs/leduc_phase1cotrain_20260531_222313/phase1_cotrain.pt + metrics.json + train_log.json + aux_pool.pkl
+[STOP] separation gate reported. STOP for user review.

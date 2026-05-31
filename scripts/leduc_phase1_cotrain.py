@@ -184,16 +184,28 @@ def sample_from_dict(probs: dict, rng) -> int:
     return int(rng.choice(keys, p=ps))
 
 
-def generate_aux_pool(anchor_fn, train_cells, *, n_hands, epsilon, seed):
+def generate_aux_pool(anchor_fn, train_cells, *, n_hands, epsilon, seed,
+                      cell_sampling_weights=None):
     """Roll out n_hands of (noised-anchor hero, archetype opp). At each opp
     decision following >=1 hero decision, record (hero_query_inputs,
-    observed_opp_action, opp_legal_mask) for later aux loss recomputation."""
+    observed_opp_action, opp_legal_mask) for later aux loss recomputation.
+
+    `cell_sampling_weights` is an optional dict {cell.id: weight}. Cells not
+    in the dict default to 1.0. Used for recipe-A archetype oversampling
+    (boost raise-heavy cells so raise actions aren't drowned by cap-hit calls)."""
     rng = np.random.default_rng(seed)
     cells = list(train_cells)
     held_out_ids = {f"{n}@s{s:.2f}" for n, s in A.HELD_OUT_DEFAULT}
+    w = np.array([cell_sampling_weights.get(c.id, 1.0)
+                  if cell_sampling_weights else 1.0
+                  for c in cells], dtype=np.float64)
+    w = w / w.sum()
     pool = []
+    cell_counts = {c.id: 0 for c in cells}
     for h in range(n_hands):
-        cell = cells[int(rng.integers(len(cells)))]
+        ci = int(rng.choice(len(cells), p=w))
+        cell = cells[ci]
+        cell_counts[cell.id] += 1
         assert cell.id not in held_out_ids, f"held-out cell leaked: {cell.id}"
         opp_fn = A.build_cell(cell)
         hero_seat = int(rng.integers(2))
@@ -231,7 +243,7 @@ def generate_aux_pool(anchor_fn, train_cells, *, n_hands, epsilon, seed):
                         "observed_opp_action": a,
                     })
                 state.apply_action(a)
-    return pool
+    return pool, cell_counts
 
 
 # --------------------------------------------------------------------------
@@ -240,7 +252,7 @@ def generate_aux_pool(anchor_fn, train_cells, *, n_hands, epsilon, seed):
 
 def co_train(net, distill_examples, aux_pool, *,
              epochs, steps_per_epoch, batch_distill, batch_aux, lr, lam,
-             device, seed, ckpt_dir, ckpt_every):
+             device, seed, ckpt_dir, ckpt_every, class_weights=None):
     opt = torch.optim.AdamW(net.parameters(), lr=lr, weight_decay=0.0)
     sched = torch.optim.lr_scheduler.CosineAnnealingLR(
         opt, T_max=epochs * steps_per_epoch)
@@ -284,7 +296,7 @@ def co_train(net, distill_examples, aux_pool, *,
             opp_lm = torch.tensor(aux_legal[ai], dtype=torch.bool, device=device)
             opp_logits = opp_logits.masked_fill(~opp_lm, NEG_INF)
             a_t = torch.tensor(aux_actions[ai], dtype=torch.long, device=device)
-            L_aux = F.cross_entropy(opp_logits, a_t)
+            L_aux = F.cross_entropy(opp_logits, a_t, weight=class_weights)
             with torch.no_grad():
                 pred = opp_logits.argmax(dim=-1)
                 acc = float((pred == a_t).float().mean())
@@ -516,6 +528,15 @@ def main():
     ap.add_argument("--pool-hands", type=int, default=2560)
     ap.add_argument("--epsilon", type=float, default=0.20,
                     help="hero noised-anchor uniform mix")
+    # Recipe A: archetype oversampling (raise-heavy cells get boosted weight).
+    ap.add_argument("--weight-maniac", type=float, default=3.0,
+                    help="cell sampling weight for always_raise@s1.00")
+    ap.add_argument("--weight-raise-mid", type=float, default=2.0,
+                    help="cell sampling weight for always_raise@s0.50")
+    # Recipe B: inverse-frequency class-balanced CE on the aux loss.
+    ap.add_argument("--class-balance", action=argparse.BooleanOptionalAction,
+                    default=True,
+                    help="weight aux CE by inverse action frequency")
     ap.add_argument("--kappa", type=float, default=1.0)
     ap.add_argument("--w0", type=float, default=2.0)
     ap.add_argument("--n-hands-probe", type=int, default=50)
@@ -552,11 +573,40 @@ def main():
     _log(f"[cells] train={len(train_cells)} test={len(test_cells)} "
          f"(held-out: {[c.id for c in test_cells]})")
     t0 = time.time()
-    aux_pool = generate_aux_pool(anchor_fn, train_cells,
-                                  n_hands=args.pool_hands,
-                                  epsilon=args.epsilon, seed=args.seed + 7)
+    cell_sampling_weights = {
+        "always_raise@s1.00": args.weight_maniac,
+        "always_raise@s0.50": args.weight_raise_mid,
+    }
+    _log(f"[recipe A] cell sampling weights: {cell_sampling_weights} "
+         "(others default to 1.0)")
+    aux_pool, cell_counts = generate_aux_pool(
+        anchor_fn, train_cells,
+        n_hands=args.pool_hands, epsilon=args.epsilon,
+        seed=args.seed + 7, cell_sampling_weights=cell_sampling_weights,
+    )
     _log(f"[aux pool] {len(aux_pool)} tuples from {args.pool_hands} hands "
          f"(ε={args.epsilon}) in {time.time()-t0:.1f}s")
+    for cid, n in sorted(cell_counts.items(), key=lambda x: -x[1]):
+        _log(f"    cell hand count: {cid:<28} {n:>4d} "
+             f"({100.0*n/args.pool_hands:.1f}%)")
+
+    # Recipe B: inverse-frequency class weights from realized pool actions.
+    actions_arr = np.array([p["observed_opp_action"] for p in aux_pool],
+                           dtype=np.int64)
+    counts = np.bincount(actions_arr, minlength=TT.NUM_ACTIONS).astype(np.float64)
+    total = counts.sum()
+    if args.class_balance:
+        # sklearn-style: weight = N / (n_classes * n_a); avoid div0.
+        cw = total / (TT.NUM_ACTIONS * np.maximum(counts, 1.0))
+        class_weights_t = torch.tensor(cw, dtype=torch.float32, device=device)
+    else:
+        cw = np.ones(TT.NUM_ACTIONS, dtype=np.float64)
+        class_weights_t = None
+    _log(f"[recipe B] aux action counts: fold={int(counts[0])} "
+         f"call={int(counts[1])} raise={int(counts[2])} "
+         f"(total={int(total)})")
+    _log(f"[recipe B] class weights: fold={cw[0]:.3f} call={cw[1]:.3f} "
+         f"raise={cw[2]:.3f}  (class_balance={args.class_balance})")
     # Sanity: pool covers all 9 train cells but no held-out.
     # (Hard to assert per-cell since cell isn't kept; we already assert at gen.)
 
@@ -575,7 +625,8 @@ def main():
                           batch_aux=args.batch_aux,
                           lr=args.lr, lam=args.lam, device=device,
                           seed=args.seed, ckpt_dir=out,
-                          ckpt_every=args.ckpt_every)
+                          ckpt_every=args.ckpt_every,
+                          class_weights=class_weights_t)
     t_train = time.time() - t0
     _log(f"[cotrain] {args.epochs} epochs × {args.steps_per_epoch} steps "
          f"in {t_train:.1f}s")
@@ -665,6 +716,15 @@ def main():
             "epsilon_noised_anchor": args.epsilon,
             "n_distill_examples": len(distill_examples),
             "n_aux_tuples": len(aux_pool),
+            "recipe_A_cell_weights": cell_sampling_weights,
+            "recipe_A_realized_cell_counts": cell_counts,
+            "recipe_B_class_balance_on": bool(args.class_balance),
+            "recipe_B_action_counts": {"fold": int(counts[0]),
+                                        "call": int(counts[1]),
+                                        "raise": int(counts[2])},
+            "recipe_B_class_weights": {"fold": float(cw[0]),
+                                        "call": float(cw[1]),
+                                        "raise": float(cw[2])},
         },
         "E0_mbb_per_game": e0,
         "per_cell_table": cell_table,
