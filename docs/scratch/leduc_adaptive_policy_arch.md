@@ -7,8 +7,10 @@ the approval message are integrated below:
 - §9 — Step-4 eval plan: per-cell headroom-normalized gain + opp-model
        accuracy as a measured diagnostic
 
-Step-3 (training spec) and Step-4 pass-bar threshold are pending. No code
-written yet.
+Step-3 (training spec) APPROVED 2026-05-31 with two corrections + locked
+thresholds — see §12. Concrete leash VALUES (β, K, λ, gate shape) are
+PROPOSED in §12 and awaiting user sign-off; do not build against them until
+signed. No code written yet.
 
 ---
 
@@ -395,14 +397,125 @@ here only so §1–§9 don't paint Step 3 into a corner:
   accuracy/KL diagnostic
 - LSTM as a fallback if transformer training is unstable at this size
 
-**PENDING (separate next-checkpoint proposals):**
-- Step-3 two-phase training spec (phase-1 distill loss, phase-2 RL algo,
-  KL-anchor schedule β, confidence signal usage, opp-aux loss weight λ)
-- Step-4 pass-bar thresholds on gain_frac (per cell or aggregate?) and on
-  exploitability-safety bound — to be set when Step-3 spec is approved
+**APPROVED 2026-05-31 (Step-3 follow-up message) — see §12:**
+- Step-3 two-phase training spec (phase-1 distill + exit gate, phase-2
+  PPO + confidence-gated blend + KL-anchor leash, opp-aux loss)
+- Two corrections locked: (1) the blend gate is keyed to a non-equilibrium
+  READ signal from the opp-model head, NOT raw decision count; (2) E* is a
+  PASS REQUIREMENT, not a diagnostic.
+- Step-4 pass-bar thresholds locked: τ_distill ≤ 5 mbb/g; E0 ≤ anchor+2
+  (≤~2.13); E* ≤ 50 mbb/g; gain_frac ≥ 0.40 on the 3 high-headroom cells;
+  held-out gain_frac ≥ 0.5× train.
+
+**PENDING user sign-off (this proposal, §12.5):**
+- Concrete leash values: β_base, β_target, K, λ, and the exact gate shape
+  g(read_confidence). Build is blocked until these are signed.
 
 **EXPLICITLY NOT IN THIS APPROVAL:**
 - The network code (not written yet — blocked on Step-3 approval)
 - Test A/B/C code (will land alongside the network code; design is fixed
   here but implementation is a Step-3-build deliverable)
 - Any training run (blocked on Step-3 approval + Tests A/B/C green)
+
+---
+
+## 12. Step-3 two-phase training spec (APPROVED 2026-05-31, with corrections)
+
+Supersedes the §10 sketch. Thresholds in §12.4 are LOCKED. Leash values in
+§12.5 are PROPOSED and awaiting sign-off — DO NOT BUILD against §12.5 until
+the user signs.
+
+### 12.1 Phase 1 — distill to anchor (+ exit gate)
+
+- **Data:** self-play only; both seats play the frozen CFR+ tabular anchor.
+  No archetype cells appear (no test-cell contact). Confidence/read signal
+  is ~0 throughout (anchor-vs-anchor is an equilibrium read).
+- **Loss:** at every hero decision, forward-KL distillation
+  `L1 = Σ_t KL(π_anchor(·|I_t) ‖ π_net(·|I_t))` (mode-covering — reproduces
+  the anchor's mixedness). Opp-model aux OFF (λ=0; no real opponent).
+- **EXIT GATE (hard block on Phase 2):** freeze the net, induce its fixed
+  Leduc strategy at empty context, compute best-response exploitability E0
+  via the anchor's machinery. Require **E0(distilled) ≤ 5 mbb/g** (§12.4).
+  Fail ⇒ Phase 2 BLOCKED. STOP and report E0 to user regardless.
+
+### 12.2 Phase 2 — exploit-shift, leashed (trains on 9 TRAIN cells ONLY)
+
+- **Algo:** PPO-clip (ε=0.2) over full-match episodes vs the 9 train cells,
+  reward = terminal chip-EV (seat-averaged). REINFORCE+value-baseline is the
+  approved fallback if PPO is unstable at this scale.
+- **Output composition (the exact zero-evidence guarantee):**
+  `π_final = (1 − g)·π_anchor + g·π_net_raw`, with the gate `g` keyed to a
+  READ signal (§12.3, correction #1) and `gate(0)=0` enforced. At zero read,
+  π_final = anchor bit-exactly.
+- **KL-anchor leash:** reward penalty `β_eff · KL(π_final ‖ π_anchor)` per
+  hero decision, `β_eff = β_base·(1−g) + β_target·g` (tight at no-read, loose
+  at strong-read), with a global warmup over K updates.
+- **Aux opp-model loss:** `λ · Σ CE(observed_opp_action, opp_pred_probs)` at
+  every opp decision. NOTE: the opp-head is now load-bearing for the gate, so
+  its calibration matters more than in the original sketch.
+- **Discipline:** 3 held-out cells never instantiated in any rollout; Tests
+  A/B/C in `tests/test_leduc_token_no_leak.py` GREEN before the first step.
+
+### 12.3 The READ signal (CORRECTION #1 — gate keyed to read, not count)
+
+The gate must open on a genuine NON-EQUILIBRIUM read, never on the clock.
+Count enters at most as a secondary shrinkage cap.
+
+```
+per opp decision t:
+  d_t  = KL( q_t ‖ π_eq(public_t) )      # opp-head pred vs anchor's action dist; "how non-equilibrium"
+  w_t  = 1 − H(q_t)/log|A_legal,t|       # sharpness/reliability ∈ [0,1]; uncertain reads down-weighted
+running read (evidence-weighted, prior-shrunk to 0):
+  D̄    = ( Σ_t w_t·d_t ) / ( w0 + Σ_t w_t )
+gate:
+  g    = tanh( κ · D̄ )                   # gate(0)=0 exactly; bounded [0,1)
+```
+
+- Equilibrium-like opp ⇒ d_t≈0 ⇒ D̄≈0 ⇒ g≈0 ⇒ π_final = anchor.
+- Uncertain/noisy head ⇒ w_t≈0 ⇒ shrunk ⇒ g small (no read ≠ many actions).
+- Sharp, far-from-equilibrium read (always_fold, always_raise, random_uniform,
+  over_caller …) ⇒ D̄ large ⇒ g opens ⇒ exploitation permitted.
+- Count appears ONLY via the w0 shrinkage prior (the allowed "secondary cap").
+
+### 12.4 LOCKED thresholds (Step-4 pass bar)
+
+- **τ_distill** (Phase-1 exit gate): `E0(distilled) ≤ 5 mbb/g`. Hard block.
+- **ε** (E0 safety / blend correctness): `E0 ≤ anchor + 2 mbb/g (≤ ~2.13)`.
+  With gate(0)=0, E0 should ≈ anchor exactly; drift above ⇒ gate(0)≠0 bug ⇒
+  fail loud.
+- **E\*** (worst-case safety — REQUIRED, correction #2): `E* ≤ 50 mbb/g`.
+  Measured over the adversarial probe set: the 12 cells' induced contexts +
+  a short BR-search over opp action sequences, with construction bound
+  `E* ≤ E0 + Δ(β, KL_max)`. By mixture convexity
+  `KL(π_final‖anchor) ≤ g·KL(π_net‖anchor)`, so exposure scales linearly in
+  g — the bound the 50 mbb/g bar leans on.
+- The hard pass bar sits on **BOTH E0 AND E\*** (a policy safe at g=0 but wild
+  at g=1 must fail).
+- **gain_frac exploitation:** `≥ 0.40` on `always_raise@s1.00` and both
+  `random_uniform` cells.
+- **gain_frac generalization:** held-out `gain_frac ≥ 0.5 × train gain_frac`
+  on comparable cells; corroborate with held-out opp-head accuracy ≈ train.
+
+### 12.5 PROPOSED leash values (AWAITING SIGN-OFF — do not build yet)
+
+See chat message 2026-05-31 for per-value justification. Values:
+`β_base=1.0`, `β_target=0.1` (chip/nat), `K=200`, `λ=0.3`, `κ=1.0`,
+`w0=2.0`. **SIGNED OFF 2026-05-31 as STARTING points.** Build order:
+(i) network code, (ii) Tests A/B/C GREEN, (iii) Phase 1 + exit-gate, report
+E0, STOP before Phase 2.
+
+### 12.6 Result-reading guardrails (recorded 2026-05-31, post sign-off)
+
+1. **κ=1.0 assumes a strong read ≈1 nat. MANDATORY pre-Phase-2 check:**
+   measure the per-cell D̄ distribution (the distilled net's opp-head reads
+   vs each train cell). If a clearly-exploitable archetype (esp.
+   `always_raise@s1.00`) yields D̄ so low that g stays ≈0, the gate is
+   mis-scaled → recalibrate κ BEFORE policy learning. "Gate never opens" is
+   a failure that masquerades as safety — a no-exploitation result must NOT
+   pass as a safety pass.
+2. **w0=2.0 is regime-sensitive.** Fine for Leduc (long matches) but must be
+   re-tuned at the 6-max SNG stage (short matches, few hands per opponent).
+   Do NOT carry it forward blind.
+3. **β_target=0.1 is the knob most in tension with the E*≤50 bar.** If
+   Phase-2 shows good exploitation but E*>50, tighten β_target FIRST (before
+   touching the gate). This tuning order is locked.
