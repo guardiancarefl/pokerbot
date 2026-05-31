@@ -516,3 +516,22 @@ This shifts the project priorities. The original plan was: complete the diversit
 
 **Alternative considered:** Continue with the planned diversity-mix experiment (~5h) and produce a small answer; or train one k=500 self-play run (~6-8h) to test the "is abstraction the bottleneck" hypothesis directly.
 **Reason rejected:** Both are real work; both would produce some incremental information; but neither addresses the architectural keystone the project actually needs. Layer 3 is the unlock that moves the bot from "Nash within an abstraction" to "Nash + real-time refinement at decision time" — the difference between Pluribus-level play and blueprint-only play.
+
+## Blueprint-alone is the reference agent; real-time resolver is experiment-only
+**Decided:** 2026-05-31 (Session 6, resolver diagnosis J0–J3 + depth sweep)
+**Conclusion (verbatim):**
+Blueprint-alone is the reference agent. The real-time resolver is proven net-negative at every
+shippable configuration (X0 lift ≈ 0 vs a correct-model opponent; J2 condition-A −2.7 to −4.2
+ICM-pts vs blueprint on all 4 legit profiles; J3 robust BR-leaves help partially but never reach
+blueprint-alone, and are unshippable at action p95 82–99s / 14.5% >15s, d=3; depth sweep: d=3 is
+the worst point, non-monotone. Root cause under diagnosis: leaf-value precision/bias vs unsafe
+solve. Resolver remains experiment-only / opt-in pending rebuild — do not enable in any
+non-experimental path.
+
+**Floor rule (absolute):** no change may make the shipped/reference agent worse than blueprint-alone.
+There is no production deployment layer (see "Scope: training only, no deployment layer" above);
+the resolver (`SubgamePolicy`) is instantiated ONLY by experiment/measurement harnesses
+(`eval_resolver_vs_shanky.py`, `eval_pool_ablation.py`, `measure_*`), never on a default path.
+This entry records that opt-in status as the locked floor pending the rebuild decision (Step 3
+leaf probe → Step 4 path A safe-resolve or path B learned leaf value net).
+**Do NOT** wire `SubgamePolicy` as a default agent anywhere until a rebuild beats blueprint-alone.

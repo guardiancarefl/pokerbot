@@ -8,6 +8,16 @@
 > `git log --oneline` before trusting any single line here — STATUS can lag the
 > last commit.
 
+## Floor lock (2026-05-31, Session 6) — blueprint-alone is the reference agent
+The real-time resolver is proven net-negative at every shippable config (X0 lift ≈ 0 vs a
+correct-model opponent; J2 condition-A −2.7 to −4.2 ICM-pts vs blueprint on all 4 legit profiles;
+J3 BR-leaves help partially but never reach blueprint-alone and are unshippable at action p95
+82–99s / 14.5% >15s, d=3; depth sweep: d=3 is the worst point, non-monotone). Root cause under
+diagnosis: leaf-value precision/bias vs unsafe solve. **Resolver is experiment-only / opt-in** —
+do not enable in any non-experimental path. See DECISIONS.md "Blueprint-alone is the reference
+agent". Open diagnostic: X5 bubble slice (running), X6 two-arm leaf probe (M=32; Arm-1 d3 + gated
+Arm-2 d4) → feeds the Step-4 rebuild choice (A safe-resolve / B learned leaf value net).
+
 ## Done
 - **Phase 1 — Leduc Deep CFR** (OpenSpiel-wrapped), validated.
 - **Phase 2 — custom NLHE Deep CFR:** EMD card abstraction, external-sampling
