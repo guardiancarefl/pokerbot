@@ -195,6 +195,11 @@ def main():
     ap.add_argument("--max-action-depth", type=int, default=3,
                     help="SubgamePolicy max_action_depth (default 3 = SubgamePolicy "
                          "ctor default, pre-shim behavior)")
+    ap.add_argument("--players-remaining", type=int, default=None,
+                    help="bubble-slice ablation: force alive_count to this value "
+                         "(typical 4 for the 3-paid bubble). Default None = "
+                         "byte-identical sampling. Monkey-patches "
+                         "stack_sampler.sample_starting_state for this run only.")
     ap.add_argument("--out", required=True, help="output JSONL path (appended)")
     args = ap.parse_args()
 
@@ -202,6 +207,21 @@ def main():
     from scripts.eval_shanky_vs_dcfr import _build_shanky_policies
     from src.nlhe.abstraction import Abstraction
     from src.nlhe.stack_sampler import TournamentStructure
+
+    # Bubble-slice override. Monkey-patches sample_starting_state for this run
+    # only — chosen over threading a force_alive kwarg through eval_pool because
+    # it keeps eval_pool unchanged. With --players-remaining absent, both module
+    # bindings retain their import-time targets -> byte-identical sampling.
+    if args.players_remaining is not None:
+        from src.nlhe import stack_sampler as _ss
+        from scripts import eval_pool as _ep
+        _orig_sampler = _ss.sample_starting_state
+        def _forced_sampler(structure, rng, num_paid=3):
+            return _orig_sampler(structure, rng, num_paid=num_paid,
+                                 force_alive=args.players_remaining)
+        _ss.sample_starting_state = _forced_sampler
+        _ep.sample_starting_state = _forced_sampler  # eval_pool imports by name
+        log.info(f"BUBBLE SLICE: forcing alive_count = {args.players_remaining}")
 
     log.info(f"loading abstraction {args.abstraction}")
     abstr = Abstraction.load(args.abstraction)
@@ -264,6 +284,7 @@ def main():
                     "gate": gate_kw,
                     "leaf_mode": args.leaf_mode,
                     "max_action_depth": args.max_action_depth,
+                    "players_remaining": args.players_remaining,
                     "opponent": f"shanky:{opp.name}",
                     "hands": args.hands,
                     "seed": seed,

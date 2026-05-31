@@ -36,6 +36,7 @@ def sample_starting_state(
     structure: TournamentStructure,
     rng: random.Random,
     num_paid: int = 3,
+    force_alive: int = None,
 ):
     """Sample a starting state for a single-hand training trajectory.
 
@@ -47,6 +48,12 @@ def sample_starting_state(
         num_paid: number of paid positions (3 for Double Up). Used to
             constrain alive count to > num_paid (we don\'t train on
             past-bubble states).
+        force_alive: ablation knob for the bubble-slice experiment.
+            If not None, force alive_count to this value; re-samples
+            the blind level until force_alive is feasible at the level\'s
+            inflated big blind (>=100 tries). None (default) is
+            byte-identical to the pre-shim sampler — same RNG draws,
+            same outputs.
 
     Returns:
         Dict with keys:
@@ -63,12 +70,28 @@ def sample_starting_state(
     blind_level = _sample_blind_level(structure, rng)
     bb_inflated = blind_level.inflated_big_blind(n)
 
-    # Stage is implied by level: early = level 1-2, mid = 3-5, late = 6+.
-    # We sample alive_count and stack distribution conditional on stage.
-    stage = _stage_of_level(blind_level.level)
-    alive_count = _sample_alive_count(
-        stage, n, num_paid, total_chips, bb_inflated, rng
-    )
+    if force_alive is not None:
+        # Bubble-slice ablation: re-sample blind level until force_alive is feasible.
+        for _ in range(100):
+            mfa = total_chips // bb_inflated if bb_inflated > 0 else n
+            if num_paid < force_alive <= mfa and force_alive <= n:
+                break
+            blind_level = _sample_blind_level(structure, rng)
+            bb_inflated = blind_level.inflated_big_blind(n)
+        else:
+            raise RuntimeError(
+                f"force_alive={force_alive} infeasible after 100 retries; "
+                f"structure too late-game / bb_inflated too large"
+            )
+        stage = _stage_of_level(blind_level.level)
+        alive_count = force_alive
+    else:
+        # Stage is implied by level: early = level 1-2, mid = 3-5, late = 6+.
+        # We sample alive_count and stack distribution conditional on stage.
+        stage = _stage_of_level(blind_level.level)
+        alive_count = _sample_alive_count(
+            stage, n, num_paid, total_chips, bb_inflated, rng
+        )
     stacks = _sample_stack_distribution(
         n=n,
         alive_count=alive_count,
