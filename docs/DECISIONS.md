@@ -519,6 +519,10 @@ This shifts the project priorities. The original plan was: complete the diversit
 
 ## Blueprint-alone is the reference agent; real-time resolver is experiment-only
 **Decided:** 2026-05-31 (Session 6, resolver diagnosis J0–J3 + depth sweep)
+**Superseded in part:** 2026-05-31 (Session 6, post-bubble-slice) — see
+"Foundation pivot: retire real-time resolver; build trained-adaptive-policy with Leduc proof
+first" below. The floor rule (blueprint-alone is the shipped reference) CARRIES FORWARD; the
+rebuild-the-resolver fork (Step 3 leaf probe → Step 4 path A/B) is RETIRED.
 **Conclusion (verbatim):**
 Blueprint-alone is the reference agent. The real-time resolver is proven net-negative at every
 shippable configuration (X0 lift ≈ 0 vs a correct-model opponent; J2 condition-A −2.7 to −4.2
@@ -535,3 +539,50 @@ the resolver (`SubgamePolicy`) is instantiated ONLY by experiment/measurement ha
 This entry records that opt-in status as the locked floor pending the rebuild decision (Step 3
 leaf probe → Step 4 path A safe-resolve or path B learned leaf value net).
 **Do NOT** wire `SubgamePolicy` as a default agent anywhere until a rebuild beats blueprint-alone.
+
+## Foundation pivot: retire real-time resolver; build trained-adaptive-policy with Leduc proof first
+**Decided:** 2026-05-31 (Session 6, post-bubble-slice)
+**Supersedes:** the resolver-rebuild fork (Step 3 leaf probe → Step 4 path A safe-resolve / path B
+learned leaf value net) recorded in the prior entry ("Blueprint-alone is the reference agent;
+real-time resolver is experiment-only"). The floor rule from that entry (blueprint-alone is the
+shipped reference; no change may make the shipped agent worse than blueprint-alone) CARRIES
+FORWARD. Only the rebuild-the-resolver direction is retired.
+
+**Verbatim conclusion:**
+
+FOUNDATION PIVOT (supersedes the resolver-rebuild fork). The real-time resolver is RETIRED as a
+development path — proven net-negative at every shippable config (X0 lift≈0 vs correct-model
+opponent; J2 −2.7..−4.2 ICM-pts; J3 robust BR-leaves never reach blueprint and are unshippable
+at 80-100s/decision; depth sweep d=3 worst, non-monotone; bubble slice: profile-leaf harm
+concentrated >15BB, break-even ≤15BB). Even a perfectly fixed resolver is low-upside (X0).
+New foundation = a TRAINED ADAPTIVE POLICY (StratFormer-style): a sequence model anchored to a
+GTO baseline that shifts toward opponent exploitation WITHIN a match, regularized for safety
+(never more exploitable than the anchor). Blueprint-alone remains the reference floor. Goal:
+crush exploitable opponents (most humans + chip-EV GTO bots via ICM); NOT to beat optimal play
+(no exploitable edge exists there).
+PLAN: validate the architecture with a CPU-only LEDUC PROOF on Contabo BEFORE any 6-max/GPU
+work. Step 0: tabular CFR+ near-Nash Leduc anchor (validate <5 mbb/g via leduc/evaluate.py).
+Step 1: ~6 rule-based Leduc archetypes. Step 2: small adaptive sequence-model (2 heads: policy +
+opponent-model). Step 3: two-phase training (distill-to-anchor, then regularized exploit-shift
+vs archetypes). Step 4 PASS BAR (both required): positive exploitation gain on exploitable
+archetypes AND exploitability stays near the CFR+ anchor. If it clears the bar → scale to 6-max
+NLHE on RunPod, anchored to the Deep CFR ICM blueprint. If not → architecture reworks before any
+GPU spend. The resolver code stays in-tree but dormant; do not invest in fixing it.
+
+**Execution status (2026-05-31):**
+- **Step 0 — DONE.** Tabular CFR+ Nash anchor landed in commit `019d486`. Final exploitability
+  **0.1286 mbb/g** at 1000 iters (Nash bar < 5 mbb/g; ~39× margin). 936 info states. Artifact:
+  `runs/leduc_cfr_anchor_20260531_144405/{anchor_table.json, avg_policy_arrays.pkl, metrics.json}`.
+  Code: `src/leduc/cfr_anchor.py`, `scripts/train_leduc_cfr_anchor.py`.
+- Steps 1–4: pending. Step 1 (rule-based Leduc archetypes) is the next-session start; Step 2 and
+  Step 3 require explicit approval after their respective design proposals; Step 4 is the
+  go/no-go gate before any GPU/6-max scale-up.
+
+**Resolver code disposition:** `src/nlhe/subgame_solver.py`, `src/nlhe/subgame_policy.py`,
+`scripts/eval_resolver_vs_shanky.py`, and `evals/resolver_shards/*` stay in-tree but DORMANT.
+Do not invest in fixing them. The bubble-slice BR arms currently running may finish — log their
+≤15BB / >15BB buckets when they land, for completeness — but no further resolver work follows.
+
+**For any fresh session reading this file first:** the previously-queued resolver-rebuild work
+is OFF. The active program is the foundation-pivot Steps 0–4 above; see
+`docs/NEXT_SESSION.md` top-of-file banner and `docs/STATUS.md` "Foundation pivot" banner.

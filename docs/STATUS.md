@@ -8,6 +8,21 @@
 > `git log --oneline` before trusting any single line here — STATUS can lag the
 > last commit.
 
+## Foundation pivot (2026-05-31, Session 6, post-bubble-slice) — read this first
+The real-time resolver is RETIRED as a development path. New foundation = a TRAINED ADAPTIVE
+POLICY (StratFormer-style) anchored to a GTO baseline, validated first by a CPU-only Leduc
+proof on Contabo before any 6-max/GPU work. See `docs/DECISIONS.md` → "Foundation pivot: retire
+real-time resolver; build trained-adaptive-policy with Leduc proof first" for the verbatim plan,
+Steps 0–4, the pass bar, and the resolver-code disposition.
+- **Step 0 DONE:** tabular CFR+ Nash anchor at **0.1286 mbb/g** (Nash bar < 5 mbb/g; ~39× margin).
+  Commit `019d486`; artifact `runs/leduc_cfr_anchor_20260531_144405/`.
+- **Step 1 NEXT:** ~6 rule-based Leduc archetypes (pending approval).
+- **Resolver code:** in-tree but dormant; do not invest in fixing it. Bubble-slice BR arms
+  still running may finish; capture ≤15BB / >15BB buckets when they land, then close the path.
+
+The floor rule from the prior entry CARRIES FORWARD (no change may make the shipped agent worse
+than blueprint-alone). The "Floor lock" block below is preserved for history.
+
 ## Floor lock (2026-05-31, Session 6) — blueprint-alone is the reference agent
 The real-time resolver is proven net-negative at every shippable config (X0 lift ≈ 0 vs a
 correct-model opponent; J2 condition-A −2.7 to −4.2 ICM-pts vs blueprint on all 4 legit profiles;

@@ -1,3 +1,11 @@
+> **PIVOT BANNER (2026-05-31, Session 6, post-bubble-slice):** the plan below this banner
+> (Session 22's Scenario 3 / Step 7 multi-day GPU blueprint training) is SUPERSEDED. The active
+> program is the foundation pivot — retire the real-time resolver, build a trained adaptive policy
+> validated by a CPU-only Leduc proof BEFORE any 6-max/GPU work. Read
+> `docs/DECISIONS.md` → "Foundation pivot: retire real-time resolver; build trained-adaptive-policy
+> with Leduc proof first" first. Step 0 is DONE (CFR+ anchor, 0.1286 mbb/g, commit `019d486`);
+> Step 1 (rule-based Leduc archetypes) is the next-session start, pending approval.
+
 # NEXT_SESSION — Session 22 close-out → Session 23 pickup
 
 **Date written:** 2026-05-27 (Session 22 close)
