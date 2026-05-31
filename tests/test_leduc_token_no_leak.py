@@ -101,11 +101,11 @@ def test_A_no_opp_private_card_field_in_layout():
     assert total == T.F_RAW
 
 
-def test_A_stats_manifest_v3_pinned():
-    """v3 opp_stats layout (20 dims, per-street split): no opp-card-implicating
-    field, manifest SHA-256 pinned, dim count matches, preflop+postflop
-    blocks both present with matching field semantics."""
-    assert T.F_STATS == 20
+def test_A_stats_manifest_v2_pinned():
+    """v2 opp_stats layout (12 dims): no opp-card-implicating field, manifest
+    SHA-256 pinned, dim count matches."""
+    assert T.F_STATS == 12
+    names = {f[0] for f in T.STATS_FIELDS}
     forbidden_substrings = ("card", "hole", "rank", "suit", "private", "deal")
     for fname, _ in T.STATS_FIELDS:
         low = fname.lower()
@@ -116,34 +116,10 @@ def test_A_stats_manifest_v3_pinned():
             )
     expected_sha = hashlib.sha256(T.STATS_MANIFEST.encode()).hexdigest()
     assert T.STATS_MANIFEST_SHA == expected_sha
-    assert T.STATS_MANIFEST.startswith("leduc-adaptive-opp-stats-v3|")
-    # 20 field indices unique and consecutive 0..19.
+    assert T.STATS_MANIFEST.startswith("leduc-adaptive-opp-stats-v2|")
+    # All 12 field indices are unique and consecutive 0..11.
     indices = sorted(idx for _, idx in T.STATS_FIELDS)
-    assert indices == list(range(20))
-    # Preflop block at 0..7, postflop block at 8..15.
-    names = {f[0]: f[1] for f in T.STATS_FIELDS}
-    assert all(names[f"preflop_{stem}"] < 8
-               for stem in ("facing_fold_rate_smoothed",
-                            "facing_call_rate_smoothed",
-                            "facing_raise_rate_smoothed",
-                            "aggression_factor_smoothed",
-                            "open_raise_rate_smoothed",
-                            "confidence_weight",
-                            "raw_raise_fraction",
-                            "raw_fold_fraction"))
-    assert all(8 <= names[f"postflop_{stem}"] < 16
-               for stem in ("facing_fold_rate_smoothed",
-                            "facing_call_rate_smoothed",
-                            "facing_raise_rate_smoothed",
-                            "aggression_factor_smoothed",
-                            "open_raise_rate_smoothed",
-                            "confidence_weight",
-                            "raw_raise_fraction",
-                            "raw_fold_fraction"))
-    # Last-action snapshot at 16..19.
-    for fname in ("last_action_is_fold", "last_action_is_call",
-                  "last_action_is_raise", "no_actions_yet"):
-        assert 16 <= names[fname] < 20
+    assert indices == list(range(12))
 
 
 def test_A_hero_card_slot_zero_at_every_opp_token():
@@ -274,87 +250,57 @@ def test_B_counterfactual_query_token_invariance():
 # Test C — opp summary stats carry no card information
 # --------------------------------------------------------------------------
 
-def test_C_opp_stats_is_pure_function_of_actions_facing_and_street():
-    """The 20-dim v3 opp_stats vector is derived entirely from
-    (action, facing_bet, street, previous_action) per opp decision. The
-    counter object holds only integer counts and the last action id; cards
-    never enter. Per-street blocks are routed by the `street` argument.
-
-    Stream chosen to exercise both blocks and the spot-check arithmetic:
-        preflop:  RAISE (open), CALL (facing)
-        postflop: FOLD (facing)
-    Preflop counts: notfacing_raise=1, facing_call=1, p_n=2
-    Postflop counts: facing_fold=1, f_n=1
-    Last action: FOLD (postflop, facing).
-    """
+def test_C_opp_stats_is_pure_function_of_actions_and_facing_bet():
+    """The 12-dim v2 opp_stats vector is derived entirely from (action,
+    facing_bet, previous_action) per opp decision. The counter object holds
+    only integer counts and the last action id; cards never enter."""
+    # Two counters fed the same action stream produce bit-identical vectors.
     stream = [
-        (T.RAISE, False, 1),
-        (T.CALL, True, 1),
-        (T.FOLD, True, 2),
+        (T.FOLD, True), (T.CALL, True), (T.RAISE, True),
+        (T.RAISE, False), (T.CALL, False), (T.CALL, True), (T.RAISE, True),
     ]
     a = T._OppCounters()
     b = T._OppCounters()
-    for act, fb, street in stream:
-        a.update(act, fb, street)
-        b.update(act, fb, street)
-    va = a.vector()
-    vb = b.vector()
-    assert np.array_equal(va, vb)
-    assert va.shape == (T.F_STATS,) == (20,)
+    for act, fb in stream:
+        a.update(act, fb)
+        b.update(act, fb)
+    assert np.array_equal(a.vector(), b.vector())
+    assert a.vector().shape == (T.F_STATS,) == (12,)
 
-    # Spot check preflop block (dims 0-7):
-    #   facing_fold=0, facing_call=1, facing_raise=0 -> f=1
-    #   notfacing_call=0, notfacing_raise=1 -> nf=1
-    #   p_n=2, all_raise=1, all_call=1
-    assert abs(va[0] - 1.0 / 4.0) < 1e-6  # p_facing_fold_rate = 1/(1+3)
-    assert abs(va[1] - 2.0 / 4.0) < 1e-6  # p_facing_call_rate = 2/4
-    assert abs(va[2] - 1.0 / 4.0) < 1e-6  # p_facing_raise_rate
-    assert abs(va[3] - 2.0 / 4.0) < 1e-6  # p_aggression_factor = (1+1)/(1+1+2)
-    assert abs(va[4] - 2.0 / 3.0) < 1e-6  # p_open_raise = (1+1)/(1+2)
-    assert abs(va[6] - 1.0 / 2.0) < 1e-6  # p_raw_raise_fraction = 1/2
-    assert abs(va[7] - 0.0) < 1e-6        # p_raw_fold_fraction = 0/1
-
-    # Spot check postflop block (dims 8-15):
-    #   facing_fold=1, facing_call=0, facing_raise=0 -> f=1
-    #   notfacing_call=0, notfacing_raise=0 -> nf=0
-    #   f_n=1, all_raise=0, all_call=0
-    assert abs(va[8]  - 2.0 / 4.0) < 1e-6  # f_facing_fold_rate = 2/4
-    assert abs(va[9]  - 1.0 / 4.0) < 1e-6  # f_facing_call_rate = 1/4
-    assert abs(va[10] - 1.0 / 4.0) < 1e-6  # f_facing_raise_rate = 1/4
-    assert abs(va[11] - 1.0 / 2.0) < 1e-6  # f_aggression_factor = 1/2
-    assert abs(va[12] - 1.0 / 2.0) < 1e-6  # f_open_raise (denom n+2 = 2) = 1/2
-    assert abs(va[14] - 0.0) < 1e-6        # f_raw_raise_fraction = 0/1
-    assert abs(va[15] - 1.0) < 1e-6        # f_raw_fold_fraction = 1/1
-
-    # Last-action snapshot: last action was FOLD.
-    assert va[16] == 1.0 and va[17] == 0.0 and va[18] == 0.0
-    assert va[19] == 0.0  # not-no-actions-anymore
-
-    # No-info baseline = v3 prior.
+    # No-info baseline = the v2 prior.
     empty = T._OppCounters().vector()
     assert np.array_equal(T.empty_opp_stats(), empty)
-    assert empty[19] == 1.0  # no_actions_yet (across BOTH streets)
-    assert empty[16] == 0.0 and empty[17] == 0.0 and empty[18] == 0.0
+    # The "no_actions_yet" flag (dim 11) must be 1 when n=0.
+    assert empty[11] == 1.0
+    # All last-action one-hots are zero when no action yet.
+    assert empty[8] == 0.0 and empty[9] == 0.0 and empty[10] == 0.0
 
-    # Routing check: same action+facing but different street routes to
-    # different blocks.
-    p_only = T._OppCounters()
-    p_only.update(T.RAISE, False, 1)
-    f_only = T._OppCounters()
-    f_only.update(T.RAISE, False, 2)
-    vp = p_only.vector()
-    vf = f_only.vector()
-    # The preflop-routed update should not change postflop dims and vice versa.
-    assert vp[4] != empty[4]    # preflop open_raise rate changed
-    assert vp[12] == empty[12]  # postflop open_raise rate unchanged
-    assert vf[12] != empty[12]
-    assert vf[4] == empty[4]
+    # Last-action one-hot follows the latest action.
+    c = T._OppCounters()
+    c.update(T.FOLD, True)
+    v = c.vector()
+    assert v[8] == 1.0 and v[9] == 0.0 and v[10] == 0.0
+    c.update(T.RAISE, False)
+    v = c.vector()
+    assert v[8] == 0.0 and v[9] == 0.0 and v[10] == 1.0
+    assert v[11] == 0.0  # not-no-actions-anymore
+
+    # Raw rates (dims 6-7) are unsmoothed fractions of integer counts.
+    # Stream above ended with RAISE-facing as the last action; counts:
+    #   facing_fold=1, facing_call=2, facing_raise=2 -> f=5
+    #   notfacing_call=1, notfacing_raise=1 -> nf=2
+    #   n=7, all_raise=3, all_call=3
+    va = a.vector()
+    assert abs(va[6] - 3.0 / 7.0) < 1e-6  # raw raise fraction
+    assert abs(va[7] - 1.0 / 5.0) < 1e-6  # raw fold fraction
 
     # All counter slots are plain integers — no card index can hide there.
     for k, v in vars(a).items():
         assert isinstance(v, int), f"non-integer slot {k}={v!r} in _OppCounters"
 
-    # Source inspection: no card-related symbols inside _OppCounters.
+    # The card_rank() helper exists but is only used for hero_card + public,
+    # never within _OppCounters. Sanity-check by ensuring _OppCounters has no
+    # method that touches cards.
     import inspect
     src = inspect.getsource(T._OppCounters)
     assert "card_rank" not in src
