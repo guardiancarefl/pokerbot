@@ -58,7 +58,37 @@ TOKEN_MANIFEST = "leduc-adaptive-token-v1|" + "|".join(
 )
 TOKEN_MANIFEST_SHA = hashlib.sha256(TOKEN_MANIFEST.encode()).hexdigest()
 
-F_STATS = 6  # opp-summary vector (§3)
+# --------------------------------------------------------------------------
+# opp_stats layout v2 (12 dims) — co-train enrichment.
+#
+# v1 (6 dims): smoothed facing rates + AF + open_raise + confidence weight.
+# v2 adds 6 dims: 2 unsmoothed raw fractions (sharper early signal) + last-
+# action 3-way one-hot + a "no-actions-yet" flag. Every new field is a pure
+# function of (action, facing_bet, previous_action) — no card information.
+# §8 invariant unchanged; Test B (counterfactual bit-identity) covers both
+# tokens and opp_stats and must stay green.
+# --------------------------------------------------------------------------
+F_STATS = 12
+
+STATS_FIELDS = (
+    ("facing_fold_rate_smoothed",   0),
+    ("facing_call_rate_smoothed",   1),
+    ("facing_raise_rate_smoothed",  2),
+    ("aggression_factor_smoothed",  3),
+    ("open_raise_rate_smoothed",    4),
+    ("confidence_weight",           5),
+    ("raw_raise_fraction",          6),
+    ("raw_fold_fraction",           7),
+    ("last_action_is_fold",         8),
+    ("last_action_is_call",         9),
+    ("last_action_is_raise",       10),
+    ("no_actions_yet",             11),
+)
+
+STATS_MANIFEST = "leduc-adaptive-opp-stats-v2|" + "|".join(
+    f"{name}@{idx}" for name, idx in STATS_FIELDS
+)
+STATS_MANIFEST_SHA = hashlib.sha256(STATS_MANIFEST.encode()).hexdigest()
 
 _GAME = pyspiel.load_game("leduc_poker")
 
@@ -85,9 +115,11 @@ class _OppCounters:
     notfacing_call: int = 0   # check when no bet
     notfacing_raise: int = 0  # open raise
     n: int = 0
+    last_action: int = -1     # -1 = no opp action yet; else 0/1/2
 
     def update(self, action: int, facing_bet: bool):
         self.n += 1
+        self.last_action = action
         if facing_bet:
             if action == FOLD:
                 self.facing_fold += 1
@@ -104,19 +136,33 @@ class _OppCounters:
     def vector(self) -> np.ndarray:
         f = self.facing_fold + self.facing_call + self.facing_raise   # facing-bet decisions
         nf = self.notfacing_call + self.notfacing_raise               # not-facing decisions
-        # 1-3: fold/call/raise rate when facing a bet (Laplace +1, denom +3)
+        # 0-2: fold/call/raise rate when facing a bet (Laplace +1, denom +3)
         fold_r = (self.facing_fold + 1.0) / (f + 3.0)
         call_r = (self.facing_call + 1.0) / (f + 3.0)
         raise_r = (self.facing_raise + 1.0) / (f + 3.0)
-        # 4: aggression factor = raises / (calls + raises) over ALL opp decisions
+        # 3: aggression factor = raises / (calls + raises) over ALL opp decisions
         all_raise = self.facing_raise + self.notfacing_raise
         all_call = self.facing_call + self.notfacing_call
         af = (all_raise + 1.0) / (all_raise + all_call + 2.0)
-        # 5: open-raise rate (raise when not facing a bet), Laplace +1 / +2
+        # 4: open-raise rate (raise when not facing a bet), Laplace +1 / +2
         open_r = (self.notfacing_raise + 1.0) / (nf + 2.0)
-        # 6: confidence weight, log(1+n)/log(101), capped near 1
+        # 5: confidence weight, log(1+n)/log(101), capped near 1
         conf = min(1.0, np.log1p(self.n) / np.log(101.0))
-        return np.array([fold_r, call_r, raise_r, af, open_r, conf], dtype=np.float32)
+        # 6: raw raise fraction (unsmoothed; sharper early-hand signal)
+        raw_raise = (all_raise / self.n) if self.n > 0 else 0.0
+        # 7: raw fold fraction (folds / facing_decisions; unsmoothed)
+        raw_fold = (self.facing_fold / f) if f > 0 else 0.0
+        # 8-10: last opp action one-hot (zero if last_action == -1)
+        last_is_fold = 1.0 if self.last_action == FOLD else 0.0
+        last_is_call = 1.0 if self.last_action == CALL else 0.0
+        last_is_raise = 1.0 if self.last_action == RAISE else 0.0
+        # 11: no opp actions observed yet
+        no_actions = 1.0 if self.n == 0 else 0.0
+        return np.array([
+            fold_r, call_r, raise_r, af, open_r, conf,
+            raw_raise, raw_fold,
+            last_is_fold, last_is_call, last_is_raise, no_actions,
+        ], dtype=np.float32)
 
 
 def empty_opp_stats() -> np.ndarray:

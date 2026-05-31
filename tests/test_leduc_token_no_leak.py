@@ -101,6 +101,27 @@ def test_A_no_opp_private_card_field_in_layout():
     assert total == T.F_RAW
 
 
+def test_A_stats_manifest_v2_pinned():
+    """v2 opp_stats layout (12 dims): no opp-card-implicating field, manifest
+    SHA-256 pinned, dim count matches."""
+    assert T.F_STATS == 12
+    names = {f[0] for f in T.STATS_FIELDS}
+    forbidden_substrings = ("card", "hole", "rank", "suit", "private", "deal")
+    for fname, _ in T.STATS_FIELDS:
+        low = fname.lower()
+        for bad in forbidden_substrings:
+            assert bad not in low, (
+                f"§8 violation: stats field '{fname}' looks like a card slot "
+                f"('{bad}')"
+            )
+    expected_sha = hashlib.sha256(T.STATS_MANIFEST.encode()).hexdigest()
+    assert T.STATS_MANIFEST_SHA == expected_sha
+    assert T.STATS_MANIFEST.startswith("leduc-adaptive-opp-stats-v2|")
+    # All 12 field indices are unique and consecutive 0..11.
+    indices = sorted(idx for _, idx in T.STATS_FIELDS)
+    assert indices == list(range(12))
+
+
 def test_A_hero_card_slot_zero_at_every_opp_token():
     """Empirically: the hero_card slot tok[9:12] is exactly 0 at opp tokens.
     This proves the slot's semantic identity is fixed to HERO — it isn't a
@@ -230,9 +251,9 @@ def test_B_counterfactual_query_token_invariance():
 # --------------------------------------------------------------------------
 
 def test_C_opp_stats_is_pure_function_of_actions_and_facing_bet():
-    """The 6-dim opp_stats vector is derived entirely from (action, facing_bet)
-    per opp decision. The counter object holds only integer counts; cards
-    never enter."""
+    """The 12-dim v2 opp_stats vector is derived entirely from (action,
+    facing_bet, previous_action) per opp decision. The counter object holds
+    only integer counts and the last action id; cards never enter."""
     # Two counters fed the same action stream produce bit-identical vectors.
     stream = [
         (T.FOLD, True), (T.CALL, True), (T.RAISE, True),
@@ -244,10 +265,34 @@ def test_C_opp_stats_is_pure_function_of_actions_and_facing_bet():
         a.update(act, fb)
         b.update(act, fb)
     assert np.array_equal(a.vector(), b.vector())
-    assert a.vector().shape == (T.F_STATS,)
+    assert a.vector().shape == (T.F_STATS,) == (12,)
 
-    # No-info baseline.
-    assert np.array_equal(T.empty_opp_stats(), T._OppCounters().vector())
+    # No-info baseline = the v2 prior.
+    empty = T._OppCounters().vector()
+    assert np.array_equal(T.empty_opp_stats(), empty)
+    # The "no_actions_yet" flag (dim 11) must be 1 when n=0.
+    assert empty[11] == 1.0
+    # All last-action one-hots are zero when no action yet.
+    assert empty[8] == 0.0 and empty[9] == 0.0 and empty[10] == 0.0
+
+    # Last-action one-hot follows the latest action.
+    c = T._OppCounters()
+    c.update(T.FOLD, True)
+    v = c.vector()
+    assert v[8] == 1.0 and v[9] == 0.0 and v[10] == 0.0
+    c.update(T.RAISE, False)
+    v = c.vector()
+    assert v[8] == 0.0 and v[9] == 0.0 and v[10] == 1.0
+    assert v[11] == 0.0  # not-no-actions-anymore
+
+    # Raw rates (dims 6-7) are unsmoothed fractions of integer counts.
+    # Stream above ended with RAISE-facing as the last action; counts:
+    #   facing_fold=1, facing_call=2, facing_raise=2 -> f=5
+    #   notfacing_call=1, notfacing_raise=1 -> nf=2
+    #   n=7, all_raise=3, all_call=3
+    va = a.vector()
+    assert abs(va[6] - 3.0 / 7.0) < 1e-6  # raw raise fraction
+    assert abs(va[7] - 1.0 / 5.0) < 1e-6  # raw fold fraction
 
     # All counter slots are plain integers — no card index can hide there.
     for k, v in vars(a).items():
@@ -255,9 +300,11 @@ def test_C_opp_stats_is_pure_function_of_actions_and_facing_bet():
 
     # The card_rank() helper exists but is only used for hero_card + public,
     # never within _OppCounters. Sanity-check by ensuring _OppCounters has no
-    # method that touches card_rank.
+    # method that touches cards.
     import inspect
     src = inspect.getsource(T._OppCounters)
     assert "card_rank" not in src
     assert "hero_card" not in src
     assert "public" not in src
+    assert "hole" not in src
+    assert "deal" not in src
