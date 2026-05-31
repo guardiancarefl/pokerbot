@@ -59,33 +59,52 @@ TOKEN_MANIFEST = "leduc-adaptive-token-v1|" + "|".join(
 TOKEN_MANIFEST_SHA = hashlib.sha256(TOKEN_MANIFEST.encode()).hexdigest()
 
 # --------------------------------------------------------------------------
-# opp_stats layout v2 (12 dims) — co-train enrichment.
+# opp_stats layout v3 (20 dims) — per-street split.
 #
 # v1 (6 dims): smoothed facing rates + AF + open_raise + confidence weight.
-# v2 adds 6 dims: 2 unsmoothed raw fractions (sharper early signal) + last-
-# action 3-way one-hot + a "no-actions-yet" flag. Every new field is a pure
-# function of (action, facing_bet, previous_action) — no card information.
-# §8 invariant unchanged; Test B (counterfactual bit-identity) covers both
-# tokens and opp_stats and must stay green.
+# v2 (12 dims): + 2 unsmoothed raw fractions + last-action one-hot + no-yet.
+# v3 (20 dims): split the 8 action-frequency features by street (preflop vs
+# postflop) so a maniac's preflop-raise character isn't smeared with its
+# postflop cap-forced calls. The 4-dim last-action snapshot stays
+# instantaneous (a moment, not a rate). confidence_weight IS split per
+# street so the head can learn "postflop confidence is 0 here, ignore the
+# postflop block".
+#
+# Every new field remains a pure function of (action, facing_bet, street,
+# previous_action). cur_round transitions live on the chance-node deal
+# schedule (deal_count==2), independent of any card value — §8 invariant
+# unchanged; Test B (counterfactual bit-identity) covers the v3 opp_stats
+# vector and must stay green.
 # --------------------------------------------------------------------------
-F_STATS = 12
+F_STATS = 20
 
 STATS_FIELDS = (
-    ("facing_fold_rate_smoothed",   0),
-    ("facing_call_rate_smoothed",   1),
-    ("facing_raise_rate_smoothed",  2),
-    ("aggression_factor_smoothed",  3),
-    ("open_raise_rate_smoothed",    4),
-    ("confidence_weight",           5),
-    ("raw_raise_fraction",          6),
-    ("raw_fold_fraction",           7),
-    ("last_action_is_fold",         8),
-    ("last_action_is_call",         9),
-    ("last_action_is_raise",       10),
-    ("no_actions_yet",             11),
+    # Preflop block (8 dims) — Leduc round 1
+    ("preflop_facing_fold_rate_smoothed",   0),
+    ("preflop_facing_call_rate_smoothed",   1),
+    ("preflop_facing_raise_rate_smoothed",  2),
+    ("preflop_aggression_factor_smoothed",  3),
+    ("preflop_open_raise_rate_smoothed",    4),
+    ("preflop_confidence_weight",           5),
+    ("preflop_raw_raise_fraction",          6),
+    ("preflop_raw_fold_fraction",           7),
+    # Postflop block (8 dims) — Leduc round 2 (post-public-card)
+    ("postflop_facing_fold_rate_smoothed",   8),
+    ("postflop_facing_call_rate_smoothed",   9),
+    ("postflop_facing_raise_rate_smoothed", 10),
+    ("postflop_aggression_factor_smoothed", 11),
+    ("postflop_open_raise_rate_smoothed",   12),
+    ("postflop_confidence_weight",          13),
+    ("postflop_raw_raise_fraction",         14),
+    ("postflop_raw_fold_fraction",          15),
+    # Last-action snapshot (4 dims) — instantaneous, NOT per-street
+    ("last_action_is_fold",  16),
+    ("last_action_is_call",  17),
+    ("last_action_is_raise", 18),
+    ("no_actions_yet",       19),
 )
 
-STATS_MANIFEST = "leduc-adaptive-opp-stats-v2|" + "|".join(
+STATS_MANIFEST = "leduc-adaptive-opp-stats-v3|" + "|".join(
     f"{name}@{idx}" for name, idx in STATS_FIELDS
 )
 STATS_MANIFEST_SHA = hashlib.sha256(STATS_MANIFEST.encode()).hexdigest()
@@ -109,60 +128,95 @@ def card_rank(card_index: int) -> int:
 
 @dataclass
 class _OppCounters:
-    facing_fold: int = 0
-    facing_call: int = 0
-    facing_raise: int = 0
-    notfacing_call: int = 0   # check when no bet
-    notfacing_raise: int = 0  # open raise
-    n: int = 0
+    # Preflop counts (Leduc round 1)
+    p_facing_fold: int = 0
+    p_facing_call: int = 0
+    p_facing_raise: int = 0
+    p_notfacing_call: int = 0
+    p_notfacing_raise: int = 0
+    p_n: int = 0
+    # Postflop counts (Leduc round 2)
+    f_facing_fold: int = 0
+    f_facing_call: int = 0
+    f_facing_raise: int = 0
+    f_notfacing_call: int = 0
+    f_notfacing_raise: int = 0
+    f_n: int = 0
+    # Instantaneous last action (across both streets)
     last_action: int = -1     # -1 = no opp action yet; else 0/1/2
 
-    def update(self, action: int, facing_bet: bool):
-        self.n += 1
+    def update(self, action: int, facing_bet: bool, street: int):
+        """street: 1 = preflop, 2 = postflop. Routes counts to the correct
+        per-street block; v3 split for opponent-character discrimination."""
         self.last_action = action
-        if facing_bet:
-            if action == FOLD:
-                self.facing_fold += 1
-            elif action == CALL:
-                self.facing_call += 1
+        if street == 1:
+            self.p_n += 1
+            if facing_bet:
+                if action == FOLD:
+                    self.p_facing_fold += 1
+                elif action == CALL:
+                    self.p_facing_call += 1
+                else:
+                    self.p_facing_raise += 1
             else:
-                self.facing_raise += 1
-        else:
-            if action == RAISE:
-                self.notfacing_raise += 1
-            else:  # CALL == check (fold never legal when not facing a bet)
-                self.notfacing_call += 1
+                if action == RAISE:
+                    self.p_notfacing_raise += 1
+                else:  # CALL == check
+                    self.p_notfacing_call += 1
+        else:  # street == 2 (postflop)
+            self.f_n += 1
+            if facing_bet:
+                if action == FOLD:
+                    self.f_facing_fold += 1
+                elif action == CALL:
+                    self.f_facing_call += 1
+                else:
+                    self.f_facing_raise += 1
+            else:
+                if action == RAISE:
+                    self.f_notfacing_raise += 1
+                else:
+                    self.f_notfacing_call += 1
+
+    def _street_block(self, facing_fold, facing_call, facing_raise,
+                       notfacing_call, notfacing_raise, n):
+        """Compute the 8-dim block for ONE street from its raw counts."""
+        f = facing_fold + facing_call + facing_raise
+        nf = notfacing_call + notfacing_raise
+        fold_r = (facing_fold + 1.0) / (f + 3.0)
+        call_r = (facing_call + 1.0) / (f + 3.0)
+        raise_r = (facing_raise + 1.0) / (f + 3.0)
+        all_raise = facing_raise + notfacing_raise
+        all_call = facing_call + notfacing_call
+        af = (all_raise + 1.0) / (all_raise + all_call + 2.0)
+        open_r = (notfacing_raise + 1.0) / (nf + 2.0)
+        conf = min(1.0, np.log1p(n) / np.log(101.0))
+        raw_raise = (all_raise / n) if n > 0 else 0.0
+        raw_fold = (facing_fold / f) if f > 0 else 0.0
+        return [fold_r, call_r, raise_r, af, open_r, conf, raw_raise, raw_fold]
 
     def vector(self) -> np.ndarray:
-        f = self.facing_fold + self.facing_call + self.facing_raise   # facing-bet decisions
-        nf = self.notfacing_call + self.notfacing_raise               # not-facing decisions
-        # 0-2: fold/call/raise rate when facing a bet (Laplace +1, denom +3)
-        fold_r = (self.facing_fold + 1.0) / (f + 3.0)
-        call_r = (self.facing_call + 1.0) / (f + 3.0)
-        raise_r = (self.facing_raise + 1.0) / (f + 3.0)
-        # 3: aggression factor = raises / (calls + raises) over ALL opp decisions
-        all_raise = self.facing_raise + self.notfacing_raise
-        all_call = self.facing_call + self.notfacing_call
-        af = (all_raise + 1.0) / (all_raise + all_call + 2.0)
-        # 4: open-raise rate (raise when not facing a bet), Laplace +1 / +2
-        open_r = (self.notfacing_raise + 1.0) / (nf + 2.0)
-        # 5: confidence weight, log(1+n)/log(101), capped near 1
-        conf = min(1.0, np.log1p(self.n) / np.log(101.0))
-        # 6: raw raise fraction (unsmoothed; sharper early-hand signal)
-        raw_raise = (all_raise / self.n) if self.n > 0 else 0.0
-        # 7: raw fold fraction (folds / facing_decisions; unsmoothed)
-        raw_fold = (self.facing_fold / f) if f > 0 else 0.0
-        # 8-10: last opp action one-hot (zero if last_action == -1)
+        # 0-7: preflop block
+        p_block = self._street_block(
+            self.p_facing_fold, self.p_facing_call, self.p_facing_raise,
+            self.p_notfacing_call, self.p_notfacing_raise, self.p_n,
+        )
+        # 8-15: postflop block
+        f_block = self._street_block(
+            self.f_facing_fold, self.f_facing_call, self.f_facing_raise,
+            self.f_notfacing_call, self.f_notfacing_raise, self.f_n,
+        )
+        # 16-18: last opp action one-hot (zero if last_action == -1)
         last_is_fold = 1.0 if self.last_action == FOLD else 0.0
         last_is_call = 1.0 if self.last_action == CALL else 0.0
         last_is_raise = 1.0 if self.last_action == RAISE else 0.0
-        # 11: no opp actions observed yet
-        no_actions = 1.0 if self.n == 0 else 0.0
-        return np.array([
-            fold_r, call_r, raise_r, af, open_r, conf,
-            raw_raise, raw_fold,
-            last_is_fold, last_is_call, last_is_raise, no_actions,
-        ], dtype=np.float32)
+        # 19: no opp actions yet (across BOTH streets)
+        no_actions = 1.0 if (self.p_n + self.f_n) == 0 else 0.0
+        return np.array(
+            [*p_block, *f_block,
+             last_is_fold, last_is_call, last_is_raise, no_actions],
+            dtype=np.float32,
+        )
 
 
 def empty_opp_stats() -> np.ndarray:
@@ -259,7 +313,7 @@ def _walk(history, hero_seat: int):
         legal_masks.append(lm)
 
         if not is_hero:
-            counters.update(a, facing)
+            counters.update(a, facing, cur_round)
         if a == RAISE:
             raises_street += 1
         first_decision = False
