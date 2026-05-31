@@ -200,6 +200,12 @@ def main():
                          "(typical 4 for the 3-paid bubble). Default None = "
                          "byte-identical sampling. Monkey-patches "
                          "stack_sampler.sample_starting_state for this run only.")
+    ap.add_argument("--no-resolver", action="store_true",
+                    help="Use plain CheckpointPolicy (blueprint-alone) instead of "
+                         "SubgamePolicy as the challenger. Skips gate / SubgamePolicy "
+                         "construction entirely. Used for the bubble-vs-bubble baseline "
+                         "(--players-remaining 4 --no-resolver). gate / leaf-mode / "
+                         "depth / solver timing fields will be zero in the JSONL.")
     ap.add_argument("--out", required=True, help="output JSONL path (appended)")
     args = ap.parse_args()
 
@@ -252,11 +258,23 @@ def main():
                        "min_legal_actions": cond["min_legal_actions"]}
             log.info("=" * 70)
             log.info(f"CONDITION {cond_key} ({cond['label']}): {gate_kw}")
-            # Fresh resolver per condition (reloads the same blueprint with new gate).
-            resolver = _build_resolver(f"resolver-{cond_key}", args.ckpt,
-                                       abstr, structure, gate_kw,
-                                       leaf_mode=args.leaf_mode,
-                                       max_action_depth=args.max_action_depth)
+            if args.no_resolver:
+                # Blueprint-alone challenger (bubble-vs-bubble baseline). Plain
+                # CheckpointPolicy — no SubgamePolicy, no gate. TimedResolver's
+                # n_gated_solve probe is absent here, so it tallies zero solves
+                # (timing_summary returns f=0, all solve_time fields zero).
+                from scripts.eval_pool import CheckpointPolicy
+                resolver = CheckpointPolicy(f"blueprint-{cond_key}", args.ckpt,
+                                            abstr, structure)
+                # Adapter: CheckpointPolicy doesn't have n_gated_solve. Stub.
+                resolver.n_gated_solve = 0
+                log.info(f"  --no-resolver: using CheckpointPolicy (blueprint-alone)")
+            else:
+                # Fresh resolver per condition (reloads the same blueprint with new gate).
+                resolver = _build_resolver(f"resolver-{cond_key}", args.ckpt,
+                                           abstr, structure, gate_kw,
+                                           leaf_mode=args.leaf_mode,
+                                           max_action_depth=args.max_action_depth)
             wrapped = TimedResolver(resolver)
 
             for i, opp in enumerate(shanky):
@@ -281,9 +299,10 @@ def main():
                 rec = {
                     "condition": cond_key,
                     "condition_label": cond["label"],
-                    "gate": gate_kw,
-                    "leaf_mode": args.leaf_mode,
-                    "max_action_depth": args.max_action_depth,
+                    "challenger": ("blueprint" if args.no_resolver else "subgame"),
+                    "gate": (None if args.no_resolver else gate_kw),
+                    "leaf_mode": (None if args.no_resolver else args.leaf_mode),
+                    "max_action_depth": (None if args.no_resolver else args.max_action_depth),
                     "players_remaining": args.players_remaining,
                     "opponent": f"shanky:{opp.name}",
                     "hands": args.hands,
