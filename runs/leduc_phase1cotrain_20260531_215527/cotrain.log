@@ -1,0 +1,75 @@
+[preflight] running pytest tests/test_leduc_token_no_leak.py
+6 passed in 1.28s
+[preflight] leakage tests GREEN — proceeding to model import
+Optional module pokerkit_wrapper was not importable: No module named 'pokerkit'
+out_dir = runs/leduc_phase1cotrain_20260531_215527
+[distill] 3780 examples in 0.5s
+[cells] train=9 test=3 (held-out: ['always_fold@s0.50', 'over_folder@s0.50', 'over_caller@s0.50'])
+[aux pool] 4214 tuples from 2560 hands (ε=0.2) in 2.2s
+[net] AdaptivePolicyNet v2 (77286 params, F_RAW=17, F_STATS=12)
+  [cotrain ep   1/200] L_d=0.7869 L_a=0.8443 acc_a=0.535 lr=1.00e-03 (2.3s)
+  [cotrain ep  10/200] L_d=0.2867 L_a=0.7052 acc_a=0.657 lr=9.94e-04 (1.9s)
+  [cotrain ep  20/200] L_d=0.2535 L_a=0.6967 acc_a=0.655 lr=9.76e-04 (1.9s)
+  [cotrain ep  30/200] L_d=0.2496 L_a=0.7022 acc_a=0.654 lr=9.46e-04 (2.1s)
+  [cotrain ep  40/200] L_d=0.2522 L_a=0.7136 acc_a=0.648 lr=9.05e-04 (2.5s)
+  [cotrain ep  50/200] L_d=0.2590 L_a=0.7054 acc_a=0.647 lr=8.54e-04 (2.0s)
+  [cotrain ep  60/200] L_d=0.2611 L_a=0.6941 acc_a=0.656 lr=7.94e-04 (1.9s)
+  [cotrain ep  70/200] L_d=0.2606 L_a=0.6980 acc_a=0.654 lr=7.27e-04 (1.7s)
+  [cotrain ep  80/200] L_d=0.2603 L_a=0.6980 acc_a=0.652 lr=6.55e-04 (1.8s)
+  [cotrain ep  90/200] L_d=0.2655 L_a=0.6851 acc_a=0.653 lr=5.78e-04 (2.1s)
+  [cotrain ep 100/200] L_d=0.2620 L_a=0.7006 acc_a=0.645 lr=5.00e-04 (1.8s)
+  [cotrain ep 110/200] L_d=0.2572 L_a=0.6847 acc_a=0.658 lr=4.22e-04 (2.0s)
+  [cotrain ep 120/200] L_d=0.2558 L_a=0.6861 acc_a=0.658 lr=3.45e-04 (2.0s)
+  [cotrain ep 130/200] L_d=0.2599 L_a=0.6945 acc_a=0.645 lr=2.73e-04 (1.8s)
+  [cotrain ep 140/200] L_d=0.2573 L_a=0.6864 acc_a=0.660 lr=2.06e-04 (2.6s)
+  [cotrain ep 150/200] L_d=0.2549 L_a=0.6884 acc_a=0.653 lr=1.46e-04 (2.1s)
+  [cotrain ep 160/200] L_d=0.2550 L_a=0.6895 acc_a=0.646 lr=9.55e-05 (2.0s)
+  [cotrain ep 170/200] L_d=0.2564 L_a=0.6925 acc_a=0.657 lr=5.45e-05 (2.2s)
+  [cotrain ep 180/200] L_d=0.2542 L_a=0.6865 acc_a=0.661 lr=2.45e-05 (2.1s)
+  [cotrain ep 190/200] L_d=0.2511 L_a=0.6839 acc_a=0.655 lr=6.16e-06 (1.7s)
+  [cotrain ep 200/200] L_d=0.2587 L_a=0.6882 acc_a=0.656 lr=0.00e+00 (1.8s)
+[cotrain] 200 epochs × 15 steps in 420.2s
+/home/quant/pokerbot/.venv/lib/python3.10/site-packages/torch/nn/modules/transformer.py:529: UserWarning: The PyTorch API of nested tensors is in prototype stage and will change in the near future. We recommend specifying layout=torch.jagged when constructing a nested tensor, as this layout receives active development, has better operator coverage, and works with torch.compile. (Triggered internally at /pytorch/aten/src/ATen/NestedTensorImpl.cpp:178.)
+  output = torch._nested_tensor_from_mask(
+[E0] 3.9929 mbb/g (bar ≤ 5.0) in 3.6s
+  [probe 1/9] always_fold@s1.00            D̄_mean=0.2801 g=0.2730 acc=0.611 ce=0.6873 (0.5s)
+  [probe 2/9] always_call@s0.50            D̄_mean=0.4516 g=0.4232 acc=0.601 ce=0.9280 (0.8s)
+  [probe 3/9] always_call@s1.00            D̄_mean=0.7409 g=0.6297 acc=1.000 ce=0.4671 (0.6s)
+  [probe 4/9] always_raise@s0.50           D̄_mean=0.3774 g=0.3605 acc=0.443 ce=0.8665 (1.4s)
+  [probe 5/9] always_raise@s1.00           D̄_mean=0.2635 g=0.2576 acc=0.521 ce=0.6280 (0.8s)
+  [probe 6/9] over_folder@s1.00            D̄_mean=0.2649 g=0.2589 acc=0.739 ce=0.6489 (0.5s)
+  [probe 7/9] over_caller@s1.00            D̄_mean=0.4667 g=0.4355 acc=0.862 ce=0.6085 (0.6s)
+  [probe 8/9] random_uniform@s0.50         D̄_mean=0.3927 g=0.3737 acc=0.442 ce=0.9810 (0.7s)
+  [probe 9/9] random_uniform@s1.00         D̄_mean=0.3347 g=0.3227 acc=0.464 ce=0.9799 (0.6s)
+[probe] done in 6.6s
+
+=== Separation gate ===
+  (i)   D̄_maniac=0.2635 vs D̄_uniform_max=0.3927 (@random_uniform@s0.50) => ratio 0.67 (>= 2.0) -> FAIL
+  (ii)  maniac g(κ=1.0)=0.2576 (>= 0.4) -> verdict=no_valid_kappa (κ_final=None) -> FAIL
+  (iii) maniac acc=0.521 (>= 0.85) -> FAIL
+  (iv)  E0=3.9929 mbb/g (<= 5.0) -> OK
+  OVERALL: FAIL
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/runpy.py", line 196, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/lib/python3.10/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/quant/pokerbot/scripts/leduc_phase1_cotrain.py", line 668, in <module>
+    main()
+  File "/home/quant/pokerbot/scripts/leduc_phase1_cotrain.py", line 660, in main
+    (out / "metrics.json").write_text(json.dumps(metrics, indent=2))
+  File "/usr/lib/python3.10/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+  File "/usr/lib/python3.10/json/encoder.py", line 201, in encode
+    chunks = list(chunks)
+  File "/usr/lib/python3.10/json/encoder.py", line 431, in _iterencode
+    yield from _iterencode_dict(o, _current_indent_level)
+  File "/usr/lib/python3.10/json/encoder.py", line 405, in _iterencode_dict
+    yield from chunks
+  File "/usr/lib/python3.10/json/encoder.py", line 405, in _iterencode_dict
+    yield from chunks
+  File "/usr/lib/python3.10/json/encoder.py", line 438, in _iterencode
+    o = _default(o)
+  File "/usr/lib/python3.10/json/encoder.py", line 179, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type bool is not JSON serializable

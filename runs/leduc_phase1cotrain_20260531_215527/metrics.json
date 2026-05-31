@@ -1,0 +1,134 @@
+{
+  "phase": "phase1_cotrain",
+  "anchor_dir": "runs/leduc_cfr_anchor_20260531_144405",
+  "anchor_exploitability_mbb": 0.12857580807822816,
+  "schema": {
+    "F_RAW": 17,
+    "F_STATS": 12,
+    "stats_manifest_sha": "see tokens.STATS_MANIFEST_SHA",
+    "token_manifest_sha": "see tokens.TOKEN_MANIFEST_SHA"
+  },
+  "training": {
+    "epochs": 200,
+    "steps_per_epoch": 15,
+    "batch_distill": 256,
+    "batch_aux": 256,
+    "lr": 0.001,
+    "lam": 0.3,
+    "pool_hands": 2560,
+    "epsilon_noised_anchor": 0.2,
+    "n_distill_examples": 3780,
+    "n_aux_tuples": 4214,
+    "wall_seconds": 420.2,
+    "final_L_distill": 0.2587,
+    "final_L_aux": 0.6882,
+    "final_acc_aux_train": 0.656
+  },
+  "E0_mbb_per_game": 3.9929,
+  "per_cell_table": [
+    {
+      "cell_id": "always_fold@s1.00",
+      "archetype": "always_fold",
+      "strength": 1.0,
+      "mean_dbar": 0.2801,
+      "mean_g_at_kappa": 0.273,
+      "opp_head_accuracy": 0.611,
+      "opp_head_ce": 0.6873
+    },
+    {
+      "cell_id": "always_call@s0.50",
+      "archetype": "always_call",
+      "strength": 0.5,
+      "mean_dbar": 0.4516,
+      "mean_g_at_kappa": 0.4232,
+      "opp_head_accuracy": 0.601,
+      "opp_head_ce": 0.928
+    },
+    {
+      "cell_id": "always_call@s1.00",
+      "archetype": "always_call",
+      "strength": 1.0,
+      "mean_dbar": 0.7409,
+      "mean_g_at_kappa": 0.6297,
+      "opp_head_accuracy": 1.0,
+      "opp_head_ce": 0.4671
+    },
+    {
+      "cell_id": "always_raise@s0.50",
+      "archetype": "always_raise",
+      "strength": 0.5,
+      "mean_dbar": 0.3774,
+      "mean_g_at_kappa": 0.3605,
+      "opp_head_accuracy": 0.443,
+      "opp_head_ce": 0.8665
+    },
+    {
+      "cell_id": "always_raise@s1.00",
+      "archetype": "always_raise",
+      "strength": 1.0,
+      "mean_dbar": 0.2635,
+      "mean_g_at_kappa": 0.2576,
+      "opp_head_accuracy": 0.521,
+      "opp_head_ce": 0.628
+    },
+    {
+      "cell_id": "over_folder@s1.00",
+      "archetype": "over_folder",
+      "strength": 1.0,
+      "mean_dbar": 0.2649,
+      "mean_g_at_kappa": 0.2589,
+      "opp_head_accuracy": 0.739,
+      "opp_head_ce": 0.6489
+    },
+    {
+      "cell_id": "over_caller@s1.00",
+      "archetype": "over_caller",
+      "strength": 1.0,
+      "mean_dbar": 0.4667,
+      "mean_g_at_kappa": 0.4355,
+      "opp_head_accuracy": 0.862,
+      "opp_head_ce": 0.6085
+    },
+    {
+      "cell_id": "random_uniform@s0.50",
+      "archetype": "random_uniform",
+      "strength": 0.5,
+      "mean_dbar": 0.3927,
+      "mean_g_at_kappa": 0.3737,
+      "opp_head_accuracy": 0.442,
+      "opp_head_ce": 0.981
+    },
+    {
+      "cell_id": "random_uniform@s1.00",
+      "archetype": "random_uniform",
+      "strength": 1.0,
+      "mean_dbar": 0.3347,
+      "mean_g_at_kappa": 0.3227,
+      "opp_head_accuracy": 0.464,
+      "opp_head_ce": 0.9799
+    }
+  ],
+  "separation_gate": {
+    "verdict": "FAIL",
+    "E0_mbb": 3.9928738567072966,
+    "E0_bar": 5.0,
+    "E0_ok": true,
+    "D_maniac": 0.2635043504462074,
+    "D_uniform_max_cell": "random_uniform@s0.50",
+    "D_uniform_max": 0.3926636845731057,
+    "separation_ratio": 0.6710688072228601,
+    "separation_ratio_min": 2.0,
+    "separation_ok": false,
+    "maniac_g_at_kappa": 0.25757033826515374,
+    "maniac_g_min": 0.4,
+    "kappa_initial": 1.0,
+    "kappa_final": null,
+    "kappa_recal_verdict": "no_valid_kappa",
+    "g_ok": false,
+    "maniac_accuracy": 0.5213270142180095,
+    "maniac_accuracy_min": 0.85,
+    "acc_ok": false
+  },
+  "metrics_rebuilt_post_hoc": true,
+  "rebuild_reason": "Original cotrain script crashed on JSON-serializing a numpy bool in the separation_gate dict. Checkpoint + log captured all values; this file reconstructs metrics.json so the artifact is complete."
+}
