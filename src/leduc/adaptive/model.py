@@ -125,6 +125,44 @@ def read_terms(q_probs: np.ndarray, pi_eq: np.ndarray, legal_mask: np.ndarray):
     return d_t, max(0.0, min(1.0, w_t))
 
 
+def read_terms_argmax(q_probs: np.ndarray, pi_eq: np.ndarray,
+                      legal_mask: np.ndarray, tie_tol: float = 1e-9):
+    """Per opp-decision read contribution, argmax-disagreement variant (D-pivot).
+        d_t = 1[ argmax(q_t) not in argmax_set(pi_eq) ]  (binary disagreement)
+        w_t = max(q_t) - second_max(q_t)                 (sharpness margin)
+    `argmax_set(pi_eq)` is the set of actions whose pi_eq probability is within
+    `tie_tol` of the maximum (handles GTO mixed strategies). With one legal
+    action (cap-forced spots), d_t = 0 by construction since the head and GTO
+    are both forced to the same single action. Returns (d_t, w_t)."""
+    legal = legal_mask.astype(bool)
+    q = q_probs.astype(np.float64).copy()
+    p = pi_eq.astype(np.float64).copy()
+    q[~legal] = 0.0
+    p[~legal] = 0.0
+    sq = q.sum()
+    sp = p.sum()
+    if sq > 0:
+        q = q / sq
+    if sp > 0:
+        p = p / sp
+    n_legal = int(legal.sum())
+    if n_legal <= 1:
+        return 0.0, 0.0
+    q_legal = q[legal]
+    p_legal = p[legal]
+    legal_indices = np.flatnonzero(legal)
+    q_argmax_local = int(np.argmax(q_legal))
+    q_argmax = int(legal_indices[q_argmax_local])
+    p_max = float(p_legal.max())
+    p_argmax_set = {int(legal_indices[i]) for i, v in enumerate(p_legal)
+                    if (p_max - v) <= tie_tol}
+    d_t = 0.0 if q_argmax in p_argmax_set else 1.0
+    q_sorted = np.sort(q_legal)[::-1]
+    margin = float(q_sorted[0] - q_sorted[1])
+    w_t = max(0.0, min(1.0, margin))
+    return d_t, w_t
+
+
 def running_read(d_list, w_list, w0: float = 2.0) -> float:
     """Evidence-weighted, prior-shrunk running read D-bar (§12.3).
         D_bar = sum(w_t d_t) / (w0 + sum w_t)

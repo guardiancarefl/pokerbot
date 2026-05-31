@@ -93,8 +93,11 @@ from src.leduc.adaptive.model import (
     AdaptivePolicyNet,
     collate,
     read_terms,
+    read_terms_argmax,
     running_read,
 )
+
+READ_PRIMITIVES = {"kl": read_terms, "argmax": read_terms_argmax}
 from src.leduc.evaluate import exploitability_mbb
 
 GAME = pyspiel.load_game("leduc_poker")
@@ -349,7 +352,8 @@ def make_net_policy_callable(net, device):
     return fn
 
 
-def run_hand_dbar(net, anchor_fn, opp_fn, hero_seat, *, w0, device, rng):
+def run_hand_dbar(net, anchor_fn, opp_fn, hero_seat, *, w0, device, rng,
+                  read_fn=read_terms):
     state = GAME.new_initial_state()
     d_list, w_list = [], []
     cached_opp_logits = None
@@ -393,7 +397,7 @@ def run_hand_dbar(net, anchor_fn, opp_fn, hero_seat, *, w0, device, rng):
             pi_eq = np.zeros(TT.NUM_ACTIONS, dtype=np.float64)
             for a, p in ap.items():
                 pi_eq[a] = p
-            d_t, w_t = read_terms(q_t, pi_eq, lm)
+            d_t, w_t = read_fn(q_t, pi_eq, lm)
             d_list.append(d_t)
             w_list.append(w_t)
             op = opp_fn(state)
@@ -404,7 +408,7 @@ def run_hand_dbar(net, anchor_fn, opp_fn, hero_seat, *, w0, device, rng):
 
 
 def per_cell_table(net, anchor_fn, train_cells, *, w0, kappa, n_hands,
-                   device, seed):
+                   device, seed, read_fn=read_terms):
     rng = np.random.default_rng(seed)
     out = []
     net.eval()
@@ -417,7 +421,7 @@ def per_cell_table(net, anchor_fn, train_cells, *, w0, kappa, n_hands,
             for hero_seat in (0, 1):
                 dbar, _, recs = run_hand_dbar(
                     net, anchor_fn, opp_fn, hero_seat,
-                    w0=w0, device=device, rng=rng)
+                    w0=w0, device=device, rng=rng, read_fn=read_fn)
                 dbars.append(dbar)
                 all_records.extend(recs)
         preds = np.stack([r[0] for r in all_records])
@@ -547,6 +551,11 @@ def main():
     ap.add_argument("--recal-g-maniac", type=float, default=0.50)
     ap.add_argument("--recal-g-uniform-max", type=float, default=0.10)
     ap.add_argument("--ckpt-every", type=int, default=50)
+    ap.add_argument("--read-primitive", choices=sorted(READ_PRIMITIVES.keys()),
+                    default="kl",
+                    help="probe/inference read primitive. 'kl' = forward-KL with "
+                         "entropy sharpness (Phase-1/2 default). 'argmax' = "
+                         "binary argmax-disagreement with sharpness-margin (D-pivot).")
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--device", default="cpu")
     ap.add_argument("--out", default=None)
@@ -638,10 +647,13 @@ def main():
 
     # 5b. Per-cell probe.
     t0 = time.time()
+    read_fn = READ_PRIMITIVES[args.read_primitive]
+    _log(f"[probe] read primitive = {args.read_primitive}")
     cell_table = per_cell_table(net, anchor_fn, train_cells,
                                  w0=args.w0, kappa=args.kappa,
                                  n_hands=args.n_hands_probe,
-                                 device=device, seed=args.seed + 1)
+                                 device=device, seed=args.seed + 1,
+                                 read_fn=read_fn)
     _log(f"[probe] done in {time.time()-t0:.1f}s")
 
     # 6. Separation gate.
@@ -727,6 +739,7 @@ def main():
                                         "raise": float(cw[2])},
         },
         "E0_mbb_per_game": e0,
+        "read_primitive": args.read_primitive,
         "per_cell_table": cell_table,
         "separation_gate": gate,
         "seconds": {"train": t_train},
