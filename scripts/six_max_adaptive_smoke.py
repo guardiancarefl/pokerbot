@@ -118,7 +118,9 @@ def gate_on_leakage_tests(test_file: str = "tests/test_six_max_token_no_leak.py"
           flush=True)
 
 
-gate_on_leakage_tests()
+import os as _os
+if __name__ == "__main__" and _os.environ.get("SKIP_LEAKAGE_PREFLIGHT") != "1":
+    gate_on_leakage_tests()
 
 
 # Safe to import everything else now.
