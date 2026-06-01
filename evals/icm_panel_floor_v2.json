@@ -1,0 +1,396 @@
+{
+  "challenger": "student_zero_context",
+  "comparator": "blueprint(candC_k200)_paired",
+  "student_ckpt": "runs/sixmax_smoke_20260601_020033/smoke_net.pt",
+  "anchor_dir": "runs/six_max_20260530_034023_phase4f_dcfr_candC_k200",
+  "abstraction_pkl": "runs/abstraction_20260521_223018_retrofit/abstraction.pkl",
+  "structure_yaml": "configs/ignition_double_up_6max_turbo.yaml",
+  "payouts": [
+    2.0,
+    2.0,
+    2.0
+  ],
+  "hands_per_seat": 1000,
+  "seats": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "pairing": "per-hand CRN: both arms reset RNG to same hand_seed",
+  "total_wall_seconds": 2232.4721829891205,
+  "results": [
+    {
+      "member": "blueprint",
+      "pooled": {
+        "n": 6000,
+        "student_icm": -0.01201396214713716,
+        "blueprint_icm": 0.004315131461499555,
+        "delta": -0.016329093608636717,
+        "delta_stderr": 0.003872708738242657,
+        "delta_sigma": 4.216452801468997
+      },
+      "per_seat": [
+        {
+          "seat": 0,
+          "n": 1000,
+          "n_capped": 0,
+          "student_icm": -0.0022273699059329535,
+          "blueprint_icm": 0.012508331449992376,
+          "delta": -0.014735701355925328,
+          "delta_stderr": 0.009579001977581146,
+          "delta_sigma": 1.5383336792719122
+        },
+        {
+          "seat": 1,
+          "n": 1000,
+          "n_capped": 0,
+          "student_icm": -0.02505149506679014,
+          "blueprint_icm": -0.009569080453210251,
+          "delta": -0.015482414613579892,
+          "delta_stderr": 0.009942679524904486,
+          "delta_sigma": 1.557167217830912
+        },
+        {
+          "seat": 2,
+          "n": 1000,
+          "n_capped": 0,
+          "student_icm": 0.0015001343603396186,
+          "blueprint_icm": 0.01821759586933966,
+          "delta": -0.01671746150900004,
+          "delta_stderr": 0.008187370506747444,
+          "delta_sigma": 2.0418596538684435
+        },
+        {
+          "seat": 3,
+          "n": 1000,
+          "n_capped": 0,
+          "student_icm": -0.020023489137832508,
+          "blueprint_icm": 0.004782469780120353,
+          "delta": -0.024805958917952866,
+          "delta_stderr": 0.010516709293153749,
+          "delta_sigma": 2.3587187043480653
+        },
+        {
+          "seat": 4,
+          "n": 1000,
+          "n_capped": 0,
+          "student_icm": -0.009501336904328821,
+          "blueprint_icm": 0.004886239546350246,
+          "delta": -0.014387576450679073,
+          "delta_stderr": 0.00838299850103929,
+          "delta_sigma": 1.7162804513081278
+        },
+        {
+          "seat": 5,
+          "n": 1000,
+          "n_capped": 0,
+          "student_icm": -0.016780216228278137,
+          "blueprint_icm": -0.004934767423595051,
+          "delta": -0.011845448804683087,
+          "delta_stderr": 0.010087197274031765,
+          "delta_sigma": 1.1743052587241178
+        }
+      ],
+      "wall_seconds": 178.21398997306824
+    },
+    {
+      "member": "shanky:minestackermttv_7_3",
+      "pooled": {
+        "n": 6000,
+        "student_icm": -2.0877979274917043e-05,
+        "blueprint_icm": 0.008861738332534912,
+        "delta": -0.008882616311809829,
+        "delta_stderr": 0.002748495720710937,
+        "delta_sigma": 3.2318101297651705
+      },
+      "per_seat": [
+        {
+          "seat": 0,
+          "n": 1000,
+          "n_capped": 0,
+          "student_icm": -0.012594325609526549,
+          "blueprint_icm": 0.02002417020838791,
+          "delta": -0.03261849581791446,
+          "delta_stderr": 0.007369858574400999,
+          "delta_sigma": 4.425932395936865
+        },
+        {
+          "seat": 1,
+          "n": 1000,
+          "n_capped": 0,
+          "student_icm": 0.006485817863355973,
+          "blueprint_icm": 0.015451529010882264,
+          "delta": -0.008965711147526293,
+          "delta_stderr": 0.007001566380642155,
+          "delta_sigma": 1.2805293358804084
+        },
+        {
+          "seat": 2,
+          "n": 1000,
+          "n_capped": 0,
+          "student_icm": 0.007030729374181073,
+          "blueprint_icm": 0.01413623388222199,
+          "delta": -0.007105504508040919,
+          "delta_stderr": 0.006765928812978886,
+          "delta_sigma": 1.0501890729932948
+        },
+        {
+          "seat": 3,
+          "n": 1000,
+          "n_capped": 0,
+          "student_icm": -0.0027336446540468817,
+          "blueprint_icm": 0.0027380593484387775,
+          "delta": -0.005471704002485658,
+          "delta_stderr": 0.006507547255334374,
+          "delta_sigma": 0.840824321022085
+        },
+        {
+          "seat": 4,
+          "n": 1000,
+          "n_capped": 0,
+          "student_icm": 0.0020457441956244714,
+          "blueprint_icm": -0.002490761950741189,
+          "delta": 0.004536506146365661,
+          "delta_stderr": 0.005927236099253492,
+          "delta_sigma": 0.7653661960482749
+        },
+        {
+          "seat": 5,
+          "n": 1000,
+          "n_capped": 0,
+          "student_icm": -0.0003595890452375858,
+          "blueprint_icm": 0.003311199496019719,
+          "delta": -0.0036707885412573045,
+          "delta_stderr": 0.00669313345087878,
+          "delta_sigma": 0.5484409609037969
+        }
+      ],
+      "wall_seconds": 332.3492965698242
+    },
+    {
+      "member": "shanky:killphilmtt",
+      "pooled": {
+        "n": 6000,
+        "student_icm": -0.02299647982055408,
+        "blueprint_icm": -0.008890847500342513,
+        "delta": -0.014105632320211567,
+        "delta_stderr": 0.0032493195208226034,
+        "delta_sigma": 4.341103492536973
+      },
+      "per_seat": [
+        {
+          "seat": 0,
+          "n": 1000,
+          "n_capped": 0,
+          "student_icm": -0.025861124349872443,
+          "blueprint_icm": -0.004644652138505355,
+          "delta": -0.021216472211367087,
+          "delta_stderr": 0.00813355521473235,
+          "delta_sigma": 2.6085114874412585
+        },
+        {
+          "seat": 1,
+          "n": 1000,
+          "n_capped": 0,
+          "student_icm": -0.03211090075343234,
+          "blueprint_icm": -0.013471235559619795,
+          "delta": -0.018639665193812542,
+          "delta_stderr": 0.009389190030237325,
+          "delta_sigma": 1.985226109364558
+        },
+        {
+          "seat": 2,
+          "n": 1000,
+          "n_capped": 0,
+          "student_icm": -0.02142105721997789,
+          "blueprint_icm": -0.006893755888796823,
+          "delta": -0.014527301331181066,
+          "delta_stderr": 0.008194838051010143,
+          "delta_sigma": 1.772738062760172
+        },
+        {
+          "seat": 3,
+          "n": 1000,
+          "n_capped": 0,
+          "student_icm": -0.019025762771045656,
+          "blueprint_icm": -0.0035730394543705035,
+          "delta": -0.015452723316675156,
+          "delta_stderr": 0.0070310729059074725,
+          "delta_sigma": 2.1977760042413803
+        },
+        {
+          "seat": 4,
+          "n": 1000,
+          "n_capped": 0,
+          "student_icm": -0.018688437896932173,
+          "blueprint_icm": -0.00797119363896379,
+          "delta": -0.01071724425796838,
+          "delta_stderr": 0.006511791958495503,
+          "delta_sigma": 1.6458210468450705
+        },
+        {
+          "seat": 5,
+          "n": 1000,
+          "n_capped": 0,
+          "student_icm": -0.020871595932063974,
+          "blueprint_icm": -0.01679120832179881,
+          "delta": -0.0040803876102651635,
+          "delta_stderr": 0.008180229625011675,
+          "delta_sigma": 0.4988108888519544
+        }
+      ],
+      "wall_seconds": 285.2830307483673
+    },
+    {
+      "member": "archetype-maniac",
+      "pooled": {
+        "n": 6000,
+        "student_icm": 0.28427048590700216,
+        "blueprint_icm": 0.30505083156820734,
+        "delta": -0.020780345661205197,
+        "delta_stderr": 0.005438674378732743,
+        "delta_sigma": 3.8208475474215082
+      },
+      "per_seat": [
+        {
+          "seat": 0,
+          "n": 1000,
+          "n_capped": 0,
+          "student_icm": 0.26231220927238036,
+          "blueprint_icm": 0.2901320066520445,
+          "delta": -0.027819797379664165,
+          "delta_stderr": 0.013943967877237676,
+          "delta_sigma": 1.9951134156783008
+        },
+        {
+          "seat": 1,
+          "n": 1000,
+          "n_capped": 0,
+          "student_icm": 0.2981825289967686,
+          "blueprint_icm": 0.2880074497643851,
+          "delta": 0.010175079232383494,
+          "delta_stderr": 0.015218690983928558,
+          "delta_sigma": 0.6685909611495966
+        },
+        {
+          "seat": 2,
+          "n": 1000,
+          "n_capped": 0,
+          "student_icm": 0.2905387760969511,
+          "blueprint_icm": 0.31282691177668537,
+          "delta": -0.02228813567973425,
+          "delta_stderr": 0.012399024717418218,
+          "delta_sigma": 1.7975716790388967
+        },
+        {
+          "seat": 3,
+          "n": 1000,
+          "n_capped": 0,
+          "student_icm": 0.2893033461547475,
+          "blueprint_icm": 0.31036073091670136,
+          "delta": -0.02105738476195391,
+          "delta_stderr": 0.013361178824274329,
+          "delta_sigma": 1.576012494024649
+        },
+        {
+          "seat": 4,
+          "n": 1000,
+          "n_capped": 0,
+          "student_icm": 0.28738080947810973,
+          "blueprint_icm": 0.30457697970471315,
+          "delta": -0.017196170226603465,
+          "delta_stderr": 0.010932723557854258,
+          "delta_sigma": 1.572908172021732
+        },
+        {
+          "seat": 5,
+          "n": 1000,
+          "n_capped": 0,
+          "student_icm": 0.27790524544305584,
+          "blueprint_icm": 0.3244009105947147,
+          "delta": -0.0464956651516589,
+          "delta_stderr": 0.013646560075975325,
+          "delta_sigma": 3.407134464128744
+        }
+      ],
+      "wall_seconds": 356.88794565200806
+    },
+    {
+      "member": "archetype-nit",
+      "pooled": {
+        "n": 6000,
+        "student_icm": -0.03309894001403419,
+        "blueprint_icm": -0.031045046026760354,
+        "delta": -0.0020538939872738384,
+        "delta_stderr": 0.004292771604226302,
+        "delta_sigma": 0.4784540564076941
+      },
+      "per_seat": [
+        {
+          "seat": 0,
+          "n": 1000,
+          "n_capped": 0,
+          "student_icm": -0.03311228270223107,
+          "blueprint_icm": -0.0467305359746437,
+          "delta": 0.01361825327241263,
+          "delta_stderr": 0.011127620823456034,
+          "delta_sigma": 1.223824345605537
+        },
+        {
+          "seat": 1,
+          "n": 1000,
+          "n_capped": 0,
+          "student_icm": -0.04089681251016641,
+          "blueprint_icm": -0.055765791475271824,
+          "delta": 0.014868978965105428,
+          "delta_stderr": 0.01158537576470303,
+          "delta_sigma": 1.2834265600954002
+        },
+        {
+          "seat": 2,
+          "n": 1000,
+          "n_capped": 0,
+          "student_icm": -0.0195096445937348,
+          "blueprint_icm": -0.016500430956381776,
+          "delta": -0.0030092136373530225,
+          "delta_stderr": 0.009951172750733601,
+          "delta_sigma": 0.30239788944787266
+        },
+        {
+          "seat": 3,
+          "n": 1000,
+          "n_capped": 0,
+          "student_icm": -0.017110411108848093,
+          "blueprint_icm": -0.011836620882719114,
+          "delta": -0.005273790226128982,
+          "delta_stderr": 0.009968324603980842,
+          "delta_sigma": 0.5290548247217891
+        },
+        {
+          "seat": 4,
+          "n": 1000,
+          "n_capped": 0,
+          "student_icm": -0.03230105376617317,
+          "blueprint_icm": -0.015792686748135318,
+          "delta": -0.01650836701803786,
+          "delta_stderr": 0.009086939818618774,
+          "delta_sigma": 1.8167135853824936
+        },
+        {
+          "seat": 5,
+          "n": 1000,
+          "n_capped": 0,
+          "student_icm": -0.05566343540305162,
+          "blueprint_icm": -0.03964421012341039,
+          "delta": -0.016019225279641225,
+          "delta_stderr": 0.011135460585056512,
+          "delta_sigma": 1.4385777002469564
+        }
+      ],
+      "wall_seconds": 1079.7341833114624
+    }
+  ]
+}
