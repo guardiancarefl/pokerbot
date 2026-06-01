@@ -814,6 +814,16 @@ def main():
     ap.add_argument("--measure-n-matches-each", type=int, default=2,
                     help="In --measure-only, matches per archetype "
                          "(total = 4 * this).")
+    # Trunk-size diagnostics (smoke-only override; not the deployed size)
+    ap.add_argument("--d-model", type=int, default=64,
+                    help="Trunk d_model. Default 64 = smoke-A4 (benchmarked "
+                         "to fit cotrain budget). Bump to 128 (design-intent "
+                         "default) for pure-distill capacity diagnostics; "
+                         "FULL cotrain at d=128 blows the 30-min budget.")
+    ap.add_argument("--num-layers", type=int, default=2,
+                    help="Trunk num_layers. Default 2 = smoke-A4.")
+    ap.add_argument("--dim-ff", type=int, default=256,
+                    help="Trunk dim_ff. Default 256 = smoke-A4.")
     ap.add_argument("--unsafe-override-distill-weight",
                     action="store_true",
                     help="FORBIDDEN in smoke — would unlock --lam-distill "
@@ -915,14 +925,18 @@ def main():
                                seed=args.seed + 12345)
     _log(f"[eval-set] {len(eval_set)} fixed states in {time.time()-t0:.1f}s")
 
-    # 5. Instantiate Adaptive6MaxNet at A4 size (SMOKE-ONLY per
-    # (D-explicit-at-call) ruling)
-    net = Adaptive6MaxNet(d_model=64, num_layers=2, nhead=4, dim_ff=256)
+    # 5. Instantiate Adaptive6MaxNet at the configured trunk size
+    # (SMOKE-ONLY per (D-explicit-at-call) ruling). The constructor defaults
+    # in src/nlhe/adaptive/model.py STAY at d=128/L=4/ff=512 (design intent);
+    # this script sets the trunk size explicitly via CLI flags.
+    net = Adaptive6MaxNet(
+        d_model=args.d_model, num_layers=args.num_layers,
+        nhead=4, dim_ff=args.dim_ff)
     n_params = sum(p.numel() for p in net.parameters())
-    _log(f"[net] Adaptive6MaxNet smoke-A4 (d=64, L=2, ff=256) — "
-         f"{n_params:,} params")
-    _log(f"      smoke-only size for CPU correctness check; real "
-         f"training size is a GPU-phase tuning decision (commit f94eb65)")
+    _log(f"[net] Adaptive6MaxNet (d={args.d_model}, L={args.num_layers}, "
+         f"ff={args.dim_ff}) — {n_params:,} params")
+    _log(f"      smoke-only size for CPU diagnostics; real training size "
+         f"is a GPU-phase tuning decision (commit f94eb65)")
 
     # 5b. PRE-TRAINING floor sanity (verify metric)
     ok, m_pre, p95_pre = floor_check(

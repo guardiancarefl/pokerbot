@@ -1,0 +1,74 @@
+[preflight] running pytest tests/test_six_max_token_no_leak.py
+========================= 8 passed, 1 warning in 3.90s =========================
+[preflight] leakage tests GREEN — proceeding to model + scaffold
+out_dir = runs/sixmax_smoke_20260601_020033
+DeepCFR6MaxSolver  device=cpu  feature_dim=236  payout_mode=double_up  payouts=[2.0, 2.0, 2.0]
+[blueprint] loaded runs/six_max_20260530_034023_phase4f_dcfr_candC_k200/checkpoints/ckpt_iter_2000.pt, schema=v2_with_strategy
+[load] blueprint loaded in 2.0s; encoder.feature_dim=236
+
+[tendency_blueprint] measured in 24.9s
+  layout = (VPIP, PFR, AF_flop, AF_turn, AF_river, F2B_pf, F2B_f, F2B_t, F2B_r, mean_bet/3)
+  values = ['0.208', '0.120', '0.421', '0.458', '0.475', '0.778', '0.279', '0.550', '0.450', '0.615']
+
+[pool gen] composition (per Correction 1 — oversample exploitables):
+  gushansenmtt     40 matches
+  killphilmtt      35 matches
+  loosenluckymtt   15 matches
+  blueprint        30 matches
+[pool gen] DONE: 5352 tuples from 120 matches in 206.2s (~1718 ms/match)
+
+[eval-set] 1000 fixed states in 13.3s
+[net] Adaptive6MaxNet (d=128, L=4, ff=512) — 843,283 params
+      smoke-only size for CPU diagnostics; real training size is a GPU-phase tuning decision (commit f94eb65)
+/home/quant/pokerbot/.venv/lib/python3.10/site-packages/torch/nn/modules/transformer.py:529: UserWarning: The PyTorch API of nested tensors is in prototype stage and will change in the near future. We recommend specifying layout=torch.jagged when constructing a nested tensor, as this layout receives active development, has better operator coverage, and works with torch.compile. (Triggered internally at /pytorch/aten/src/ATen/NestedTensorImpl.cpp:178.)
+  output = torch._nested_tensor_from_mask(
+[pre-train floor sanity] random-init mean_KL=0.9919 p95_KL=2.2651 (expected large since untrained)
+
+=== Cotrain ===
+  [G1 OK] grad norm = 11.0990
+  [cotrain ep   1/25] L_d=1.0385 L_a=0.1086 (9.6s)
+  [cotrain ep   2/25] L_d=0.8699 L_a=0.1170 (8.8s)
+  [cotrain ep   3/25] L_d=0.8324 L_a=0.1148 (9.8s)
+  [cotrain ep   4/25] L_d=0.7956 L_a=0.1154 (9.5s)
+  [cotrain ep   5/25] L_d=0.7660 L_a=0.1151 (10.6s)
+  [cotrain ep   6/25] L_d=0.7627 L_a=0.1140 (9.6s)
+  [cotrain ep   7/25] L_d=0.7673 L_a=0.1129 (11.2s)
+  [cotrain ep   8/25] L_d=0.7560 L_a=0.1159 (9.8s)
+  [cotrain ep   9/25] L_d=0.7581 L_a=0.1138 (10.9s)
+  [cotrain ep  10/25] L_d=0.7473 L_a=0.1158 (9.9s)
+  [cotrain ep  11/25] L_d=0.7395 L_a=0.1145 (10.0s)
+  [cotrain ep  12/25] L_d=0.7253 L_a=0.1146 (10.4s)
+  [cotrain ep  13/25] L_d=0.7278 L_a=0.1150 (10.5s)
+  [cotrain ep  14/25] L_d=0.7241 L_a=0.1142 (11.2s)
+  [cotrain ep  15/25] L_d=0.7226 L_a=0.1134 (10.3s)
+  [cotrain ep  16/25] L_d=0.7043 L_a=0.1151 (10.7s)
+  [cotrain ep  17/25] L_d=0.7215 L_a=0.1155 (9.6s)
+  [cotrain ep  18/25] L_d=0.7127 L_a=0.1152 (9.8s)
+  [cotrain ep  19/25] L_d=0.7157 L_a=0.1145 (9.8s)
+  [cotrain ep  20/25] L_d=0.7148 L_a=0.1164 (11.4s)
+  [cotrain ep  21/25] L_d=0.7117 L_a=0.1161 (9.5s)
+  [cotrain ep  22/25] L_d=0.7139 L_a=0.1136 (8.9s)
+  [cotrain ep  23/25] L_d=0.7207 L_a=0.1148 (9.3s)
+  [cotrain ep  24/25] L_d=0.7152 L_a=0.1142 (9.2s)
+  [cotrain ep  25/25] L_d=0.7058 L_a=0.1152 (8.7s)
+    [G4 floor ep 25] mean_KL=0.1034 (bar=0.02) p95_KL=0.4960 (bar=0.05) -> BREACH
+    [G4 BREACH] STOP per Decision B; first lever = halve --lam-aux (currently 0.0) and restart.
+[cotrain DONE] 249.5s wall (epochs ran: 25)
+[G2] L_distill: ep1=1.0385, epLast=0.7058 -> OK
+[G3] L_aux:     ep1=0.1086, epLast=0.1152 -> FAIL (diagnostic only)
+[G4] floor checks (1 total) -> BREACH
+     ep 25: mean=0.1034 p95=0.4960 -> BREACH
+
+=== G6 probe (separation reasoning per Correction 2) ===
+[G6 probe] done in 55.5s (n_probe_matches_per_opp=8)
+  blueprint D̄ (absolute, negative control): 0.9115
+  per-opp D̄ + separation ratio vs blueprint:
+    gushansenmtt     D̄=0.9124  ratio_vs_bp=1.00
+    killphilmtt      D̄=0.9206  ratio_vs_bp=1.01
+    loosenluckymtt   D̄=0.9138  ratio_vs_bp=1.00
+    blueprint        D̄=0.9115  ratio_vs_bp=1.00
+[G6] blueprint absolute (≤ 0.05 expected): 0.9115 -> LOOSE
+[G6] separation ratio (all archetypes/blueprint ≥ 2.0): -> WEAK
+
+[saved] runs/sixmax_smoke_20260601_020033/metrics.json + smoke_net.pt
+[STOP] smoke complete. STOP for user review.
