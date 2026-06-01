@@ -40,10 +40,13 @@ Test C6 — opp-stat purity:
   * Sanity-run on a hand: SeatStats values depend only on observed actions
     and the public parsed-state dict.
 
-Test D6 — DEFERRED until `Adaptive6MaxNet` exists (scaffold step 3). The
-`Adaptive6MaxNet.forward()` signature must accept no tendency-target /
-archetype-id / oracle parameters; sentinel test asserts forward determinism.
-Will be added in the same commit as the model class.
+Test D6 — model-surface leak guard for `Adaptive6MaxNet` (scaffold step 1b).
+The `Adaptive6MaxNet.forward()` signature accepts ONLY the 5 declared inputs
+(tokens, pad_mask, query_idx, legal_mask, opp_stats); no tendency target,
+archetype id, true-tendency, match-confidence oracle, or other identity-of-
+opponent parameter may enter the forward pass. Source inspection forbids
+such references; sentinel test verifies forward determinism on identical
+inputs.
 """
 from __future__ import annotations
 
@@ -509,3 +512,79 @@ def test_C6_match_observer_carries_no_card_information():
         st = observer.get_stats(s)
         assert isinstance(st.n_actions, int)
         assert isinstance(st.sum_bet_size_over_pot, float)
+
+
+# --------------------------------------------------------------------------
+# Test D6 — Adaptive6MaxNet model-surface leak guard
+# --------------------------------------------------------------------------
+# The S2(a)/scaffold-step-1b architecture introduces continuous opponent
+# tendency supervision via opp_head_tendency (K=10). The tendency target,
+# any archetype identity, and any oracle-derived per-opponent label must be
+# TRAINING-TIME signals only — never enter forward(). This test enforces the
+# property at three layers:
+#
+#   (D6.1) forward() signature accepts only (tokens, pad_mask, query_idx,
+#          legal_mask, opp_stats). The match_conf multiplier (Q4) lives
+#          OUTSIDE forward (in the inference-time blend), so its absence
+#          here is the correct surface.
+#   (D6.2) forward() source body contains no forbidden token
+#          (tendency_target / cell_label / archetype_id / true_tendency /
+#          oracle / true_cell).
+#   (D6.3) Sentinel — repeated forward calls with the same 5-arg inputs
+#          produce bit-identical outputs.
+
+def test_D6_tendency_target_not_in_forward_inputs():
+    import torch
+    from src.nlhe.adaptive.model import (
+        Adaptive6MaxNet, F_TOKEN, F_STATS, NUM_ACTIONS, K_TENDENCY,
+    )
+
+    net = Adaptive6MaxNet()
+    net.eval()
+
+    # D6.1 — signature
+    sig = inspect.signature(net.forward)
+    params = list(sig.parameters.keys())
+    expected = ["tokens", "pad_mask", "query_idx", "legal_mask", "opp_stats"]
+    assert params == expected, (
+        f"forward() signature changed; expected {expected}, got {params}. "
+        "If a tendency-target / archetype-id / oracle parameter has been "
+        "added, the scaffold's no-oracle property has been broken at the "
+        "architecture layer (Decision A / Q1c verified, Test D6 enforced).")
+
+    # D6.2 — forward source contains no forbidden token
+    src = inspect.getsource(net.forward)
+    forbidden = ("tendency_target", "cell_label", "cell_id", "cell_idx",
+                 "archetype_id", "archetype_idx", "true_cell",
+                 "true_tendency", "oracle")
+    for tok in forbidden:
+        assert tok not in src, (
+            f"forward() source contains forbidden token '{tok}'. "
+            "Opponent identity / supervision target must not flow into "
+            "the forward pass.")
+
+    # D6.3 — sentinel: same inputs → bit-identical outputs
+    B, T = 3, 8
+    seed_rng = np.random.default_rng(2026)
+    tokens = torch.from_numpy(
+        seed_rng.standard_normal((B, T, F_TOKEN)).astype(np.float32))
+    pad_mask = torch.zeros((B, T), dtype=torch.bool)
+    query_idx = torch.tensor([2, 5, 3], dtype=torch.long)
+    legal_mask = torch.ones((B, NUM_ACTIONS), dtype=torch.bool)
+    opp_stats = torch.from_numpy(
+        seed_rng.standard_normal((B, F_STATS)).astype(np.float32))
+
+    with torch.no_grad():
+        pol1, tend1, comb1 = net(
+            tokens, pad_mask, query_idx, legal_mask, opp_stats)
+        pol2, tend2, comb2 = net(
+            tokens, pad_mask, query_idx, legal_mask, opp_stats)
+    assert torch.equal(pol1, pol2)
+    assert torch.equal(tend1, tend2)
+    assert torch.equal(comb1, comb2)
+
+    # And the head shapes match the declared K_TENDENCY / NUM_ACTIONS.
+    assert pol1.shape == (B, NUM_ACTIONS)
+    assert tend1.shape == (B, K_TENDENCY)
+    # tendency_pred is sigmoided → bounded in [0, 1].
+    assert torch.all(tend1 >= 0.0) and torch.all(tend1 <= 1.0)
