@@ -120,10 +120,31 @@ def build_panel(solver, abstraction, calibration, big_blind_chips=100):
     return out
 
 
-def play_one_hand_fixed_seat(hero_policy, opp_policy, hero_seat, structure, rng):
+def play_one_hand_fixed_seat(hero_policy, opp_policy, hero_seat, structure,
+                              rng, restrict_eff_bb_max=None):
     """One sampled tournament hand; hero in hero_seat, all other seats =
-    opp_policy. Returns hero's ICM-equity-delta (float), or None if capped."""
-    sampled = sample_starting_state(structure, rng, num_paid=NUM_PAID)
+    opp_policy. Returns hero's ICM-equity-delta (float), or None if capped.
+
+    restrict_eff_bb_max: if not None, rejection-sample sample_starting_state
+    until table-effective stack (min seated stack / bb) <= this cap, OR
+    return None after 200 rejected attempts. Used by Arm A of the mode-2
+    ablation (loss-fix on 15bb-only pool) so Arm A is judged on the depth
+    range it actually trained on, not the full tournament. Pairing CRN
+    preserved because both arms reset to the same hand_seed rng and reject
+    identically."""
+    if restrict_eff_bb_max is not None:
+        sampled = None
+        for _ in range(200):
+            cand = sample_starting_state(structure, rng, num_paid=NUM_PAID)
+            bb = cand["blind_level"].big_blind
+            eff_bb = min(cand["stacks"]) / bb
+            if eff_bb <= restrict_eff_bb_max:
+                sampled = cand
+                break
+        if sampled is None:
+            return None  # cap-exhausted; paired arm also returns None
+    else:
+        sampled = sample_starting_state(structure, rng, num_paid=NUM_PAID)
     gs = structure.to_inner_game_string_for_state(
         blind_level=sampled["blind_level"],
         stacks=sampled["stacks"],
@@ -168,7 +189,7 @@ def _stats(deltas):
 
 
 def run_member(name, opp_pol, base_seed, student, blueprint, structure,
-               n_per_seat, log_every=250):
+               n_per_seat, log_every=250, restrict_eff_bb_max=None):
     """Returns the per-member result dict with pooled + per-seat numbers."""
     per_seat = []
     pooled_student, pooled_bp, pooled_pair = [], [], []
@@ -181,9 +202,11 @@ def run_member(name, opp_pol, base_seed, student, blueprint, structure,
         for h in range(n_per_seat):
             hand_seed = seat_base + h
             sd = play_one_hand_fixed_seat(
-                student, opp_pol, seat, structure, random.Random(hand_seed))
+                student, opp_pol, seat, structure, random.Random(hand_seed),
+                restrict_eff_bb_max=restrict_eff_bb_max)
             bd = play_one_hand_fixed_seat(
-                blueprint, opp_pol, seat, structure, random.Random(hand_seed))
+                blueprint, opp_pol, seat, structure, random.Random(hand_seed),
+                restrict_eff_bb_max=restrict_eff_bb_max)
             if sd is None or bd is None:
                 n_capped += 1
                 continue
@@ -235,6 +258,17 @@ def main():
                     help="comma-separated seat ids for smoke (default 0-5)")
     ap.add_argument("--output", type=str, required=True)
     ap.add_argument("--log-every", type=int, default=250)
+    # Mode-2 ablation knobs (post-b0f91dd attribution verdict).
+    ap.add_argument("--restrict-eff-bb-max", type=float, default=None,
+                    help="If set, rejection-sample sample_starting_state "
+                         "until table-effective stack (min seated stack / bb) "
+                         "<= this cap. Used to judge Arm A on the depth range "
+                         "it was actually trained on (S1=15bb). Pairing CRN "
+                         "preserved: both arms reject identically.")
+    ap.add_argument("--seat-material-threshold", type=float, default=-0.005,
+                    help="Per-seat 'materially-negative' cutoff for the gate "
+                         "verdict (ICM-pts/hand). A seat fails iff "
+                         "delta_sigma>=2 AND delta <= this threshold.")
     args = ap.parse_args()
 
     only = set(args.only.split(",")) if args.only else None
@@ -282,13 +316,45 @@ def main():
         if seats != list(range(NUM_SEATS)):
             r = run_member_seats(name, opp, base_seed, student, blueprint,
                                  structure, args.hands_per_seat, seats,
-                                 args.log_every)
+                                 args.log_every,
+                                 restrict_eff_bb_max=args.restrict_eff_bb_max)
         else:
             r = run_member(name, opp, base_seed, student, blueprint,
-                           structure, args.hands_per_seat, args.log_every)
+                           structure, args.hands_per_seat, args.log_every,
+                           restrict_eff_bb_max=args.restrict_eff_bb_max)
         results.append(r)
 
     total_wall = time.time() - t_total
+
+    # Compute the gate verdict per the docstring contract (lines 30-33),
+    # with the tightened seat rule:
+    #   - member fails iff pooled delta<0 AND |sigma|>=2
+    #   - seat fails iff (|sigma|>=2 AND delta<=soft_threshold)  -- significant negative
+    #                OR (delta<=hard_cap)                         -- large regardless of sigma
+    # Asymmetric cost: false breach is a cheap re-run; false pass ships a leak.
+    # hard_cap = 2 * soft_threshold (so -0.005 soft → -0.010 hard by default).
+    soft_threshold = args.seat_material_threshold
+    hard_cap = 2.0 * soft_threshold
+    member_fails = []
+    seat_fails = []
+    for r in results:
+        p = r["pooled"]
+        if p["delta"] < 0 and p["delta_sigma"] >= 2.0:
+            member_fails.append({"member": r["member"],
+                                  "pooled_delta": p["delta"],
+                                  "pooled_sigma": p["delta_sigma"]})
+        for s in r["per_seat"]:
+            sig_neg = (s["delta_sigma"] >= 2.0 and s["delta"] <= soft_threshold)
+            large_neg = (s["delta"] <= hard_cap)
+            if sig_neg or large_neg:
+                seat_fails.append({"member": r["member"], "seat": s["seat"],
+                                    "delta": s["delta"],
+                                    "delta_sigma": s["delta_sigma"],
+                                    "trigger": ("sig_neg" if sig_neg else "")
+                                              + ("|" if sig_neg and large_neg else "")
+                                              + ("large_neg" if large_neg else "")})
+    verdict = "PASS" if (not member_fails and not seat_fails) else "BREACH"
+
     out = {
         "challenger": "student_zero_context",
         "comparator": "blueprint(candC_k200)_paired",
@@ -299,8 +365,18 @@ def main():
         "payouts": PAYOUTS,
         "hands_per_seat": args.hands_per_seat,
         "seats": seats,
+        "restrict_eff_bb_max": args.restrict_eff_bb_max,
+        "seat_material_threshold_soft": soft_threshold,
+        "seat_material_threshold_hard": hard_cap,
         "pairing": "per-hand CRN: both arms reset RNG to same hand_seed",
         "total_wall_seconds": total_wall,
+        "verdict": verdict,
+        "verdict_criterion": ("PASS iff every member's pooled delta has "
+                              "|sigma|<2 OR delta>=0 AND no per-seat fails. "
+                              "Per-seat fails iff (|sigma|>=2 AND delta<=soft) "
+                              "OR (delta<=hard); hard = 2*soft."),
+        "member_breaches": member_fails,
+        "seat_breaches": seat_fails,
         "results": results,
     }
     Path(args.output).parent.mkdir(parents=True, exist_ok=True)
@@ -308,10 +384,15 @@ def main():
         json.dump(out, f, indent=2)
     print(f"\n=== DONE total_wall={total_wall:.1f}s output={args.output} ===",
           flush=True)
+    print(f"VERDICT = {verdict}", flush=True)
+    if member_fails:
+        print(f"  member breaches: {member_fails}", flush=True)
+    if seat_fails:
+        print(f"  seat breaches: {seat_fails}", flush=True)
 
 
 def run_member_seats(name, opp_pol, base_seed, student, blueprint, structure,
-                     n_per_seat, seats, log_every):
+                     n_per_seat, seats, log_every, restrict_eff_bb_max=None):
     """Smoke variant of run_member that iterates only `seats`."""
     per_seat = []
     pooled_student, pooled_bp, pooled_pair = [], [], []
@@ -323,9 +404,11 @@ def run_member_seats(name, opp_pol, base_seed, student, blueprint, structure,
         for h in range(n_per_seat):
             hand_seed = seat_base + h
             sd = play_one_hand_fixed_seat(
-                student, opp_pol, seat, structure, random.Random(hand_seed))
+                student, opp_pol, seat, structure, random.Random(hand_seed),
+                restrict_eff_bb_max=restrict_eff_bb_max)
             bd = play_one_hand_fixed_seat(
-                blueprint, opp_pol, seat, structure, random.Random(hand_seed))
+                blueprint, opp_pol, seat, structure, random.Random(hand_seed),
+                restrict_eff_bb_max=restrict_eff_bb_max)
             if sd is None or bd is None:
                 n_capped += 1
                 continue

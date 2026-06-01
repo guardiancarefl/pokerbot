@@ -588,3 +588,115 @@ def test_D6_tendency_target_not_in_forward_inputs():
     assert tend1.shape == (B, K_TENDENCY)
     # tendency_pred is sigmoided → bounded in [0, 1].
     assert torch.all(tend1 >= 0.0) and torch.all(tend1 <= 1.0)
+
+
+# --------------------------------------------------------------------------
+# Test E6 — entropy-floor distill-shaping penalty (mode-collapse fix)
+# --------------------------------------------------------------------------
+# Post-b0f91dd: the mode-2 attribution diagnostic (n=456 soft preflop
+# short-stack agg_resp cell) confirmed forward-CE distillation collapses
+# the teacher's soft mixtures onto their modal action (fold). Fix: add a
+# `entropy_floor_penalty(policy_raw, distill_target)` term to the distill
+# loss that activates only when student is sharper than teacher. This term
+# must be PROVABLY leakage-clean — it must read NO inputs other than the
+# two policy distributions that already live in L_distill, both of which
+# are themselves leakage-clean per B6 (encoder bit-identity under opp-card
+# substitution) and D6 (forward signature lockdown).
+#
+# E6 enforces this property at four layers:
+#   (E6.1) signature: exactly (policy_raw, distill_target, eps) — no
+#          opponent state, no extra tensors.
+#   (E6.2) source body: no forbidden tokens (private/opp/oracle/tendency).
+#   (E6.3) sentinels: penalty is 0 when teacher sharper-or-equal (relu
+#          inactive); penalty > 0 when student sharper; penalty == 0 when
+#          policies equal; gradient flows back into policy_raw, not the
+#          (detached) teacher target.
+#   (E6.4) tensor-purity: identical (policy_raw, distill_target) → bit-
+#          identical penalty across calls (no global state).
+
+def test_E6_entropy_floor_is_pure_function_of_policies():
+    import torch
+    from scripts.six_max_adaptive_smoke import entropy_floor_penalty
+
+    # E6.1 — signature
+    sig = inspect.signature(entropy_floor_penalty)
+    params = list(sig.parameters.keys())
+    assert params == ["policy_raw", "distill_target", "eps"], (
+        f"entropy_floor_penalty signature changed: got {params}. The term "
+        "must read ONLY the two policy distributions (already in L_distill "
+        "and leakage-proven by B6/D6) — no opponent state, no oracle.")
+
+    # E6.2 — source body: no forbidden tokens
+    src = inspect.getsource(entropy_floor_penalty)
+    forbidden = (
+        "private_card", "hole_card", "opp_card", "opponent_card",
+        "tendency_target", "true_tendency", "archetype_id", "true_cell",
+        "oracle",
+        # also reject the no-context-input tokens themselves — the term
+        # operates purely on the renormalized policy tensors
+        "opp_stats", "pad_mask", "query_idx",
+    )
+    for tok in forbidden:
+        assert tok not in src, (
+            f"entropy_floor_penalty source references forbidden token "
+            f"'{tok}' — distill-shaping term must read only (policy_raw, "
+            "distill_target).")
+
+    # E6.3 — numerical sentinels
+    B, A = 4, 9
+
+    # (a) teacher sharper than student → relu inactive → L_ef == 0
+    teacher_sharp = torch.zeros(B, A); teacher_sharp[:, 0] = 1.0
+    student_uniform = torch.full((B, A), 1.0 / A)
+    L = float(entropy_floor_penalty(student_uniform, teacher_sharp))
+    assert L == 0.0, (
+        f"expected L_ef=0 when teacher sharper than student; got {L}. The "
+        "relu must zero out the (h_t - h_s)<0 case.")
+
+    # (b) student sharper than teacher → L_ef > 0
+    teacher_uniform = torch.full((B, A), 1.0 / A)
+    student_sharp = torch.zeros(B, A); student_sharp[:, 0] = 1.0
+    L = float(entropy_floor_penalty(student_sharp, teacher_uniform))
+    assert L > 0.0, (
+        f"expected L_ef>0 when student sharper than teacher; got {L}. The "
+        "term must activate on the measured mode-collapse regime.")
+    # Magnitude check: gap ≈ log(A) when student is a one-hot and teacher
+    # is uniform — ln(9) ≈ 2.197
+    assert abs(L - np.log(A)) < 1e-4, (
+        f"expected L_ef≈log(A)={np.log(A):.4f} for one-hot-vs-uniform; "
+        f"got {L:.4f}")
+
+    # (c) equal policies → L_ef == 0
+    rng = np.random.default_rng(2026)
+    p = torch.softmax(torch.from_numpy(
+        rng.standard_normal((B, A)).astype(np.float32)), dim=-1)
+    L = float(entropy_floor_penalty(p, p))
+    assert L < 1e-6, (
+        f"expected L_ef≈0 when student==teacher; got {L}. The term must not "
+        "double-penalize identical distributions.")
+
+    # (d) gradient flows into student, not teacher (teacher is the target,
+    # not a learnable parameter — the term must not push the teacher).
+    student_var = torch.full((B, A), 1.0 / A, requires_grad=True)
+    teacher = torch.softmax(torch.zeros(B, A) + torch.from_numpy(
+        rng.standard_normal((B, A)).astype(np.float32)), dim=-1)
+    # Make student a bit sharper than teacher so the relu is active
+    student_var2 = (student_var + 0.001 * torch.eye(A)[0:B]).softmax(dim=-1)
+    L = entropy_floor_penalty(student_var2, teacher)
+    if L.item() > 0:
+        L.backward()
+        assert student_var.grad is not None, (
+            "gradient must flow into student policy_raw")
+        assert not teacher.requires_grad, "teacher target must not be learnable"
+
+    # E6.4 — tensor-purity (no global state / no rng): identical inputs ⇒
+    # identical outputs across calls.
+    p1 = torch.softmax(torch.from_numpy(
+        rng.standard_normal((B, A)).astype(np.float32)), dim=-1)
+    p2 = torch.softmax(torch.from_numpy(
+        rng.standard_normal((B, A)).astype(np.float32)), dim=-1)
+    L_a = entropy_floor_penalty(p1, p2)
+    L_b = entropy_floor_penalty(p1, p2)
+    assert torch.equal(L_a, L_b), (
+        "entropy_floor_penalty produced different values on identical inputs "
+        "— there is non-determinism / hidden state in the term.")

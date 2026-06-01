@@ -134,6 +134,8 @@ from src.nlhe.adaptive.model import (
     Adaptive6MaxNet, F_TOKEN, F_STATS, NUM_ACTIONS, K_TENDENCY,
     collate, tendency_l2_read,
 )
+from src.nlhe.game_strings import TournamentStructure
+from src.nlhe.stack_sampler import sample_starting_state
 
 GAME = pyspiel.load_game(six_max_sng())
 NUM_SEATS = 6
@@ -142,6 +144,43 @@ NEG_INF = -1e9
 
 def _log(msg=""):
     print(msg, flush=True)
+
+
+def entropy_floor_penalty(policy_raw: "torch.Tensor",
+                           distill_target: "torch.Tensor",
+                           eps: float = 1e-12) -> "torch.Tensor":
+    """Entropy-floor distill-shaping penalty — the mode-collapse fix.
+
+    Mode-2 attribution diagnostic (n=456 soft preflop short-stack agg_resp
+    cell) confirmed: forward-CE distillation collapses the teacher's soft
+    mixtures onto the modal action (fold) under finite student capacity.
+    h_st < h_bp systematically (z=-12.8, sign-agree 0.72); st_F=0.67 vs
+    bp_F=0.50 vs uniform_F=0.30; 57% of over-fold mass on bp-modal-fold
+    nodes. Forward-CE alone has no signal to prevent this.
+
+    This term activates ONLY when the student is SHARPER than the teacher,
+    and pushes student entropy back UP toward teacher entropy without
+    prescribing which action the freed mass goes to (the CE term in
+    L_distill still pulls toward the teacher's mass distribution):
+
+        L_ef = mean( relu( H(distill_target) - H(policy_raw) ) )
+
+    Pure function of (policy_raw, distill_target); no opponent-private or
+    supervision-side-channel inputs (Test-E6-clean). Inputs are already
+    legal-mask-renormalized by the network's policy_head and by
+    blueprint_policy() respectively — illegal actions carry zero mass and
+    contribute zero to the entropy sums.
+
+    Args:
+        policy_raw    : (B, A) student policy, masked-renorm on legal subset.
+        distill_target: (B, A) blueprint policy, masked-renorm on legal subset.
+        eps           : log-stability floor.
+
+    Returns: scalar tensor (batch-mean penalty).
+    """
+    H_t = -(distill_target * torch.log(distill_target + eps)).sum(dim=-1)
+    H_s = -(policy_raw    * torch.log(policy_raw    + eps)).sum(dim=-1)
+    return F.relu(H_t - H_s).mean()
 
 
 # --------------------------------------------------------------------------
@@ -277,9 +316,15 @@ def _shanky_to_discrete(action_chip: int, d_to_chip: dict) -> int:
 def run_match_collect(solver, opp_policy, hero_seat: int,
                       hand_target: int, epsilon: float,
                       designated_opp_seat: int,
-                      seed: int, hero_encoder_rng_seed: int = 0):
+                      seed: int, hero_encoder_rng_seed: int = 0,
+                      hand_init_fn=None):
     """Run one match (up to hand_target hands), record per-hero-decision
-    tuples with the encode-once buffer for tokens, return the result."""
+    tuples with the encode-once buffer for tokens, return the result.
+
+    hand_init_fn: optional callable(rng) -> initial state. If None (default),
+    each hand uses GAME.new_initial_state() (the fixed 15bb six_max_sng
+    single-game distribution). For the stratified-tournament pool (S2/S3/S4),
+    pass a rejection-sampling function over sample_starting_state."""
     py_rng = random.Random(seed)
     enc_rng = random.Random(hero_encoder_rng_seed)
     observer = WM.MatchObserver(num_seats=NUM_SEATS)
@@ -291,7 +336,8 @@ def run_match_collect(solver, opp_policy, hero_seat: int,
     n_encoder_calls = 0
 
     for hand_i in range(hand_target):
-        state = GAME.new_initial_state()
+        state = (GAME.new_initial_state() if hand_init_fn is None
+                 else hand_init_fn(py_rng))
         n_hands += 1
         # Per-hand encode-once buffer (resets each hand). Each entry is the
         # 236-dim encoder output from HERO's perspective at one public
@@ -522,6 +568,188 @@ def generate_pool(solver, opp_specs: dict, hand_target: int,
 
 
 # --------------------------------------------------------------------------
+# Stratified-tournament pool (Mode-2 ablation; fixes Defect 2 = depth/antes)
+# --------------------------------------------------------------------------
+# Per mode-2 attribution diagnosis (b0f91dd + /tmp/mode2_attribution.json):
+# the current 15bb single-game pool covers Defect 1 (mode-collapse fix lives
+# in the LOSS via entropy_floor_penalty). Defect 2 = the panel sampled
+# levels 1-9 with antes and stacks up to ~60bb, none of which the pool ever
+# saw. Fix = preserve S1 (current 15bb 5352 tuples) verbatim and add three
+# tournament-sourced strata. Tags each tuple t["stratum"] in {S1,S2,S3,S4}.
+
+_STRATA_SPEC = {
+    # Strict lower bounds (eff_bb_min_strict): predicate is
+    # eff_bb_min_strict < eff_bb <= eff_bb_max. Closed-above, open-below
+    # → contiguous + non-overlapping coverage from S1 (eff_bb<=15) through
+    # S4 (<=60). S1 is generated via the existing six_max_sng game (NOT a
+    # predicate match against sample_starting_state output) — its eff_bb
+    # at hand-start is exactly 15.0bb (1500-chip start / 100-chip bb) with
+    # no antes (100/50 blinds, single level), bit-identical to the existing
+    # 5352-tuple pool.
+    "S2": {"eff_bb_min_strict": 8.0,   "eff_bb_max": 15.0,
+           "level_min": 2,  "level_max": 9, "require_antes": True,
+           "desc": "short+antes (8 < eff_bb <= 15, ante-active level)"},
+    "S3": {"eff_bb_min_strict": 15.0,  "eff_bb_max": 30.0,
+           "level_min": 2,  "level_max": 9, "require_antes": True,
+           "desc": "mid+antes (15 < eff_bb <= 30)"},
+    "S4": {"eff_bb_min_strict": 30.0,  "eff_bb_max": 60.0,
+           "level_min": 1,  "level_max": 3, "require_antes": False,
+           "desc": "deep (30 < eff_bb <= 60, levels 1-3)"},
+}
+
+
+def _stratum_predicate(stratum: str):
+    """Returns a function(sampled_dict) -> bool: True iff the sampled
+    starting state falls in the named stratum. Operates on the output of
+    sample_starting_state(structure, rng, num_paid=3).
+
+    Bounds are open-below / closed-above:
+        eff_bb_min_strict < min(stacks)/bb <= eff_bb_max
+    so adjacent strata's max/min meet at a single value that lives in the
+    HIGHER stratum (e.g., 15.0bb is in S2 not S3). Coverage [8, 60]bb is
+    a partition; states outside this band are rejected by all strata
+    (acceptable — <8bb is all-in-or-fold territory and >60bb is panel
+    tail rarely visited)."""
+    spec = _STRATA_SPEC[stratum]
+    def ok(sampled):
+        bb = sampled["blind_level"].big_blind
+        # Effective stack = min over seated stacks (table-level effective);
+        # any single short stack constrains everyone's preflop options.
+        eff_bb_min = min(sampled["stacks"]) / bb
+        if not (spec["eff_bb_min_strict"] < eff_bb_min <= spec["eff_bb_max"]):
+            return False
+        level = sampled["blind_level"].level
+        if not (spec["level_min"] <= level <= spec["level_max"]):
+            return False
+        if spec["require_antes"]:
+            ante = float(getattr(sampled["blind_level"], "ante", 0.0))
+            if ante <= 0.0:
+                return False
+        return True
+    return ok
+
+
+def _stratum_init_fn(stratum: str, structure: TournamentStructure,
+                     max_attempts: int = 2000):
+    """Returns hand_init_fn(rng) -> pyspiel state, rejection-sampling
+    sample_starting_state(structure, rng, num_paid=3) until the stratum
+    predicate accepts. Raises if max_attempts exhausted (signals a spec
+    that's too narrow vs the tournament distribution — caller should
+    widen)."""
+    predicate = _stratum_predicate(stratum)
+    def init(rng):
+        for _ in range(max_attempts):
+            sampled = sample_starting_state(structure, rng, num_paid=3)
+            if predicate(sampled):
+                gs = structure.to_inner_game_string_for_state(
+                    blind_level=sampled["blind_level"],
+                    stacks=sampled["stacks"],
+                    dealer_seat=sampled["dealer_seat"])
+                game = pyspiel.load_game(gs)
+                return game.new_initial_state()
+        raise RuntimeError(
+            f"Stratum {stratum} unreachable in {max_attempts} attempts; "
+            f"spec too narrow vs sample_starting_state distribution.")
+    return init
+
+
+def _generate_pool_for_stratum(solver, opp_specs, stratum: str,
+                                target_tuples: int, structure,
+                                hand_target: int, epsilon: float,
+                                base_seed: int, verbose: bool = True):
+    """Generate ~target_tuples tuples for one stratum (S2/S3/S4) using the
+    rejection-sampled init fn. Opponent mix proportional to opp_specs."""
+    init_fn = _stratum_init_fn(stratum, structure)
+    pool = []
+    # Cycle opponents proportional to their n_matches.
+    opp_cycle = []
+    for name, info in opp_specs.items():
+        opp_cycle.extend([(name, info)] * int(info["n_matches"]))
+    if not opp_cycle:
+        return pool
+    match_i = 0
+    safety_cap = max(1, 5 * target_tuples)
+    while len(pool) < target_tuples and match_i < safety_cap:
+        opp_name, info = opp_cycle[match_i % len(opp_cycle)]
+        opp_pol = make_opp_policy(opp_name, info, solver)
+        hero_seat = match_i % NUM_SEATS
+        designated_opp_seat = (hero_seat + 1) % NUM_SEATS
+        result = run_match_collect(
+            solver=solver, opp_policy=opp_pol, hero_seat=hero_seat,
+            hand_target=hand_target, epsilon=epsilon,
+            designated_opp_seat=designated_opp_seat,
+            seed=base_seed + match_i * 17,
+            hero_encoder_rng_seed=match_i,
+            hand_init_fn=init_fn)
+        for t in result.tuples:
+            t["opp_name"] = opp_name
+            t["stratum"] = stratum
+        pool.extend(result.tuples)
+        match_i += 1
+        if verbose and (match_i % 5 == 0 or len(pool) >= target_tuples):
+            _log(f"  [{stratum}] match {match_i:>3d}  opp={opp_name:<16} "
+                 f"pool={len(pool):>4d}/{target_tuples}")
+    # Truncate to exact target (trimming the last partial match).
+    return pool[:target_tuples]
+
+
+def generate_pool_stratified(solver, opp_specs: dict, structure,
+                              hand_target: int, epsilon: float,
+                              base_seed: int,
+                              strata_targets=(5352, 2000, 2000, 1500),
+                              verbose: bool = True):
+    """4-stratum tournament-stratified pool. Returns (pool, per_opp, stats)
+    matching generate_pool's contract; every tuple carries t['stratum']."""
+    s1_target, s2_target, s3_target, s4_target = strata_targets
+    if verbose:
+        _log(f"[stratified] targets: S1={s1_target}  S2={s2_target}  "
+             f"S3={s3_target}  S4={s4_target}  total≈"
+             f"{sum(strata_targets)}")
+    t_total = time.time()
+
+    # S1: existing 15bb single-game pool — preserved verbatim.
+    if verbose:
+        _log("\n=== STRATUM S1 — current 15bb single-game pool ===")
+    s1_pool, s1_per_opp, s1_stats = generate_pool(
+        solver=solver, opp_specs=opp_specs, hand_target=hand_target,
+        epsilon=epsilon, base_seed=base_seed, verbose=verbose)
+    for t in s1_pool:
+        t["stratum"] = "S1"
+    pool = list(s1_pool[:s1_target])
+
+    # S2/S3/S4: tournament-sourced via rejection sampling.
+    per_stratum_stats = {"S1": {"n_tuples": len(s1_pool),
+                                "wall_seconds": s1_stats["wall_seconds"]}}
+    for stratum_i, stratum in enumerate(("S2", "S3", "S4")):
+        target = strata_targets[stratum_i + 1]
+        if verbose:
+            _log(f"\n=== STRATUM {stratum} — "
+                 f"{_STRATA_SPEC[stratum]['desc']} (target {target}) ===")
+        t_s = time.time()
+        s_pool = _generate_pool_for_stratum(
+            solver=solver, opp_specs=opp_specs, stratum=stratum,
+            target_tuples=target, structure=structure,
+            hand_target=hand_target, epsilon=epsilon,
+            base_seed=base_seed + 1_000_000 * (stratum_i + 1),
+            verbose=verbose)
+        pool.extend(s_pool)
+        per_stratum_stats[stratum] = {
+            "n_tuples": len(s_pool),
+            "wall_seconds": time.time() - t_s,
+        }
+
+    dt_total = time.time() - t_total
+    stats = {
+        "mode": "stratified",
+        "strata_targets": list(strata_targets),
+        "per_stratum": per_stratum_stats,
+        "n_pool_tuples": len(pool),
+        "wall_seconds": dt_total,
+    }
+    return pool, {"S1": s1_per_opp}, stats
+
+
+# --------------------------------------------------------------------------
 # Fixed eval set for floor check (G4)
 # --------------------------------------------------------------------------
 
@@ -672,19 +900,35 @@ def probe_g6(net, solver, opp_specs, tendency_blueprint, hand_target,
 def cotrain(net, pool, eval_set, *, epochs: int, steps_per_epoch: int,
             batch_size: int, lr: float, lam_distill: float, lam_aux: float,
             eps_mean: float, eps_p95: float, ckpt_every: int,
-            device: str, seed: int, out_dir: Path):
+            device: str, seed: int, out_dir: Path,
+            beta_entropy_floor: float = 0.0,
+            skip_g4_floor: bool = False):
     """Train net on the pool with the distill + tendency-MSE loss.
-    Floor (G4) checked every `ckpt_every` epochs; HARD STOP on breach."""
+
+    beta_entropy_floor: β coefficient on entropy_floor_penalty (the
+        mode-collapse fix; pre-registered for the 3-arm ablation following
+        the b0f91dd verdict). 0.0 = current behavior. Activates only on
+        nodes where the student is sharper than the teacher.
+    skip_g4_floor: if True, bypass the G4 KL early-exit (KL has been retired
+        as a gate per the b0f91dd verdict; ICM panel is the gate). The
+        KL is still logged at floor-check epochs for monitoring continuity
+        when skip_g4_floor=False, or skipped entirely when True.
+
+    Floor (G4) checked every `ckpt_every` epochs UNLESS skip_g4_floor;
+    HARD STOP on breach UNLESS skip_g4_floor."""
     # Decision-B assertion
     assert lam_distill == 1.0, (
         f"lam_distill is HARD-LOCKED at 1.0 in smoke; got {lam_distill}. "
         "Use --unsafe-override-distill-weight to override (forbidden in smoke).")
+    assert beta_entropy_floor >= 0.0, (
+        f"beta_entropy_floor must be >= 0; got {beta_entropy_floor}.")
 
     opt = torch.optim.AdamW(net.parameters(), lr=lr, weight_decay=0.0)
     rng = np.random.default_rng(seed)
     log = []
     train_kls_distill = []
     train_mses_aux = []
+    train_efs = []
     floor_checks = []
     net.train()
     n_pool = len(pool)
@@ -693,6 +937,7 @@ def cotrain(net, pool, eval_set, *, epochs: int, steps_per_epoch: int,
         t_ep = time.time()
         ep_L_distill = 0.0
         ep_L_aux = 0.0
+        ep_L_ef = 0.0
         n_steps = 0
         for s in range(steps_per_epoch):
             idx = rng.choice(n_pool, size=batch_size, replace=False)
@@ -708,7 +953,15 @@ def cotrain(net, pool, eval_set, *, epochs: int, steps_per_epoch: int,
             log_p = torch.log(policy_raw + 1e-12)
             L_distill = -(distill_target * log_p).sum(dim=-1).mean()
             L_aux = F.mse_loss(tendency_pred, tendency_target)
-            L = lam_distill * L_distill + lam_aux * L_aux
+            # Mode-collapse fix (see entropy_floor_penalty docstring).
+            # β=0 reduces to baseline (b0f91dd) behavior bit-identically.
+            if beta_entropy_floor > 0.0:
+                L_ef = entropy_floor_penalty(policy_raw, distill_target)
+            else:
+                L_ef = torch.zeros((), device=policy_raw.device)
+            L = (lam_distill * L_distill
+                 + beta_entropy_floor * L_ef
+                 + lam_aux * L_aux)
             opt.zero_grad()
             L.backward()
             # G1: gradient-flow sanity (check on the first step only — cheap)
@@ -731,22 +984,27 @@ def cotrain(net, pool, eval_set, *, epochs: int, steps_per_epoch: int,
             opt.step()
             ep_L_distill += float(L_distill.detach())
             ep_L_aux += float(L_aux.detach())
+            ep_L_ef += float(L_ef.detach())
             n_steps += 1
         dt = time.time() - t_ep
         log.append({
             "epoch": ep,
             "L_distill": ep_L_distill / n_steps,
             "L_aux": ep_L_aux / n_steps,
+            "L_entropy_floor": ep_L_ef / n_steps,
             "seconds": dt,
         })
         train_kls_distill.append(ep_L_distill / n_steps)
         train_mses_aux.append(ep_L_aux / n_steps)
+        train_efs.append(ep_L_ef / n_steps)
         if ep == 1 or ep % max(1, epochs // 20) == 0 or ep == epochs:
             _log(f"  [cotrain ep {ep:>3d}/{epochs}] "
                  f"L_d={ep_L_distill/n_steps:.4f} "
-                 f"L_a={ep_L_aux/n_steps:.4f} ({dt:.1f}s)")
-        # G4 floor check at ckpt_every
-        if ep % ckpt_every == 0 or ep == epochs:
+                 f"L_a={ep_L_aux/n_steps:.4f} "
+                 f"L_ef={ep_L_ef/n_steps:.4f} ({dt:.1f}s)")
+        # G4 floor check at ckpt_every — bypassed when skip_g4_floor (KL
+        # retired as gate per b0f91dd; ICM panel is the gate).
+        if not skip_g4_floor and (ep % ckpt_every == 0 or ep == epochs):
             ok, m_kl, p95_kl = floor_check(
                 net, eval_set, device=device,
                 eps_mean=eps_mean, eps_p95=eps_p95)
@@ -765,7 +1023,8 @@ def cotrain(net, pool, eval_set, *, epochs: int, steps_per_epoch: int,
                         "stopped_early_at_epoch": ep,
                         "g4_breach": True,
                         "train_kls_distill": train_kls_distill,
-                        "train_mses_aux": train_mses_aux}
+                        "train_mses_aux": train_mses_aux,
+                        "train_efs": train_efs}
             net.train()
         if ep % ckpt_every == 0:
             torch.save({"state_dict": net.state_dict(), "epoch": ep},
@@ -774,7 +1033,8 @@ def cotrain(net, pool, eval_set, *, epochs: int, steps_per_epoch: int,
             "stopped_early_at_epoch": None,
             "g4_breach": False,
             "train_kls_distill": train_kls_distill,
-            "train_mses_aux": train_mses_aux}
+            "train_mses_aux": train_mses_aux,
+            "train_efs": train_efs}
 
 
 # --------------------------------------------------------------------------
@@ -828,6 +1088,26 @@ def main():
                     action="store_true",
                     help="FORBIDDEN in smoke — would unlock --lam-distill "
                          "from its HARD-LOCK at 1.0. Asserted off.")
+    # Mode-2 ablation knobs (post-b0f91dd attribution verdict).
+    ap.add_argument("--beta-entropy-floor", type=float, default=0.0,
+                    help="β coefficient on the entropy-floor distill penalty "
+                         "(beta · relu(H_teacher - H_student)). 0.0 = baseline "
+                         "(b0f91dd, mode-collapsed). Pre-registered β=0.25 for "
+                         "Arms A and C of the 3-arm ablation.")
+    ap.add_argument("--skip-g4-floor", action="store_true",
+                    help="Bypass G4 KL floor early-exit. KL retired as the "
+                         "acceptance gate per b0f91dd verdict (per-node KL is "
+                         "blind to compounding directional bias); ICM panel "
+                         "is the gate. Use for Arms A/B/C.")
+    ap.add_argument("--pool-stratified", action="store_true",
+                    help="Use 4-stratum tournament pool (S1+S2+S3+S4) instead "
+                         "of single-game 15bb pool. Preserves S1 verbatim; "
+                         "adds antes/depth via sample_starting_state.")
+    ap.add_argument("--strata-targets", type=str, default="5352,2000,2000,1500",
+                    help="Per-stratum tuple count S1,S2,S3,S4 (CSV). Used iff "
+                         "--pool-stratified.")
+    ap.add_argument("--structure-yaml", default="configs/ignition_double_up_6max_turbo.yaml",
+                    help="Tournament structure YAML for stratified sampling.")
     args = ap.parse_args()
     if args.unsafe_override_distill_weight:
         sys.exit("--unsafe-override-distill-weight is FORBIDDEN in smoke.")
@@ -910,13 +1190,30 @@ def main():
                  for k, v in POOL_DEFAULTS.items()}
     for k, v in opp_specs.items():
         _log(f"  {k:<16} {v['n_matches']} matches")
-    pool, per_opp_results, pool_stats = generate_pool(
-        solver=solver, opp_specs=opp_specs, hand_target=args.hand_target,
-        epsilon=args.epsilon, base_seed=args.seed, verbose=False)
-    _log(f"[pool gen] DONE: {pool_stats['n_pool_tuples']} tuples from "
-         f"{pool_stats['n_matches_total']} matches in "
-         f"{pool_stats['wall_seconds']:.1f}s "
-         f"(~{pool_stats['ms_per_match']:.0f} ms/match)")
+    if args.pool_stratified:
+        strata_targets = tuple(int(x) for x in args.strata_targets.split(","))
+        assert len(strata_targets) == 4, (
+            "--strata-targets must be 4 comma-separated ints "
+            "(S1,S2,S3,S4)")
+        structure = TournamentStructure.from_yaml(args.structure_yaml)
+        _log(f"[pool gen] STRATIFIED mode  structure={args.structure_yaml}  "
+             f"targets={strata_targets}")
+        pool, per_opp_results, pool_stats = generate_pool_stratified(
+            solver=solver, opp_specs=opp_specs, structure=structure,
+            hand_target=args.hand_target, epsilon=args.epsilon,
+            base_seed=args.seed, strata_targets=strata_targets,
+            verbose=False)
+        _log(f"[pool gen] DONE: {pool_stats['n_pool_tuples']} tuples "
+             f"in {pool_stats['wall_seconds']:.1f}s; per-stratum: "
+             f"{pool_stats['per_stratum']}")
+    else:
+        pool, per_opp_results, pool_stats = generate_pool(
+            solver=solver, opp_specs=opp_specs, hand_target=args.hand_target,
+            epsilon=args.epsilon, base_seed=args.seed, verbose=False)
+        _log(f"[pool gen] DONE: {pool_stats['n_pool_tuples']} tuples from "
+             f"{pool_stats['n_matches_total']} matches in "
+             f"{pool_stats['wall_seconds']:.1f}s "
+             f"(~{pool_stats['ms_per_match']:.0f} ms/match)")
 
     # 4. Build fixed eval set for floor check
     _log("")
@@ -956,7 +1253,9 @@ def main():
         lam_distill=args.lam_distill, lam_aux=args.lam_aux,
         eps_mean=args.eps_floor_mean, eps_p95=args.eps_floor_p95,
         ckpt_every=args.ckpt_every,
-        device="cpu", seed=args.seed, out_dir=out)
+        device="cpu", seed=args.seed, out_dir=out,
+        beta_entropy_floor=args.beta_entropy_floor,
+        skip_g4_floor=args.skip_g4_floor)
     train_wall = time.time() - train_t0
     _log(f"[cotrain DONE] {train_wall:.1f}s wall "
          f"(epochs ran: "
