@@ -1,27 +1,60 @@
 # Project Status
 
-**Last updated:** 2026-05-29 (Session 5 close)
-**Current phase:** Phase 5 closed with strategic pivot. Layer 3 (real-time subgame solving) is the next session's focus.
+**Last updated:** 2026-06-01 (Session 6 late, post-S2(a))
+**Current phase:** Leduc proof DONE. Verdict S1. Next session = 6-max adaptive scaffold CPU-smoke (no GPU yet).
 
 > Note: this file was badly stale before Session 13 (it still read "Pre-Phase-1
 > setup, 2026-05-21"). Rewritten from git history + the docs. Cross-check
 > `git log --oneline` before trusting any single line here — STATUS can lag the
 > last commit.
 
-## Foundation pivot (2026-05-31, Session 6, post-bubble-slice) — read this first
+## Leduc proof complete — S1 verdict (2026-06-01, Session 6 late) — read this first
+The Leduc CPU proof is DONE. Verdict: **S1 confirmed** — Leduc is too information-poor
+(~2–3 opp decisions per hand) to per-hand-resolve opponent STRENGTH, even with direct
+cell-classification supervision and a transferable head-derived read. The architecture,
+leakage invariants (Tests A/B/C/D), and read mechanism are VALIDATED and carry forward to
+6-max. See `docs/DECISIONS.md` → "Leduc proof complete — S1 verdict; move to 6-max scaffold"
+for the verbatim verdict, the full falsification chain (imbalance → smearing → read primitive
+→ training target), what's validated, the open scaffold questions, and the gated next step.
+
+- **Falsification chain — four independent hypotheses ruled out by experiment:**
+  imbalance (A+B, `e4c9a9a`) → feature smearing (C, `08b59eb`, reverted `2d004ca`) →
+  read primitive (D-pivot, `8f8f20b`) → training target (S2(a), `9e5c07f`). Maniac mis-
+  classification breakdown was the decisive diagnostic: 90% raise-cluster, 58% strength-resolved
+  to s1.00, 32% spilled to s0.50 = "reads tendency, loses strength" — the predicted
+  information-poverty signature.
+- **What was validated (carry forward to 6-max):** transformer trunk + opp_head_cell
+  classifier + head-derived KL-vs-anchor read; §8 A/B/C/D leakage invariant as the reusable
+  correctness surface; gate(0)=0 confidence-gated blend as the safety mechanism;
+  oracle-free read path (transferable by construction to unseen opponents).
+- **Next step (gated; NOT GPU yet):** build + CPU-smoke-test the 6-max adaptive-training
+  scaffold on Contabo (net + DCFR ICM blueprint anchor + training loop + 6-max-analog
+  leakage tests + E0-analog bounded). GPU spend only after the scaffold runs correctly on
+  CPU. Scaffold spec is next-session design surface.
+- **Open scaffold questions (flag, not solved):** (a) cell-classifier generalization
+  story (continuous embedding vs archetype-mixture vs hybrid — 6-max opponents are not
+  discrete cells); (b) trunk capacity under triple-loss budget (E0 broke at Leduc;
+  first lever is lowering `λ_action` while keeping `λ_cell` primary).
+- **Resolver code disposition:** unchanged from the foundation-pivot entry —
+  in-tree but DORMANT; do not invest in fixing it. Bubble-slice BR arms have closed
+  (both shards DONE; killphil ≤15BB diff −0.039 σ−2.5, ticket >15BB diff −0.044 σ−2.9;
+  net-negative overall on both, resolver path closed).
+
+The floor rule from the prior entry CARRIES FORWARD (no change may make the shipped agent
+worse than blueprint-alone). The "Floor lock" block below is preserved for history.
+
+## Foundation pivot (2026-05-31, Session 6, post-bubble-slice) — superseded by the entry above
 The real-time resolver is RETIRED as a development path. New foundation = a TRAINED ADAPTIVE
 POLICY (StratFormer-style) anchored to a GTO baseline, validated first by a CPU-only Leduc
-proof on Contabo before any 6-max/GPU work. See `docs/DECISIONS.md` → "Foundation pivot: retire
-real-time resolver; build trained-adaptive-policy with Leduc proof first" for the verbatim plan,
-Steps 0–4, the pass bar, and the resolver-code disposition.
+proof on Contabo before any 6-max/GPU work. The "Leduc proof FIRST" gate from this entry was
+honored and cleared above; the four-experiment falsification chain finished with S1.
+See `docs/DECISIONS.md` → "Foundation pivot: retire real-time resolver; build trained-
+adaptive-policy with Leduc proof first" for the original verbatim plan + Steps 0–4.
 - **Step 0 DONE:** tabular CFR+ Nash anchor at **0.1286 mbb/g** (Nash bar < 5 mbb/g; ~39× margin).
   Commit `019d486`; artifact `runs/leduc_cfr_anchor_20260531_144405/`.
-- **Step 1 NEXT:** ~6 rule-based Leduc archetypes (pending approval).
+- **Steps 1–4 DONE (Leduc proof closed):** see "Leduc proof complete" block above.
 - **Resolver code:** in-tree but dormant; do not invest in fixing it. Bubble-slice BR arms
-  still running may finish; capture ≤15BB / >15BB buckets when they land, then close the path.
-
-The floor rule from the prior entry CARRIES FORWARD (no change may make the shipped agent worse
-than blueprint-alone). The "Floor lock" block below is preserved for history.
+  closed (final numbers in "Leduc proof complete" block above).
 
 ## Floor lock (2026-05-31, Session 6) — blueprint-alone is the reference agent
 The real-time resolver is proven net-negative at every shippable config (X0 lift ≈ 0 vs a

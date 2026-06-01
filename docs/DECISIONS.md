@@ -586,3 +586,92 @@ Do not invest in fixing them. The bubble-slice BR arms currently running may fin
 **For any fresh session reading this file first:** the previously-queued resolver-rebuild work
 is OFF. The active program is the foundation-pivot Steps 0–4 above; see
 `docs/NEXT_SESSION.md` top-of-file banner and `docs/STATUS.md` "Foundation pivot" banner.
+
+## Leduc proof complete — S1 verdict; move to 6-max scaffold (CPU-smoke before GPU)
+**Decided:** 2026-06-01 (Session 6 late, post-S2(a) cotrain)
+**Supersedes:** the "Leduc proof FIRST" gate in the foundation-pivot entry above. The Leduc
+proof is now DONE; its verdict reroutes the program to a 6-max adaptive-training scaffold, with
+the S2(a) negative as design input. The architecture, leakage invariants, and read mechanism
+carry forward unchanged; what is retired is "use Leduc to validate per-hand strength resolution
+before scaling."
+
+**Verbatim conclusion:**
+
+LEDUC PROOF COMPLETE. Verdict: **S1 confirmed** — Leduc is too information-poor (~2–3 opp
+decisions per hand) to per-hand-resolve opponent STRENGTH, even with direct cell-classification
+supervision and a transferable head-derived read.
+
+**Falsification chain — four hypotheses tested and ruled out by experiment:**
+1. **Imbalance (A+B)** — recipe-A cell-sampling weights + recipe-B inverse-freq class CE.
+   Maniac D̄ moved 0.13 → 0.59; maniac action acc capped at 0.60. Cell-distribution rebalance
+   insufficient. (commit `e4c9a9a`)
+2. **Feature smearing (C)** — STATS_MANIFEST_v3 per-street opp_stats split (12→20 dims). No
+   movement on watch metric (0.60→0.61); E0 broke (4.09→5.66). Reverted.
+   (commit `08b59eb`, revert `2d004ca`)
+3. **Read primitive (D-pivot)** — KL → argmax-disagreement × sharpness margin. Ratio
+   1.17 → 1.35. Maniac choice-reveal acc 0.583. Disagreement was 74–86% on LOPSIDED GTO spots,
+   not spurious near-tie firing — the head was confidently wrong, not noise-firing. Read
+   mechanism was not the bottleneck. (commit `8f8f20b`)
+4. **Training target (S2(a))** — cell-classifier head as primary aux signal, head-derived KL-
+   vs-anchor read (oracle-free, Test D verified). Ratio 1.25; maniac CELL-classification acc
+   0.580; misclassification breakdown 90% raise-cluster but only 58% strength-resolved to
+   s1.00 (32% spilled to s0.50 raise-mid). E0 broke (6.24, predicted trunk overload from triple
+   loss). Decision-level cell acc 1.000 vs hand-end 0.58 = per-hand-info-poverty signature.
+   (commit `9e5c07f`)
+
+**What was validated — carry forward to 6-max:**
+- **Architecture mechanism is sound.** Transformer trunk + `opp_head_cell` 9-way classifier +
+  head-derived KL-vs-anchor read is the right shape. The head reads maniac raise-tendency 90%
+  reliably and NEVER confuses it for calling-station / always-fold / over-folder — the call-
+  default leak is ruled out. The mechanism is identity-aware; it cannot resolve fine-grained
+  strength on Leduc's thin signal.
+- **Leakage invariant + Tests A/B/C/D are the reusable correctness surface.** §8 tokens /
+  opp_stats counterfactual bit-identity, plus Test D's "cell label not in forward inputs"
+  guarantee, transfer to 6-max as the audit harness for any new head architecture.
+- **Confidence-gated blend is the safety mechanism.** `gate(0)=0` (no evidence → π = anchor
+  exactly), `g ∈ [0, 1)`, blend `π_final = (1−g)·anchor + g·raw`. By construction
+  `E0_final ≤ E0_anchor` when the gate is closed. Transfers unchanged.
+- **Read path is transferable, NOT oracle-dependent.** Inputs enumerated and verified: head
+  outputs + universal anchor only; archetype identities and δ tables never enter the read. Same
+  primitive deploys at 6-max vs unseen opponents.
+
+**Why 6-max is the next proving ground (deliberate scope decision, not a tweak):**
+6-max NLHE provides ~10–20× more opp decisions per hand than Leduc (4 streets × ~3 decisions/
+street + richer action space + multiple opponents). This directly relieves the strength-
+resolution bottleneck. The information density that capped Leduc at "reads tendency, loses
+strength" is precisely what 6-max provides natively.
+
+**Open questions for the 6-max scaffold (flag, do NOT solve in scaffold step):**
+- **(a) Cell-classifier generalization story.** Leduc S2(a) used 9 enumerable archetypes; real
+  6-max opponents are not discrete cells. The 6-max adaptive head needs a generalization design:
+  continuous opponent embedding (cell head becomes regression to a learned embedding), archetype-
+  mixture (posterior over many discrete profiles, accepting mixture as natural state), or some
+  hybrid. Design surface, not solved here.
+- **(b) Trunk capacity under triple-loss budget.** E0 broke at Leduc under
+  `L_distill + 0.3·L_cell + 0.3·L_action` on a 78k-param net. The 6-max net is larger, but the
+  distill-vs-aux gradient competition must be managed; first lever per S2(a) result is lowering
+  `λ_action` (action carryover) while keeping `λ_cell` as the primary identity signal. Settings
+  to be re-derived at scale; flag as a known dial.
+
+**Next step (gated; NOT GPU yet):**
+Build + CPU-smoke-test a 6-max adaptive-training scaffold on Contabo BEFORE renting GPU:
+1. 6-max adaptive net (trunk shape derived from S2(a), scaled to NLHE token/feature surface).
+2. Deep CFR ICM blueprint as anchor (existing in-tree; not Leduc CFR+).
+3. Training loop wiring: distill + aux (cell-or-embedding head per (a)) + safety blend.
+4. CPU smoke: tiny epoch count, verify gradients flow / losses decrease / §8-analog leakage tests
+   green on 6-max tokens / E0-analog bounded.
+GPU spend follows ONLY after the scaffold runs correctly on CPU. Scaffold spec is the next
+session's design surface, not tonight's work.
+
+**Artifact pointers:**
+- Leduc CFR+ anchor: `runs/leduc_cfr_anchor_20260531_144405/`.
+- A+B reference (E0 = 4.0936 baseline): `runs/leduc_phase1cotrain_20260531_222313/`.
+- D-pivot probe result: `runs/leduc_phase1cotrain_20260531_222313/d_pivot_probe_argmax.json`.
+- S2(a) terminal experiment: `runs/leduc_phase1s2a_20260531_234542/`.
+- Code: `src/leduc/adaptive/model.py` (`AdaptivePolicyNet`, `AdaptivePolicyNetS2a`),
+  `scripts/leduc_phase1_*cotrain*.py`, `scripts/leduc_d_pivot_probe.py`,
+  `tests/test_leduc_token_no_leak.py` (A/B/C/D, 7/7 GREEN).
+
+**For any fresh session reading this file first:** the Leduc proof is DONE. The active program
+is the 6-max adaptive scaffold per "Next step" above. See `docs/STATUS.md` "Leduc proof complete"
+banner and `docs/NEXT_SESSION.md` top-of-file banner.

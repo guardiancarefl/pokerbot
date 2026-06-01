@@ -1,10 +1,28 @@
-> **PIVOT BANNER (2026-05-31, Session 6, post-bubble-slice):** the plan below this banner
-> (Session 22's Scenario 3 / Step 7 multi-day GPU blueprint training) is SUPERSEDED. The active
-> program is the foundation pivot — retire the real-time resolver, build a trained adaptive policy
-> validated by a CPU-only Leduc proof BEFORE any 6-max/GPU work. Read
-> `docs/DECISIONS.md` → "Foundation pivot: retire real-time resolver; build trained-adaptive-policy
-> with Leduc proof first" first. Step 0 is DONE (CFR+ anchor, 0.1286 mbb/g, commit `019d486`);
-> Step 1 (rule-based Leduc archetypes) is the next-session start, pending approval.
+> **PIVOT BANNER (2026-06-01, Session 6 late, post-S2(a)):** Leduc proof COMPLETE. Verdict
+> **S1 confirmed** — Leduc is too information-poor (~2–3 opp decisions/hand) to per-hand-
+> resolve opponent strength, even with direct cell-classification supervision and a transferable
+> head-derived read. The architecture, leakage invariants (Tests A/B/C/D), and read mechanism
+> are VALIDATED and carry forward to 6-max unchanged. Falsification chain: imbalance (A+B,
+> `e4c9a9a`) → smearing (C, `08b59eb`, reverted `2d004ca`) → read primitive (D-pivot,
+> `8f8f20b`) → training target (S2(a), `9e5c07f`). Maniac misclassification: 90% raise-cluster,
+> only 58% strength-resolved — predicted information-poverty signature.
+>
+> **Next-session pickup:** design + build the **6-max adaptive-training scaffold** on Contabo
+> (CPU-smoke only, NO GPU yet). Components: (1) 6-max adaptive net (trunk from S2(a), scaled to
+> NLHE token/feature surface); (2) Deep CFR ICM blueprint as anchor; (3) training loop wiring
+> distill + aux (cell-or-embedding head) + safety blend; (4) CPU smoke verifying gradients flow,
+> losses decrease, §8-analog leakage tests green on 6-max tokens, E0-analog bounded. Open
+> design questions to resolve at scaffold time: (a) cell-classifier generalization story
+> (continuous embedding vs archetype-mixture vs hybrid — real 6-max opponents aren't discrete
+> cells); (b) trunk capacity under triple-loss budget (E0 broke at Leduc; first lever is
+> lowering `λ_action` while keeping `λ_cell` as the primary identity signal).
+>
+> Read `docs/DECISIONS.md` → "Leduc proof complete — S1 verdict; move to 6-max scaffold (CPU-
+> smoke before GPU)" for the full verdict, validated-and-carried-forward inventory, and the
+> gated next step. The "Foundation pivot" entry below that one is the original plan whose
+> Leduc-proof-FIRST gate is now cleared. GPU spend follows ONLY after the scaffold runs
+> correctly on CPU. Everything below this banner (Session 22's Scenario 3 / Step 7 multi-day
+> GPU blueprint training) remains SUPERSEDED.
 
 # NEXT_SESSION — Session 22 close-out → Session 23 pickup
 
