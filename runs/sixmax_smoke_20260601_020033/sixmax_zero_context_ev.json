@@ -1,0 +1,26 @@
+{
+  "hero_seat": 0,
+  "n_hands_per_arm": 3000,
+  "big_blind": 100,
+  "blueprint_vs_blueprint": {
+    "label": "blueprint_vs_blueprint",
+    "n": 3000,
+    "mean_chips": -38.378,
+    "stderr_chips": 8.985351430516658,
+    "mean_bb_per_hand": -0.38378,
+    "mean_bb_per_100": -38.378,
+    "sigma_vs_zero": -4.271174065563873
+  },
+  "student_vs_blueprint": {
+    "label": "student_vs_blueprint",
+    "n": 3000,
+    "mean_chips": -19.64666666666667,
+    "stderr_chips": 11.809464574499724,
+    "mean_bb_per_hand": -0.19646666666666668,
+    "mean_bb_per_100": -19.64666666666667,
+    "sigma_vs_zero": -1.6636373768451687
+  },
+  "delta_chips": 18.731333333333332,
+  "combined_stderr_chips": 14.839137234564944,
+  "sigma": 1.2622926142702056
+}
