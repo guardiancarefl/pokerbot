@@ -18,6 +18,7 @@ Run:  python scripts/validate_rebel_leduc.py
 
 from __future__ import annotations
 
+import re
 import sys
 import time
 from pathlib import Path
@@ -30,6 +31,7 @@ import pyspiel  # noqa: E402
 from src.rlcfr.cfr import DCFRParams, TabularCFR  # noqa: E402
 from src.rebel.subgame import DepthLimitedCFR  # noqa: E402
 from src.rebel import pbs  # noqa: E402
+from src.rebel import oracle  # noqa: E402
 
 
 def layer1_plumbing(iters: int = 100) -> bool:
@@ -116,6 +118,56 @@ def layer2_beliefs() -> bool:
     print(f"  members keyed by valid private cards: {priv_ok}")
     print(f"  belief mass conserved/finite under uniform policy: {mass_finite}")
     print(f"  Layer 2 [{'PASS' if ok else 'FAIL'}]   ({time.time()-t0:.1f}s)\n")
+    return ok
+
+
+def layer3b_oracle_gate(full_iters: int = 1000, dl_iters: int = 1000,
+                        pass_mbb: float = 1.0) -> bool:
+    """Correct value function => optimal play (the GATE core).
+
+    Feed the depth-limited round-1 solve the EXACT Nash continuation values and
+    check the reassembled policy returns to ≈ Nash exploitability.
+    """
+    print("Layer 3b — oracle gate: correct leaf values => near-Nash play")
+    game = pyspiel.load_game("leduc_poker")
+    t0 = time.time()
+
+    # 1. Full Nash solve (the source of correct leaf values + round-2 strategy).
+    full = TabularCFR(game, dcfr=DCFRParams(mode="plus"))
+    full.run(full_iters)
+    e_full = full.exploitability_mbb()
+    print(f"  full Nash solve @{full_iters} = {e_full:.5f} mbb/g  "
+          f"({time.time()-t0:.0f}s)")
+
+    # 2. Exact Nash continuation values at every round-2-entry world state.
+    nash_leaf = oracle.avg_strategy_subtree_value(game, full)
+    print(f"  extracted {len(nash_leaf)} round-2-entry leaf values")
+
+    def leaf_fn(state):
+        return nash_leaf[state.history_str()]
+
+    # 3. Depth-limited round-1 solve reading those leaves.
+    round1_map, dl = oracle.round1_strategy_with_leaves(
+        game, leaf_fn, dcfr=DCFRParams(mode="plus"), iters=dl_iters)
+    print(f"  depth-limited round-1 solve: {len(round1_map)} round-1 infosets, "
+          f"leaf_hits/pass={dl.leaf_hits}  ({time.time()-t0:.0f}s)")
+
+    # 4. Reassemble: round-1 (depth-limited) + round-2 (Nash) -> exploitability.
+    round2_map = {}
+    for info_key, node in full.nodes.items():
+        m = re.search(r"\[Round (\d+)\]", info_key)
+        if m and int(m.group(1)) == 2:
+            avg = full.average_strategy(info_key)
+            round2_map[info_key] = {int(a): float(p)
+                                    for a, p in zip(node.legal, avg)}
+    combined = dict(round2_map)
+    combined.update(round1_map)  # round-1 infosets are disjoint from round-2
+    e_combined = oracle.exploitability_mbb(game, combined)
+
+    ok = bool(dl.leaf_hits > 0 and e_combined < pass_mbb)
+    print(f"  reassembled policy exploitability = {e_combined:.5f} mbb/g "
+          f"(Nash ref {e_full:.5f}, pass < {pass_mbb})")
+    print(f"  Layer 3b [{'PASS' if ok else 'FAIL'}]   ({time.time()-t0:.0f}s)\n")
     return ok
 
 
