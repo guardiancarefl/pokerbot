@@ -71,6 +71,28 @@ Pass Gate 1 by making the re-solve **safe**. Options, in rough order of effort:
    eventual target anyway, but validating it on Leduc still needs the safe
    re-solve primitive at the leaf.
 
+## Gadget attempt #1 (FAILED) — 2026-06-02
+
+First CFR-D gadget implementation (`src/rebel/gadget.py`) used a **non-standard
+symmetric outer-loop-on-ranges** formulation: both players get opt-outs, ranges
+rescaled by per-hand FOLLOW probabilities between warm-started inner re-solves.
+
+Acid test (blueprint = Nash, exploitability of Nash-r1 + gadget-safe-r2):
+**410.6 mbb/g** — *worse* than the unsafe 54.6, and 405s/run.
+
+Likely causes (untested): (a) symmetric both-player gadget over-constrains /
+is the wrong game vs the textbook **one-sided** gadget (fix re-solver range,
+gadget only the opponent, run once per player); (b) the outer-loop-on-ranges is
+an unreliable approximation of the gadget — the correct method builds an
+**augmented game tree** (per-hand FOLLOW/TERMINATE nodes) and solves it with a
+single CFR; (c) warm-started inner solver averages across changing ranges,
+corrupting the CFVs the gadget regret consumes. The proper one-sided
+augmented-tree gadget remains untried and is a meaningful additional build.
+
+**Decision point (per the failed-gate / time-box norm):** invest in the proper
+one-sided augmented-tree gadget, or reconsider scope. See session report.
+
+## Original recommendation
 **Recommendation:** implement the CFR-D gadget (option 1) as the safe re-solve
 primitive, re-run Layer 4 on Leduc (target: assembled exploitability → ≈Nash),
 and only then proceed to the 6-max PBS value-net + Phase 2. Do **not** start
