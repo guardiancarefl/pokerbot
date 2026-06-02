@@ -171,6 +171,38 @@ def layer3b_oracle_gate(full_iters: int = 1000, dl_iters: int = 1000,
     return ok
 
 
+def layer4_safe_resolve_gate(blueprint_iters: int = 1000, gadget_iters: int = 700,
+                             pass_mbb: float = 2.0) -> bool:
+    """GATE 1 core — safe subgame re-solving reaches near-Nash on Leduc.
+
+    Unsafe re-solving is exploitable (~54.6 mbb/g). The augmented-tree CFR-D
+    gadget (per-opponent-hand FOLLOW/TERMINATE terminals, single CFR) makes it
+    safe: blueprint round-1 + gadget-safe round-2 must return to ≈ Nash.
+    """
+    from src.rebel import gadget
+    print("Layer 4 — safe re-solving (augmented-tree CFR-D gadget)")
+    game = pyspiel.load_game("leduc_poker")
+    t0 = time.time()
+    full = TabularCFR(game, dcfr=DCFRParams(mode="plus"))
+    full.run(blueprint_iters)
+    e_bp = full.exploitability_mbb()
+    r2map, _lv = gadget.gadget_resolve_all_tree(game, full, iters=gadget_iters)
+    r1map = {}
+    for k, node in full.nodes.items():
+        if re.search(r"\[Round (\d+)\]", k).group(1) == "1":
+            r1map[k] = {int(a): float(p)
+                        for a, p in zip(node.legal, full.average_strategy(k))}
+    combined = dict(r2map)
+    combined.update(r1map)
+    e = oracle.exploitability_mbb(game, combined)
+    ok = e < pass_mbb
+    print(f"  blueprint Nash expl = {e_bp:.4f} mbb/g")
+    print(f"  safe-resolved (Nash r1 + gadget r2) = {e:.4f} mbb/g "
+          f"(unsafe ref 54.6, pass < {pass_mbb})")
+    print(f"  Layer 4 [{'PASS' if ok else 'FAIL'}]   ({time.time()-t0:.0f}s)\n")
+    return ok
+
+
 def main() -> int:
     print("=" * 64)
     print("GATE 1 — ReBeL depth-limited search validation on Leduc")
@@ -178,7 +210,7 @@ def main() -> int:
     results = {}
     results["layer1"] = layer1_plumbing()
     results["layer2"] = layer2_beliefs()
-    # Layers 3-4 are appended as they are built.
+    results["layer4"] = layer4_safe_resolve_gate()
 
     print("-" * 64)
     allpass = all(results.values())

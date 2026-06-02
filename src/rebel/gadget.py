@@ -127,6 +127,165 @@ def _infoset_player(info_key):
     return None  # placeholder (unused)
 
 
+from src.rlcfr.cfr import _Node, regret_matching
+
+
+class AugGadgetCFR:
+    """The REAL augmented-tree CFR-D gadget (single integrated CFR).
+
+    Per opponent hand h_O, O has a FOLLOW/TERMINATE decision at the subgame root:
+    FOLLOW enters the OpenSpiel subgame; TERMINATE is a real terminal paying O its
+    opt-out `w_O[h_O]` (cf-scaled) and R `-w_O[h_O]`. Both the gadget regrets and
+    the subgame regrets are CFR+-updated in the SAME pass using current-iteration
+    counterfactual values — so the re-solver R is genuinely inside the gadget
+    game (its over-exploitation is unprofitable because O simply terminates,
+    removing R's counterfactual weight). This is the construction the three
+    reach-modulation attempts approximated and got wrong.
+    """
+
+    def __init__(self, game, entries, R, r_R, r_O_prior, w_O):
+        self.game = game
+        self.nump = game.num_players()
+        self.entries = entries  # list of (state, (h_R, h_O))
+        self.R = R
+        self.O = 1 - R
+        self.r_R = r_R
+        self.r_O_prior = r_O_prior
+        self.w_O = w_O
+        self.opp = sorted({c[self.O] for _, c in entries})
+        self.nodes = {}
+        self.greg = {h: np.zeros(2) for h in self.opp}   # [FOLLOW, TERMINATE]
+        self.gss = {h: np.zeros(2) for h in self.opp}
+        self.iter = 0
+        self._pass_id = 0
+        self._touched = []
+        self._gfollow = {}
+
+    def _node(self, key, legal):
+        n = self.nodes.get(key)
+        if n is None:
+            n = _Node.make(legal)
+            self.nodes[key] = n
+        return n
+
+    def _freeze(self, node):
+        if node.work_iter != self._pass_id:
+            node.cur_strategy = regret_matching(node.regret)
+            node.regret_delta = np.zeros_like(node.regret)
+            node.strat_delta = np.zeros_like(node.strat_sum)
+            node.work_iter = self._pass_id
+            self._touched.append(node)
+
+    def _cfr(self, state, reach, traverser):
+        if state.is_terminal():
+            return np.asarray(state.returns(), dtype=np.float64)
+        if state.is_chance_node():
+            ev = np.zeros(self.nump)
+            for a, p in state.chance_outcomes():
+                nr = reach.copy()
+                nr[self.nump] *= p
+                ev += p * self._cfr(state.child(a), nr, traverser)
+            return ev
+        player = state.current_player()
+        key = state.information_state_string(player)
+        legal = state.legal_actions()
+        node = self._node(key, legal)
+        updating = player == traverser
+        if updating:
+            self._freeze(node)
+            strat = node.cur_strategy
+        else:
+            strat = regret_matching(node.regret)
+        au = np.zeros((len(legal), self.nump))
+        nu = np.zeros(self.nump)
+        for i, a in enumerate(legal):
+            nr = reach.copy()
+            nr[player] *= strat[i]
+            u = self._cfr(state.child(a), nr, traverser)
+            au[i] = u
+            nu += strat[i] * u
+        if updating:
+            cf = 1.0
+            for pp in range(self.nump + 1):
+                if pp != player:
+                    cf *= reach[pp]
+            node.regret_delta += cf * (au[:, player] - nu[player])
+            node.strat_delta += reach[player] * strat
+        return nu
+
+    def _pass(self, traverser, t):
+        self._pass_id += 1
+        self._touched = []
+        self._gfollow = {h: regret_matching(self.greg[h])[0] for h in self.opp}
+        gfollow_cfv = {h: 0.0 for h in self.opp}
+        for state, c in self.entries:
+            hR, hO = c[self.R], c[self.O]
+            reach = np.ones(self.nump + 1)
+            reach[self.R] = self.r_R[hR]
+            reach[self.O] = self.r_O_prior[hO] * self._gfollow[hO]
+            v = self._cfr(state.clone(), reach, traverser)
+            gfollow_cfv[hO] += self.r_R[hR] * v[self.O]
+        # commit subgame regrets (CFR+)
+        for node in self._touched:
+            node.regret = np.maximum(node.regret + node.regret_delta, 0.0)
+            node.strat_sum = node.strat_sum + t * node.strat_delta
+        # gadget regrets (O's decision), updated on O's pass
+        if traverser == self.O:
+            for h in self.opp:
+                f = regret_matching(self.greg[h])
+                follow_cfv = gfollow_cfv[h]
+                term_cfv = self.w_O[h]
+                node_v = f[0] * follow_cfv + f[1] * term_cfv
+                self.greg[h][0] = max(self.greg[h][0] + follow_cfv - node_v, 0.0)
+                self.greg[h][1] = max(self.greg[h][1] + term_cfv - node_v, 0.0)
+                self.gss[h] += t * f
+
+    def run(self, iters):
+        for _ in range(iters):
+            self.iter += 1
+            t = self.iter
+            for trav in range(self.nump):
+                self._pass(trav, t)
+
+    def avg_strategy(self, key):
+        node = self.nodes.get(key)
+        if node is None:
+            return None
+        s = node.strat_sum.sum()
+        return (node.strat_sum / s if s > 0
+                else np.full(len(node.legal), 1.0 / len(node.legal)))
+
+    def follow_avg(self):
+        return {h: (self.gss[h][0] / self.gss[h].sum()
+                    if self.gss[h].sum() > 0 else 1.0) for h in self.opp}
+
+
+def gadget_resolve_all_tree(game, blueprint, iters: int = 800):
+    """Safe re-solve of every round-2 node via the REAL augmented-tree gadget,
+    run once per re-solver. Returns (round2_map, leaf_values)."""
+    ranges, optouts, groups = blueprint_round2(game, blueprint)
+    round2_map, leaf_values = {}, {}
+    nump = game.num_players()
+    for gkey, entries in groups.items():
+        r0 = {h: ranges[gkey][0][h] for h in {c[0] for _, c in entries}}
+        r1 = {h: ranges[gkey][1][h] for h in {c[1] for _, c in entries}}
+        w0 = {h: optouts[gkey][0][h] for h in r0}
+        w1 = {h: optouts[gkey][1][h] for h in r1}
+        for R, w_opp in ((0, w1), (1, w0)):
+            solver = AugGadgetCFR(game, entries, R,
+                                  r0 if R == 0 else r1,
+                                  r1 if R == 0 else r0, w_opp)
+            solver.run(iters)
+            for key, node in solver.nodes.items():
+                m = _ROUND_RE.search(key)
+                if m and int(m.group(1)) == 2 and key.startswith(
+                        "[Observer: %d]" % R):
+                    avg = solver.avg_strategy(key)
+                    round2_map[key] = {int(a): float(p)
+                                       for a, p in zip(node.legal, avg)}
+    return round2_map, leaf_values
+
+
 def gadget_resolve_oneside(game, entries, resolver_player, r_fixed, r_opp_prior,
                            w_opp, iters: int = 1000,
                            dcfr: Optional[DCFRParams] = None):

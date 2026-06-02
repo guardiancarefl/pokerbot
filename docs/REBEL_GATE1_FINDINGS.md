@@ -1,6 +1,22 @@
 # ReBeL GATE 1 (Leduc search validation) — findings
 
-**Status: GATE 1 NOT PASSED — stopped per the failed-gate norm.**
+**STATUS: GATE 1 PASSED (2026-06-02).** The real augmented-tree CFR-D gadget gives
+safe re-solving on Leduc: acid test (Nash round-1 + gadget-safe round-2)
+exploitability **0.263 mbb/g** vs unsafe 54.6 and Nash 0.1234 — near-Nash,
+essentially lossless (+0.14 mbb/g over pure Nash). A validated safe-resolve
+primitive now exists (`src/rebel/gadget.py::AugGadgetCFR`). HOLDING before any
+NLHE/Phase-2 work per user decision.
+
+Progression: unsafe 54.6 → gadget #1 (symmetric reach-mod) 410 → #2 (one-sided
+reach-mod) 135 → #3 (integrated reach-mod) 262 → #4 (REAL augmented tree) **0.26**.
+The fix was structural (diagnosed in the 15-min debug): reach-modulation never
+exposed the re-solver to the TERMINATE branches; the real augmented tree does, so
+the opponent's range no longer collapses and R cannot profitably over-exploit.
+
+---
+
+## Historical (superseded) — the path to the fix
+**Earlier status: GATE 1 NOT PASSED — stopped per the failed-gate norm.**
 Root cause is a *known, expected* property (unsafe subgame solving), not a
 plumbing bug. Every search-plumbing layer is byte-exact validated; the faithful
 re-solving step is unsafe and must use safe subgame solving before any
