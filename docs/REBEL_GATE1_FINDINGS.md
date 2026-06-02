@@ -137,6 +137,31 @@ hand-rolled implementation, not the method. Recommend pulling a reference
 implementation (e.g. OpenSpiel's `cfr_br` / known DeepStack-style re-solving) and
 validating it against this same Leduc acid test before any NLHE work.
 
+## Root cause CRACKED (15-min debug pass, 2026-06-02)
+
+Sign/scale ruled OUT: at blueprint ranges Follow CFV ≈ opt-out (diff ~3e-4) —
+correct near-indifference. The real bug, confirmed by instrumentation:
+
+  - Gadget FOLLOW probabilities at convergence: **[0.97, 0, 0, 0, 0]** — the
+    opponent terminates 4 of 5 hands, collapsing its range to one hand. The
+    re-solver then best-responds to a near-degenerate range → wrong σ (raises a
+    paired hand 100% where Nash checks; unreached infosets fall back to uniform).
+
+  - **Why:** all three attempts *modulate the opponent's reach* by the follow
+    probability but never put the RE-SOLVER into the gadget game — R's regrets
+    are computed only on the FOLLOW sub-branch against the shrunken range, with
+    no exposure to the TERMINATE terminals. In the real augmented tree R's
+    regrets span the whole gadget game, which is what keeps R safe. Reach-
+    modulation is NOT the augmented tree.
+
+**Fix is structural, not a tweak:** build the actual augmented tree — explicit
+per-opponent-hand FOLLOW/TERMINATE nodes with TERMINATE as a real terminal
+(payoff = opp opt-out to O, −opt-out to R) above the OpenSpiel subgame — and run
+standard CFR over the hybrid tree so the re-solver's regrets account for the
+terminate branches. This is what a published CFR-D/DeepStack implementation does;
+OpenSpiel has no off-the-shelf re-solving gadget, so it must be ported/built from
+a reference construction (not hand-rolled from scratch a 4th time).
+
 ## Decision point (time-box reached)
 
 Effort spent: search plumbing fully validated (Layers 1/2/3a byte-exact); the
