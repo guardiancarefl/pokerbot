@@ -123,93 +123,109 @@ def _regret_match2(regret):
     return pos / s if s > 0 else np.array([0.5, 0.5])
 
 
-def gadget_resolve_node(game, entries, r0_prior, r1_prior, w0, w1,
-                        outer: int = 40, inner: int = 60,
-                        dcfr: Optional[DCFRParams] = None):
-    """Safe re-solve of one round-2 public node via the CFR-D gadget.
+def _infoset_player(info_key):
+    return None  # placeholder (unused)
 
-    r{0,1}_prior: blueprint reach range per hand. w{0,1}: opt-out CFV per hand.
-    Returns (round2_map, leaf_values, cfv0, cfv1) where cfvs are the safe
-    counterfactual values per hand (the trunk leaf values).
+
+def gadget_resolve_oneside(game, entries, resolver_player, r_fixed, r_opp_prior,
+                           w_opp, outer: int = 25, inner: int = 120,
+                           dcfr: Optional[DCFRParams] = None):
+    """One-sided CFR-D gadget: re-solve `resolver_player`'s SAFE strategy.
+
+    The re-solver's range `r_fixed` is fixed (blueprint reach). The opponent is
+    gadgeted: each round it FOLLOWs hand h with prob from regret-matching its
+    subgame CFV vs its opt-out `w_opp[h]`, so it only enters with hands that beat
+    opting out — forcing the re-solver to be safe. The inner subgame is solved
+    FRESH each outer round (no range-averaging across rounds).
+
+    Returns `(strategy_map_for_resolver, value_per_hand)` where strategy_map only
+    covers the re-solver's own infosets.
     """
+    R = resolver_player
+    O = 1 - R
     nump = game.num_players()
     dcfr = dcfr or DCFRParams(mode="plus")
-    cards = [c for _, c in entries]
-    hands0 = sorted({c[0] for c in cards})
-    hands1 = sorted({c[1] for c in cards})
-    # gadget follow regrets per hand (FOLLOW vs TERMINATE)
-    g_reg0 = {h: np.zeros(2) for h in hands0}
-    g_reg1 = {h: np.zeros(2) for h in hands1}
-    follow0 = {h: 1.0 for h in hands0}
-    follow1 = {h: 1.0 for h in hands1}
+    opp_hands = sorted({c[O] for _, c in entries})
+    g_reg = {h: np.zeros(2) for h in opp_hands}     # FOLLOW vs TERMINATE
+    follow = {h: 1.0 for h in opp_hands}
+    strat_acc = {}   # accumulate re-solver strategy across outer rounds (avg)
+    value_hand = {h: 0.0 for h in {c[R] for _, c in entries}}
 
-    solver = None
-    last_map, last_lv = {}, {}
-    cfv0 = {h: 0.0 for h in hands0}
-    cfv1 = {h: 0.0 for h in hands1}
     for it in range(outer):
-        range0 = {h: r0_prior[h] * follow0[h] for h in hands0}
-        range1 = {h: r1_prior[h] * follow1[h] for h in hands1}
+        range_opp = {h: r_opp_prior[h] * follow[h] for h in opp_hands}
         roots = []
-        for st, (h0, h1) in entries:
+        for st, c in entries:
             reach = np.ones(nump + 1)
-            reach[0] = range0[h0]
-            reach[1] = range1[h1]
+            reach[R] = r_fixed[c[R]]
+            reach[O] = range_opp[c[O]]
             roots.append((st, reach))
-        if solver is None:
-            solver = SubgameCFR(game, roots=roots, dcfr=dcfr)
-        else:
-            solver.roots = roots
+        solver = SubgameCFR(game, roots=roots, dcfr=dcfr)  # fresh each round
         solver.run(inner)
-        # per-hand counterfactual values under current solved strategy
-        vals = {}
-        for st, (h0, h1) in entries:
-            vals[(h0, h1)] = solver._eval_avg(st.clone(), np.ones(nump + 1))
-        cfv0 = {h: 0.0 for h in hands0}
-        cfv1 = {h: 0.0 for h in hands1}
-        for (h0, h1), v in vals.items():
-            cfv0[h0] += range1[h1] * v[0]
-            cfv1[h1] += range0[h0] * v[1]
-        # gadget regret update: FOLLOW value = cfv, TERMINATE value = w*
-        for h in hands0:
-            f = _regret_match2(g_reg0[h])
-            node_v = f[0] * cfv0[h] + f[1] * w0[h]
-            g_reg0[h][0] += cfv0[h] - node_v
-            g_reg0[h][1] += w0[h] - node_v
-            follow0[h] = _regret_match2(g_reg0[h])[0]
-        for h in hands1:
-            f = _regret_match2(g_reg1[h])
-            node_v = f[0] * cfv1[h] + f[1] * w1[h]
-            g_reg1[h][0] += cfv1[h] - node_v
-            g_reg1[h][1] += w1[h] - node_v
-            follow1[h] = _regret_match2(g_reg1[h])[0]
-
-    # final solved strategy map + leaf values
-    for info_key, node in solver.nodes.items():
-        m = _ROUND_RE.search(info_key)
-        if m and int(m.group(1)) == 2:
+        # opponent CFV per hand (to drive the gadget) and resolver value per hand
+        vals = {c: solver._eval_avg(st.clone(), np.ones(nump + 1))
+                for st, c in entries}
+        cfv_opp = {h: 0.0 for h in opp_hands}
+        for c, v in vals.items():
+            cfv_opp[c[O]] += r_fixed[c[R]] * v[O]
+        for h in opp_hands:
+            f = _regret_match2(g_reg[h])
+            node_v = f[0] * cfv_opp[h] + f[1] * w_opp[h]
+            g_reg[h][0] += cfv_opp[h] - node_v
+            g_reg[h][1] += w_opp[h] - node_v
+            follow[h] = _regret_match2(g_reg[h])[0]
+        # accumulate the re-solver's strategy (simple average over outer rounds)
+        for info_key, node in solver.nodes.items():
+            m = _ROUND_RE.search(info_key)
+            if not (m and int(m.group(1)) == 2):
+                continue
+            if "[Observer: %d]" % R not in info_key and \
+               "[Private:" in info_key and not info_key.startswith(
+                   "[Observer: %d]" % R):
+                pass
             avg = solver.average_strategy(info_key)
-            last_map[info_key] = {int(a): float(p)
-                                  for a, p in zip(node.legal, avg)}
-    for st, _c in entries:
-        last_lv[st.history_str()] = solver._eval_avg(
-            st.clone(), np.ones(nump + 1))
-    return last_map, last_lv, cfv0, cfv1
+            cur = strat_acc.setdefault(info_key, np.zeros(len(node.legal)))
+            strat_acc[info_key] = cur + avg
+            strat_acc[(info_key, "legal")] = node.legal
+        for c, v in vals.items():
+            value_hand[c[R]] = value_hand.get(c[R], 0.0)  # last-round value
+        if it == outer - 1:
+            for c, v in vals.items():
+                value_hand[c[R]] = v[R]
+
+    # normalize accumulated strategy; keep only the re-solver's infosets
+    out_map = {}
+    for key, vec in strat_acc.items():
+        if isinstance(key, tuple):
+            continue
+        legal = strat_acc[(key, "legal")]
+        s = vec.sum()
+        probs = vec / s if s > 0 else np.full(len(legal), 1.0 / len(legal))
+        # is this the re-solver's infoset? check observer tag
+        if key.startswith("[Observer: %d]" % R):
+            out_map[key] = {int(a): float(p) for a, p in zip(legal, probs)}
+    return out_map, value_hand
 
 
-def gadget_resolve_all(game, blueprint, outer: int = 40, inner: int = 60,
+def gadget_resolve_all(game, blueprint, outer: int = 25, inner: int = 120,
                        dcfr: Optional[DCFRParams] = None):
-    """Safe re-solve of every round-2 node against a blueprint. Returns
-    (round2_map, leaf_values) assembled across all public nodes."""
+    """Safe re-solve of every round-2 node via the one-sided gadget, run once per
+    player. Returns (round2_map, leaf_values)."""
     ranges, optouts, groups = blueprint_round2(game, blueprint)
     round2_map, leaf_values = {}, {}
+    nump = game.num_players()
     for gkey, entries in groups.items():
         r0 = {h: ranges[gkey][0][h] for h in {c[0] for _, c in entries}}
         r1 = {h: ranges[gkey][1][h] for h in {c[1] for _, c in entries}}
         w0 = {h: optouts[gkey][0][h] for h in r0}
         w1 = {h: optouts[gkey][1][h] for h in r1}
-        m, lv, _c0, _c1 = gadget_resolve_node(
-            game, entries, r0, r1, w0, w1, outer=outer, inner=inner, dcfr=dcfr)
-        round2_map.update(m)
-        leaf_values.update(lv)
+        # P0 safe strategy (gadget P1) and P1 safe strategy (gadget P0)
+        m0, val0 = gadget_resolve_oneside(game, entries, 0, r0, r1, w1,
+                                          outer=outer, inner=inner, dcfr=dcfr)
+        m1, val1 = gadget_resolve_oneside(game, entries, 1, r1, r0, w0,
+                                          outer=outer, inner=inner, dcfr=dcfr)
+        round2_map.update(m0)
+        round2_map.update(m1)
+        for st, c in entries:
+            leaf_values[st.history_str()] = np.array(
+                [val0.get(c[0], 0.0), val1.get(c[1], 0.0)])
     return round2_map, leaf_values

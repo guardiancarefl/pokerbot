@@ -89,8 +89,33 @@ single CFR; (c) warm-started inner solver averages across changing ranges,
 corrupting the CFVs the gadget regret consumes. The proper one-sided
 augmented-tree gadget remains untried and is a meaningful additional build.
 
-**Decision point (per the failed-gate / time-box norm):** invest in the proper
-one-sided augmented-tree gadget, or reconsider scope. See session report.
+## Gadget attempt #2 (FAILED) — one-sided, 2026-06-02
+
+Re-implemented as the textbook **one-sided** gadget (fix the re-solver's range,
+gadget only the opponent, run once per player, inner subgame solved fresh each
+outer round). Acid test (blueprint = Nash, exploitability of Nash-r1 + safe-r2):
+**135.4 mbb/g** — better than the symmetric 410 but still *worse* than the
+unsafe 54.6, and far from Nash 0.12.
+
+**Both gadget attempts are actively harmful.** The common cause is that an
+**outer-loop-on-ranges** is the wrong construction: the correct CFR-D gadget is
+an **augmented game tree** (per-opponent-hand FOLLOW/TERMINATE nodes with
+TERMINATE valued at the blueprint CFV) solved with a **single** CFR pass over the
+augmented tree. My loop re-solves the bare subgame and nudges ranges between
+solves, which does not converge to the safe equilibrium (and combining each
+player's strategy from a *different* solve yields an inconsistent profile). The
+proper augmented-tree gadget has not been built.
+
+## Decision point (time-box reached)
+
+Effort spent: search plumbing fully validated (Layers 1/2/3a byte-exact); the
+unsafe-resolve failure precisely characterized; two gadget formulations tried,
+both failed. Remaining to pass Gate 1: a correct **augmented-tree** safe-resolve
+primitive — a substantial, careful build with uncertain payoff, on top of a
+search whose safe-resolve core has resisted multiple attempts this session (and
+which was net-negative in every prior repo attempt). Options: (A) build the
+augmented-tree gadget properly; (B) reconsider scope — whether faithful ReBeL is
+worth the safe-resolve complexity for the Double-Up use case. Surfaced to user.
 
 ## Original recommendation
 **Recommendation:** implement the CFR-D gadget (option 1) as the safe re-solve
