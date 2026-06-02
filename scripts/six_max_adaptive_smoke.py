@@ -1343,9 +1343,13 @@ def main():
     }
     (out / "metrics.json").write_text(json.dumps(metrics, indent=2,
                                                   default=str))
+    # config records the ACTUAL net dims used (not a hardcoded default).
+    # nhead is hardcoded at construction (see line ~1233), so it's literal here.
     torch.save({"state_dict": net.state_dict(),
-                "config": {"d_model": 64, "num_layers": 2, "nhead": 4,
-                            "dim_ff": 256, "smoke_only": True}},
+                "config": {"d_model": args.d_model,
+                            "num_layers": args.num_layers,
+                            "nhead": 4, "dim_ff": args.dim_ff,
+                            "smoke_only": True}},
                out / "smoke_net.pt")
     _log(f"[saved] {out}/metrics.json + smoke_net.pt")
     _log(f"[STOP] smoke complete. STOP for user review.")
