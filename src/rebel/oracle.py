@@ -277,6 +277,156 @@ def resolve_round2(game: pyspiel.Game, beliefs: dict,
     return leaf_values, round2_map
 
 
+class FrozenTrunkCFR(TabularCFR):
+    """Solve round 2 with round 1 FROZEN to a given policy.
+
+    Why this exists: injecting a belief as seeded reach into a round-2-rooted
+    subgame was found to mis-solve (non-equilibrium). But solving the *post-deal*
+    tree with `SubgameCFR` and uniform reach reproduces Nash round-2 exactly,
+    because the beliefs reaching round 2 emerge from round-1 play rather than
+    being injected. This class keeps that correct behaviour while letting round-1
+    be an arbitrary fixed policy (the trunk's current strategy): round-1 decision
+    nodes play `round1_policy_fn` and accumulate no regret; round-2 nodes are
+    solved by ordinary CFR. The round-2 equilibrium is thus solved against the
+    belief induced by the frozen round-1 — exactly the leaf oracle ReBeL needs,
+    with no belief injection.
+    """
+
+    def __init__(self, game, roots, round1_policy_fn,
+                 dcfr: Optional[DCFRParams] = None):
+        super().__init__(game, dcfr=dcfr or DCFRParams(mode="plus"))
+        self.roots = list(roots)
+        self.round1_policy_fn = round1_policy_fn
+
+    @staticmethod
+    def _is_round1(state) -> bool:
+        info = state.information_state_string(state.current_player())
+        m = _ROUND_RE.search(info)
+        return m is not None and int(m.group(1)) == 1
+
+    def _pass(self, traverser, t) -> None:
+        self._pass_id += 1
+        self._touched = []
+        for state, reach0 in self.roots:
+            self._cfr(state.clone(), np.asarray(reach0, dtype=np.float64).copy(),
+                      traverser)
+        self._commit(t)
+
+    def _cfr(self, state, reach, traverser):
+        if state.is_terminal() or state.is_chance_node():
+            return super()._cfr(state, reach, traverser)
+        if not self._is_round1(state):
+            return super()._cfr(state, reach, traverser)  # round-2: normal CFR
+        # Round-1: play the fixed policy, recurse, accumulate NO regret.
+        player = state.current_player()
+        legal = state.legal_actions()
+        probs = self.round1_policy_fn(state)
+        strat = np.array([probs.get(a, 0.0) for a in legal], dtype=np.float64)
+        node_util = np.zeros(self.num_players)
+        for i, a in enumerate(legal):
+            nr = reach.copy()
+            nr[player] *= strat[i]
+            node_util += strat[i] * self._cfr(state.child(a), nr, traverser)
+        return node_util
+
+    def _eval_avg(self, state, reach):
+        """Expected per-player value of `state`'s subtree under avg strategy."""
+        if state.is_terminal():
+            return np.asarray(state.returns(), dtype=np.float64)
+        if state.is_chance_node():
+            ev = np.zeros(self.num_players)
+            for a, p in state.chance_outcomes():
+                ev += p * self._eval_avg(state.child(a), reach)
+            return ev
+        player = state.current_player()
+        legal = state.legal_actions()
+        if self._is_round1(state):
+            probs = self.round1_policy_fn(state)
+            strat = np.array([probs.get(a, 0.0) for a in legal])
+        else:
+            avg = self.average_strategy(
+                state.information_state_string(player))
+            strat = avg if avg is not None else np.full(len(legal),
+                                                        1.0 / len(legal))
+        ev = np.zeros(self.num_players)
+        for i, a in enumerate(legal):
+            ev += strat[i] * self._eval_avg(state.child(a), reach)
+        return ev
+
+
+def _postdeal_roots(game):
+    """All post-deal states (private cards dealt, round-1 betting about to start)."""
+    n = game.num_players()
+    roots = []
+
+    def walk(state):
+        if state.is_chance_node():
+            child0 = state.child(state.chance_outcomes()[0][0])
+            if not child0.is_chance_node():  # next is a decision -> deals are done
+                for a, _ in state.chance_outcomes():
+                    roots.append(state.child(a).clone())
+                return
+            for a, _ in state.chance_outcomes():
+                walk(state.child(a))
+
+    walk(game.new_initial_state())
+    return [(s, np.ones(n + 1)) for s in roots]
+
+
+class Round2Oracle:
+    """Round-2 leaf oracle via frozen-round-1 solving (the correct resolver).
+
+    `step(round1_policy_fn, k)` solves round 2 against the belief induced by the
+    given round-1 policy and returns `(leaf_values, round2_map)` exactly like the
+    old `Round2Resolver`, but using `FrozenTrunkCFR` (no belief injection). The
+    solver persists across steps so successive trunk iterations warm-start.
+    """
+
+    def __init__(self, game, dcfr: Optional[DCFRParams] = None):
+        self.game = game
+        self.nump = game.num_players()
+        self.dcfr = dcfr or DCFRParams(mode="plus")
+        self.roots = _postdeal_roots(game)
+        # round-2-entry states, to read leaf values from.
+        self._entries = []
+
+        def walk(state):
+            if state.is_terminal():
+                return
+            if is_round2_entry(state):
+                self._entries.append(state.clone())
+                return
+            if state.is_chance_node():
+                for a, _ in state.chance_outcomes():
+                    walk(state.child(a))
+                return
+            for a in state.legal_actions():
+                walk(state.child(a))
+
+        walk(game.new_initial_state())
+        self.solver = None
+
+    def step(self, round1_policy_fn, k: int = 200):
+        if self.solver is None:
+            self.solver = FrozenTrunkCFR(self.game, self.roots, round1_policy_fn,
+                                         dcfr=self.dcfr)
+        else:
+            self.solver.round1_policy_fn = round1_policy_fn
+        self.solver.run(k)
+        round2_map = {}
+        for info_key, node in self.solver.nodes.items():
+            m = _ROUND_RE.search(info_key)
+            if m and int(m.group(1)) == 2:
+                avg = self.solver.average_strategy(info_key)
+                round2_map[info_key] = {int(a): float(p)
+                                        for a, p in zip(node.legal, avg)}
+        leaf_values = {}
+        for st in self._entries:
+            leaf_values[st.history_str()] = self.solver._eval_avg(
+                st.clone(), np.ones(self.nump + 1))
+        return leaf_values, round2_map
+
+
 class Round2Resolver:
     """Persistent round-2 subgame re-solver: structure precomputed once.
 
