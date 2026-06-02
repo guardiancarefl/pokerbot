@@ -37,6 +37,7 @@ Diffs to /tmp first; copied to the run dir + committed once spec-complete.
 from __future__ import annotations
 
 import argparse
+import inspect
 import json
 import os
 import random
@@ -257,6 +258,11 @@ def main():
     ap.add_argument("--seats", type=str, default=None,
                     help="comma-separated seat ids for smoke (default 0-5)")
     ap.add_argument("--output", type=str, required=True)
+    ap.add_argument("--student", type=str, default=None,
+                    help="Override STUDENT_CKPT path. Net is built from the "
+                         "checkpoint's own ck['config'] (Adaptive6MaxNet init "
+                         "params only), so arms with different arch from the "
+                         "default smoke run (d=128 L=4) load correctly.")
     ap.add_argument("--log-every", type=int, default=250)
     # Mode-2 ablation knobs (post-b0f91dd attribution verdict).
     ap.add_argument("--restrict-eff-bb-max", type=float, default=None,
@@ -279,7 +285,8 @@ def main():
     print(f"ICM-panel floor v2 (2-arm x 6-seat paired)  "
           f"N/seat={args.hands_per_seat}  seats={seats}  "
           f"only={only or 'ALL 5'}")
-    print(f"  student={STUDENT_CKPT}")
+    ckpt_path = args.student or STUDENT_CKPT
+    print(f"  student={ckpt_path}")
     print(f"  anchor ={ANCHOR_DIR}")
     print("=" * 78, flush=True)
 
@@ -292,8 +299,10 @@ def main():
           flush=True)
 
     t = time.time()
-    student_net = Adaptive6MaxNet(**STUDENT_CONFIG)
-    ckpt = torch.load(STUDENT_CKPT, weights_only=False, map_location="cpu")
+    _valid_init = set(inspect.signature(Adaptive6MaxNet.__init__).parameters) - {"self"}
+    ckpt = torch.load(ckpt_path, weights_only=False, map_location="cpu")
+    cfg = {k: v for k, v in ckpt["config"].items() if k in _valid_init}
+    student_net = Adaptive6MaxNet(**cfg)
     student_net.load_state_dict(ckpt["state_dict"])
     student_net.eval()
     student = StudentZeroContextPolicy(student_net, solver.encoder)
@@ -358,7 +367,7 @@ def main():
     out = {
         "challenger": "student_zero_context",
         "comparator": "blueprint(candC_k200)_paired",
-        "student_ckpt": STUDENT_CKPT,
+        "student_ckpt": ckpt_path,
         "anchor_dir": ANCHOR_DIR,
         "abstraction_pkl": ABSTRACTION_PKL,
         "structure_yaml": STRUCTURE_YAML,
