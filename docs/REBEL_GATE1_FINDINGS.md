@@ -106,6 +106,37 @@ solves, which does not converge to the safe equilibrium (and combining each
 player's strategy from a *different* solve yields an inconsistent profile). The
 proper augmented-tree gadget has not been built.
 
+## Gadget attempt #3 (FAILED) — integrated single-CFR, 2026-06-02 — HARD STOP
+
+Re-implemented as the correct *form*: a single integrated CFR with a persistent
+accumulating subgame solver and the FOLLOW/TERMINATE gadget regrets updated every
+subgame iteration in lockstep (RM+), opt-outs counterfactual-scaled, run once per
+player. Acid test (blueprint = Nash): **261.9 mbb/g** — still *worse* than the
+unsafe 54.6.
+
+Three formulations, all worse than unsafe: 410 (symmetric), 135 (one-sided),
+262 (integrated). **HARD STOP per the user's directive — no fourth hand-rolled
+variant.**
+
+### Diagnostic lead for the reference implementation
+All three are *worse than no gadget* (54.6). A merely-imperfect gadget would land
+*between* unsafe and Nash; landing *above* unsafe means an **active error pushing
+strategies the wrong way**, not just under-convergence. Most likely suspects, in
+order:
+  1. **Opt-out sign/scale** — `blueprint_round2` computes `w` as a counterfactual
+     value `sum_opp reach_opp * v`; the gadget compares FOLLOW (`cfv_O`) vs
+     TERMINATE (`w_O`). A sign flip or a mismatched scale (counterfactual vs
+     normalized; whose value `v[O]` vs `v[R]`) would invert the gadget's push.
+  2. **Combining σ0 (from R=0 solve) and σ1 (from R=1 solve)** into one round-2
+     profile — the two come from *different* gadget solves and may be mutually
+     inconsistent / jointly exploitable even if each is individually safe.
+  3. **Leaf-value extraction** (`valR`) uses the gadget-averaged follow range —
+     approximate.
+A correct, published CFR-D gadget MUST reach ≈Nash on Leduc, so the bug is in this
+hand-rolled implementation, not the method. Recommend pulling a reference
+implementation (e.g. OpenSpiel's `cfr_br` / known DeepStack-style re-solving) and
+validating it against this same Leduc acid test before any NLHE work.
+
 ## Decision point (time-box reached)
 
 Effort spent: search plumbing fully validated (Layers 1/2/3a byte-exact); the

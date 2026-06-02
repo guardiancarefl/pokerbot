@@ -128,85 +128,76 @@ def _infoset_player(info_key):
 
 
 def gadget_resolve_oneside(game, entries, resolver_player, r_fixed, r_opp_prior,
-                           w_opp, outer: int = 25, inner: int = 120,
+                           w_opp, iters: int = 1000,
                            dcfr: Optional[DCFRParams] = None):
-    """One-sided CFR-D gadget: re-solve `resolver_player`'s SAFE strategy.
+    """One-sided CFR-D gadget as a SINGLE integrated CFR (the correct form).
 
-    The re-solver's range `r_fixed` is fixed (blueprint reach). The opponent is
-    gadgeted: each round it FOLLOWs hand h with prob from regret-matching its
-    subgame CFV vs its opt-out `w_opp[h]`, so it only enters with hands that beat
-    opting out — forcing the re-solver to be safe. The inner subgame is solved
-    FRESH each outer round (no range-averaging across rounds).
+    Augmented game (re-solver R fixed range, opponent O gadgeted): O, knowing its
+    hand h, chooses FOLLOW (play the subgame) or TERMINATE (take opt-out
+    `w_opp[h]`, counterfactual-scaled). FOLLOW and the subgame are solved in ONE
+    CFR: a persistent accumulating subgame solver, and the gadget FOLLOW/TERMINATE
+    regrets updated EVERY subgame iteration in lockstep (RM+). O's reach into the
+    subgame each iteration = `r_opp_prior[h] * follow_t[h]`, so the average
+    strategy reflects the gadget-controlled range — exactly the augmented tree.
 
-    Returns `(strategy_map_for_resolver, value_per_hand)` where strategy_map only
-    covers the re-solver's own infosets.
+    Returns `(strategy_map_for_R, value_per_R_hand)`.
     """
     R = resolver_player
     O = 1 - R
     nump = game.num_players()
     dcfr = dcfr or DCFRParams(mode="plus")
     opp_hands = sorted({c[O] for _, c in entries})
-    g_reg = {h: np.zeros(2) for h in opp_hands}     # FOLLOW vs TERMINATE
-    follow = {h: 1.0 for h in opp_hands}
-    strat_acc = {}   # accumulate re-solver strategy across outer rounds (avg)
-    value_hand = {h: 0.0 for h in {c[R] for _, c in entries}}
+    r_hands = sorted({c[R] for _, c in entries})
+    g_reg = {h: np.zeros(2) for h in opp_hands}        # [FOLLOW, TERMINATE], RM+
+    g_strat_sum = {h: np.zeros(2) for h in opp_hands}  # linear-averaged
 
-    for it in range(outer):
-        range_opp = {h: r_opp_prior[h] * follow[h] for h in opp_hands}
+    solver = SubgameCFR(game, roots=[(st, np.ones(nump + 1)) for st, _ in entries],
+                        dcfr=dcfr)  # persistent / accumulating
+    for t in range(1, iters + 1):
+        follow = {h: _regret_match2(g_reg[h])[0] for h in opp_hands}
         roots = []
         for st, c in entries:
             reach = np.ones(nump + 1)
             reach[R] = r_fixed[c[R]]
-            reach[O] = range_opp[c[O]]
+            reach[O] = r_opp_prior[c[O]] * follow[c[O]]
             roots.append((st, reach))
-        solver = SubgameCFR(game, roots=roots, dcfr=dcfr)  # fresh each round
-        solver.run(inner)
-        # opponent CFV per hand (to drive the gadget) and resolver value per hand
+        solver.roots = roots
+        solver.run(1)  # one accumulating subgame iteration against current range
+        # O's subgame counterfactual value per hand under current avg strategy
         vals = {c: solver._eval_avg(st.clone(), np.ones(nump + 1))
                 for st, c in entries}
-        cfv_opp = {h: 0.0 for h in opp_hands}
+        cfv_O = {h: 0.0 for h in opp_hands}
         for c, v in vals.items():
-            cfv_opp[c[O]] += r_fixed[c[R]] * v[O]
+            cfv_O[c[O]] += r_fixed[c[R]] * v[O]
+        # gadget RM+ update + linear strategy averaging
         for h in opp_hands:
-            f = _regret_match2(g_reg[h])
-            node_v = f[0] * cfv_opp[h] + f[1] * w_opp[h]
-            g_reg[h][0] += cfv_opp[h] - node_v
-            g_reg[h][1] += w_opp[h] - node_v
-            follow[h] = _regret_match2(g_reg[h])[0]
-        # accumulate the re-solver's strategy (simple average over outer rounds)
-        for info_key, node in solver.nodes.items():
-            m = _ROUND_RE.search(info_key)
-            if not (m and int(m.group(1)) == 2):
-                continue
-            if "[Observer: %d]" % R not in info_key and \
-               "[Private:" in info_key and not info_key.startswith(
-                   "[Observer: %d]" % R):
-                pass
-            avg = solver.average_strategy(info_key)
-            cur = strat_acc.setdefault(info_key, np.zeros(len(node.legal)))
-            strat_acc[info_key] = cur + avg
-            strat_acc[(info_key, "legal")] = node.legal
-        for c, v in vals.items():
-            value_hand[c[R]] = value_hand.get(c[R], 0.0)  # last-round value
-        if it == outer - 1:
-            for c, v in vals.items():
-                value_hand[c[R]] = v[R]
+            s = _regret_match2(g_reg[h])
+            node_v = s[0] * cfv_O[h] + s[1] * w_opp[h]
+            g_reg[h][0] = max(g_reg[h][0] + cfv_O[h] - node_v, 0.0)
+            g_reg[h][1] = max(g_reg[h][1] + w_opp[h] - node_v, 0.0)
+            g_strat_sum[h] += t * s
 
-    # normalize accumulated strategy; keep only the re-solver's infosets
+    # R's safe strategy = subgame average at R's infosets
     out_map = {}
-    for key, vec in strat_acc.items():
-        if isinstance(key, tuple):
-            continue
-        legal = strat_acc[(key, "legal")]
-        s = vec.sum()
-        probs = vec / s if s > 0 else np.full(len(legal), 1.0 / len(legal))
-        # is this the re-solver's infoset? check observer tag
-        if key.startswith("[Observer: %d]" % R):
-            out_map[key] = {int(a): float(p) for a, p in zip(legal, probs)}
-    return out_map, value_hand
+    for info_key, node in solver.nodes.items():
+        m = _ROUND_RE.search(info_key)
+        if m and int(m.group(1)) == 2 and info_key.startswith(
+                "[Observer: %d]" % R):
+            avg = solver.average_strategy(info_key)
+            out_map[info_key] = {int(a): float(p)
+                                 for a, p in zip(node.legal, avg)}
+    # leaf value to R per hand: weight by O's final gadget range
+    follow_avg = {h: (g_strat_sum[h][0] / g_strat_sum[h].sum()
+                      if g_strat_sum[h].sum() > 0 else 1.0) for h in opp_hands}
+    finalvals = {c: solver._eval_avg(st.clone(), np.ones(nump + 1))
+                 for st, c in entries}
+    valR = {h: 0.0 for h in r_hands}
+    for c, v in finalvals.items():
+        valR[c[R]] += r_opp_prior[c[O]] * follow_avg[c[O]] * v[R]
+    return out_map, valR
 
 
-def gadget_resolve_all(game, blueprint, outer: int = 25, inner: int = 120,
+def gadget_resolve_all(game, blueprint, iters: int = 1000,
                        dcfr: Optional[DCFRParams] = None):
     """Safe re-solve of every round-2 node via the one-sided gadget, run once per
     player. Returns (round2_map, leaf_values)."""
@@ -218,11 +209,10 @@ def gadget_resolve_all(game, blueprint, outer: int = 25, inner: int = 120,
         r1 = {h: ranges[gkey][1][h] for h in {c[1] for _, c in entries}}
         w0 = {h: optouts[gkey][0][h] for h in r0}
         w1 = {h: optouts[gkey][1][h] for h in r1}
-        # P0 safe strategy (gadget P1) and P1 safe strategy (gadget P0)
         m0, val0 = gadget_resolve_oneside(game, entries, 0, r0, r1, w1,
-                                          outer=outer, inner=inner, dcfr=dcfr)
+                                          iters=iters, dcfr=dcfr)
         m1, val1 = gadget_resolve_oneside(game, entries, 1, r1, r0, w0,
-                                          outer=outer, inner=inner, dcfr=dcfr)
+                                          iters=iters, dcfr=dcfr)
         round2_map.update(m0)
         round2_map.update(m1)
         for st, c in entries:
