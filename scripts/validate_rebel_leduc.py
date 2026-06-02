@@ -29,6 +29,7 @@ import pyspiel  # noqa: E402
 
 from src.rlcfr.cfr import DCFRParams, TabularCFR  # noqa: E402
 from src.rebel.subgame import DepthLimitedCFR  # noqa: E402
+from src.rebel import pbs  # noqa: E402
 
 
 def layer1_plumbing(iters: int = 100) -> bool:
@@ -69,13 +70,63 @@ def layer1_plumbing(iters: int = 100) -> bool:
     return ok
 
 
+def layer2_beliefs() -> bool:
+    """Public partition is a faithful coarsening; beliefs conserve mass."""
+    print("Layer 2 — PBS: public partition bijective with engine infosets")
+    game = pyspiel.load_game("leduc_poker")
+    t0 = time.time()
+
+    # Engine's infoset set (all reachable after a single traversal).
+    eng = TabularCFR(game, dcfr=DCFRParams(mode="plus"))
+    eng.run(1)
+    engine_infosets = set(eng.nodes.keys())
+
+    tree = pbs.build_public_tree(game)
+    members = []
+    for pk, node in tree.items():
+        members.extend(node["members"].values())
+    member_set = set(members)
+
+    # Bijection checks: no infoset claimed twice, and the public partition's
+    # members are exactly the engine's infosets.
+    no_dupes = len(members) == len(member_set)
+    covers = member_set == engine_infosets
+    n_priv = pbs.num_private(game)
+    # Each public node's members are keyed by distinct private cards in [0, n_priv).
+    priv_ok = all(
+        all(0 <= c < n_priv for c in node["members"])
+        for node in tree.values())
+
+    # Belief mass conservation under the uniform policy: at the root public
+    # states (round 1, no betting) every legal private card carries equal mass.
+    def uniform_policy(state):
+        la = state.legal_actions()
+        return {a: 1.0 / len(la) for a in la}
+
+    ranges = pbs.compute_ranges(game, uniform_policy)
+    total_mass = sum(float(r[p].sum()) for r in ranges.values()
+                     for p in range(game.num_players()))
+    mass_finite = np.isfinite(total_mass) and total_mass > 0
+
+    ok = bool(no_dupes and covers and priv_ok and mass_finite)
+    print(f"  public nodes: {len(tree)}   infoset members: {len(members)}")
+    print(f"  engine infosets: {len(engine_infosets)}   "
+          f"partition==engine: {covers}")
+    print(f"  no infoset claimed by two public nodes: {no_dupes}")
+    print(f"  members keyed by valid private cards: {priv_ok}")
+    print(f"  belief mass conserved/finite under uniform policy: {mass_finite}")
+    print(f"  Layer 2 [{'PASS' if ok else 'FAIL'}]   ({time.time()-t0:.1f}s)\n")
+    return ok
+
+
 def main() -> int:
     print("=" * 64)
     print("GATE 1 — ReBeL depth-limited search validation on Leduc")
     print("=" * 64 + "\n")
     results = {}
     results["layer1"] = layer1_plumbing()
-    # Layers 2-4 are appended as they are built.
+    results["layer2"] = layer2_beliefs()
+    # Layers 3-4 are appended as they are built.
 
     print("-" * 64)
     allpass = all(results.values())
