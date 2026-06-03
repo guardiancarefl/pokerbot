@@ -43,17 +43,24 @@ _FOLD = 0  # DiscreteAction.FOLD
 
 
 def worker(wid, target_per_worker, seconds, depth, M, n_iters, num_paid,
-           out_dir, flush_every, ret):
+           out_dir, flush_every, ret, leaf_mode="rollout", net_path=None):
     os.environ["CUDA_VISIBLE_DEVICES"] = ""   # CPU per worker
+    # Pin BLAS to ONE thread per worker BEFORE numpy/torch import — else the net-leaf
+    # matmul goes multi-threaded, one worker saturates the box, and 26 can't scale.
+    for _v in ("OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS",
+               "NUMEXPR_NUM_THREADS", "VECLIB_MAXIMUM_THREADS"):
+        os.environ[_v] = "1"
     import numpy as np
     import torch; torch.set_num_threads(1)
+    import torch.nn as nn
     import pyspiel
     from src.nlhe.abstraction import Abstraction
     from src.nlhe.game_strings import TournamentStructure
     from src.nlhe.stack_sampler import sample_starting_state
     from src.nlhe.biased_policy import BiasedBlueprint
     from src.nlhe.icm import sng_payouts_6max_double_up
-    from src.nlhe.subgame import build_subgame_tree, tree_depth
+    from src.nlhe.equity import cards_from_str
+    from src.nlhe.subgame import build_subgame_tree, tree_depth, iter_leaf_nodes
     from src.nlhe.subgame_leaf import LeafEvalContext, LeafEvalMode, evaluate_leaves
     from src.nlhe.subgame_solver import SubgameSolveContext, solve_subgame
     from src.nlhe.infoset6 import parse_state_6max
@@ -80,12 +87,71 @@ def worker(wid, target_per_worker, seconds, depth, M, n_iters, num_paid,
             K_STREET[idx] = int(getattr(sd, "medoid_histograms").shape[0])
     is_v2 = (getattr(pn, "loaded_schema_version", None) == PN_SCHEMA)
 
+    # --- net-leaf evaluator (the ~100x faster path: a batched net forward over all
+    # leaves of a tree instead of per-leaf rollouts) ---
+    leaf_net = None
+    if leaf_mode == "net":
+        def _build_mlp(in_dim, hidden):
+            layers, d = [], in_dim
+            for h in hidden:
+                layers += [nn.Linear(d, h), nn.ReLU()]; d = h
+            layers += [nn.Linear(d, 6)]
+            return nn.Sequential(*layers)
+        nck = torch.load(net_path, map_location="cpu", weights_only=False)
+        leaf_net = _build_mlp(nck["in_dim"], tuple(nck["hidden"]))
+        leaf_net.load_state_dict({kk.replace("net.", "", 1): vv for kk, vv in nck["state_dict"].items()})
+        leaf_net.eval()
+        NET_YMU, NET_YSD, NET_K = nck["y_mean"], nck["y_std"], nck["k"]
+
+    def set_net_leaves(tree, hero, hero_cards, dealer):
+        """Per-seat 6-vec at every LEAF from ONE batched net forward (public block +
+        belief: hero one-hot from known cards on the leaf board, opponents uniform —
+        same no-peek leaf belief the resolver uses at inference)."""
+        leaves = list(iter_leaf_nodes(tree))
+        if not leaves:
+            return
+        rows = np.zeros((len(leaves), 36 + 6 * NET_K), dtype=np.float32)
+        hbcache = {}
+        for i, leaf in enumerate(leaves):
+            st = leaf.state
+            p = parse_state_6max(st, observer=0) if st.current_player() < 0 else parse_state_6max(st)
+            p["dealer_seat"] = dealer
+            pp = dict(p); pp["private_cards"] = ""   # skip the per-leaf bucket MC
+            feat = np.asarray(encoder.encode_from_parsed(pp, rng=None), dtype=np.float32)
+            bkey = p.get("public_cards", "") or ""
+            if bkey in hbcache:
+                hb = hbcache[bkey]
+            else:
+                board = cards_from_str(bkey)
+                hb = int(abstraction.bucket_of(hero_cards, board, runouts=20, rng=rng)) if len(hero_cards) == 2 else -1
+                hbcache[bkey] = hb
+            kk = K_STREET.get(int(p["street_idx"]), NET_K)
+            bel = np.zeros((6, NET_K), dtype=np.float32)
+            if 0 <= hb < NET_K:
+                bel[hero, hb] = 1.0
+            stt = [int(p["money"][s]) + int(p["contribution"][s]) for s in range(6)]
+            for s in range(6):
+                if s != hero and stt[s] > 0:
+                    bel[s, :kk] = 1.0 / kk
+            rows[i, :36] = feat[200:]
+            rows[i, 36:] = bel.reshape(6 * NET_K)
+        with torch.no_grad():
+            out = leaf_net(torch.from_numpy(rows)).numpy() * NET_YSD + NET_YMU
+        # Project onto zero-sum: the true leaf value is an ICM-equity-delta vector
+        # (conserved), but the net predicts seats independently. Subtracting the row
+        # mean restores the invariant and keeps iterate targets consistent with the
+        # exactly-zero-sum bootstrap targets.
+        out = out - out.mean(axis=1, keepdims=True)
+        for leaf, v in zip(leaves, out):
+            leaf.leaf_value = [float(x) for x in v]
+
     meta = {
         "blueprint_sha": file_sha1(CKPT), "abstraction_sha": file_sha1(ABSTR),
         "k_postflop": int(bucket_dim), "feat_dim": int(encoder.feature_dim),
         "n_actions": 9, "structure": structure.format_name,
         "depth": depth, "M": M, "n_iterations": n_iters, "num_paid": num_paid,
-        "leaf_mode": "PROFILE_SAMPLE", "round": "bootstrap_v2",
+        "leaf_mode": ("net:" + (file_sha1(net_path) if net_path else "?")) if leaf_mode == "net" else "PROFILE_SAMPLE",
+        "round": ("iterate_netleaf" if leaf_mode == "net" else "bootstrap_v2"),
         "sampler": "trajectory_stack_sampler", "belief": "reach_posterior",
         "street_upweight": _STREET_W,
     }
@@ -220,11 +286,15 @@ def worker(wid, target_per_worker, seconds, depth, M, n_iters, num_paid,
 
             tree = build_subgame_tree(root_state, max_action_depth=depth,
                                       chance_samples_per_node=2, rng=rng)
-            lctx = LeafEvalContext(blueprint=solver, biased_blueprint=BiasedBlueprint(),
-                                   starting_stacks=stacks, payouts=payouts, hero_seat=hero,
-                                   mode=LeafEvalMode.PROFILE_SAMPLE, n_samples=M, rng=rng,
-                                   num_paid=num_paid, dealer_seat=dealer)
-            evaluate_leaves(tree, lctx)
+            if leaf_mode == "net":
+                hero_cards = cards_from_str(parse_state_6max(root_state, observer=hero).get("private_cards", "") or "")
+                set_net_leaves(tree, hero, hero_cards, dealer)
+            else:
+                lctx = LeafEvalContext(blueprint=solver, biased_blueprint=BiasedBlueprint(),
+                                       starting_stacks=stacks, payouts=payouts, hero_seat=hero,
+                                       mode=LeafEvalMode.PROFILE_SAMPLE, n_samples=M, rng=rng,
+                                       num_paid=num_paid, dealer_seat=dealer)
+                evaluate_leaves(tree, lctx)
             sctx = SubgameSolveContext(blueprint=solver, starting_stacks=stacks, payouts=payouts,
                                        hero_seat=hero, n_iterations=n_iters, rng=rng,
                                        num_paid=num_paid, average_weighting="linear",
@@ -280,19 +350,24 @@ if __name__ == "__main__":
     ap.add_argument("--num-paid", type=int, default=3)
     ap.add_argument("--out", default="/workspace/rebel_samples")
     ap.add_argument("--flush-every", type=int, default=256)
+    ap.add_argument("--leaf", choices=("rollout", "net"), default="rollout",
+                    help="leaf values: 'rollout' (PROFILE_SAMPLE, bootstrap) or 'net' (batched net forward, ~100x faster iterate path)")
+    ap.add_argument("--net-path", default=None, help="value net .pt for --leaf net")
     a = ap.parse_args()
+    if a.leaf == "net" and not a.net_path:
+        ap.error("--leaf net requires --net-path")
 
     per_worker = (a.target + a.workers - 1) // a.workers
     os.makedirs(a.out, exist_ok=True)
     host = socket.gethostname()
     print(f"[samplegen v2] host={host} workers={a.workers} target={a.target} "
-          f"(~{per_worker}/worker) depth={a.depth} M={a.M} K={a.n_iters} out={a.out}", flush=True)
+          f"(~{per_worker}/worker) depth={a.depth} M={a.M} K={a.n_iters} leaf={a.leaf} out={a.out}", flush=True)
 
     ctx = mp.get_context("spawn")
     ret = ctx.Manager().dict()
     procs = [ctx.Process(target=worker,
                          args=(w, per_worker, a.seconds, a.depth, a.M, a.n_iters,
-                               a.num_paid, a.out, a.flush_every, ret))
+                               a.num_paid, a.out, a.flush_every, ret, a.leaf, a.net_path))
              for w in range(a.workers)]
     t0 = time.perf_counter()
     for p in procs: p.start()

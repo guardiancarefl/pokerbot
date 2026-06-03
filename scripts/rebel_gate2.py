@@ -186,6 +186,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--hands", type=int, default=300)
     ap.add_argument("--seed", type=int, default=2026)
+    ap.add_argument("--net", default=NET)
+    ap.add_argument("--label", default="")
     a = ap.parse_args()
     # (label, kind, key) — tight bots first (the decisive over-folding rows).
     PANEL = [
@@ -203,7 +205,7 @@ def main():
     solver = _load_solver(CKPT, abstraction, structure)
     calib = EquityCalibration.load(CALIB)
     payouts = list(sng_payouts_6max_double_up())
-    ck = torch.load(NET, map_location="cpu", weights_only=False)
+    ck = torch.load(a.net, map_location="cpu", weights_only=False)
     net = mlp(ck["in_dim"], tuple(ck["hidden"]))
     net.load_state_dict({kk.replace("net.", "", 1): vv for kk, vv in ck["state_dict"].items()})
     net.eval()
@@ -213,7 +215,8 @@ def main():
 
     print(f"GATE 2 (directional) — ReBeL(B) vs k=200(A), {a.hands} paired hands/matchup, "
           f"ICM-equity-delta per hand", flush=True)
-    print(f"net: val_R2(6vec)={ck['val_r2_6vec']:.3f} (rough M=1)  | opponents: Shanky tight bots + built-in archetypes\n", flush=True)
+    print(f"NET={a.label or a.net}  val_R2(6vec)={ck['val_r2_6vec']:.3f} val_R2(hero)={ck['val_r2_hero']:.3f}  "
+          f"| opponents: Shanky tight bots + built-in archetypes\n", flush=True)
     print(f"{'matchup':<12} {'k200 A':>10} {'ReBeL B':>10} {'Δ (B-A)':>10} {'noise±':>8} {'verdict':>10}", flush=True)
     print("-" * 62, flush=True)
 

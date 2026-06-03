@@ -51,6 +51,7 @@ def main():
     ap.add_argument("--lr", type=float, default=1e-3)
     ap.add_argument("--weight-decay", type=float, default=1e-4)
     ap.add_argument("--val-frac", type=float, default=0.10)
+    ap.add_argument("--max-samples", type=int, default=0, help="subsample to this many rows (0=all); for size-matched controls")
     ap.add_argument("--seed", type=int, default=0)
     a = ap.parse_args()
 
@@ -67,6 +68,9 @@ def main():
     belief = d["belief"].astype(np.float32)
     y = d["value6"].astype(np.float32)
     hero = d["hero_seat"].astype(np.int64)
+    if a.max_samples and a.max_samples < len(feat):
+        sub = np.random.RandomState(a.seed).permutation(len(feat))[:a.max_samples]
+        feat, belief, y, hero = feat[sub], belief[sub], y[sub], hero[sub]
     N, k = feat.shape[0], belief.shape[2]
     X = np.concatenate([feat[:, 200:], belief.reshape(N, 6 * k)], axis=1)
     in_dim = X.shape[1]
