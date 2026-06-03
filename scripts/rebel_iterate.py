@@ -14,7 +14,7 @@ Composes the existing scripts (rebel_samplegen --leaf net / rebel_train_value_ne
       --prev-net /workspace/rebel_value_net_full.pt \
       --gen-target 4000000 --hands 500
 """
-import sys, os, subprocess, argparse
+import sys, os, shutil, subprocess, argparse
 sys.path.insert(0, '.')
 
 PY = ".venv/bin/python"
@@ -57,6 +57,17 @@ def main():
         run([PY, "scripts/rebel_train_value_net_v3.py", "--data", snap, "--out", new_net,
              "--logfile", f"/tmp/train_iter{n}.log", "--samples-per-param", "15",
              "--max-epochs", "200", "--patience", "10"])
+        # BOUND DISK (MooseFS 19G quota): once Net_{n+1} is trained, the raw samples
+        # are spent — keep only the .pt net, delete this iteration's shards + snapshot
+        # BEFORE the next batch. Without this the quota fills after ~2 iterations and
+        # generation stalls (happened at iter 1).
+        if os.path.exists(new_net):
+            shutil.rmtree(sdir, ignore_errors=True)
+            if os.path.exists(snap):
+                os.remove(snap)
+            print(f"[iterate] disk bound: deleted {sdir} + {snap}, kept {new_net}", flush=True)
+        else:
+            print(f"[iterate] WARNING: {new_net} missing — NOT deleting samples", flush=True)
     # 3. plateau-check: Net_{n+1} vs Net_n, and Net_{n+1} vs k=200
     run([PY, "scripts/rebel_gate2.py", "--hands", str(a.hands),
          "--net-a", a.prev_net, "--net-b", new_net], log=f"/workspace/gate2_iter{n}_vs_prev.log")
