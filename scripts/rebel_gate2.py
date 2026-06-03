@@ -187,8 +187,12 @@ def main():
     ap.add_argument("--hands", type=int, default=300)
     ap.add_argument("--seed", type=int, default=2026)
     ap.add_argument("--net", default=NET)
+    ap.add_argument("--net-a", default="k200", help="'k200' or a value-net .pt (hero A)")
+    ap.add_argument("--net-b", default=None, help="'k200' or a value-net .pt (hero B); default=--net")
     ap.add_argument("--label", default="")
     a = ap.parse_args()
+    if a.net_b is None:
+        a.net_b = a.net
     # (label, kind, key) — tight bots first (the decisive over-folding rows).
     PANEL = [
         ("KillPhilMTT", ("shanky", "KillPhilMTT.txt")),
@@ -205,19 +209,21 @@ def main():
     solver = _load_solver(CKPT, abstraction, structure)
     calib = EquityCalibration.load(CALIB)
     payouts = list(sng_payouts_6max_double_up())
-    ck = torch.load(a.net, map_location="cpu", weights_only=False)
-    net = mlp(ck["in_dim"], tuple(ck["hidden"]))
-    net.load_state_dict({kk.replace("net.", "", 1): vv for kk, vv in ck["state_dict"].items()})
-    net.eval()
+    def make_hero(spec):
+        if spec == "k200":
+            return BlueprintHero(solver), "k200"
+        cck = torch.load(spec, map_location="cpu", weights_only=False)
+        cnet = mlp(cck["in_dim"], tuple(cck["hidden"]))
+        cnet.load_state_dict({kk.replace("net.", "", 1): vv for kk, vv in cck["state_dict"].items()})
+        cnet.eval()
+        return ReBeLHero(solver, abstraction, cnet, cck, payouts), os.path.basename(spec).replace(".pt", "")
 
-    heroA = BlueprintHero(solver)
-    heroB = ReBeLHero(solver, abstraction, net, ck, payouts)
+    heroA, labelA = make_hero(a.net_a)
+    heroB, labelB = make_hero(a.net_b)
 
-    print(f"GATE 2 (directional) — ReBeL(B) vs k=200(A), {a.hands} paired hands/matchup, "
-          f"ICM-equity-delta per hand", flush=True)
-    print(f"NET={a.label or a.net}  val_R2(6vec)={ck['val_r2_6vec']:.3f} val_R2(hero)={ck['val_r2_hero']:.3f}  "
-          f"| opponents: Shanky tight bots + built-in archetypes\n", flush=True)
-    print(f"{'matchup':<12} {'k200 A':>10} {'ReBeL B':>10} {'Δ (B-A)':>10} {'noise±':>8} {'verdict':>10}", flush=True)
+    print(f"GATE 2 — B={labelB} vs A={labelA}, {a.hands} paired hands/matchup, ICM-equity-delta/hand", flush=True)
+    print(f"opponents: Shanky tight bots + built-in archetypes\n", flush=True)
+    print(f"{'matchup':<12} {labelA[:10]:>10} {labelB[:10]:>10} {'Δ (B-A)':>10} {'noise±':>8} {'verdict':>10}", flush=True)
     print("-" * 62, flush=True)
 
     for label, spec in PANEL:
@@ -242,10 +248,10 @@ def main():
         d = [b - x for b, x in zip(Bs, As)]
         md = statistics.mean(d)
         se = (statistics.pstdev(d) / (n ** 0.5)) if n > 1 else 0.0
-        verdict = "ReBeL+" if md > 2 * se else ("k200+" if md < -2 * se else "~tie")
+        verdict = "B+" if md > 2 * se else ("A+" if md < -2 * se else "~tie")
         print(f"{label:<12} {mA:>10.4f} {mB:>10.4f} {md:>+10.4f} {2*se:>8.4f} {verdict:>10}", flush=True)
 
-    print("\n(Δ>2·SE = beyond noise band. TIGHT rows (NIT/TAG) are the decisive over-folding signal.)", flush=True)
+    print(f"\n(Δ>2·SE = B beats A beyond noise. B={labelB} A={labelA}. TIGHT rows NIT/TAG/KillPhil are decisive.)", flush=True)
 
 
 if __name__ == "__main__":
