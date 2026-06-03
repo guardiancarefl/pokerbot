@@ -49,7 +49,7 @@ from typing import Optional, Sequence
 
 import numpy as np
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 DEFAULT_ROOT = "/workspace/rebel_samples"
 
 
@@ -64,15 +64,32 @@ def file_sha1(path: str, _buf: int = 1 << 20) -> str:
 
 @dataclass
 class RebelSample:
-    """One (PBS, target) training sample. Arrays are plain numpy (portable)."""
-    feat: np.ndarray            # float32[feat_dim] — full root PBS encoding
-    bucket: int                 # acting-seat bucket id (-1 if none)
+    """One (PBS, target) training sample. Arrays are plain numpy (portable).
+
+    Schema v2: per-seat 6-vector value target (`value6`) + belief block
+    (`seat_buckets`, the 6-seat joint config → 6×k one-hot at train time) +
+    tournament context (`blind_level`, `alive_count`, `dealer_seat`) so the net
+    learns ICM/stack-depth/player-count structure across the whole reachable
+    Double-Up SNG state space, not one spot.
+    """
+    feat: np.ndarray            # float32[feat_dim] — root PBS encoding (public + acting bucket)
+    bucket: int                 # acting-seat (hero) bucket id (-1 if none)
+    # belief: float16[6,k] — per-seat range. hero row = one-hot at its KNOWN bucket;
+    # each active opponent row = the reach-POSTERIOR over buckets inferred from its
+    # blueprint actions (a true BELIEF — what the bot knows from public betting, NOT
+    # the opponent's actual cards); folded/busted rows = all-zero. This is the value-
+    # net's opponent-uncertainty input; it transfers to deployment (no perfect info).
+    belief: np.ndarray
     hero_seat: int
     street: int
     depth: int
     n_iterations: int
     degraded: bool
-    root_value: float           # hero root EV
+    blind_level: int            # tournament blind level (1..N)
+    alive_count: int            # players still in the tournament (4..6; 4 = bubble)
+    dealer_seat: int            # button seat
+    value6: np.ndarray          # float32[6] — PER-SEAT root value target (THE fix)
+    root_value: float           # = value6[hero_seat] (scalar, kept for sanity/back-compat)
     root_policy: np.ndarray     # float32[n_actions]
     root_q_values: np.ndarray   # float32[n_actions]
     legal_mask: np.ndarray      # int8[n_actions]
@@ -80,9 +97,8 @@ class RebelSample:
 
 # Column names <-> per-sample fields. Kept explicit so the on-disk layout is a
 # stable contract the merger/loader and any trainer can rely on.
-_SCALAR_COLS = ("bucket", "hero_seat", "street", "depth", "n_iterations",
-                "degraded", "root_value")
-_VECTOR_COLS = ("feat", "root_policy", "root_q_values", "legal_mask")
+_VECTOR_COLS = ("feat", "value6", "belief", "root_policy",
+                "root_q_values", "legal_mask")
 
 
 class ShardWriter:
@@ -147,6 +163,9 @@ class ShardWriter:
         cols["depth"] = np.asarray([s.depth for s in self._buf], dtype=np.int8)
         cols["n_iterations"] = np.asarray([s.n_iterations for s in self._buf], dtype=np.int32)
         cols["degraded"] = np.asarray([s.degraded for s in self._buf], dtype=np.bool_)
+        cols["blind_level"] = np.asarray([s.blind_level for s in self._buf], dtype=np.int8)
+        cols["alive_count"] = np.asarray([s.alive_count for s in self._buf], dtype=np.int8)
+        cols["dealer_seat"] = np.asarray([s.dealer_seat for s in self._buf], dtype=np.int8)
         cols["root_value"] = np.asarray([s.root_value for s in self._buf], dtype=np.float32)
         cols["_meta_json"] = np.asarray(json.dumps(self.meta))
 

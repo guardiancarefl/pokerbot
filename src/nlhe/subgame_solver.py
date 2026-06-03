@@ -118,6 +118,11 @@ class SubgameSolveContext:
     rng: Optional[random.Random] = None
     num_paid: int = 3
     average_weighting: str = "linear"
+    # Button seat (0-indexed) for tournament-mode single-hand states that don't
+    # expose dealer_seat(). Injected into the parsed dict before encoding so the
+    # blueprint (trained dealer-aware) gets correct positions. None = legacy /
+    # repeated_poker (parse already supplies dealer_seat).
+    dealer_seat: Optional[int] = None
 
     def __post_init__(self) -> None:
         if len(self.starting_stacks) != _NUM_SEATS:
@@ -204,6 +209,10 @@ class SubgameSolveResult:
     root_q_values: Optional[np.ndarray] = None
     root_advantages_blueprint: Optional[np.ndarray] = None
     root_advantages_refined: Optional[np.ndarray] = None
+    # Per-seat root value 6-vector under the solved profile (value-net target,
+    # docs/REBEL_PBS_6MAX.md §4 head A). None on the K=0/K=1 paths (the value-net
+    # generator uses K>1); root_value_per_seat[hero_seat] ≈ the scalar hero root value.
+    root_value_per_seat: Optional[np.ndarray] = None
 
 
 # ============================================================
@@ -256,6 +265,8 @@ def _blueprint_adv(node, ctx: SubgameSolveContext, rng) -> np.ndarray:
     eval_6max_self_play._sample_action_from_policy (lines 137-143): parse → encode
     → predict_advantages for the node's current_player."""
     parsed = _parse(node.state)
+    if ctx.dealer_seat is not None and "dealer_seat" not in parsed:
+        parsed["dealer_seat"] = ctx.dealer_seat
     feat = np.asarray(
         ctx.blueprint.encoder.encode_from_parsed(parsed, rng=rng), dtype=np.float32
     )
@@ -489,6 +500,51 @@ def _run_cfr(tree: SubgameTree, ctx: SubgameSolveContext,
                 history.append((t, l1_tail))
         prev_avg = avg_t
 
+    # --- Per-seat root value 6-vector (value-net target; docs/REBEL_PBS_6MAX.md §4) ---
+    # Back up EACH seat's value at the root under the SOLVED average profile: hero's
+    # linear-averaged strategy at hero nodes, the fixed blueprint at opponent nodes,
+    # chance_prob at chance, and the per-seat leaf/terminal 6-vectors at the bottom
+    # (leaf_value and icm_adjust_returns are already full 6-vectors). This is the
+    # only piece the scalar hero-q backup above does NOT give us, and it is what lets
+    # the value net value a leaf for ANY seat (not just whoever is to act).
+    stacks6 = list(ctx.starting_stacks)
+    payouts6 = list(ctx.payouts)
+    _v6_memo: dict = {}
+
+    def _value6(node) -> np.ndarray:
+        key = id(node)
+        if key in _v6_memo:
+            return _v6_memo[key]
+        if node.is_leaf:
+            lv = node.leaf_value
+            out = (np.zeros(_NUM_SEATS) if lv is None
+                   else np.asarray(lv, dtype=np.float64))
+        elif node.is_terminal:
+            out = np.asarray(
+                icm_adjust_returns(list(node.terminal_returns), stacks6, payouts6),
+                dtype=np.float64)
+        elif node.is_chance:
+            out = np.zeros(_NUM_SEATS)
+            for child in node.children:
+                if child.chance_prob:
+                    out = out + child.chance_prob * _value6(child)
+        else:
+            nid = id(node)
+            if node.current_player == hero:
+                s = S[nid]; z = float(s.sum())
+                sig = (s / z) if z > 0 else cache.sigma[nid]
+            else:
+                sig = cache.sigma[nid]
+            out = np.zeros(_NUM_SEATS)
+            for child in node.children:
+                p = float(sig[int(child.action_from_parent)])
+                if p:
+                    out = out + p * _value6(child)
+        _v6_memo[key] = out
+        return out
+
+    root_value_6 = _value6(tree.root)
+
     return {
         "root_policy": prev_avg.astype(np.float32),
         "converged_l1_tail": l1_tail,
@@ -497,6 +553,7 @@ def _run_cfr(tree: SubgameTree, ctx: SubgameSolveContext,
         "convergence_history": tuple(history),
         "root_q_values": root_q_holder[0].astype(np.float64),
         "root_advantages_refined": R[root_id].astype(np.float64),
+        "root_value_6": root_value_6.astype(np.float64),
     }
 
 
@@ -595,6 +652,7 @@ def solve_subgame(tree: SubgameTree, ctx: SubgameSolveContext) -> SubgameSolveRe
         root_q_values=out["root_q_values"],
         root_advantages_blueprint=root_adv.copy(),
         root_advantages_refined=out["root_advantages_refined"],
+        root_value_per_seat=out["root_value_6"],
     )
 
 

@@ -203,6 +203,11 @@ class LeafEvalContext:
     # `biased_blueprint`. All per-seat BiasedBlueprints MUST have the same `.k`
     # as `biased_blueprint` (BR enumeration iterates `range(k)`).
     biased_blueprint_per_seat: Optional[dict] = None
+    # Button seat (0-indexed) for tournament-mode single-hand states that don't
+    # expose dealer_seat(). Injected into the parsed dict before the blueprint
+    # encode in the rollout so positions match the dealer-aware blueprint. None =
+    # legacy / repeated_poker (parse already supplies it).
+    dealer_seat: Optional[int] = None
 
 
 # ============================================================
@@ -323,6 +328,8 @@ def _rollout_once(state, ctx: LeafEvalContext, action_dist_fn, rng):
             continue
         cp = state.current_player()
         parsed = parse_state_6max(state)
+        if ctx.dealer_seat is not None and "dealer_seat" not in parsed:
+            parsed["dealer_seat"] = ctx.dealer_seat
         view, discrete_to_chip, _legal = fast_view_and_discretize(state, parsed)
         if not discrete_to_chip:
             return None
