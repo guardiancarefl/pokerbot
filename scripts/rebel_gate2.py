@@ -190,6 +190,8 @@ def main():
     ap.add_argument("--net-a", default="k200", help="'k200' or a value-net .pt (hero A)")
     ap.add_argument("--net-b", default=None, help="'k200' or a value-net .pt (hero B); default=--net")
     ap.add_argument("--label", default="")
+    ap.add_argument("--depth-a", type=int, default=3)
+    ap.add_argument("--depth-b", type=int, default=3)
     a = ap.parse_args()
     if a.net_b is None:
         a.net_b = a.net
@@ -209,17 +211,17 @@ def main():
     solver = _load_solver(CKPT, abstraction, structure)
     calib = EquityCalibration.load(CALIB)
     payouts = list(sng_payouts_6max_double_up())
-    def make_hero(spec):
+    def make_hero(spec, depth=3):
         if spec == "k200":
             return BlueprintHero(solver), "k200"
         cck = torch.load(spec, map_location="cpu", weights_only=False)
         cnet = mlp(cck["in_dim"], tuple(cck["hidden"]))
         cnet.load_state_dict({kk.replace("net.", "", 1): vv for kk, vv in cck["state_dict"].items()})
         cnet.eval()
-        return ReBeLHero(solver, abstraction, cnet, cck, payouts), os.path.basename(spec).replace(".pt", "")
+        return ReBeLHero(solver, abstraction, cnet, cck, payouts, depth=depth), os.path.basename(spec).replace(".pt", "")+f"_d{depth}"
 
-    heroA, labelA = make_hero(a.net_a)
-    heroB, labelB = make_hero(a.net_b)
+    heroA, labelA = make_hero(a.net_a, a.depth_a)
+    heroB, labelB = make_hero(a.net_b, a.depth_b)
 
     print(f"GATE 2 — B={labelB} vs A={labelA}, {a.hands} paired hands/matchup, ICM-equity-delta/hand", flush=True)
     print(f"opponents: Shanky tight bots + built-in archetypes\n", flush=True)
