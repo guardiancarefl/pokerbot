@@ -1,0 +1,72 @@
+{
+  "ablation": "opp_stats input zeroed; equivalent to using repr_ (128-d trunk-only) since opp_stats_proj(0) is a constant bias",
+  "feature_dim": 128,
+  "n_train_decisions": 270047,
+  "n_held_decisions": 44879,
+  "n_val_matches": 300,
+  "binary_threshold_train_median": 0.5914974808692932,
+  "binary_label_train": {
+    "GusHansenMTT": 0,
+    "KillPhilMTT": 0,
+    "Loosenluckymtt": 1,
+    "MillenniumMTTv.49": 1,
+    "wildbillmtt": 0,
+    "LionMTTv.10": 0,
+    "NIT": 1,
+    "TAG": 0,
+    "LAG": 1,
+    "STATION": 1,
+    "MANIAC": 1,
+    "blueprint": 0
+  },
+  "binary_label_held": {
+    "TheFixerSNG": 0,
+    "ticketmaster": 0,
+    "kamakazi": 0,
+    "littlegreen": 1,
+    "timidtom": 0
+  },
+  "val_AUC": 0.7072464245154548,
+  "heldout_AUC": 0.4837210414256222,
+  "history_length_buckets": {
+    "1": {
+      "val_auc": 0.6911130447941889,
+      "val_n": 743,
+      "held_auc": 0.5077359068627452,
+      "held_n": 587
+    },
+    "3": {
+      "val_auc": 0.7130403957396755,
+      "val_n": 727,
+      "held_auc": 0.5173161912414624,
+      "held_n": 606
+    },
+    "5": {
+      "val_auc": 0.7094106742121182,
+      "val_n": 721,
+      "held_auc": 0.5036836075486109,
+      "held_n": 603
+    },
+    "10": {
+      "val_auc": 0.6968812003968253,
+      "val_n": 1840,
+      "held_auc": 0.48681006389694637,
+      "held_n": 1507
+    },
+    "20": {
+      "val_auc": 0.7078843671415935,
+      "val_n": 47026,
+      "held_auc": 0.4805697233164865,
+      "held_n": 38872
+    }
+  },
+  "reference_decodability_probe_results": {
+    "FAITHFUL_non_ablated_val": 0.922,
+    "FAITHFUL_non_ablated_heldout": 0.9074,
+    "REFERENCE_opp_stats_val": 0.9203,
+    "REFERENCE_opp_stats_heldout": 0.9231,
+    "PRIMARY_tokens_val": 0.7606,
+    "PRIMARY_tokens_heldout": 0.4637
+  },
+  "wall_seconds": 2463.1770312786102
+}

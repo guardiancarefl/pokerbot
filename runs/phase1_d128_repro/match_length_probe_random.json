@@ -1,0 +1,1853 @@
+{
+  "config": {
+    "n_matches": 200,
+    "policy": "random",
+    "starting_stack": 1500,
+    "hands_per_level": 3,
+    "max_hands": 500,
+    "structure_yaml": "configs/ignition_double_up_6max_turbo.yaml",
+    "anchor_dir": "runs/six_max_20260530_034023_phase4f_dcfr_candC_k200",
+    "abstraction_pkl": "runs/abstraction_20260521_223018_retrofit/abstraction.pkl",
+    "seed": 2026
+  },
+  "n_capped_at_max_hands": 0,
+  "wall_seconds_total": 0.3958597183227539,
+  "summary_hands_to_first_bust": {
+    "label": "hands_to_first_bust",
+    "n": 200,
+    "median": 1.0,
+    "p25": 1.0,
+    "p10": 1.0,
+    "p5": 1.0,
+    "p1": 1.0,
+    "min": 1,
+    "max": 4,
+    "mean": 1.095,
+    "histogram_5_hand_buckets": {
+      "0-4": 200
+    }
+  },
+  "summary_hands_to_three_left": {
+    "label": "hands_to_three_left",
+    "n": 200,
+    "median": 2.0,
+    "p25": 1.0,
+    "p10": 1.0,
+    "p5": 1.0,
+    "p1": 1.0,
+    "min": 1,
+    "max": 7,
+    "mean": 2.23,
+    "histogram_5_hand_buckets": {
+      "0-4": 190,
+      "5-9": 10
+    }
+  },
+  "per_match": [
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 0,
+      "wall_seconds": 0.0014450550079345703
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 3,
+      "n_alive_at_end": 1,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 1,
+      "wall_seconds": 0.0014925003051757812
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 2,
+      "wall_seconds": 0.0005168914794921875
+    },
+    {
+      "hands_to_first_bust": 2,
+      "hands_to_three_left": 4,
+      "n_alive_at_end": 3,
+      "level_at_end": 2,
+      "terminated_by_cap": false,
+      "match_idx": 3,
+      "wall_seconds": 0.0015957355499267578
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 2,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 4,
+      "wall_seconds": 0.0007309913635253906
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 1,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 5,
+      "wall_seconds": 0.00032138824462890625
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 2,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 6,
+      "wall_seconds": 0.0005092620849609375
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 5,
+      "n_alive_at_end": 3,
+      "level_at_end": 2,
+      "terminated_by_cap": false,
+      "match_idx": 7,
+      "wall_seconds": 0.002189159393310547
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 4,
+      "n_alive_at_end": 3,
+      "level_at_end": 2,
+      "terminated_by_cap": false,
+      "match_idx": 8,
+      "wall_seconds": 0.002086639404296875
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 3,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 9,
+      "wall_seconds": 0.0017199516296386719
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 10,
+      "wall_seconds": 0.001107931137084961
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 3,
+      "n_alive_at_end": 2,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 11,
+      "wall_seconds": 0.0017476081848144531
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 7,
+      "n_alive_at_end": 3,
+      "level_at_end": 3,
+      "terminated_by_cap": false,
+      "match_idx": 12,
+      "wall_seconds": 0.0032410621643066406
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 2,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 13,
+      "wall_seconds": 0.0010943412780761719
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 3,
+      "n_alive_at_end": 2,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 14,
+      "wall_seconds": 0.0015196800231933594
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 2,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 15,
+      "wall_seconds": 0.001058816909790039
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 3,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 16,
+      "wall_seconds": 0.0010690689086914062
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 17,
+      "wall_seconds": 0.0005128383636474609
+    },
+    {
+      "hands_to_first_bust": 2,
+      "hands_to_three_left": 3,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 18,
+      "wall_seconds": 0.0015578269958496094
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 3,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 19,
+      "wall_seconds": 0.0015931129455566406
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 20,
+      "wall_seconds": 0.0011048316955566406
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 21,
+      "wall_seconds": 0.0004131793975830078
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 22,
+      "wall_seconds": 0.0009851455688476562
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 5,
+      "n_alive_at_end": 3,
+      "level_at_end": 2,
+      "terminated_by_cap": false,
+      "match_idx": 23,
+      "wall_seconds": 0.0027701854705810547
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 2,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 24,
+      "wall_seconds": 0.0005347728729248047
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 25,
+      "wall_seconds": 0.0005717277526855469
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 4,
+      "n_alive_at_end": 2,
+      "level_at_end": 2,
+      "terminated_by_cap": false,
+      "match_idx": 26,
+      "wall_seconds": 0.002165555953979492
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 2,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 27,
+      "wall_seconds": 0.0011932849884033203
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 28,
+      "wall_seconds": 0.0005040168762207031
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 29,
+      "wall_seconds": 0.0013933181762695312
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 6,
+      "n_alive_at_end": 3,
+      "level_at_end": 2,
+      "terminated_by_cap": false,
+      "match_idx": 30,
+      "wall_seconds": 0.0025577545166015625
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 1,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 31,
+      "wall_seconds": 0.0009758472442626953
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 5,
+      "n_alive_at_end": 3,
+      "level_at_end": 2,
+      "terminated_by_cap": false,
+      "match_idx": 32,
+      "wall_seconds": 0.0022284984588623047
+    },
+    {
+      "hands_to_first_bust": 2,
+      "hands_to_three_left": 4,
+      "n_alive_at_end": 3,
+      "level_at_end": 2,
+      "terminated_by_cap": false,
+      "match_idx": 33,
+      "wall_seconds": 0.0016367435455322266
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 2,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 34,
+      "wall_seconds": 0.0005142688751220703
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 35,
+      "wall_seconds": 0.0005178451538085938
+    },
+    {
+      "hands_to_first_bust": 2,
+      "hands_to_three_left": 4,
+      "n_alive_at_end": 3,
+      "level_at_end": 2,
+      "terminated_by_cap": false,
+      "match_idx": 36,
+      "wall_seconds": 0.0014579296112060547
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 3,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 37,
+      "wall_seconds": 0.0009937286376953125
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 2,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 38,
+      "wall_seconds": 0.0005753040313720703
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 5,
+      "n_alive_at_end": 3,
+      "level_at_end": 2,
+      "terminated_by_cap": false,
+      "match_idx": 39,
+      "wall_seconds": 0.0023660659790039062
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 2,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 40,
+      "wall_seconds": 0.0004429817199707031
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 3,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 41,
+      "wall_seconds": 0.0023436546325683594
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 3,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 42,
+      "wall_seconds": 0.0015211105346679688
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 2,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 43,
+      "wall_seconds": 0.0012235641479492188
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 44,
+      "wall_seconds": 0.0004851818084716797
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 3,
+      "n_alive_at_end": 2,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 45,
+      "wall_seconds": 0.006993293762207031
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 1,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 46,
+      "wall_seconds": 0.0009412765502929688
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 47,
+      "wall_seconds": 0.021866798400878906
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 2,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 48,
+      "wall_seconds": 0.0012736320495605469
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 3,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 49,
+      "wall_seconds": 0.023540496826171875
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 2,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 50,
+      "wall_seconds": 0.007538557052612305
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 4,
+      "n_alive_at_end": 3,
+      "level_at_end": 2,
+      "terminated_by_cap": false,
+      "match_idx": 51,
+      "wall_seconds": 0.009788036346435547
+    },
+    {
+      "hands_to_first_bust": 3,
+      "hands_to_three_left": 3,
+      "n_alive_at_end": 1,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 52,
+      "wall_seconds": 0.0014994144439697266
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 2,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 53,
+      "wall_seconds": 0.0009105205535888672
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 54,
+      "wall_seconds": 0.0011038780212402344
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 2,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 55,
+      "wall_seconds": 0.0007236003875732422
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 56,
+      "wall_seconds": 0.00327301025390625
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 57,
+      "wall_seconds": 0.0012652873992919922
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 2,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 58,
+      "wall_seconds": 0.00061798095703125
+    },
+    {
+      "hands_to_first_bust": 2,
+      "hands_to_three_left": 4,
+      "n_alive_at_end": 3,
+      "level_at_end": 2,
+      "terminated_by_cap": false,
+      "match_idx": 59,
+      "wall_seconds": 0.002882719039916992
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 60,
+      "wall_seconds": 0.0015270709991455078
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 61,
+      "wall_seconds": 0.00046372413635253906
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 1,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 62,
+      "wall_seconds": 0.0010318756103515625
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 5,
+      "n_alive_at_end": 3,
+      "level_at_end": 2,
+      "terminated_by_cap": false,
+      "match_idx": 63,
+      "wall_seconds": 0.0018486976623535156
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 64,
+      "wall_seconds": 0.0010986328125
+    },
+    {
+      "hands_to_first_bust": 4,
+      "hands_to_three_left": 4,
+      "n_alive_at_end": 3,
+      "level_at_end": 2,
+      "terminated_by_cap": false,
+      "match_idx": 65,
+      "wall_seconds": 0.0020089149475097656
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 3,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 66,
+      "wall_seconds": 0.0013675689697265625
+    },
+    {
+      "hands_to_first_bust": 2,
+      "hands_to_three_left": 4,
+      "n_alive_at_end": 3,
+      "level_at_end": 2,
+      "terminated_by_cap": false,
+      "match_idx": 67,
+      "wall_seconds": 0.0020978450775146484
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 4,
+      "n_alive_at_end": 3,
+      "level_at_end": 2,
+      "terminated_by_cap": false,
+      "match_idx": 68,
+      "wall_seconds": 0.004264354705810547
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 69,
+      "wall_seconds": 0.0022192001342773438
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 3,
+      "n_alive_at_end": 2,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 70,
+      "wall_seconds": 0.0013744831085205078
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 3,
+      "n_alive_at_end": 2,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 71,
+      "wall_seconds": 0.002257108688354492
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 3,
+      "n_alive_at_end": 1,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 72,
+      "wall_seconds": 0.002774953842163086
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 2,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 73,
+      "wall_seconds": 0.002347230911254883
+    },
+    {
+      "hands_to_first_bust": 2,
+      "hands_to_three_left": 3,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 74,
+      "wall_seconds": 0.006176471710205078
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 3,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 75,
+      "wall_seconds": 0.004918098449707031
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 3,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 76,
+      "wall_seconds": 0.007957696914672852
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 77,
+      "wall_seconds": 0.0055599212646484375
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 78,
+      "wall_seconds": 0.006788730621337891
+    },
+    {
+      "hands_to_first_bust": 2,
+      "hands_to_three_left": 3,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 79,
+      "wall_seconds": 0.005311012268066406
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 3,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 80,
+      "wall_seconds": 0.0032324790954589844
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 2,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 81,
+      "wall_seconds": 0.002735614776611328
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 82,
+      "wall_seconds": 0.0014095306396484375
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 83,
+      "wall_seconds": 0.0017085075378417969
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 84,
+      "wall_seconds": 0.005152702331542969
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 85,
+      "wall_seconds": 0.002087116241455078
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 86,
+      "wall_seconds": 0.0016205310821533203
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 4,
+      "n_alive_at_end": 3,
+      "level_at_end": 2,
+      "terminated_by_cap": false,
+      "match_idx": 87,
+      "wall_seconds": 0.003429889678955078
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 88,
+      "wall_seconds": 0.0005307197570800781
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 1,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 89,
+      "wall_seconds": 0.0007371902465820312
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 90,
+      "wall_seconds": 0.0005428791046142578
+    },
+    {
+      "hands_to_first_bust": 3,
+      "hands_to_three_left": 6,
+      "n_alive_at_end": 2,
+      "level_at_end": 2,
+      "terminated_by_cap": false,
+      "match_idx": 91,
+      "wall_seconds": 0.003793478012084961
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 92,
+      "wall_seconds": 0.0008361339569091797
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 3,
+      "n_alive_at_end": 2,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 93,
+      "wall_seconds": 0.0022559165954589844
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 2,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 94,
+      "wall_seconds": 0.0016541481018066406
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 95,
+      "wall_seconds": 0.0009834766387939453
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 2,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 96,
+      "wall_seconds": 0.0004978179931640625
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 97,
+      "wall_seconds": 0.0005168914794921875
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 98,
+      "wall_seconds": 0.0008790493011474609
+    },
+    {
+      "hands_to_first_bust": 2,
+      "hands_to_three_left": 4,
+      "n_alive_at_end": 3,
+      "level_at_end": 2,
+      "terminated_by_cap": false,
+      "match_idx": 99,
+      "wall_seconds": 0.002186298370361328
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 100,
+      "wall_seconds": 0.0008013248443603516
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 101,
+      "wall_seconds": 0.002804994583129883
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 102,
+      "wall_seconds": 0.0006456375122070312
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 103,
+      "wall_seconds": 0.0003943443298339844
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 104,
+      "wall_seconds": 0.0008649826049804688
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 105,
+      "wall_seconds": 0.0008451938629150391
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 2,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 106,
+      "wall_seconds": 0.0009100437164306641
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 107,
+      "wall_seconds": 0.0005879402160644531
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 108,
+      "wall_seconds": 0.0010004043579101562
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 109,
+      "wall_seconds": 0.0012764930725097656
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 110,
+      "wall_seconds": 0.001073598861694336
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 2,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 111,
+      "wall_seconds": 0.0013213157653808594
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 112,
+      "wall_seconds": 0.0005140304565429688
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 2,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 113,
+      "wall_seconds": 0.0004947185516357422
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 2,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 114,
+      "wall_seconds": 0.0007679462432861328
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 115,
+      "wall_seconds": 0.0011987686157226562
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 3,
+      "n_alive_at_end": 2,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 116,
+      "wall_seconds": 0.00617218017578125
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 117,
+      "wall_seconds": 0.0012254714965820312
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 2,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 118,
+      "wall_seconds": 0.0004410743713378906
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 119,
+      "wall_seconds": 0.0007405281066894531
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 3,
+      "n_alive_at_end": 2,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 120,
+      "wall_seconds": 0.0018856525421142578
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 121,
+      "wall_seconds": 0.0015001296997070312
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 122,
+      "wall_seconds": 0.0016634464263916016
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 123,
+      "wall_seconds": 0.0016562938690185547
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 2,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 124,
+      "wall_seconds": 0.000797271728515625
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 2,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 125,
+      "wall_seconds": 0.002604961395263672
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 2,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 126,
+      "wall_seconds": 0.0011267662048339844
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 2,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 127,
+      "wall_seconds": 0.0008518695831298828
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 128,
+      "wall_seconds": 0.0014872550964355469
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 129,
+      "wall_seconds": 0.0013349056243896484
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 130,
+      "wall_seconds": 0.0010514259338378906
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 131,
+      "wall_seconds": 0.00042438507080078125
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 132,
+      "wall_seconds": 0.00044918060302734375
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 133,
+      "wall_seconds": 0.000492095947265625
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 134,
+      "wall_seconds": 0.0006086826324462891
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 4,
+      "n_alive_at_end": 3,
+      "level_at_end": 2,
+      "terminated_by_cap": false,
+      "match_idx": 135,
+      "wall_seconds": 0.0026106834411621094
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 136,
+      "wall_seconds": 0.0008542537689208984
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 137,
+      "wall_seconds": 0.0004699230194091797
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 4,
+      "n_alive_at_end": 1,
+      "level_at_end": 2,
+      "terminated_by_cap": false,
+      "match_idx": 138,
+      "wall_seconds": 0.0017213821411132812
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 139,
+      "wall_seconds": 0.0009176731109619141
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 4,
+      "n_alive_at_end": 2,
+      "level_at_end": 2,
+      "terminated_by_cap": false,
+      "match_idx": 140,
+      "wall_seconds": 0.001737356185913086
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 141,
+      "wall_seconds": 0.0009522438049316406
+    },
+    {
+      "hands_to_first_bust": 2,
+      "hands_to_three_left": 3,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 142,
+      "wall_seconds": 0.001255035400390625
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 143,
+      "wall_seconds": 0.0007815361022949219
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 2,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 144,
+      "wall_seconds": 0.0014719963073730469
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 3,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 145,
+      "wall_seconds": 0.0020210742950439453
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 146,
+      "wall_seconds": 0.00046372413635253906
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 2,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 147,
+      "wall_seconds": 0.0011832714080810547
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 2,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 148,
+      "wall_seconds": 0.0004928112030029297
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 149,
+      "wall_seconds": 0.0008721351623535156
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 150,
+      "wall_seconds": 0.00051116943359375
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 2,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 151,
+      "wall_seconds": 0.0004513263702392578
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 3,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 152,
+      "wall_seconds": 0.0014178752899169922
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 153,
+      "wall_seconds": 0.0010840892791748047
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 154,
+      "wall_seconds": 0.0007638931274414062
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 155,
+      "wall_seconds": 0.0012154579162597656
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 3,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 156,
+      "wall_seconds": 0.0009014606475830078
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 157,
+      "wall_seconds": 0.0007846355438232422
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 3,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 158,
+      "wall_seconds": 0.0015864372253417969
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 159,
+      "wall_seconds": 0.0010192394256591797
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 160,
+      "wall_seconds": 0.0004162788391113281
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 161,
+      "wall_seconds": 0.0004363059997558594
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 162,
+      "wall_seconds": 0.0004601478576660156
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 163,
+      "wall_seconds": 0.0011451244354248047
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 2,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 164,
+      "wall_seconds": 0.0012750625610351562
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 165,
+      "wall_seconds": 0.0009744167327880859
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 166,
+      "wall_seconds": 0.0009484291076660156
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 167,
+      "wall_seconds": 0.00038123130798339844
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 168,
+      "wall_seconds": 0.00041484832763671875
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 3,
+      "n_alive_at_end": 2,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 169,
+      "wall_seconds": 0.0015583038330078125
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 2,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 170,
+      "wall_seconds": 0.0006480216979980469
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 171,
+      "wall_seconds": 0.00039505958557128906
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 3,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 172,
+      "wall_seconds": 0.0015375614166259766
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 2,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 173,
+      "wall_seconds": 0.00039124488830566406
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 174,
+      "wall_seconds": 0.0003631114959716797
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 175,
+      "wall_seconds": 0.00041103363037109375
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 176,
+      "wall_seconds": 0.00038909912109375
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 177,
+      "wall_seconds": 0.00041365623474121094
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 3,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 178,
+      "wall_seconds": 0.001420736312866211
+    },
+    {
+      "hands_to_first_bust": 2,
+      "hands_to_three_left": 3,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 179,
+      "wall_seconds": 0.0015170574188232422
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 3,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 180,
+      "wall_seconds": 0.001245260238647461
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 2,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 181,
+      "wall_seconds": 0.0003674030303955078
+    },
+    {
+      "hands_to_first_bust": 2,
+      "hands_to_three_left": 5,
+      "n_alive_at_end": 3,
+      "level_at_end": 2,
+      "terminated_by_cap": false,
+      "match_idx": 182,
+      "wall_seconds": 0.0018873214721679688
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 2,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 183,
+      "wall_seconds": 0.0008449554443359375
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 2,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 184,
+      "wall_seconds": 0.0008032321929931641
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 185,
+      "wall_seconds": 0.00039958953857421875
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 1,
+      "n_alive_at_end": 2,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 186,
+      "wall_seconds": 0.00042128562927246094
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 4,
+      "n_alive_at_end": 2,
+      "level_at_end": 2,
+      "terminated_by_cap": false,
+      "match_idx": 187,
+      "wall_seconds": 0.0019266605377197266
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 5,
+      "n_alive_at_end": 3,
+      "level_at_end": 2,
+      "terminated_by_cap": false,
+      "match_idx": 188,
+      "wall_seconds": 0.0016350746154785156
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 4,
+      "n_alive_at_end": 3,
+      "level_at_end": 2,
+      "terminated_by_cap": false,
+      "match_idx": 189,
+      "wall_seconds": 0.0017230510711669922
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 190,
+      "wall_seconds": 0.0008242130279541016
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 3,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 191,
+      "wall_seconds": 0.001262664794921875
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 4,
+      "n_alive_at_end": 3,
+      "level_at_end": 2,
+      "terminated_by_cap": false,
+      "match_idx": 192,
+      "wall_seconds": 0.0012707710266113281
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 3,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 193,
+      "wall_seconds": 0.001199483871459961
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 4,
+      "n_alive_at_end": 3,
+      "level_at_end": 2,
+      "terminated_by_cap": false,
+      "match_idx": 194,
+      "wall_seconds": 0.0012366771697998047
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 195,
+      "wall_seconds": 0.0010809898376464844
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 4,
+      "n_alive_at_end": 2,
+      "level_at_end": 2,
+      "terminated_by_cap": false,
+      "match_idx": 196,
+      "wall_seconds": 0.0016722679138183594
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 3,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 197,
+      "wall_seconds": 0.0013053417205810547
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 2,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 198,
+      "wall_seconds": 0.0008330345153808594
+    },
+    {
+      "hands_to_first_bust": 1,
+      "hands_to_three_left": 2,
+      "n_alive_at_end": 3,
+      "level_at_end": 1,
+      "terminated_by_cap": false,
+      "match_idx": 199,
+      "wall_seconds": 0.0007843971252441406
+    }
+  ],
+  "level_at_end_dist": {
+    "1": 170,
+    "2": 29,
+    "3": 1
+  }
+}
