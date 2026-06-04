@@ -388,15 +388,16 @@ class ActionDerivationError(Exception):
 def preflop_action_order(dealer_seat: int, alive_seats: list[int]) -> list[int]:
     """Return seats in OpenSpiel preflop action order, ONE FULL LAP.
 
-    Matches `to_inner_game_string_for_state`'s rotation (game_strings.py:397-423):
-      - n_alive == 2 (heads-up): BB acts first preflop (= dealer per the library's
-        n_alive==2 branch). Note this is the OPPOSITE of standard real-poker
-        heads-up convention, and is the documented library bug queued for the next
-        training cycle (DECISIONS.md). The integration's n_alive<4 soft-drop
-        means we never actually walk this branch for shipped frames, but
-        the function returns the library-matching order for completeness.
-      - n_alive >= 3: UTG first (= alive_seats[(dealer_pos + 3) % n_alive]),
-        then clockwise through alive seats.
+    Matches `to_inner_game_string_for_state`'s alive-seat rotation
+    (game_strings.py:397-423) for ALIVE seats only. EMPTY (non-alive) seats
+    are NOT in this list — but the replay engine MUST account for them, since
+    OpenSpiel cycles through all seats including the stack=1 placeholders.
+    `preflop_action_order_with_empties` is the version that includes empties
+    and is the right one for replay sequence emission.
+
+    Use this version for ALGORITHMIC reasoning (UTG/SB/BB identification);
+    use the _with_empties version for emitting action sequences fed to
+    OpenSpiel's state.apply_action.
     """
     n_alive = len(alive_seats)
     if n_alive < 2:
@@ -407,6 +408,35 @@ def preflop_action_order(dealer_seat: int, alive_seats: list[int]) -> list[int]:
         sb_seat = alive_seats[(dpos + 1) % n_alive]
         return [bb_seat, sb_seat]
     return [alive_seats[(dpos + 3 + i) % n_alive] for i in range(n_alive)]
+
+
+def preflop_action_order_with_empties(dealer_seat: int,
+                                        alive: tuple[bool, ...]) -> list[int]:
+    """Like preflop_action_order but includes EMPTY (non-alive) seats in
+    their OpenSpiel cycle position. OpenSpiel rotates through ALL six seats
+    (including stack=1 placeholders for empties), so the action sequence
+    must emit an action for each empty seat too (it's a forced fold).
+
+    The order starts at UTG-among-alive and walks clockwise through ALL
+    seat indices 0..5, in absolute order rotating from UTG. Empty seats
+    that fall in the natural clockwise position are kept.
+    """
+    alive_seats = [i for i in range(NUM_SEATS) if alive[i]]
+    n_alive = len(alive_seats)
+    if n_alive < 2:
+        return []
+    if n_alive == 2:
+        # Heads-up: only the two alive seats get cycled (we don't model the
+        # empties' "forced fold" turns for heads-up since the n_alive<4
+        # soft-drop rejects these frames anyway).
+        return preflop_action_order(dealer_seat, alive_seats)
+    # UTG = (dealer + 3) % NUM_SEATS in ABSOLUTE seat numbering when all
+    # seats are alive. Shorthanded: UTG is the third ALIVE seat clockwise
+    # from dealer (library convention).
+    dpos = alive_seats.index(dealer_seat)
+    utg_seat = alive_seats[(dpos + 3) % n_alive]
+    # From utg_seat, walk clockwise through ALL 6 seats once
+    return [(utg_seat + offset) % NUM_SEATS for offset in range(NUM_SEATS)]
 
 
 def postflop_action_order(dealer_seat: int, alive_seats: list[int],
@@ -623,11 +653,17 @@ def derive_action_sequence(frame: ScraperFrame
                 preflop_commit[seat] = max(
                     0, total_committed[seat] - ante)
 
-    # PREFLOP action emission
+    # PREFLOP action emission — walk WITH-EMPTIES so OpenSpiel's natural
+    # cycle (which includes stack=1 placeholders for empty seats) lines up.
+    # Empty seats emit forced-fold; alive seats emit per the simple model.
     actions: list[tuple[int, int]] = []
-    pf_order = preflop_action_order(frame.dealer_seat, alive_seats)
+    pf_order = preflop_action_order_with_empties(frame.dealer_seat, frame.alive)
     running_max_pf = frame.blinds.bb  # initial preflop max = BB
     for seat in pf_order:
+        # Empty seat: forced fold (OpenSpiel placeholder cycles through them).
+        if not frame.alive[seat]:
+            actions.append((seat, 0))
+            continue
         # Hero stop condition for preflop frame
         if street_idx == 0 and seat == frame.hero_seat:
             break

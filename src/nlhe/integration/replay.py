@@ -229,6 +229,178 @@ def _cards_in_public(pub: str) -> list[str]:
     return [pub[i:i + 2] for i in range(0, len(pub), 2)]
 
 
+# --------------------------------------------------------------------------
+# Full mid-hand replay engine (Phase 2 Piece 4)
+# --------------------------------------------------------------------------
+
+
+@dataclass
+class MidHandState:
+    """Result of a successful mid-hand replay.
+
+    Extends HandStartState with bookkeeping needed by the generalised
+    invariant check (Piece 5): per-seat prior-streets cumulative
+    commitment (used to convert OpenSpiel total-commit to scraper
+    current-street bet during the diff).
+    """
+    state: Any                          # OpenSpiel state at hero's decision
+    game_str: str
+    pre_hand_stacks: tuple[int, ...]
+    blind_level: BlindLevel
+    sb_seat: int
+    bb_seat: int
+    n_alive: int
+    n_actions_applied: int              # for diagnostics
+    final_current_player: int           # should == hero_seat
+
+
+def replay_to_decision(frame, structure):
+    """Walk OpenSpiel from new_initial_state() to the hero's current decision.
+
+    Combines Pieces 1, 2, 3:
+      - Piece 1 (DEAL_ORDER_SEQUENCE): drives the dealer's slot lookup
+      - Piece 2 (derive_action_sequence): canonical action sequence
+      - Piece 3 (deal_one_card_6max): forced chance handling
+
+    Step-by-step:
+      1. Build pre-hand stacks via the simple-model chip-conservation
+         helper from scraper_schema (same one derive_action_sequence uses).
+      2. Build game string via to_inner_game_string_for_state with those
+         pre-hand stacks + dealer.
+      3. Load + new_initial_state() -> at the first hole-card chance node.
+      4. Derive the action sequence via derive_action_sequence(frame).
+      5. Walk: at each loop step, if state.is_chance_node() apply a
+         forced deal (hole or board card as appropriate); otherwise apply
+         the next action int from the sequence. Continue until either
+         (a) the action sequence is exhausted AND state.current_player()
+         == hero_seat (SUCCESS) or (b) we hit a step that can't be
+         applied (ReplayError).
+      6. Return a MidHandState ready for the generalised invariant.
+
+    Raises ReplayError if any step inconsistency: action not in legal_actions,
+    state goes terminal before reaching hero, hero_seat mismatch at end, etc.
+    Callers should treat ReplayError as a soft-drop (ScraperDataQuality
+    equivalent for replay-time failures).
+    """
+    try:
+        # Lazy imports — keep top of module light + tolerate /tmp paths.
+        from src.nlhe.integration.scraper_schema import (
+            _derive_pre_hand_simple_model, derive_action_sequence,
+            ActionDerivationError,
+        )
+    except ImportError:  # pragma: no cover (only the /tmp dev shim path)
+        from scraper_schema import (  # type: ignore
+            _derive_pre_hand_simple_model, derive_action_sequence,
+            ActionDerivationError,
+        )
+
+    alive_seats = [i for i in range(NUM_SEATS) if frame.alive[i]]
+    n_alive = len(alive_seats)
+    if n_alive < 2:
+        raise ReplayError(f"n_alive={n_alive} < 2; no hand possible")
+
+    # Match SB/BB by the same alive-seat rotation the library uses
+    sb_seat, bb_seat = _sb_bb_seats(frame.dealer_seat, alive_seats)
+
+    blind_level = _find_blind_level(structure, frame.blinds)
+
+    # Pre-hand stacks via the simple-model chip-conservation helper
+    pre = _derive_pre_hand_simple_model(frame, sb_seat, bb_seat)
+    stacks = list(pre)
+
+    # Game string + initial state
+    try:
+        game_str = structure.to_inner_game_string_for_state(
+            blind_level=blind_level,
+            stacks=stacks,
+            dealer_seat=frame.dealer_seat,
+        )
+        game = pyspiel.load_game(game_str)
+        state = game.new_initial_state()
+    except Exception as e:
+        raise ReplayError(
+            f"OpenSpiel load_game / new_initial_state failed: {e}\n"
+            f"game_str (first 300): {game_str[:300] if 'game_str' in locals() else 'N/A'}"
+        )
+
+    # Derive canonical action sequence
+    try:
+        action_seq = derive_action_sequence(frame)
+    except ActionDerivationError as e:
+        raise ReplayError(f"action sequence derivation failed: {e}")
+
+    # Walk: interleave chance handling with action application
+    action_idx = 0
+    max_steps = 200  # safety cap (12 holes + 5 board + ~50 actions << 200)
+    n_actions_applied = 0
+    for _step in range(max_steps):
+        if state.is_terminal():
+            raise ReplayError(
+                f"state went terminal before hero's decision; "
+                f"action_idx={action_idx}/{len(action_seq)} "
+                f"n_actions_applied={n_actions_applied}"
+            )
+        if state.is_chance_node():
+            try:
+                deal_one_card_6max(
+                    state, frame.hero_seat,
+                    frame.hero_cards, frame.board,
+                )
+            except ReplayError:
+                raise  # propagate
+            except Exception as e:
+                raise ReplayError(f"chance deal failed: {e}")
+            continue
+        # Decision node — check if we've reached hero's decision
+        if action_idx >= len(action_seq):
+            # Sequence exhausted; verify we landed at hero
+            if state.current_player() == frame.hero_seat:
+                return MidHandState(
+                    state=state,
+                    game_str=game_str,
+                    pre_hand_stacks=tuple(stacks),
+                    blind_level=blind_level,
+                    sb_seat=sb_seat,
+                    bb_seat=bb_seat,
+                    n_alive=n_alive,
+                    n_actions_applied=n_actions_applied,
+                    final_current_player=state.current_player(),
+                )
+            raise ReplayError(
+                f"action sequence exhausted but current_player="
+                f"{state.current_player()}, expected hero_seat="
+                f"{frame.hero_seat}; sequence under-emitted"
+            )
+        # Apply next action — verify seat matches expected
+        expected_seat, chip_int = action_seq[action_idx]
+        actual_seat = state.current_player()
+        if actual_seat != expected_seat:
+            raise ReplayError(
+                f"action_seq[{action_idx}] expects seat {expected_seat} "
+                f"but state.current_player()={actual_seat}; "
+                f"action_seq mismatched OpenSpiel's action order"
+            )
+        legal = state.legal_actions()
+        if chip_int not in legal:
+            raise ReplayError(
+                f"action_seq[{action_idx}]=(seat={expected_seat}, "
+                f"chip_int={chip_int}) not in legal_actions={legal[:10]}"
+                f"{' ...' if len(legal) > 10 else ''}; "
+                f"derive_action_sequence emitted an illegal action"
+            )
+        try:
+            state.apply_action(int(chip_int))
+        except Exception as e:
+            raise ReplayError(f"apply_action failed: {e}")
+        action_idx += 1
+        n_actions_applied += 1
+    raise ReplayError(
+        f"replay exceeded max_steps={max_steps}; "
+        f"action_idx={action_idx}/{len(action_seq)} "
+        f"likely infinite chance loop"
+    )
+
+
 class ReplayError(Exception):
     """Replay failed for a non-recoverable reason — caller must safe-fallback."""
 
