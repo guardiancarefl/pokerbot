@@ -126,6 +126,13 @@ class SubgameSolveContext:
     # blueprint (trained dealer-aware) gets correct positions. None = legacy /
     # repeated_poker (parse already supplies dealer_seat).
     dealer_seat: Optional[int] = None
+    # ReBeL policy-net warm-start at the HERO ROOT (Brown et al. 2020, value+policy).
+    # When set, a (9,) softmax over DiscreteAction slots — replaces the blueprint
+    # advantage warm-start at the hero root only (non-root hero nodes still get
+    # blueprint advantages). Mass is L1-matched to the blueprint at the root so the
+    # prior strength is comparable; only the prior SHAPE differs. None = blueprint
+    # warm-start at root (legacy path; bit-identical to pre-policy-net behavior).
+    root_policy_prior: Optional[np.ndarray] = None
 
     def __post_init__(self) -> None:
         if len(self.starting_stacks) != _NUM_SEATS:
@@ -441,6 +448,8 @@ def _run_cfr(tree: SubgameTree, ctx: SubgameSolveContext,
     R: dict = {}
     S: dict = {}
     warm = getattr(ctx, "warm_start", True)
+    root_id = id(tree.root)
+    policy_prior = getattr(ctx, "root_policy_prior", None)
     for node in iter_decision_nodes(tree):
         if node.current_player == hero:
             nid = id(node)
@@ -448,9 +457,23 @@ def _run_cfr(tree: SubgameTree, ctx: SubgameSolveContext,
             # contribution to the resolve), or start from zero (vanilla CFR) when off.
             R[nid] = (cache.adv[nid].astype(np.float64) if warm
                       else np.zeros(_N_ACTIONS, dtype=np.float64))
+            # Policy-net warm-start at the hero root only: replace the prior SHAPE
+            # while keeping the prior MASS (clip-positive L1) identical to blueprint.
+            # RM+(p * mass) = p (already normalized over legal), so the initial σ_pre
+            # equals the policy net's prediction; matching mass keeps the prior's
+            # "persistence vs CFR signal" identical to the blueprint warm-start.
+            if (warm and nid == root_id and policy_prior is not None):
+                pp = np.asarray(policy_prior, dtype=np.float64) * cache.mask[nid]
+                if pp.sum() > 0:
+                    mass = float(np.maximum(R[nid], 0.0).sum())
+                    if mass <= 0.0:
+                        # Blueprint advantage was all-negative on legal; fall back to
+                        # mass=1.0 so RM+(pp * 1) = pp/Σpp, giving a meaningful prior
+                        # rather than an all-zero R that re-uniformizes.
+                        mass = 1.0
+                    R[nid] = pp * (mass / pp.sum())
             S[nid] = np.zeros(_N_ACTIONS, dtype=np.float64)
 
-    root_id = id(tree.root)
     root_q_holder = [np.zeros(_N_ACTIONS, dtype=np.float64)]  # last-iter root Q
 
     def traverse(node, w: float) -> float:
