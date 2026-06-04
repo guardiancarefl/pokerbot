@@ -267,6 +267,25 @@ def parse_frame(record: dict, hero_seat_alias: str = "seat1") -> ScraperFrame:
             f"captured_at={record.get('captured_at', '<missing>')}"
         )
 
+    # n_alive < 4: out of the model's training distribution AND out of the
+    # deployment format's playable range. _sample_alive_count requires
+    # alive_count >= num_paid + 1 = 4 (the ship blueprint + rebel value-net
+    # have zero exposure to 2/3-alive states), and Double-Up top-3
+    # terminates at 3-alive (the match is over; everyone left has cashed).
+    # Any frame with n_alive < 4 is therefore either (a) a different
+    # tournament format mixed into the corpus, or (b) a transient frame
+    # captured between bust and the match-end UI update. Either way the
+    # resolver should not be asked to decide on it. Soft-drop.
+    n_alive_total = sum(alive)
+    if n_alive_total < 4:
+        raise ScraperDataQuality(
+            f"n_alive={n_alive_total} < 4; below the trained model's "
+            f"sample_starting_state lower bound (alive_count >= num_paid+1=4) "
+            f"AND below the Double-Up top-3 deployment's playable range "
+            f"(match terminates at 3-alive). Soft drop. "
+            f"captured_at={record.get('captured_at', '<missing>')}"
+        )
+
     # Controls
     controls_present = bool(
         (record.get("controls") or {}).get("present", False)

@@ -722,3 +722,47 @@ workaround and its removal are paired — do not remove one without the other.
 
 **Pointer to the workaround:** `src/nlhe/integration/invariant.py:openspiel_to_scraper_view`
 (module docstring + inline `BUG-MATCHED` comments at the conversion lines).
+
+## Heads-up SB/BB convention library bug (latent; FIX QUEUED with ghost-ante fix)
+**Decided:** 2026-06-04 (Option B integration build, scraper-state replay phase)
+**Why this is noted, not fixed:** `src/nlhe/game_strings.py:to_inner_game_string_for_state`
+(line ~397-417) computes SB/BB positions in heads-up play with the convention "dealer=BB,
+non-dealer=SB" — opposite to standard real-poker heads-up (dealer=SB, non-dealer=BB; SB acts
+first preflop). Concretely, for `n_alive=2` the function returns `sb_seat=alive[(dpos+1)%2]`
+and `bb_seat=alive[(dpos+2)%2]=alive[dpos]=dealer_seat`. The comment in the source claims
+"BB acts first preflop" for heads-up which is also opposite to standard rules.
+
+**Exposed by:** the strict invariant check on `live9.jsonl` line 265 — a heads-up frame where
+the scraper sees `dealer=seat3` with `bets={seat1: 100, seat3: 50}` (dealer is SB), but the
+library's replay produces `bets={seat1: 50, seat3: 100}` (dealer is BB). Pre Option B with
+the ghost-ante fixed in the integration, the per-seat stack/bet are swapped between the two
+positions.
+
+**Why we don't fix this now:** out of scope for the ship integration:
+
+1. `_sample_alive_count` (`src/nlhe/stack_sampler.py:149`) requires
+   `alive_count >= num_paid + 1 = 4`, so the rebel value-net + k=200 blueprint have ZERO
+   training exposure to 2-alive states. Even if the convention were fixed, the model's
+   decisions on heads-up are unreliable.
+2. The Double-Up top-3 deployment format terminates at 3-alive (the bubble is at 4, the
+   match ends when only 3 remain — all 3 have cashed). So n_alive=2 is NEVER reached during
+   play in the deployment context.
+3. Fixing the convention is a `to_inner_game_string_for_state` change that's coupled with
+   the ghost-ante fix (same function, different shorthanded-accounting bug); see the
+   companion "Integration ghost-ante bug-match workaround" entry above. Both fixes should
+   land in the same training cycle to avoid retraining twice.
+
+**Mitigation in the integration:** the parser drops `n_alive < 4` frames as
+`ScraperDataQuality` (matches both the model's training-distribution lower bound AND the
+deployment format's playable range). See `scraper_schema.parse_frame` near the alive[]
+derivation.
+
+**QUEUED for the next training cycle:** when the ghost-ante fix lands (Option A from the
+companion entry), ALSO fix the heads-up SB/BB convention to match real-poker rules:
+`sb_seat = dealer_seat` and `bb_seat = alive[(dpos+1)%2]` for `n_alive=2`, with
+`preflop_actor = sb_seat + 1` and `postflop_actor = bb_seat + 1`. Update the
+`if n_alive == 2:` branch's comment to "SB acts first preflop, BB first postflop" (the
+standard rules). Add tests for the heads-up case. Remove the `n_alive < 4` drop if the
+retrained model is exposed to heads-up samples; keep it otherwise. Document the test
+expectations alongside the ghost-ante test updates so both library bugs are fixed and
+verified together.
