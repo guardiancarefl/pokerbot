@@ -373,3 +373,317 @@ def chip_conservation_total(frame: ScraperFrame) -> int:
     which is a strictly NON-increasing sequence frame-to-frame within a session.
     """
     return sum(pre_hand_stacks(frame))
+
+
+# --------------------------------------------------------------------------
+# Action-sequence derivation (Phase 2 Piece 2)
+# --------------------------------------------------------------------------
+
+
+class ActionDerivationError(Exception):
+    """Action-sequence derivation hit an inconsistency; caller drops the frame
+    as ScraperDataQuality (the safe-fallback path)."""
+
+
+def preflop_action_order(dealer_seat: int, alive_seats: list[int]) -> list[int]:
+    """Return seats in OpenSpiel preflop action order, ONE FULL LAP.
+
+    Matches `to_inner_game_string_for_state`'s rotation (game_strings.py:397-423):
+      - n_alive == 2 (heads-up): BB acts first preflop (= dealer per the library's
+        n_alive==2 branch). Note this is the OPPOSITE of standard real-poker
+        heads-up convention, and is the documented library bug queued for the next
+        training cycle (DECISIONS.md). The integration's n_alive<4 soft-drop
+        means we never actually walk this branch for shipped frames, but
+        the function returns the library-matching order for completeness.
+      - n_alive >= 3: UTG first (= alive_seats[(dealer_pos + 3) % n_alive]),
+        then clockwise through alive seats.
+    """
+    n_alive = len(alive_seats)
+    if n_alive < 2:
+        return []
+    dpos = alive_seats.index(dealer_seat)
+    if n_alive == 2:
+        bb_seat = alive_seats[(dpos + 2) % n_alive]  # = dealer (library bug)
+        sb_seat = alive_seats[(dpos + 1) % n_alive]
+        return [bb_seat, sb_seat]
+    return [alive_seats[(dpos + 3 + i) % n_alive] for i in range(n_alive)]
+
+
+def postflop_action_order(dealer_seat: int, alive_seats: list[int],
+                           folded: tuple[bool, ...]) -> list[int]:
+    """Return alive-non-folded seats in OpenSpiel postflop action order
+    (SB first, then clockwise; folded seats skipped).
+
+    SB is alive_seats[(dpos+1) % n_alive]. We walk clockwise from there and
+    skip any seat that's folded. n_alive == 2 case: SB acts first postflop
+    (= non-dealer; this matches both real-poker and the library's
+    `postflop_actor = sb_seat + 1` line, so no convention-bug here for
+    postflop)."""
+    n_alive = len(alive_seats)
+    if n_alive < 2:
+        return []
+    dpos = alive_seats.index(dealer_seat)
+    sb_alive_idx = (dpos + 1) % n_alive
+    order = []
+    for offset in range(n_alive):
+        seat = alive_seats[(sb_alive_idx + offset) % n_alive]
+        if not folded[seat]:
+            order.append(seat)
+    return order
+
+
+def _street_idx_from_board(board: tuple) -> int:
+    """Map scraper.board length to OpenSpiel street_idx.
+    0/3/4/5 cards -> 0/1/2/3 (preflop/flop/turn/river). Anything else: error."""
+    n = len(board)
+    if n == 0:
+        return 0
+    if n == 3:
+        return 1
+    if n == 4:
+        return 2
+    if n == 5:
+        return 3
+    raise ActionDerivationError(
+        f"invalid board length {n}; expected 0/3/4/5"
+    )
+
+
+def _derive_pre_hand_simple_model(frame: ScraperFrame,
+                                    sb_seat: int, bb_seat: int
+                                    ) -> tuple[int, ...]:
+    """Reconstruct per-seat pre-hand stacks (chips at hand START, before
+    any blinds/antes posted) using chip conservation + the simple model.
+
+    Simple model assumption: all alive-non-folded seats reached the same
+    preflop commit (P_max); folded seats folded preflop without voluntary
+    action (committed ante + blind if blind seat, else ante only).
+    Frames that violate this assumption (e.g., someone called preflop then
+    folded on a later street) will produce wrong pre_hand here, which
+    propagates to a wrong action sequence, which the downstream invariant
+    rejects.
+
+    Works for both hand-start frames (where P_max = 0, trivially) and
+    postflop frames. For empty seats: returns 0.
+    """
+    alive_seats = [i for i in range(NUM_SEATS) if frame.alive[i]]
+    n_alive = len(alive_seats)
+    ante = frame.blinds.ante
+    sb = frame.blinds.sb
+    bb = frame.blinds.bb
+
+    # Folded seats' total commit (simple model: folded preflop)
+    folded_commit_total = 0
+    folded_seats = [i for i in alive_seats if frame.folded[i]]
+    for i in folded_seats:
+        folded_commit_total += ante
+        if i == sb_seat:
+            folded_commit_total += sb
+        elif i == bb_seat:
+            folded_commit_total += bb
+
+    alive_non_folded = [i for i in alive_seats if not frame.folded[i]]
+    n_anf = len(alive_non_folded)
+
+    # Chip conservation:
+    #   pot = sum_alive_non_folded(bet + preflop_commit + ante)
+    #       + folded_commit_total
+    #   pot - folded_commit_total - n_anf*ante - sum(bet over anf)
+    #         = n_anf * preflop_commit_per_alive
+    if n_anf == 0:
+        # Degenerate (everyone folded). Skip — only the winner remains and
+        # the hand would have ended; should not reach derive at hero-to-act.
+        preflop_commit_per_alive = 0
+    else:
+        bet_sum_anf = sum(frame.bet[i] for i in alive_non_folded)
+        residual = (frame.pot_total - folded_commit_total
+                     - n_anf * ante - bet_sum_anf)
+        # If residual < 0 or not divisible cleanly by n_anf, the simple
+        # model doesn't fit this frame. We still compute a best-effort value
+        # (integer-divide); the downstream invariant will catch any mismatch.
+        preflop_commit_per_alive = max(0, residual // n_anf)
+
+    pre = []
+    for i in range(NUM_SEATS):
+        if not frame.alive[i]:
+            pre.append(0)
+        elif frame.folded[i]:
+            blind_amt = sb if i == sb_seat else bb if i == bb_seat else 0
+            pre.append(frame.stack[i] + ante + blind_amt)
+        else:
+            pre.append(frame.stack[i] + ante
+                        + preflop_commit_per_alive
+                        + frame.bet[i])
+    return tuple(pre)
+
+
+def derive_action_sequence(frame: ScraperFrame
+                            ) -> list[tuple[int, int]]:
+    """Derive the canonical (seat_idx, openspiel_chip_int) sequence to walk
+    OpenSpiel state from new_initial_state() to the hero's current decision.
+
+    Stop condition (caller stops at the hero's decision):
+      - On preflop: we walk the preflop order; we BREAK at the hero's slot.
+        Whether the hero has already acted (re-raise, second lap) is NOT
+        handled here — first-lap only. Multi-lap preflop frames will produce
+        an action sequence that lands at the wrong current_player and the
+        downstream invariant rejects them as ScraperDataQuality (correct
+        safe-fallback). Acceptable for Phase 2 first pass; tighten if the
+        corpus shows non-trivial multi-lap incidence.
+      - On postflop frames: we emit all preflop actions, then for each
+        postflop street up to (but not including) the current street, emit
+        a CHECK for every alive non-folded seat in postflop order. On the
+        CURRENT postflop street, emit the seat actions implied by frame.bet
+        in postflop order; STOP at the hero's slot.
+
+    Simple postflop model: all prior-street commit (preflop + intermediate
+    streets) is attributed to PREFLOP — intermediate streets are
+    all-checks. Frames where alive seats raised on intermediate streets
+    (so their preflop_commit derived from total - current_bet doesn't
+    match across alive seats) will fail the downstream invariant. The
+    invariant's strictness is the correctness gate — this function is
+    permitted to be approximate as long as it's right for the common case.
+
+    Returns: list of (seat_idx, openspiel_chip_int). For each entry,
+    apply_action(chip_int) on the OpenSpiel state when state.current_player()
+    is at that seat (Piece 4's replay engine handles chance-node
+    interleaving and asserts the seat matches).
+
+    Raises:
+        ActionDerivationError: structural inconsistency that should make
+            the caller treat the frame as ScraperDataQuality (soft drop).
+    """
+    alive_seats = [i for i in range(NUM_SEATS) if frame.alive[i]]
+    n_alive = len(alive_seats)
+    if n_alive < 2:
+        raise ActionDerivationError(
+            f"n_alive={n_alive} < 2; no hand possible")
+
+    dpos = alive_seats.index(frame.dealer_seat)
+    sb_seat = alive_seats[(dpos + 1) % n_alive]
+    bb_seat = alive_seats[(dpos + 2) % n_alive] if n_alive >= 3 \
+        else alive_seats[(dpos + 2) % n_alive]
+
+    street_idx = _street_idx_from_board(frame.board)
+
+    # Per-seat pre-hand stacks via simple-model chip conservation. Works
+    # for both hand-start (P_max=0) and postflop frames. See helper docstring
+    # for the simple-model assumption and its failure modes.
+    pre = _derive_pre_hand_simple_model(frame, sb_seat, bb_seat)
+
+    # In the simple model, for alive seats we ASSUME all prior-street commit
+    # was preflop. For a preflop frame, preflop_commit_seat = total_commit_seat
+    # (i.e., frame.bet[seat] = preflop_commit for alive seats, and the
+    # pre_hand_stacks helper already adds ante back so chip arithmetic closes).
+    #
+    # For postflop alive seats: preflop_commit = total_committed - current_bet.
+    # But the SIMPLE model picks a single preflop_max for all alive
+    # non-folded seats. We pick preflop_max = max alive (total_committed -
+    # current_bet) — i.e., the highest preflop commitment any alive seat
+    # made. If alive seats DIFFER on this metric, they had non-matching
+    # prior-street commits (some bet on an intermediate street, others
+    # didn't), which the simple model can't represent. We DON'T raise here;
+    # we proceed with the max and let the downstream invariant catch any
+    # state mismatch.
+
+    if street_idx == 0:
+        # PREFLOP frame. preflop_commit[seat] = chips committed THIS STREET
+        # (frame.bet[seat], for alive seats). For folded seats the bet field
+        # is 0 in our parser, but they may have committed sb/bb if they
+        # were the blind seat and folded after just-blinding.
+        # In OpenSpiel accounting (un-inflated bb on the integration side),
+        # the BB seat's preflop_commit_in_openspiel after blinds posted = bb
+        # (which the inflated_bb represents in the buggy library; we already
+        # bug-match elsewhere). For action sequence, we emit chip_ints in
+        # SCRAPER-EQUIVALENT accounting and the OpenSpiel engine handles the
+        # inflated bookkeeping on its side.
+        preflop_commit = list(frame.bet)
+    else:
+        # POSTFLOP: compute per-seat total_committed, derive preflop_commit
+        # via simple model (all prior to preflop).
+        total_committed = [
+            pre[i] - frame.stack[i] if frame.alive[i] else 0
+            for i in range(NUM_SEATS)
+        ]
+        # Subtract ante (which is in "chips put in pot" arithmetic but NOT
+        # in OpenSpiel-side seat contributions for non-BB seats; the BB
+        # carries everyone's ante via the inflated convention).
+        ante = frame.blinds.ante
+        preflop_commit = [
+            max(0, total_committed[i] - frame.bet[i] - ante)
+            if frame.alive[i] else 0
+            for i in range(NUM_SEATS)
+        ]
+        # For folded seats: their total_committed includes ante + whatever
+        # they paid before folding. Attribute all of it to preflop.
+        for seat in range(NUM_SEATS):
+            if not frame.alive[seat]:
+                continue
+            if frame.folded[seat]:
+                preflop_commit[seat] = max(
+                    0, total_committed[seat] - ante)
+
+    # PREFLOP action emission
+    actions: list[tuple[int, int]] = []
+    pf_order = preflop_action_order(frame.dealer_seat, alive_seats)
+    running_max_pf = frame.blinds.bb  # initial preflop max = BB
+    for seat in pf_order:
+        # Hero stop condition for preflop frame
+        if street_idx == 0 and seat == frame.hero_seat:
+            break
+        seat_commit_pf = preflop_commit[seat]
+        if frame.folded[seat]:
+            actions.append((seat, 0))  # fold
+            # Folded seats don't update running_max
+            continue
+        if seat_commit_pf == 0:
+            # Alive seat with zero commit — usually means hero wasn't reached
+            # yet in the order; emit fold defensively (the invariant will
+            # catch if this is wrong).
+            actions.append((seat, 0))
+            continue
+        if seat_commit_pf < running_max_pf:
+            # Less than current max → they must have folded (committed only
+            # blind/partial); already handled above for folded seats; here
+            # alive-but-under-max is anomalous, treat as fold defensively.
+            actions.append((seat, 0))
+        elif seat_commit_pf == running_max_pf:
+            # Call/check
+            actions.append((seat, 1))
+        else:
+            # Raise to seat_commit_pf (OpenSpiel chip_int = cumulative
+            # voluntary commitment for non-BB; for BB it's also cumulative
+            # but starts at inflated_bb). For the bug-matched library, the
+            # right chip_int for a non-BB raise equals their scraper-side
+            # voluntary bet (= seat_commit_pf for preflop).
+            actions.append((seat, seat_commit_pf))
+            running_max_pf = seat_commit_pf
+
+    if street_idx == 0:
+        return actions
+
+    # POSTFLOP: emit intermediate streets (all-checks) then current street
+    pf_alive_post = postflop_action_order(
+        frame.dealer_seat, alive_seats, frame.folded)
+    # Intermediate streets (1..street_idx-1): all checks
+    for _ in range(1, street_idx):
+        for seat in pf_alive_post:
+            actions.append((seat, 1))  # check
+    # Current street: emit bets per frame.bet in postflop order, stop at hero
+    running_max_cs = 0  # current-street max (chips IN FRONT this street)
+    for seat in pf_alive_post:
+        if seat == frame.hero_seat:
+            break
+        cs_commit = frame.bet[seat]
+        if cs_commit == 0:
+            actions.append((seat, 1))  # check
+        elif cs_commit == running_max_cs:
+            actions.append((seat, 1))  # call
+        else:
+            # Raise this street: chip_int = cumulative across streets =
+            # preflop_commit[seat] + cs_commit
+            total_int = preflop_commit[seat] + cs_commit
+            actions.append((seat, total_int))
+            running_max_cs = cs_commit
+
+    return actions
