@@ -118,6 +118,9 @@ class SubgameSolveContext:
     rng: Optional[random.Random] = None
     num_paid: int = 3
     average_weighting: str = "linear"
+    # Warm-start hero CFR regret with blueprint advantages (True, default) or start
+    # from zero (vanilla CFR) — the policy-net-warm-start on/off lever.
+    warm_start: bool = True
     # Button seat (0-indexed) for tournament-mode single-hand states that don't
     # expose dealer_seat(). Injected into the parsed dict before encoding so the
     # blueprint (trained dealer-aware) gets correct positions. None = legacy /
@@ -437,10 +440,14 @@ def _run_cfr(tree: SubgameTree, ctx: SubgameSolveContext,
     # Hero regret (R) + linearly-weighted average-strategy (S) accumulators.
     R: dict = {}
     S: dict = {}
+    warm = getattr(ctx, "warm_start", True)
     for node in iter_decision_nodes(tree):
         if node.current_player == hero:
             nid = id(node)
-            R[nid] = cache.adv[nid].astype(np.float64)
+            # Warm-start hero regret with the blueprint advantages (the policy-net
+            # contribution to the resolve), or start from zero (vanilla CFR) when off.
+            R[nid] = (cache.adv[nid].astype(np.float64) if warm
+                      else np.zeros(_N_ACTIONS, dtype=np.float64))
             S[nid] = np.zeros(_N_ACTIONS, dtype=np.float64)
 
     root_id = id(tree.root)

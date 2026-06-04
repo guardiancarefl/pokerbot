@@ -31,6 +31,9 @@ from src.nlhe.equity import cards_from_str
 from src.nlhe.subgame import build_subgame_tree, iter_leaf_nodes
 from src.nlhe.subgame_solver import SubgameSolveContext, solve_subgame, extract_action
 from src.nlhe.infoset6 import parse_state_6max
+from src.nlhe.actions import discretize_legal_actions
+from src.nlhe.cfr6 import _build_view_6max
+from src.nlhe.networks6 import SCHEMA_VERSION as _PN_SCHEMA
 from src.nlhe.archetype6 import ArchetypePolicy
 from src.nlhe.archetypes import NAMED_ARCHETYPES, EquityCalibration
 from src.nlhe.scripted_bots import ShankyProfilePolicy
@@ -67,17 +70,79 @@ class BlueprintHero:
 
 class ReBeLHero:
     name = "rebel"
-    def __init__(self, solver, abstraction, net, ck, payouts, depth=3, n_iters=150, num_paid=3, weighting="linear"):
+    def __init__(self, solver, abstraction, net, ck, payouts, depth=3, n_iters=150, num_paid=3,
+                 weighting="linear", warm_start=True, belief="uniform"):
         self.solver = solver; self.abs = abstraction; self.net = net
         self.ymu, self.ysd, self.k = ck["y_mean"], ck["y_std"], ck["k"]
         self.bd = solver.encoder.max_bucket_dim; self.enc = solver.encoder
-        self.payouts = payouts; self.depth = depth; self.n_iters = n_iters; self.num_paid = num_paid; self.weighting = weighting
+        self.payouts = payouts; self.depth = depth; self.n_iters = n_iters; self.num_paid = num_paid
+        self.weighting = weighting; self.warm_start = warm_start; self.belief = belief
+        self.pn = solver.policy_nets
+        self.is_v2 = (getattr(self.pn, "loaded_schema_version", None) == _PN_SCHEMA)
         self.dealer = None; self.kstreet = {0: 20, 1: 200, 2: 200, 3: 200}
+        self._opp_belief = None  # precomputed per-decision opponent reach-belief (reach mode)
     def new_hand(self, dealer): self.dealer = dealer
 
     def _starting(self, parsed):
         m, c = parsed["money"], parsed["contribution"]
         return [int(m[i]) + int(c[i]) for i in range(NUM_SEATS)]
+
+    def _batched_policy(self, seat, public, mask, kk):
+        """Blueprint policy over all kk bucket-variants at one infoset (for reach)."""
+        feats = np.zeros((kk, self.enc.feature_dim), dtype=np.float32)
+        feats[:, self.bd:] = public
+        feats[np.arange(kk), np.arange(kk)] = 1.0
+        x = torch.from_numpy(feats)
+        with torch.no_grad():
+            net = self.pn.strat_net if self.is_v2 else self.pn.nets[seat]
+            net.eval(); out = net(x).numpy()
+        m = mask[None, :]
+        ex = (np.exp(out - out.max(1, keepdims=True)) if self.is_v2 else np.maximum(out, 0.0)) * m
+        den = ex.sum(1, keepdims=True)
+        return np.where(den > 0, ex / np.maximum(den, 1e-12), m / max(float(mask.sum()), 1.0))
+
+    def _root_belief(self, state, hero, starting):
+        """Per-opponent reach-POSTERIOR over root-street buckets from the public
+        betting history (the resolver's precise-belief mode). Held across the
+        depth-limited subgame's leaves (opponent ranges ~constant within it)."""
+        try:
+            init = state.get_game().new_initial_state()
+            recs = []; s = init
+            for act in state.history():
+                if s.is_chance_node():
+                    s.apply_action(act); continue
+                cp = s.current_player()
+                p = parse_state_6max(s); p["dealer_seat"] = self.dealer
+                feat = np.asarray(self.enc.encode_from_parsed(p, rng=None), dtype=np.float32)
+                view = _build_view_6max(s, p)
+                d2c = discretize_legal_actions(list(s.legal_actions()), view)
+                da = next((int(d) for d, c in d2c.items() if c == act), None)
+                if da is not None:
+                    mask = np.zeros(9, dtype=np.float32)
+                    for dd in d2c:
+                        mask[int(dd)] = 1.0
+                    recs.append({"seat": cp, "public": feat[self.bd:].copy(), "mask": mask,
+                                 "action": da, "street": int(p["street_idx"])})
+                s.apply_action(act)
+            root_street = int(parse_state_6max(state)["street_idx"])
+            kk = self.kstreet.get(root_street, self.k)
+            folded = {r["seat"] for r in recs if r["action"] == 0}
+            bel = np.zeros((6, self.k), dtype=np.float32)
+            for sd in range(6):
+                if sd == hero or starting[sd] <= 0 or sd in folded:
+                    continue
+                past = [r for r in recs if r["seat"] == sd and r["street"] == root_street]
+                if not past:
+                    bel[sd, :kk] = 1.0 / kk; continue
+                logr = np.zeros(kk)
+                for r in past:
+                    pol = self._batched_policy(sd, r["public"], r["mask"], kk)
+                    logr += np.log(pol[:, r["action"]] + 1e-9)
+                logr -= logr.max(); rr = np.exp(logr); rr /= max(rr.sum(), 1e-12)
+                bel[sd, :kk] = rr
+            return bel
+        except Exception:
+            return None
 
     def _leaf_val(self, leaf, hero, hero_cards, hbucket_cache):
         st = leaf.state
@@ -102,9 +167,15 @@ class ReBeLHero:
         if 0 <= hb < self.k:
             belief[hero, hb] = 1.0
         starting = self._starting(p)
-        for s in range(6):
-            if s != hero and starting[s] > 0:
-                belief[s, :kk] = 1.0 / kk
+        if self.belief == "reach" and self._opp_belief is not None:
+            # precise: opponents = the root reach-posterior (held across leaves)
+            for s in range(6):
+                if s != hero and starting[s] > 0:
+                    belief[s] = self._opp_belief[s]
+        else:
+            for s in range(6):
+                if s != hero and starting[s] > 0:
+                    belief[s, :kk] = 1.0 / kk
         x = np.concatenate([public, belief.reshape(6 * self.k)])[None, :].astype(np.float32)
         with torch.no_grad():
             out = self.net(torch.from_numpy(x)).numpy()[0] * self.ysd + self.ymu
@@ -115,6 +186,7 @@ class ReBeLHero:
         starting = self._starting(parsed)
         try:
             hero_cards = cards_from_str(parse_state_6max(state, observer=cp).get("private_cards", "") or "")
+            self._opp_belief = self._root_belief(state, cp, starting) if self.belief == "reach" else None
             tree = build_subgame_tree(state, max_action_depth=self.depth,
                                       chance_samples_per_node=2, rng=rng)
             cache = {}
@@ -123,7 +195,7 @@ class ReBeLHero:
             res = solve_subgame(tree, SubgameSolveContext(
                 blueprint=self.solver, starting_stacks=starting, payouts=self.payouts,
                 hero_seat=cp, n_iterations=self.n_iters, rng=rng, num_paid=self.num_paid,
-                average_weighting=self.weighting, dealer_seat=self.dealer))
+                average_weighting=self.weighting, warm_start=self.warm_start, dealer_seat=self.dealer))
             if res.degraded:
                 raise RuntimeError("degraded")
             return extract_action(res, state, rng, mode)
@@ -196,6 +268,10 @@ def main():
     ap.add_argument("--kiters-b", type=int, default=150)
     ap.add_argument("--weighting-a", default="linear")
     ap.add_argument("--weighting-b", default="linear")
+    ap.add_argument("--warmstart-a", type=int, default=1)
+    ap.add_argument("--warmstart-b", type=int, default=1)
+    ap.add_argument("--belief-a", default="uniform")
+    ap.add_argument("--belief-b", default="uniform")
     a = ap.parse_args()
     if a.net_b is None:
         a.net_b = a.net
@@ -215,17 +291,18 @@ def main():
     solver = _load_solver(CKPT, abstraction, structure)
     calib = EquityCalibration.load(CALIB)
     payouts = list(sng_payouts_6max_double_up())
-    def make_hero(spec, depth=3, kiters=150, weighting="linear"):
+    def make_hero(spec, depth=3, kiters=150, weighting="linear", warm=1, belief="uniform"):
         if spec == "k200":
             return BlueprintHero(solver), "k200"
         cck = torch.load(spec, map_location="cpu", weights_only=False)
         cnet = mlp(cck["in_dim"], tuple(cck["hidden"]))
         cnet.load_state_dict({kk.replace("net.", "", 1): vv for kk, vv in cck["state_dict"].items()})
         cnet.eval()
-        return ReBeLHero(solver, abstraction, cnet, cck, payouts, depth=depth, n_iters=kiters, weighting=weighting), os.path.basename(spec).replace(".pt","")+f"_d{depth}k{kiters}{weighting[0]}"
+        lbl = os.path.basename(spec).replace(".pt","")+f"_d{depth}k{kiters}{weighting[0]}"+("" if warm else "_nowarm")+("" if belief=="uniform" else "_rb")
+        return ReBeLHero(solver, abstraction, cnet, cck, payouts, depth=depth, n_iters=kiters, weighting=weighting, warm_start=bool(warm), belief=belief), lbl
 
-    heroA, labelA = make_hero(a.net_a, a.depth_a, a.kiters_a, a.weighting_a)
-    heroB, labelB = make_hero(a.net_b, a.depth_b, a.kiters_b, a.weighting_b)
+    heroA, labelA = make_hero(a.net_a, a.depth_a, a.kiters_a, a.weighting_a, a.warmstart_a, a.belief_a)
+    heroB, labelB = make_hero(a.net_b, a.depth_b, a.kiters_b, a.weighting_b, a.warmstart_b, a.belief_b)
 
     print(f"GATE 2 — B={labelB} vs A={labelA}, {a.hands} paired hands/matchup, ICM-equity-delta/hand", flush=True)
     print(f"opponents: Shanky tight bots + built-in archetypes\n", flush=True)

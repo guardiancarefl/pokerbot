@@ -29,9 +29,10 @@ VARIANTS = {
     "k50":     dict(net_b=NET130, depth_b=3, kiters_b=50,  weighting_b="linear"),
     "vanilla": dict(net_b=NET130, depth_b=3, kiters_b=150, weighting_b="uniform"),
     "d4k50":   dict(net_b=NET130, depth_b=4, kiters_b=50,  weighting_b="linear"),
-    # --- need a small/real build (placeholders; not run until built) ---
-    "warmstart_off": dict(build="solver flag: start CFR regret at 0 vs blueprint-adv"),
-    "precise_belief": dict(build="reach-posterior belief at leaves in the resolver"),
+    # --- structural (built) ---
+    "warmstart_off":  dict(net_b=NET130, depth_b=3, kiters_b=150, weighting_b="linear", warmstart_b=0),
+    "precise_belief": dict(net_b=NET130, depth_b=3, kiters_b=150, weighting_b="linear", belief_b="reach"),
+    # --- real builds (deferred until the cheap scan flickers) ---
     "opp_model":      dict(build="ODCFR opponent-modeling bias in the leaf eval"),
     "lowvar_target":  dict(build="lower-variance leaf target -> regen + retrain net"),
 }
@@ -47,7 +48,8 @@ def run_variant(name, hands, seed):
            "--net-a", BASE["net_a"], "--depth-a", str(BASE["depth_a"]),
            "--kiters-a", str(BASE["kiters_a"]), "--weighting-a", BASE["weighting_a"],
            "--net-b", v["net_b"], "--depth-b", str(v["depth_b"]),
-           "--kiters-b", str(v["kiters_b"]), "--weighting-b", v["weighting_b"]]
+           "--kiters-b", str(v["kiters_b"]), "--weighting-b", v["weighting_b"],
+           "--warmstart-b", str(v.get("warmstart_b", 1)), "--belief-b", v.get("belief_b", "uniform")]
     print(f"[sweep] running {name} -> {log}", flush=True)
     with open(log, "w") as f:
         subprocess.run(cmd, stdout=f, stderr=subprocess.DEVNULL)
