@@ -68,6 +68,167 @@ DEAL_ORDER_SEQUENCE: tuple[tuple[int, int], ...] = tuple(
 assert len(DEAL_ORDER_SEQUENCE) == NUM_SEATS * 2
 
 
+# --------------------------------------------------------------------------
+# Forced-card dealer (Phase 2 Piece 3)
+# --------------------------------------------------------------------------
+#
+# OpenSpiel's universal_poker engine deals hole + board cards via chance
+# nodes; left to its own RNG it picks uniform at random. For our replay we
+# need DETERMINISTIC card placements:
+#   - hero's hole cards: known from scraper, force-deal at hero's slots
+#   - opponent hole cards: hidden — pick any plausible card not on the
+#     hero's or board's "forbidden" set
+#   - board cards: known from scraper as the hand progresses, force-deal
+#     at the right chance node when board cards open
+#
+# These helpers port the proven HUNL pattern from src/nlhe/policy_adapter.py
+# (`pick_deck_action`, `_deal_one_card`) to 6-max, indexed via the verified
+# DEAL_ORDER_SEQUENCE above.
+
+import re as _re
+
+_DEAL_RE = _re.compile(r"\bDeal\s+([2-9TJQKA][cdhs])\b")
+_PRIVATE_RE_REPLAY = _re.compile(r"\[Private:\s+([^\]]*)\]")
+_PUBLIC_RE_REPLAY = _re.compile(r"\[Public:\s+([^\]]*)\]")
+
+
+def _extract_card_from_action_string(s: str) -> str:
+    """Pull '2c' out of OpenSpiel chance action_to_string output like
+    'player=-1 move=Deal 2c'. Raises ValueError if no card found."""
+    m = _DEAL_RE.search(s)
+    if not m:
+        raise ValueError(f"no deal-card pattern in action string: {s!r}")
+    return m.group(1)
+
+
+def pick_deck_action(state, predicate, purpose: str) -> int:
+    """Scan a chance node's legal actions; return the first int whose card
+    satisfies predicate. Raises ReplayError if nothing matches.
+
+    Ported from src/nlhe/policy_adapter.py:59 (HUNL version); semantics
+    identical, just lifted to the 6-max replay module.
+    """
+    legal = state.legal_actions()
+    available: list[str] = []
+    for a in legal:
+        try:
+            card = _extract_card_from_action_string(state.action_to_string(a))
+        except ValueError:
+            continue
+        available.append(card)
+        if predicate(card):
+            return int(a)
+    preview = ", ".join(available[:8]) + (" ..." if len(available) > 8 else "")
+    raise ReplayError(
+        f"pick_deck_action({purpose}): no legal card satisfied predicate. "
+        f"Available in deck ({len(available)} cards): [{preview}]"
+    )
+
+
+def _private_cards_for(state, seat: int) -> str:
+    """Read OpenSpiel's [Private: XXXX] field for the given seat."""
+    info = state.information_state_string(seat)
+    m = _PRIVATE_RE_REPLAY.search(info)
+    return m.group(1) if m else ""
+
+
+def _public_cards(state) -> str:
+    """Read OpenSpiel's [Public: XXXX] field (public info; either seat works)."""
+    try:
+        info = state.information_state_string(0)
+    except Exception:
+        # At chance nodes universal_poker may reject info_state for some
+        # observers. observation_string is the safe fallback.
+        info = state.observation_string(0)
+    m = _PUBLIC_RE_REPLAY.search(info)
+    return m.group(1) if m else ""
+
+
+def deal_one_card_6max(state, hero_seat: int,
+                        hero_cards: tuple[str, ...],
+                        target_board: tuple[str, ...]) -> None:
+    """At a chance node, apply the appropriate card-dealing action.
+
+    Universal_poker 6-max deals hole cards per DEAL_ORDER_SEQUENCE (seat 0
+    both, seat 1 both, ..., seat 5 both), then board cards one at a time
+    at street boundaries (3 on flop, 1 on turn, 1 on river).
+
+    For hero's hole-card slots: place the next hero card not yet placed.
+    For opponent hole-card slots: place an ARBITRARY card not in
+        forbidden = hero_cards ∪ target_board (avoids consuming a card
+        we'll need later).
+    For board-card slots: place the next target_board card not yet placed.
+    """
+    # Determine where we are: count cards already dealt to each seat
+    # + how many board cards are out.
+    per_seat_counts = [len(_private_cards_for(state, p)) // 2
+                       for p in range(NUM_SEATS)]
+    board_count = len(_public_cards(state)) // 2
+    total_hole_dealt = sum(per_seat_counts)
+
+    if total_hole_dealt < len(DEAL_ORDER_SEQUENCE):
+        # Still dealing hole cards; the next slot is DEAL_ORDER_SEQUENCE[total_hole_dealt]
+        target_seat, _target_card_pos = DEAL_ORDER_SEQUENCE[total_hole_dealt]
+        if target_seat == hero_seat:
+            already = set(_cards_in_private(
+                _private_cards_for(state, hero_seat)))
+            remaining = [c for c in hero_cards if c not in already]
+            if not remaining:
+                raise ReplayError(
+                    f"hero hole-card slot but all hero_cards already placed: "
+                    f"hero_priv_now={_private_cards_for(state, hero_seat)!r} "
+                    f"hero_cards={hero_cards}")
+            target_card = remaining[0]
+            action = pick_deck_action(
+                state,
+                lambda c, t=target_card: c == t,
+                f"hero (seat={hero_seat}) hole card {target_card!r}",
+            )
+        else:
+            # Opponent hole card — pick any card NOT reserved for hero or
+            # board. Multiple replay calls in one hand: also exclude cards
+            # already dealt to OTHER opponents so we don't risk double-deal
+            # if pick_deck_action's predicate is greedy. universal_poker's
+            # legal_actions naturally excludes already-dealt cards, but the
+            # forbidden set is belt-and-suspenders.
+            already_dealt: set[str] = set()
+            for p in range(NUM_SEATS):
+                priv = _private_cards_for(state, p)
+                already_dealt.update(_cards_in_private(priv))
+            already_dealt.update(_cards_in_public(_public_cards(state)))
+            forbidden = (set(hero_cards) | set(target_board)
+                          | already_dealt)
+            action = pick_deck_action(
+                state,
+                lambda c, fb=forbidden: c not in fb,
+                f"opponent (seat={target_seat}) hole card "
+                f"(forbidden={sorted(forbidden)})",
+            )
+    else:
+        # Board card phase. board_count tells us which board card is next.
+        if board_count >= len(target_board):
+            raise ReplayError(
+                f"chance node past hole cards but target_board exhausted: "
+                f"board_count={board_count} target_board={target_board}")
+        next_board = target_board[board_count]
+        action = pick_deck_action(
+            state,
+            lambda c, t=next_board: c == t,
+            f"board card #{board_count + 1}: {next_board!r}",
+        )
+    state.apply_action(int(action))
+
+
+def _cards_in_private(priv: str) -> list[str]:
+    """Split concatenated private string ('2d2c') into ['2d', '2c']."""
+    return [priv[i:i + 2] for i in range(0, len(priv), 2)]
+
+
+def _cards_in_public(pub: str) -> list[str]:
+    """Same split for board string."""
+    return [pub[i:i + 2] for i in range(0, len(pub), 2)]
+
+
 class ReplayError(Exception):
     """Replay failed for a non-recoverable reason — caller must safe-fallback."""
 
