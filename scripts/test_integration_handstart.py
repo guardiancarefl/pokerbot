@@ -28,7 +28,7 @@ sys.path.insert(0, str(REPO_ROOT))
 from src.nlhe.game_strings import TournamentStructure  # noqa: E402
 from src.nlhe.integration.scraper_schema import (  # noqa: E402
     parse_frame, is_hand_start, chip_conservation_total, ScraperSuspect,
-    ScraperParseError, NUM_SEATS,
+    ScraperParseError, ScraperDataQuality, NUM_SEATS,
 )
 from src.nlhe.integration.replay import replay_hand_start, ReplayError  # noqa: E402
 from src.nlhe.integration.invariant import check_hand_start_invariant  # noqa: E402
@@ -60,8 +60,8 @@ def run_one(record: dict, structure: TournamentStructure,
             ) -> tuple[str, dict]:
     """Run parse -> handstart-detect -> replay -> invariant on one record.
     Returns (status, info_dict) where status is one of:
-      'parse_error', 'suspect', 'not_handstart', 'replay_error',
-      'invariant_fail', 'pass'
+      'parse_error', 'suspect', 'data_quality', 'not_handstart',
+      'replay_error', 'invariant_fail', 'pass'
     """
     info: dict = {"captured_at": record.get("captured_at", "")}
     try:
@@ -69,6 +69,9 @@ def run_one(record: dict, structure: TournamentStructure,
     except ScraperSuspect as e:
         info["reason"] = str(e)
         return "suspect", info
+    except ScraperDataQuality as e:
+        info["reason"] = str(e)
+        return "data_quality", info
     except ScraperParseError as e:
         info["reason"] = str(e)
         return "parse_error", info
@@ -157,7 +160,10 @@ def run_jsonl(path: Path, structure: TournamentStructure,
                                     hero_seat_alias=hero_seat_alias,
                                     verbose=False)
             counts[status] += 1
-            if status not in ("not_handstart", "suspect", "parse_error"):
+            # Drops (soft): suspect, data_quality, parse_error, not_handstart.
+            # All other statuses are hand-start records we attempted to replay.
+            if status not in ("not_handstart", "suspect",
+                               "parse_error", "data_quality"):
                 n_handstart += 1
                 handstart_counts[status] += 1
                 if status == "pass":
@@ -169,13 +175,13 @@ def run_jsonl(path: Path, structure: TournamentStructure,
     wall = time.time() - t0
     print(f"Processed {n_total} records in {wall:.1f}s\n")
     print("=== Per-status counts (all records) ===")
-    for k in ("parse_error", "suspect", "not_handstart", "replay_error",
-              "invariant_fail", "pass"):
+    for k in ("parse_error", "suspect", "data_quality", "not_handstart",
+              "replay_error", "invariant_fail", "pass"):
         print(f"  {k:<18s}  {counts.get(k, 0):>6d}")
     print()
     if n_handstart:
         pass_rate = 100.0 * n_invariant_pass / n_handstart
-        print(f"=== Hand-start records (suspect/parse_error/not_handstart excluded) ===")
+        print(f"=== Hand-start records (suspect/parse_error/data_quality/not_handstart excluded) ===")
         print(f"  total hand-starts processed:  {n_handstart}")
         print(f"  replay_error:                 {handstart_counts.get('replay_error', 0)}")
         print(f"  invariant_fail:               {handstart_counts.get('invariant_fail', 0)}")

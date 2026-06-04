@@ -675,3 +675,50 @@ session's design surface, not tonight's work.
 **For any fresh session reading this file first:** the Leduc proof is DONE. The active program
 is the 6-max adaptive scaffold per "Next step" above. See `docs/STATUS.md` "Leduc proof complete"
 banner and `docs/NEXT_SESSION.md` top-of-file banner.
+
+## Integration ghost-ante bug-match workaround (Option B, deliberate; FIX QUEUED)
+**Decided:** 2026-06-04 (Option B integration build, scraper-state replay phase)
+**Why:** `src/nlhe/game_strings.py:to_inner_game_string_for_state` has a latent bug — it
+passes `self.num_players` (always 6) to `BlindLevel.inflated_big_blind(n)` regardless of
+the actual alive-seat count. The result: at shorthanded tables (`n_alive < 6`), the library
+posts a "ghost ante" for each empty seat into the BB's contribution, over-stating both the
+BB contribution and the pot by `(NUM_SEATS - n_alive) * ante` chips. The bug is exposed by
+the strict invariant check in the live-corpus replay (`scripts/test_integration_handstart.py`):
+all 6-handed frames pass 100% bit-exactly; all shorthanded frames fail by exactly the
+ghost-ante amount.
+
+**Why we didn't fix the library directly:** the existing ship-candidate (`rebel_value_net_full.pt`)
+and the k=200 blueprint (`runs/six_max_20260530_034023_phase4f_dcfr_candC_k200/checkpoints/ckpt_iter_2000.pt`)
+were trained via `sample_starting_state` → `to_inner_game_string_for_state` (the buggy path),
+and `_sample_alive_count` samples 4/5/6-handed at 40-55% rates in mid/short stages. So the
+ghost-ante distribution is BAKED INTO their training distributions. Fixing the library now
+without retraining would shift inference-time per-seat normalized features by up to
+`(NUM_SEATS - n_alive) * ante / starting_stack` — as much as 24% at level 10 with 4 alive —
+on the exact shorthanded late-game states that decide the format. That would invalidate
+the `candidate_bakeoff` numbers used to pick the ship checkpoint.
+
+**Workaround applied (Option B):** in `src/nlhe/integration/invariant.openspiel_to_scraper_view`,
+match the library's ante convention by using `NUM_SEATS=6` in the BB stack/bet conversions
+(instead of `n_alive`) and subtracting `(NUM_SEATS - n_alive) * ante` "ghost antes" from the
+reconstructed pot. The resolver/integration thus sees state values that match the model's
+training distribution; the invariant check passes on shorthanded states by matching the
+library's bug. Documented as a deliberate bug-match in the invariant.py module docstring.
+
+**Alternative considered (Option A) — fix the library at the source:** clean semantics
+(antes paid by alive seats only) but requires retraining the blueprint and rebel value-net
+on correctly-sampled chips. ~weeks of training. Plus updates to one test that hard-codes
+the buggy inflated_bb value (`tests/test_game_strings.py:test_for_state_sb_bb_rotate_over_alive_seats`).
+
+**Reason Option B chosen now:** preserves model in-distribution at inference; bake-off
+numbers stay valid; contained 3-line workaround; trivially removable when models are
+retrained.
+
+**QUEUED for the next training cycle:** apply Option A — fix `to_inner_game_string_for_state`
+to use `n_alive` not `num_players` in `inflated_big_blind`; update
+`test_for_state_sb_bb_rotate_over_alive_seats`; retrain blueprint + value-net on the
+corrected chip distribution; THEN remove the bug-match from `invariant.py` (the conversion
+becomes the formula in the module docstring's commented-out "correct" alternative). The
+workaround and its removal are paired — do not remove one without the other.
+
+**Pointer to the workaround:** `src/nlhe/integration/invariant.py:openspiel_to_scraper_view`
+(module docstring + inline `BUG-MATCHED` comments at the conversion lines).

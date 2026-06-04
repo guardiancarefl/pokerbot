@@ -3,24 +3,53 @@
 Diffs the reconstructed OpenSpiel hand-start state against the originating
 ScraperFrame. Any field mismatch -> REJECT and return a safe fallback.
 
-Critical translation: OpenSpiel uses the "inflated_big_blind" convention
-where all antes are folded into the BB's contribution slot (the SB and
-other seats see no ante deduction; the BB sees bb + n_alive*ante in its
-contribution). The scraper sees the on-screen reality: every seat's stack
-is deducted by its own ante, the BB's "bet in front" is just bb (not
-inflated), and antes appear only in the pot. The invariant converts
-OpenSpiel-view -> scraper-view before diffing.
+============================================================================
+DELIBERATE BUG-MATCH WORKAROUND — read this whole block before editing
+============================================================================
 
-Conversion (validated against the sample frame in the prior turn's
-arithmetic check):
-    n_alive = count of alive seats (== NUM_SEATS at full table)
+There is a real bug in `src/nlhe/game_strings.py:to_inner_game_string_for_state`
+(line ~381-382): when computing the OpenSpiel BB-position chip amount, it
+calls `blind_level.inflated_big_blind(n=self.num_players)` (always 6 for
+6-max), NOT `inflated_big_blind(n_alive)`. The result: at shorthanded tables
+the library posts a "ghost ante" for each empty seat into the BB's
+contribution slot. At n_alive=5, BB contribution = bb + 6*ante instead of
+the correct bb + 5*ante.
+
+Why we don't fix the library here: the existing rebel_value_net and k200
+blueprint were trained on samples produced via `sample_starting_state` ->
+`to_inner_game_string_for_state` (the buggy path), so the bug is baked into
+their training distributions. `sample_starting_state` samples 4/5/6-handed
+states at meaningful rates (40-55% of mid/short stages). Fixing the library
+without retraining would push inference-time inputs OOD on shorthanded
+states by up to (NUM_SEATS - n_alive) * ante / starting_stack — as much as
+24% normalized-feature shift at level 10. That would invalidate the
+candidate_bakeoff numbers we just used to pick the ship checkpoint.
+
+Decision (documented in docs/DECISIONS.md): match the library's bug here in
+the integration layer so the resolver sees the same in-distribution state
+it was trained on. Queue the real fix (alive-count antes) for the NEXT
+training cycle, at which point both the library AND this workaround must be
+fixed together.
+
+Conversion (BUG-MATCHED — uses NUM_SEATS, not n_alive, in the ante terms):
     For each alive seat i:
         if i == bb_seat:
-            scraper_stack[i] = openspiel_stack[i] + (n_alive - 1) * ante
-            scraper_bet[i]   = openspiel_contribution[i] - n_alive * ante
+            scraper_stack[i] = openspiel_stack[i] + (NUM_SEATS - 1) * ante
+            scraper_bet[i]   = openspiel_contribution[i] - NUM_SEATS * ante
         else:
             scraper_stack[i] = openspiel_stack[i] - ante
-            scraper_bet[i]   = openspiel_contribution[i]   # 0 for non-blinds, sb for SB
+            scraper_bet[i]   = openspiel_contribution[i]
+    scraper_pot = sum(contribution) - (NUM_SEATS - n_alive) * ante
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                                       the "ghost antes" the library posted
+                                       for empty seats; subtract them so the
+                                       reconstructed pot matches what the
+                                       scraper sees on the actual table.
+
+When the library bug is fixed (Option A queued): replace NUM_SEATS with
+n_alive in the three places above and DELETE the ghost-antes correction
+from scraper_pot. The 6-handed case is bit-identical between bug-match and
+the correct formula (NUM_SEATS == n_alive), so 6-handed tests don't change.
 """
 from __future__ import annotations
 
@@ -85,10 +114,13 @@ def openspiel_to_scraper_view(parsed: dict, bb_seat: int, n_alive: int,
     contrib = list(parsed["contribution"])
     scraper_stack = list(money)
     scraper_bet = list(contrib)
+    # BUG-MATCHED conversion (uses NUM_SEATS, not n_alive). See module
+    # docstring for the why; remove this workaround when the library bug
+    # in to_inner_game_string_for_state is fixed and models are retrained.
     for i in range(NUM_SEATS):
         if i == bb_seat:
-            scraper_stack[i] = money[i] + (n_alive - 1) * ante
-            scraper_bet[i] = contrib[i] - n_alive * ante
+            scraper_stack[i] = money[i] + (NUM_SEATS - 1) * ante
+            scraper_bet[i] = contrib[i] - NUM_SEATS * ante
         else:
             # Non-blind seats: OpenSpiel didn't deduct ante; scraper did.
             # If money[i] == 0 (busted/empty seat), keep at 0 (no ante to deduct).
@@ -102,10 +134,14 @@ def openspiel_to_scraper_view(parsed: dict, bb_seat: int, n_alive: int,
             scraper_bet[i] = 0
     # NOTE: OpenSpiel's [Pot: N] observation field is its internal "potential
     # pot" (often n_seats * inflated_bb, e.g. 330 = 6*55 at level 1), NOT the
-    # actual chips in the pot. The chips-in-pot equivalent matching the
+    # actual chips in the pot. The chips-in-pot equivalent that matches the
     # scraper's pot.total is sum(contribution). Verified empirically at the
     # initial chance node of a 6-max universal_poker game.
-    scraper_pot = int(sum(parsed["contribution"]))
+    # BUG-MATCHED: subtract the (NUM_SEATS - n_alive) "ghost antes" the
+    # library posted for empty seats; without this the reconstructed pot
+    # is over by (NUM_SEATS - n_alive) * ante on shorthanded states.
+    ghost_antes = (NUM_SEATS - n_alive) * ante
+    scraper_pot = int(sum(parsed["contribution"]) - ghost_antes)
     return {
         "stack": tuple(scraper_stack),
         "bet": tuple(scraper_bet),

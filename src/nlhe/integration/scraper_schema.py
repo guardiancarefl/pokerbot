@@ -50,11 +50,23 @@ _SEAT_RE = re.compile(r"^seat([1-6])$")
 
 
 class ScraperParseError(Exception):
-    """The scraper JSON is malformed in a way we can't recover from."""
+    """The scraper JSON is structurally malformed (schema violation, real
+    corruption). Raise loudly — these are bugs to investigate.
+    """
 
 
 class ScraperSuspect(Exception):
-    """The scraper marked this frame as suspect; never pass to the resolver."""
+    """The scraper marked this frame as suspect:true; drop silently."""
+
+
+class ScraperDataQuality(Exception):
+    """The frame is syntactically fine but the scraper's reading is unusable
+    for replay (dealer field missing/empty due to OCR miss, dealer button
+    apparently on an empty seat, etc.). DROP the frame — do NOT raise to
+    the resolver. Counted separately from ScraperParseError so we can see
+    scraper-coverage gaps in the corpus stats without conflating them with
+    actual schema violations.
+    """
 
 
 @dataclass(frozen=True)
@@ -196,7 +208,13 @@ def parse_frame(record: dict, hero_seat_alias: str = "seat1") -> ScraperFrame:
 
     dealer_str = record.get("dealer", "")
     if not dealer_str:
-        raise ScraperParseError("dealer field missing/empty")
+        # Scraper sometimes misses the dealer button mid-move-animation or
+        # when the button graphic is partly off-screen. This is a coverage
+        # gap, not a schema violation -> soft drop.
+        raise ScraperDataQuality(
+            f"dealer field missing/empty; OCR coverage gap. captured_at="
+            f"{record.get('captured_at', '<missing>')}"
+        )
     dealer_seat = _seat_to_idx(dealer_str)
 
     # Cards
@@ -238,6 +256,16 @@ def parse_frame(record: dict, hero_seat_alias: str = "seat1") -> ScraperFrame:
         (not empty[i]) and (stack[i] > 0 or bet[i] > 0)
         for i in range(NUM_SEATS)
     )
+
+    # Dealer-on-empty: the button can't sit on an empty seat in real poker.
+    # When the scraper reports this, it's an OCR drift (typically a
+    # transient frame just before/after the button moves). Soft-drop.
+    if empty[dealer_seat] or not alive[dealer_seat]:
+        raise ScraperDataQuality(
+            f"dealer points to seat{dealer_seat+1} but that seat is "
+            f"empty/non-alive (alive={alive}, empty={empty}); soft drop. "
+            f"captured_at={record.get('captured_at', '<missing>')}"
+        )
 
     # Controls
     controls_present = bool(
