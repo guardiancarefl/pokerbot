@@ -1,0 +1,230 @@
+{
+  "feature_names": {
+    "1": "PRIMARY tokens_pool [mean,std] 472-d",
+    "2": "REFERENCE opp_stats[:12] (circular for binary verdict)",
+    "3": "FAITHFUL combined 160-d from frozen Phase-1 d128 backbone"
+  },
+  "n_train_decisions": 270047,
+  "n_held_decisions": 44879,
+  "n_train_matches": 1502,
+  "n_val_matches": 300,
+  "n_classes_train": 12,
+  "opp_to_idx": {
+    "GusHansenMTT": 0,
+    "KillPhilMTT": 1,
+    "LAG": 2,
+    "LionMTTv.10": 3,
+    "Loosenluckymtt": 4,
+    "MANIAC": 5,
+    "MillenniumMTTv.49": 6,
+    "NIT": 7,
+    "STATION": 8,
+    "TAG": 9,
+    "blueprint": 10,
+    "wildbillmtt": 11
+  },
+  "binary_threshold_train_median": 0.5914974808692932,
+  "binary_label_train": {
+    "GusHansenMTT": 0,
+    "KillPhilMTT": 0,
+    "Loosenluckymtt": 1,
+    "MillenniumMTTv.49": 1,
+    "wildbillmtt": 0,
+    "LionMTTv.10": 0,
+    "NIT": 1,
+    "TAG": 0,
+    "LAG": 1,
+    "STATION": 1,
+    "MANIAC": 1,
+    "blueprint": 0
+  },
+  "binary_label_held": {
+    "TheFixerSNG": 0,
+    "ticketmaster": 0,
+    "kamakazi": 0,
+    "littlegreen": 1,
+    "timidtom": 0
+  },
+  "train_dist_to_bp_ref": {
+    "GusHansenMTT": 0.44354841113090515,
+    "KillPhilMTT": 0.42168885469436646,
+    "Loosenluckymtt": 0.8336049914360046,
+    "MillenniumMTTv.49": 0.6284441947937012,
+    "wildbillmtt": 0.21917584538459778,
+    "LionMTTv.10": 0.461465060710907,
+    "NIT": 0.7193748950958252,
+    "TAG": 0.5545507669448853,
+    "LAG": 0.6696087121963501,
+    "STATION": 1.1974456310272217,
+    "MANIAC": 0.7290890216827393,
+    "blueprint": 0.22927263379096985
+  },
+  "held_dist_to_bp_ref": {
+    "TheFixerSNG": 0.455013245344162,
+    "ticketmaster": 0.4861242175102234,
+    "kamakazi": 0.4278732240200043,
+    "littlegreen": 0.8470875024795532,
+    "timidtom": 0.43200811743736267
+  },
+  "blueprint_ref": [
+    0.23023530840873718,
+    0.12466822564601898,
+    0.34434524178504944,
+    0.4000000059604645,
+    0.4749999940395355,
+    0.7538947463035583,
+    0.46666663885116577,
+    0.5,
+    0.4749999940395355,
+    0.5882469415664673
+  ],
+  "median_train_match_length": 150,
+  "match_length_min": 20,
+  "match_length_max": 150,
+  "by_feature": {
+    "1": {
+      "multiclass_top1_val": 0.310207160466571,
+      "multiclass_chance": 0.08333333333333333,
+      "binary_auc_val": 0.7606255250034772,
+      "binary_auc_heldout": 0.46373594234410254,
+      "history_length_buckets": {
+        "1": {
+          "val_auc": 0.760574303874092,
+          "val_n_pos": 295,
+          "val_n_neg": 448,
+          "held_auc": 0.46107366557734203,
+          "held_n_pos": 128,
+          "held_n_neg": 459
+        },
+        "3": {
+          "val_auc": 0.7589992104542306,
+          "val_n_pos": 274,
+          "val_n_neg": 453,
+          "held_auc": 0.4558457211731619,
+          "held_n_pos": 131,
+          "held_n_neg": 475
+        },
+        "5": {
+          "val_auc": 0.7734616385338406,
+          "val_n_pos": 277,
+          "val_n_neg": 444,
+          "held_auc": 0.45757088756643227,
+          "held_n_pos": 134,
+          "held_n_neg": 469
+        },
+        "10": {
+          "val_auc": 0.7532118055555556,
+          "val_n_pos": 720,
+          "val_n_neg": 1120,
+          "held_auc": 0.46948780125952183,
+          "held_n_pos": 333,
+          "held_n_neg": 1174
+        },
+        "20": {
+          "val_auc": 0.7597973085668471,
+          "val_n_pos": 17988,
+          "val_n_neg": 29038,
+          "held_auc": 0.4637556101561469,
+          "held_n_pos": 8474,
+          "held_n_neg": 30398
+        }
+      }
+    },
+    "2": {
+      "multiclass_top1_val": 0.742650034956029,
+      "multiclass_chance": 0.08333333333333333,
+      "binary_auc_val": 0.9203125805146528,
+      "binary_auc_heldout": 0.9230876935335655,
+      "history_length_buckets": {
+        "1": {
+          "val_auc": 0.7838983050847458,
+          "val_n_pos": 295,
+          "val_n_neg": 448,
+          "held_auc": 0.5458963099128541,
+          "held_n_pos": 128,
+          "held_n_neg": 459
+        },
+        "3": {
+          "val_auc": 0.8265376001031244,
+          "val_n_pos": 274,
+          "val_n_neg": 453,
+          "held_auc": 0.5866532744073925,
+          "held_n_pos": 131,
+          "held_n_neg": 475
+        },
+        "5": {
+          "val_auc": 0.8607262497154193,
+          "val_n_pos": 277,
+          "val_n_neg": 444,
+          "held_auc": 0.6406374311809822,
+          "held_n_pos": 134,
+          "held_n_neg": 469
+        },
+        "10": {
+          "val_auc": 0.8703249007936508,
+          "val_n_pos": 720,
+          "val_n_neg": 1120,
+          "held_auc": 0.7629187961385576,
+          "held_n_pos": 333,
+          "held_n_neg": 1174
+        },
+        "20": {
+          "val_auc": 0.9271353903880606,
+          "val_n_pos": 17988,
+          "val_n_neg": 29038,
+          "held_auc": 0.9414137888529522,
+          "held_n_pos": 8474,
+          "held_n_neg": 30398
+        }
+      }
+    },
+    "3": {
+      "multiclass_top1_val": 0.7655554329028222,
+      "multiclass_chance": 0.08333333333333333,
+      "binary_auc_val": 0.9220428516749242,
+      "binary_auc_heldout": 0.9074346151017739,
+      "history_length_buckets": {
+        "1": {
+          "val_auc": 0.796455054479419,
+          "val_n_pos": 295,
+          "val_n_neg": 448,
+          "held_auc": 0.5158292483660131,
+          "held_n_pos": 128,
+          "held_n_neg": 459
+        },
+        "3": {
+          "val_auc": 0.8385056637824075,
+          "val_n_pos": 274,
+          "val_n_neg": 453,
+          "held_auc": 0.5610928083567698,
+          "held_n_pos": 131,
+          "held_n_neg": 475
+        },
+        "5": {
+          "val_auc": 0.86479981786841,
+          "val_n_pos": 277,
+          "val_n_neg": 444,
+          "held_auc": 0.6681252585685644,
+          "held_n_pos": 134,
+          "held_n_neg": 469
+        },
+        "10": {
+          "val_auc": 0.8688647073412699,
+          "val_n_pos": 720,
+          "val_n_neg": 1120,
+          "held_auc": 0.7405957917031171,
+          "held_n_pos": 333,
+          "held_n_neg": 1174
+        },
+        "20": {
+          "val_auc": 0.9287048767257547,
+          "val_n_pos": 17988,
+          "val_n_neg": 29038,
+          "held_auc": 0.9261091345105605,
+          "held_n_pos": 8474,
+          "held_n_neg": 30398
+        }
+      }
+    }
+  }
+}
