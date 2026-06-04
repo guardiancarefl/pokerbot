@@ -145,7 +145,8 @@ class ReBeLHero:
                  weighting="linear", warm_start=True, belief="uniform",
                  policy_net=None, policy_ck=None,
                  short_stack_fix=False, ss_bb_thresh=10.0, ss_commit_thresh=0.7,
-                 ss_icm_tighten=0.05, ss_eq_trials=400, ss_range="tight16"):
+                 ss_icm_tighten=0.05, ss_eq_trials=400, ss_range="tight16",
+                 ss_rule="chip_ev"):
         self.solver = solver; self.abs = abstraction; self.net = net
         self.ymu, self.ysd, self.k = ck["y_mean"], ck["y_std"], ck["k"]
         self.bd = solver.encoder.max_bucket_dim; self.enc = solver.encoder
@@ -175,8 +176,18 @@ class ReBeLHero:
                              f"valid: {sorted(SHOVE_RANGE_TABLE)}")
         self.ss_range_name = ss_range
         self.ss_range_combos = SHOVE_RANGE_TABLE[ss_range]
+        if ss_rule not in ("chip_ev", "icm_ev"):
+            raise ValueError(f"ss_rule must be 'chip_ev' or 'icm_ev', got {ss_rule!r}")
+        self.ss_rule = ss_rule
         # Per-run counters (for diagnostics; reset by new_hand).
         self._ss_calls = 0; self._ss_folds = 0; self._ss_eqs = []
+        # icm_ev-rule telemetry: how often the icm branch decided, and how often
+        # we fell through to chip_ev because the spot was multi-shover / side-pot.
+        self._ss_icm_decided = 0
+        self._ss_multi_shover_fallthrough = 0
+        # Per-hand starting-stack bucket (set by gate2 main on the first decision
+        # of each hand) — exposed for downstream <10bb-bucket attribution.
+        self._ss_last_bucket = None
     def new_hand(self, dealer, bb=None):
         self.dealer = dealer; self.bb_chips = bb
 
@@ -377,6 +388,51 @@ class ReBeLHero:
         except Exception:
             return None
         pot = int(sum(contribs))
+        monies = parsed["money"]
+        # ICM-EV branch: compute three-branch Malmuth-Harville diff if exactly
+        # one opp has put in more than hero (clean shover scenario, no side pots).
+        if self.ss_rule == "icm_ev":
+            opp_above = [i for i in range(NUM_SEATS)
+                         if i != hero and int(contribs[i]) > int(contribs[hero])]
+            if len(opp_above) == 1:
+                shover = opp_above[0]
+                # Effective call (capped at hero remaining for true all-in spots).
+                eff_call = min(int(to_call), int(monies[hero]))
+                # Post-decision stacks (length NUM_SEATS) for each branch.
+                # monies[i] = current remaining; pot = chips already in.
+                # FOLD: shover wins entire pot. Other seats unchanged.
+                s_fold = [int(monies[i]) for i in range(NUM_SEATS)]
+                s_fold[shover] = int(monies[shover]) + pot
+                # CALL & WIN: hero gains pot (the to_call cancels:
+                #   monies[hero] - to_call + (pot + to_call) = monies[hero] + pot).
+                # Shover stack stays at their remaining (often 0 if all-in).
+                s_win = [int(monies[i]) for i in range(NUM_SEATS)]
+                s_win[hero] = int(monies[hero]) + pot
+                # CALL & LOSE: hero busts to (monies[hero] - eff_call), often 0.
+                # Shover takes pot + hero's call.
+                s_lose = [int(monies[i]) for i in range(NUM_SEATS)]
+                s_lose[hero] = max(0, int(monies[hero]) - eff_call)
+                s_lose[shover] = int(monies[shover]) + pot + eff_call
+                # ICM equities (default eligible=None semantics — stack-0 = just-
+                # busted finisher; for double_up [2,2,2] that's the bottom payout=0).
+                from src.nlhe.icm import icm_equity as _icm_eq
+                eq_fold = _icm_eq(s_fold, self.payouts)[hero]
+                eq_win = _icm_eq(s_win, self.payouts)[hero]
+                eq_lose = _icm_eq(s_lose, self.payouts)[hero]
+                icm_call = eq * eq_win + (1.0 - eq) * eq_lose
+                self._ss_icm_decided += 1
+                self._ss_eqs.append((eq, eq_fold))  # store eq + icm_fold-equity threshold proxy
+                if icm_call < eq_fold and 0 in d2c:
+                    self._ss_folds += 1
+                    return int(d2c[0])  # fold
+                if 1 in d2c:
+                    self._ss_calls += 1
+                    return int(d2c[1])  # call
+                return None
+            else:
+                # Multi-shover or no-shover: fall through to chip_ev path.
+                self._ss_multi_shover_fallthrough += 1
+        # chip_ev rule (default) OR icm_ev fall-through on multi-shover spots.
         threshold = (to_call / float(pot + to_call)) + self.ss_icm_tighten
         self._ss_eqs.append((eq, threshold))
         if eq < threshold and 0 in d2c:
@@ -504,6 +560,10 @@ def main():
                     help="ICM-tightening added to chip-EV equity threshold")
     ap.add_argument("--ss-range", default="tight16",
                     help="assumed shove range: 'tight16' (~16% 6-max push) or 'killphil7' (KP allin range)")
+    ap.add_argument("--ss-rule", default="chip_ev",
+                    choices=["chip_ev", "icm_ev"],
+                    help="short-stack decision rule: chip_ev (existing) or "
+                         "icm_ev (three-branch Malmuth-Harville diff)")
     a = ap.parse_args()
     if a.net_b is None:
         a.net_b = a.net
@@ -516,6 +576,7 @@ def main():
         ("LAG",         ("archetype", "LAG")),
         ("mixed",       ("mixed", None)),
         ("STATION",     ("archetype", "STATION")),
+        ("MANIAC",      ("archetype", "MANIAC")),
     ]
     if a.matchups:
         keep = set(s.strip() for s in a.matchups.split(",") if s.strip())
@@ -550,7 +611,8 @@ def main():
                          ss_bb_thresh=a.ss_bb_thresh,
                          ss_commit_thresh=a.ss_commit_thresh,
                          ss_icm_tighten=a.ss_icm_tighten,
-                         ss_range=a.ss_range), lbl
+                         ss_range=a.ss_range,
+                         ss_rule=a.ss_rule), lbl
 
     heroA, labelA = make_hero(a.net_a, a.depth_a, a.kiters_a, a.weighting_a, a.warmstart_a, a.belief_a,
                               policy_path=a.policy_net_a, ss_fix=bool(a.short_stack_fix_a))
@@ -562,9 +624,21 @@ def main():
     print(f"{'matchup':<12} {labelA[:10]:>10} {labelB[:10]:>10} {'Δ (B-A)':>10} {'noise±':>8} {'verdict':>10}", flush=True)
     print("-" * 62, flush=True)
 
+    bucket_labels = ("<10bb", "10-20bb", "20+bb")
+    def _bucket_of(start_chips: int, bb_chips: int) -> str:
+        if bb_chips <= 0:
+            return ">=20bb"
+        bb = start_chips / float(bb_chips)
+        if bb < 10:
+            return "<10bb"
+        if bb < 20:
+            return "10-20bb"
+        return "20+bb"
+
+    per_matchup_bucket = {}
     for label, spec in PANEL:
         factory = build_opponent_factory(spec, abstraction, calib, structure)
-        As, Bs = [], []
+        As, Bs, buckets = [], [], []
         for i in range(a.hands):
             base = a.seed + i * 7919
             sm = sample_starting_state(structure, random.Random(base * 2 + 1), num_paid=3)
@@ -580,6 +654,7 @@ def main():
             vb = play_hand(gs, sm, hero_seat, heroB, opps, dealer, base)
             if va is not None and vb is not None:
                 As.append(va); Bs.append(vb)
+                buckets.append(_bucket_of(int(sm["stacks"][hero_seat]), int(bb_chips)))
         n = len(As)
         mA, mB = statistics.mean(As), statistics.mean(Bs)
         d = [b - x for b, x in zip(Bs, As)]
@@ -588,6 +663,24 @@ def main():
         verdict = "B+" if md > 2 * se else ("A+" if md < -2 * se else "~tie")
         print(f"{label:<12} {mA:>10.4f} {mB:>10.4f} {md:>+10.4f} {2*se:>8.4f} {verdict:>10}", flush=True)
 
+        # Per-stack-bucket delta (CRN paired): mean delta and CI per bucket.
+        per_matchup_bucket[label] = {}
+        for blab in bucket_labels:
+            idx = [i for i, b in enumerate(buckets) if b == blab]
+            if not idx:
+                per_matchup_bucket[label][blab] = (0, 0.0, 0.0, 0.0, 0.0)
+                continue
+            dAs = [As[i] for i in idx]
+            dBs = [Bs[i] for i in idx]
+            dD = [Bs[i] - As[i] for i in idx]
+            mAk = statistics.mean(dAs)
+            mBk = statistics.mean(dBs)
+            mDk = statistics.mean(dD)
+            seDk = (statistics.pstdev(dD) / (len(dD) ** 0.5)) if len(dD) > 1 else 0.0
+            per_matchup_bucket[label][blab] = (len(idx), mAk, mBk, mDk, 2 * seDk)
+            print(f"  └ {blab:<8} n={len(idx):>4d}  A={mAk:>+8.4f}  B={mBk:>+8.4f}  "
+                  f"Δ={mDk:>+8.4f}  ±{2*seDk:.4f}", flush=True)
+
     # Short-stack-fix telemetry: how often did the override fire on each hero?
     for hh, hl in [(heroA, "A"), (heroB, "B")]:
         if isinstance(hh, ReBeLHero) and hh.short_stack_fix:
@@ -595,10 +688,17 @@ def main():
             if n_fires:
                 eq_mean = statistics.mean(e for e, _ in hh._ss_eqs)
                 th_mean = statistics.mean(t for _, t in hh._ss_eqs)
-                print(f"[ss-fix {hl}] fires={n_fires}  calls={hh._ss_calls}  folds={hh._ss_folds}  "
-                      f"mean_eq={eq_mean:.3f}  mean_threshold={th_mean:.3f}", flush=True)
+                print(f"[ss-fix {hl} rule={hh.ss_rule}] fires={n_fires}  "
+                      f"calls={hh._ss_calls}  folds={hh._ss_folds}  "
+                      f"mean_eq={eq_mean:.3f}  mean_threshold={th_mean:.3f}",
+                      flush=True)
+                if hh.ss_rule == "icm_ev":
+                    print(f"  └ icm_ev branch decided: {hh._ss_icm_decided}  "
+                          f"multi-shover fall-through to chip_ev: "
+                          f"{hh._ss_multi_shover_fallthrough}", flush=True)
             else:
-                print(f"[ss-fix {hl}] enabled but never fired (no <10bb shove-call spots)", flush=True)
+                print(f"[ss-fix {hl} rule={hh.ss_rule}] enabled but never fired "
+                      f"(no <10bb shove-call spots)", flush=True)
 
     print(f"\n(Δ>2·SE = B beats A beyond noise. B={labelB} A={labelA}. TIGHT rows NIT/TAG/KillPhil are decisive.)", flush=True)
 

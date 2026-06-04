@@ -1,0 +1,18 @@
+DeepCFR6MaxSolver  device=cpu  feature_dim=236  payout_mode=double_up  payouts=[2.0, 2.0, 2.0]
+GATE 2 — B=rebel_value_net_full_d3k150l_ssf vs A=rebel_value_net_full_d3k150l, 500 paired hands/matchup, ICM-equity-delta/hand
+opponents: Shanky tight bots + built-in archetypes
+
+matchup      rebel_valu rebel_valu    Δ (B-A)   noise±    verdict
+--------------------------------------------------------------
+KillPhilMTT     -0.0431    -0.0269    +0.0162   0.0290       ~tie
+  └ <10bb    n= 289  A= -0.0771  B= -0.0491  Δ= +0.0280  ±0.0500
+  └ 10-20bb  n= 115  A= -0.0301  B= -0.0301  Δ= +0.0000  ±0.0000
+  └ 20+bb    n=  96  A= +0.0437  B= +0.0437  Δ= +0.0000  ±0.0000
+STATION          0.2882     0.2901    +0.0019   0.0221       ~tie
+  └ <10bb    n= 289  A= +0.2722  B= +0.2756  Δ= +0.0034  ±0.0381
+  └ 10-20bb  n= 115  A= +0.2891  B= +0.2891  Δ= +0.0000  ±0.0000
+  └ 20+bb    n=  96  A= +0.3350  B= +0.3350  Δ= +0.0000  ±0.0000
+[ss-fix B rule=icm_ev] fires=179  calls=45  folds=134  mean_eq=0.350  mean_threshold=0.617
+  └ icm_ev branch decided: 62  multi-shover fall-through to chip_ev: 117
+
+(Δ>2·SE = B beats A beyond noise. B=rebel_value_net_full_d3k150l_ssf A=rebel_value_net_full_d3k150l. TIGHT rows NIT/TAG/KillPhil are decisive.)

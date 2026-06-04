@@ -1,0 +1,14 @@
+DeepCFR6MaxSolver  device=cpu  feature_dim=236  payout_mode=double_up  payouts=[2.0, 2.0, 2.0]
+GATE 2 — B=rebel_value_net_full_d3k150l_ssf vs A=rebel_value_net_full_d3k150l, 500 paired hands/matchup, ICM-equity-delta/hand
+opponents: Shanky tight bots + built-in archetypes
+
+matchup      rebel_valu rebel_valu    Δ (B-A)   noise±    verdict
+--------------------------------------------------------------
+MANIAC           0.3744     0.3341    -0.0403   0.0349         A+
+  └ <10bb    n= 289  A= +0.2881  B= +0.2183  Δ= -0.0697  ±0.0601
+  └ 10-20bb  n= 115  A= +0.4699  B= +0.4699  Δ= +0.0000  ±0.0000
+  └ 20+bb    n=  96  A= +0.5200  B= +0.5200  Δ= +0.0000  ±0.0000
+[ss-fix B rule=icm_ev] fires=150  calls=60  folds=90  mean_eq=0.355  mean_threshold=0.503
+  └ icm_ev branch decided: 21  multi-shover fall-through to chip_ev: 129
+
+(Δ>2·SE = B beats A beyond noise. B=rebel_value_net_full_d3k150l_ssf A=rebel_value_net_full_d3k150l. TIGHT rows NIT/TAG/KillPhil are decisive.)
