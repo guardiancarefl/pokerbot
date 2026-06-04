@@ -17,6 +17,13 @@ have been posted via the inflated_big_blind encoding. The scraper's
 observable fields (pot, per-seat stack, per-seat bet, dealer position) all
 have known equivalents at this state, modulo OpenSpiel's ante-inflation
 convention which we explicitly convert.
+
+Phase 2 prerequisite — empirically verified 6-max hole-card deal order:
+universal_poker deals all of seat 0's hole cards (both), then all of
+seat 1's, ..., then all of seat 5's. Same convention as HUNL
+(documented in src/nlhe/policy_adapter.py:464). Verified by
+scripts/probe_six_max_deal_order.py; codified in DEAL_ORDER_SEQUENCE
+below for use by the Phase 2 forced-card dealer.
 """
 from __future__ import annotations
 
@@ -46,6 +53,19 @@ except ImportError:
         ScraperFrame, BlindsLevel, pre_hand_stacks, is_hand_start,
         NUM_SEATS,
     )
+
+
+# OpenSpiel universal_poker 6-max hole-card deal order, verified empirically
+# by scripts/probe_six_max_deal_order.py: sequential per seat — seat 0 gets
+# both cards, then seat 1 gets both, ..., then seat 5 gets both. Each tuple
+# is (seat_idx, card_position) for slots 0..11. The tuple at slot N tells
+# the Phase 2 forced-card dealer which (seat, card-slot) to fill when
+# OpenSpiel asks for chance action N.
+DEAL_ORDER_SEQUENCE: tuple[tuple[int, int], ...] = tuple(
+    (seat, card) for seat in range(NUM_SEATS) for card in range(2)
+)
+# Sanity: 12 hole cards total for 6 seats × 2 cards
+assert len(DEAL_ORDER_SEQUENCE) == NUM_SEATS * 2
 
 
 class ReplayError(Exception):
