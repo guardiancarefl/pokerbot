@@ -67,11 +67,11 @@ class BlueprintHero:
 
 class ReBeLHero:
     name = "rebel"
-    def __init__(self, solver, abstraction, net, ck, payouts, depth=3, n_iters=150, num_paid=3):
+    def __init__(self, solver, abstraction, net, ck, payouts, depth=3, n_iters=150, num_paid=3, weighting="linear"):
         self.solver = solver; self.abs = abstraction; self.net = net
         self.ymu, self.ysd, self.k = ck["y_mean"], ck["y_std"], ck["k"]
         self.bd = solver.encoder.max_bucket_dim; self.enc = solver.encoder
-        self.payouts = payouts; self.depth = depth; self.n_iters = n_iters; self.num_paid = num_paid
+        self.payouts = payouts; self.depth = depth; self.n_iters = n_iters; self.num_paid = num_paid; self.weighting = weighting
         self.dealer = None; self.kstreet = {0: 20, 1: 200, 2: 200, 3: 200}
     def new_hand(self, dealer): self.dealer = dealer
 
@@ -123,7 +123,7 @@ class ReBeLHero:
             res = solve_subgame(tree, SubgameSolveContext(
                 blueprint=self.solver, starting_stacks=starting, payouts=self.payouts,
                 hero_seat=cp, n_iterations=self.n_iters, rng=rng, num_paid=self.num_paid,
-                average_weighting="linear", dealer_seat=self.dealer))
+                average_weighting=self.weighting, dealer_seat=self.dealer))
             if res.degraded:
                 raise RuntimeError("degraded")
             return extract_action(res, state, rng, mode)
@@ -192,6 +192,10 @@ def main():
     ap.add_argument("--label", default="")
     ap.add_argument("--depth-a", type=int, default=3)
     ap.add_argument("--depth-b", type=int, default=3)
+    ap.add_argument("--kiters-a", type=int, default=150)
+    ap.add_argument("--kiters-b", type=int, default=150)
+    ap.add_argument("--weighting-a", default="linear")
+    ap.add_argument("--weighting-b", default="linear")
     a = ap.parse_args()
     if a.net_b is None:
         a.net_b = a.net
@@ -211,17 +215,17 @@ def main():
     solver = _load_solver(CKPT, abstraction, structure)
     calib = EquityCalibration.load(CALIB)
     payouts = list(sng_payouts_6max_double_up())
-    def make_hero(spec, depth=3):
+    def make_hero(spec, depth=3, kiters=150, weighting="linear"):
         if spec == "k200":
             return BlueprintHero(solver), "k200"
         cck = torch.load(spec, map_location="cpu", weights_only=False)
         cnet = mlp(cck["in_dim"], tuple(cck["hidden"]))
         cnet.load_state_dict({kk.replace("net.", "", 1): vv for kk, vv in cck["state_dict"].items()})
         cnet.eval()
-        return ReBeLHero(solver, abstraction, cnet, cck, payouts, depth=depth), os.path.basename(spec).replace(".pt", "")+f"_d{depth}"
+        return ReBeLHero(solver, abstraction, cnet, cck, payouts, depth=depth, n_iters=kiters, weighting=weighting), os.path.basename(spec).replace(".pt","")+f"_d{depth}k{kiters}{weighting[0]}"
 
-    heroA, labelA = make_hero(a.net_a, a.depth_a)
-    heroB, labelB = make_hero(a.net_b, a.depth_b)
+    heroA, labelA = make_hero(a.net_a, a.depth_a, a.kiters_a, a.weighting_a)
+    heroB, labelB = make_hero(a.net_b, a.depth_b, a.kiters_b, a.weighting_b)
 
     print(f"GATE 2 — B={labelB} vs A={labelA}, {a.hands} paired hands/matchup, ICM-equity-delta/hand", flush=True)
     print(f"opponents: Shanky tight bots + built-in archetypes\n", flush=True)
