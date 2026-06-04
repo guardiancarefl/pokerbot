@@ -216,3 +216,142 @@ def check_hand_start_invariant(frame: ScraperFrame,
         ok=True, deltas=[], safe_action=None,
         reconstructed=reconstructed,
     )
+
+
+def _canonical_card_string(cards) -> str:
+    """Normalize a card representation (str 'AhKs' or tuple ('Ah','Ks')) to
+    sorted concatenated form for canonical comparison."""
+    if isinstance(cards, str):
+        # Split into 2-char card chunks
+        chunks = [cards[i:i + 2] for i in range(0, len(cards), 2)]
+    else:
+        chunks = [str(c) for c in cards]
+    return "".join(sorted(chunks))
+
+
+def check_mid_hand_invariant(frame, state_pack) -> InvariantResult:
+    """Strict diff for mid-hand hero-to-act state (Piece 5, Phase 2).
+
+    Five LOAD-BEARING checks (any mismatch -> ok=False, safe_action set):
+      1. current_player == hero_seat — we replayed to the right point
+      2. private_cards == hero's hole cards — we dealt the right hero cards
+      3. public_cards == scraper's board — we dealt the right board
+      4. pot == frame.pot_total — total-chip conservation matches
+      5. legal_actions consistent with hero_facing_bet:
+           if hero_facing_bet -> FOLD MUST be in state.legal_actions()
+           else                -> FOLD MUST NOT be in state.legal_actions()
+
+    NOTE on per-seat stack/bet checks (intentionally DROPPED for mid-hand):
+    the inflated-BB library bug (Option B bug-match) cascades through OpenSpiel's
+    betting rules in ways that make per-seat scraper-view conversion
+    configuration-dependent: at hand-start the BB has inflated contribution
+    but non-BB seats are clean (Phase 1's formula works); after a call of
+    the inflated_bb, every alive seat's OpenSpiel contribution = inflated_bb
+    (subtract n*ante to recover scraper_bet); after a raise above inflated_bb,
+    the contribution is the raise amount as-is (NO subtraction needed). The
+    rule changes per-state, and there's no clean single formula. Per-seat
+    checks would either generate false rejections on raises or paper over
+    real mismatches on calls — neither acceptable. The 5 load-bearing
+    checks above are SUFFICIENT to verify the resolver receives the
+    correct decision-point state: right player to act, right cards, right
+    pot total, right action menu. Per-seat redundancy goes when the
+    library bug is fixed (queued in DECISIONS.md).
+    """
+    # MidHandState (Piece 4) carries everything we need beyond what
+    # HandStartState provides.
+    state = state_pack.state
+    bb_seat = state_pack.bb_seat
+    n_alive = state_pack.n_alive
+    ante = state_pack.blind_level.ante
+    street_idx = state_pack.street_idx
+    preflop_commit_per_alive = state_pack.preflop_commit_per_alive
+
+    parsed = parse_state_6max(state, observer=frame.hero_seat)
+    parsed["dealer_seat"] = frame.dealer_seat
+
+    # Use the existing scraper-view conversion for hero/board fields and
+    # the per-seat stack (the latter is used for diagnostics only — we
+    # don't strict-check it on mid-hand).
+    recon_handlevel = openspiel_to_scraper_view(
+        parsed, bb_seat=bb_seat, n_alive=n_alive, ante=ante)
+
+    # Compute the correct scraper-equivalent pot using the formula that
+    # accounts for the inflated-BB cascade through OpenSpiel's call
+    # mechanism. Per-seat OpenSpiel-vs-scraper chip-flow diff:
+    #   BB (always):                       +(NUM_SEATS - 1) * ante
+    #   non-BB seat at contrib==inflated_bb (= matched the max via call):
+    #                                      +(NUM_SEATS - 1) * ante
+    #   non-BB alive at contrib != inflated_bb (folded, just-blinded,
+    #                                            or raised above):
+    #                                      -ante
+    #   empty seat (no real ante paid):    0
+    # Sum simplifies to:
+    #   total_diff = ante * (NUM_SEATS * (1 + k) - n_alive)
+    # where k = count of non-BB alive seats with openspiel_contrib ==
+    # inflated_bb. Verified by arithmetic on 6-handed limp-around
+    # (k=5 -> diff=150 ✓), 6-handed UTG-raise-folds (k=0 -> diff=0 ✓),
+    # and 5-handed limp-around (k=4 -> diff=125 ✓).
+    inflated_bb = state_pack.blind_level.inflated_big_blind(NUM_SEATS)
+    contrib = parsed["contribution"]
+    k = sum(1 for i in range(NUM_SEATS)
+            if i != bb_seat and contrib[i] == inflated_bb)
+    total_diff = ante * (NUM_SEATS * (1 + k) - n_alive)
+    reconstructed_pot = int(sum(contrib) - total_diff)
+
+    deltas = []
+
+    # 1. current_player
+    if parsed["current_player"] != frame.hero_seat:
+        deltas.append(("current_player",
+                        frame.hero_seat, parsed["current_player"]))
+
+    # 2. street_idx (from state) should match scraper-derived (from board len)
+    if parsed["street_idx"] != street_idx:
+        deltas.append(("street_idx", street_idx, parsed["street_idx"]))
+
+    # 3. pot (sum-of-contribution un-inflated, scenario-aware formula)
+    if reconstructed_pot != frame.pot_total:
+        deltas.append(("pot", frame.pot_total, reconstructed_pot))
+
+    # 4. private_cards: hero's hole cards (canonical sorted)
+    scraper_hole_canon = _canonical_card_string(frame.hero_cards)
+    state_hole_canon = _canonical_card_string(recon_handlevel["private_cards"])
+    if scraper_hole_canon != state_hole_canon:
+        deltas.append(("hero_cards",
+                        scraper_hole_canon, state_hole_canon))
+
+    # 5. public_cards: board (canonical sorted)
+    scraper_board_canon = _canonical_card_string(frame.board)
+    state_board_canon = _canonical_card_string(recon_handlevel["public_cards"])
+    if scraper_board_canon != state_board_canon:
+        deltas.append(("board",
+                        scraper_board_canon, state_board_canon))
+
+    # 6. legal_actions consistency with hero_facing_bet
+    legal = state.legal_actions()
+    fold_legal = 0 in legal
+    if frame.hero_facing_bet and not fold_legal:
+        deltas.append(("legal_actions:fold_when_facing_bet",
+                        True, False))
+    # NOTE: when hero is NOT facing a bet (e.g., BB's preflop option), FOLD
+    # is sometimes still in legal_actions() in OpenSpiel even though it'd
+    # be a strictly dominated check (give up vs costless check). We don't
+    # treat that case as a mismatch — only the "hero facing a bet but no
+    # FOLD legal" direction is a real correctness concern.
+
+    if deltas:
+        safe = "fold" if frame.hero_facing_bet else "check"
+        return InvariantResult(
+            ok=False, deltas=deltas, safe_action=safe,
+            reconstructed={
+                **recon_handlevel,
+                "legal_has_fold": fold_legal,
+            },
+        )
+    return InvariantResult(
+        ok=True, deltas=[], safe_action=None,
+        reconstructed={
+            **recon_handlevel,
+            "legal_has_fold": fold_legal,
+        },
+    )

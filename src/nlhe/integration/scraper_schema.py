@@ -479,22 +479,16 @@ def _street_idx_from_board(board: tuple) -> int:
     )
 
 
-def _derive_pre_hand_simple_model(frame: ScraperFrame,
-                                    sb_seat: int, bb_seat: int
-                                    ) -> tuple[int, ...]:
-    """Reconstruct per-seat pre-hand stacks (chips at hand START, before
-    any blinds/antes posted) using chip conservation + the simple model.
+def _derive_pre_hand_and_preflop_commit_simple_model(
+        frame: ScraperFrame, sb_seat: int, bb_seat: int
+        ) -> tuple[tuple[int, ...], int]:
+    """Same simple-model chip-conservation derivation as
+    _derive_pre_hand_simple_model but ALSO returns preflop_commit_per_alive,
+    which Piece 5's mid-hand invariant needs for prior-streets-committed
+    bookkeeping when converting cumulative-OpenSpiel-contribution to
+    current-street-scraper-bet on postflop frames.
 
-    Simple model assumption: all alive-non-folded seats reached the same
-    preflop commit (P_max); folded seats folded preflop without voluntary
-    action (committed ante + blind if blind seat, else ante only).
-    Frames that violate this assumption (e.g., someone called preflop then
-    folded on a later street) will produce wrong pre_hand here, which
-    propagates to a wrong action sequence, which the downstream invariant
-    rejects.
-
-    Works for both hand-start frames (where P_max = 0, trivially) and
-    postflop frames. For empty seats: returns 0.
+    Returns (pre_hand_stacks: tuple[int,6], preflop_commit_per_alive: int).
     """
     alive_seats = [i for i in range(NUM_SEATS) if frame.alive[i]]
     n_alive = len(alive_seats)
@@ -502,7 +496,6 @@ def _derive_pre_hand_simple_model(frame: ScraperFrame,
     sb = frame.blinds.sb
     bb = frame.blinds.bb
 
-    # Folded seats' total commit (simple model: folded preflop)
     folded_commit_total = 0
     folded_seats = [i for i in alive_seats if frame.folded[i]]
     for i in folded_seats:
@@ -515,22 +508,12 @@ def _derive_pre_hand_simple_model(frame: ScraperFrame,
     alive_non_folded = [i for i in alive_seats if not frame.folded[i]]
     n_anf = len(alive_non_folded)
 
-    # Chip conservation:
-    #   pot = sum_alive_non_folded(bet + preflop_commit + ante)
-    #       + folded_commit_total
-    #   pot - folded_commit_total - n_anf*ante - sum(bet over anf)
-    #         = n_anf * preflop_commit_per_alive
     if n_anf == 0:
-        # Degenerate (everyone folded). Skip — only the winner remains and
-        # the hand would have ended; should not reach derive at hero-to-act.
         preflop_commit_per_alive = 0
     else:
         bet_sum_anf = sum(frame.bet[i] for i in alive_non_folded)
         residual = (frame.pot_total - folded_commit_total
                      - n_anf * ante - bet_sum_anf)
-        # If residual < 0 or not divisible cleanly by n_anf, the simple
-        # model doesn't fit this frame. We still compute a best-effort value
-        # (integer-divide); the downstream invariant will catch any mismatch.
         preflop_commit_per_alive = max(0, residual // n_anf)
 
     pre = []
@@ -544,7 +527,21 @@ def _derive_pre_hand_simple_model(frame: ScraperFrame,
             pre.append(frame.stack[i] + ante
                         + preflop_commit_per_alive
                         + frame.bet[i])
-    return tuple(pre)
+    return tuple(pre), preflop_commit_per_alive
+
+
+def _derive_pre_hand_simple_model(frame: ScraperFrame,
+                                    sb_seat: int, bb_seat: int
+                                    ) -> tuple[int, ...]:
+    """Pre-hand stacks (chips at hand START) via the simple-model chip-
+    conservation derivation. See
+    _derive_pre_hand_and_preflop_commit_simple_model for the algorithm + the
+    simple-model assumptions. This wrapper drops the preflop_commit return
+    value; callers that need it (Piece 5 invariant) use the longer name.
+    """
+    pre, _ = _derive_pre_hand_and_preflop_commit_simple_model(
+        frame, sb_seat, bb_seat)
+    return pre
 
 
 def derive_action_sequence(frame: ScraperFrame

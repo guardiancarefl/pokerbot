@@ -252,6 +252,12 @@ class MidHandState:
     n_alive: int
     n_actions_applied: int              # for diagnostics
     final_current_player: int           # should == hero_seat
+    street_idx: int                     # 0/1/2/3 = preflop/flop/turn/river
+    # Per-alive-seat preflop commitment (simple model: same for all alive
+    # non-folded seats; used by Piece 5 invariant to subtract prior-street
+    # commits from OpenSpiel-cumulative-contribution to recover scraper's
+    # current-street-only bet on postflop frames).
+    preflop_commit_per_alive: int
 
 
 def replay_to_decision(frame, structure):
@@ -285,12 +291,14 @@ def replay_to_decision(frame, structure):
     try:
         # Lazy imports — keep top of module light + tolerate /tmp paths.
         from src.nlhe.integration.scraper_schema import (
-            _derive_pre_hand_simple_model, derive_action_sequence,
+            _derive_pre_hand_and_preflop_commit_simple_model,
+            derive_action_sequence, _street_idx_from_board,
             ActionDerivationError,
         )
     except ImportError:  # pragma: no cover (only the /tmp dev shim path)
         from scraper_schema import (  # type: ignore
-            _derive_pre_hand_simple_model, derive_action_sequence,
+            _derive_pre_hand_and_preflop_commit_simple_model,
+            derive_action_sequence, _street_idx_from_board,
             ActionDerivationError,
         )
 
@@ -304,9 +312,13 @@ def replay_to_decision(frame, structure):
 
     blind_level = _find_blind_level(structure, frame.blinds)
 
-    # Pre-hand stacks via the simple-model chip-conservation helper
-    pre = _derive_pre_hand_simple_model(frame, sb_seat, bb_seat)
+    # Pre-hand stacks via the simple-model chip-conservation helper;
+    # also capture preflop_commit_per_alive for the mid-hand invariant
+    pre, preflop_commit_per_alive = (
+        _derive_pre_hand_and_preflop_commit_simple_model(
+            frame, sb_seat, bb_seat))
     stacks = list(pre)
+    street_idx = _street_idx_from_board(frame.board)
 
     # Game string + initial state
     try:
@@ -365,6 +377,8 @@ def replay_to_decision(frame, structure):
                     n_alive=n_alive,
                     n_actions_applied=n_actions_applied,
                     final_current_player=state.current_player(),
+                    street_idx=street_idx,
+                    preflop_commit_per_alive=preflop_commit_per_alive,
                 )
             raise ReplayError(
                 f"action sequence exhausted but current_player="
