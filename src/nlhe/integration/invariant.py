@@ -230,32 +230,36 @@ def _canonical_card_string(cards) -> str:
 
 
 def check_mid_hand_invariant(frame, state_pack) -> InvariantResult:
-    """Strict diff for mid-hand hero-to-act state (Piece 5, Phase 2).
+    """Bridge-aware invariant check for mid-hand hero-to-act state.
 
-    Five LOAD-BEARING checks (any mismatch -> ok=False, safe_action set):
-      1. current_player == hero_seat — we replayed to the right point
-      2. private_cards == hero's hole cards — we dealt the right hero cards
-      3. public_cards == scraper's board — we dealt the right board
-      4. pot == frame.pot_total — total-chip conservation matches
-      5. legal_actions consistent with hero_facing_bet:
+    With the Phase 2 bridge (src/nlhe/integration/translate.py) active,
+    real-poker chip_ints get translated to OpenSpiel-legal chip_ints in
+    the inflated-BB space. This means OpenSpiel's reconstructed pot/stack
+    values CANNOT match scraper exactly by construction — chip amounts
+    are systematically inflated. We rely instead on a set of checks that
+    are invariant under the translation:
+
+    FOUR LOAD-BEARING CHECKS (any mismatch -> ok=False, safe_action set):
+      1. current_player == hero_seat — replayed to the right player to act
+      2. private_cards == hero's hole cards — dealt the right hero cards
+      3. public_cards == scraper's board — dealt the right board
+      4. legal_actions consistent with hero_facing_bet:
            if hero_facing_bet -> FOLD MUST be in state.legal_actions()
-           else                -> FOLD MUST NOT be in state.legal_actions()
 
-    NOTE on per-seat stack/bet checks (intentionally DROPPED for mid-hand):
-    the inflated-BB library bug (Option B bug-match) cascades through OpenSpiel's
-    betting rules in ways that make per-seat scraper-view conversion
-    configuration-dependent: at hand-start the BB has inflated contribution
-    but non-BB seats are clean (Phase 1's formula works); after a call of
-    the inflated_bb, every alive seat's OpenSpiel contribution = inflated_bb
-    (subtract n*ante to recover scraper_bet); after a raise above inflated_bb,
-    the contribution is the raise amount as-is (NO subtraction needed). The
-    rule changes per-state, and there's no clean single formula. Per-seat
-    checks would either generate false rejections on raises or paper over
-    real mismatches on calls — neither acceptable. The 5 load-bearing
-    checks above are SUFFICIENT to verify the resolver receives the
-    correct decision-point state: right player to act, right cards, right
-    pot total, right action menu. Per-seat redundancy goes when the
-    library bug is fixed (queued in DECISIONS.md).
+    PLUS SCRAPER SELF-CONSISTENCY (chip-conservation against the frame's
+    own fields):
+      5. scraper.pot_total == sum_of_chips_implied_by_per-seat_arithmetic
+         (catches scraper OCR errors that produce inconsistent chip values
+         even though they pass exact-OpenSpiel match would have caught
+         more broadly).
+
+    NOTE: exact pot/per-seat stack checks are intentionally DROPPED here.
+    The bridge inflates raise amounts on the OpenSpiel side, making
+    bit-exact reconstruction impossible by design. The qualitative state
+    (right player, right cards, right action menu) is what determines
+    whether the resolver gets a valid in-distribution input. The
+    bet-sizing drift is documented in DECISIONS.md "Phase 2 bridge" and
+    is the measurement step the deployment is designed to evaluate.
     """
     # MidHandState (Piece 4) carries everything we need beyond what
     # HandStartState provides.
@@ -269,34 +273,10 @@ def check_mid_hand_invariant(frame, state_pack) -> InvariantResult:
     parsed = parse_state_6max(state, observer=frame.hero_seat)
     parsed["dealer_seat"] = frame.dealer_seat
 
-    # Use the existing scraper-view conversion for hero/board fields and
-    # the per-seat stack (the latter is used for diagnostics only — we
-    # don't strict-check it on mid-hand).
+    # Use the scraper-view conversion for hero/board fields only — we no
+    # longer expect chip values to round-trip exactly with the bridge.
     recon_handlevel = openspiel_to_scraper_view(
         parsed, bb_seat=bb_seat, n_alive=n_alive, ante=ante)
-
-    # Compute the correct scraper-equivalent pot using the formula that
-    # accounts for the inflated-BB cascade through OpenSpiel's call
-    # mechanism. Per-seat OpenSpiel-vs-scraper chip-flow diff:
-    #   BB (always):                       +(NUM_SEATS - 1) * ante
-    #   non-BB seat at contrib==inflated_bb (= matched the max via call):
-    #                                      +(NUM_SEATS - 1) * ante
-    #   non-BB alive at contrib != inflated_bb (folded, just-blinded,
-    #                                            or raised above):
-    #                                      -ante
-    #   empty seat (no real ante paid):    0
-    # Sum simplifies to:
-    #   total_diff = ante * (NUM_SEATS * (1 + k) - n_alive)
-    # where k = count of non-BB alive seats with openspiel_contrib ==
-    # inflated_bb. Verified by arithmetic on 6-handed limp-around
-    # (k=5 -> diff=150 ✓), 6-handed UTG-raise-folds (k=0 -> diff=0 ✓),
-    # and 5-handed limp-around (k=4 -> diff=125 ✓).
-    inflated_bb = state_pack.blind_level.inflated_big_blind(NUM_SEATS)
-    contrib = parsed["contribution"]
-    k = sum(1 for i in range(NUM_SEATS)
-            if i != bb_seat and contrib[i] == inflated_bb)
-    total_diff = ante * (NUM_SEATS * (1 + k) - n_alive)
-    reconstructed_pot = int(sum(contrib) - total_diff)
 
     deltas = []
 
@@ -309,9 +289,53 @@ def check_mid_hand_invariant(frame, state_pack) -> InvariantResult:
     if parsed["street_idx"] != street_idx:
         deltas.append(("street_idx", street_idx, parsed["street_idx"]))
 
-    # 3. pot (sum-of-contribution un-inflated, scenario-aware formula)
-    if reconstructed_pot != frame.pot_total:
-        deltas.append(("pot", frame.pot_total, reconstructed_pot))
+    # 5. SCRAPER SELF-CONSISTENCY (chip conservation against frame's own
+    # fields). The scraper pot_total should equal: SB + BB + n_alive*ante
+    # + sum_of_per-seat_voluntary_commits_implied_by_pre_hand_arithmetic.
+    # In the simple model: voluntary commits per alive non-folded seat =
+    # preflop_commit_per_alive + frame.bet[i]; per folded seat = blind-only
+    # (sb if sb_seat, bb if bb_seat, 0 else).
+    #
+    # Use the REPAIRED folded array (workaround for Ignition's stale
+    # folded field — see _repair_folded_from_chip_deductions). The simple
+    # model in `replay_to_decision` also uses the repaired folded, so the
+    # invariant must use the same view to be self-consistent.
+    from src.nlhe.integration.scraper_schema import (
+        _repair_folded_from_chip_deductions,
+    )
+    sb_seat = state_pack.sb_seat
+    sb = state_pack.blind_level.small_blind
+    bb = state_pack.blind_level.big_blind
+    folded = _repair_folded_from_chip_deductions(
+        frame, sb_seat=sb_seat, bb_seat=bb_seat)
+    n_alive_total = sum(frame.alive)
+    implied_pot = n_alive_total * ante  # antes
+    for i in range(NUM_SEATS):
+        if not frame.alive[i]:
+            continue
+        if folded[i]:
+            # Folded seat: paid their blind only (simple model: folded preflop)
+            if i == sb_seat:
+                implied_pot += sb
+            elif i == bb_seat:
+                implied_pot += bb
+            # Non-blind folded seat: contributed 0 voluntarily
+        else:
+            # Alive non-folded: preflop_commit + current-street bet
+            implied_pot += preflop_commit_per_alive + frame.bet[i]
+    # Tolerance: the simple-model integer-divides `residual // n_anf`, which
+    # loses up to (n_anf - 1) chips of remainder. A small drift here means
+    # alive seats didn't all match at exactly the same preflop level (some
+    # raised, some called at different amounts) — fine for the bridge,
+    # since exact chip values are already drift-tolerant by design. We
+    # reject only if the drift exceeds the integer-divide remainder, which
+    # would indicate a real scraper inconsistency.
+    n_anf = sum(1 for i in range(NUM_SEATS)
+                if frame.alive[i] and not folded[i])
+    self_consistency_tolerance = max(1, n_anf - 1)
+    if abs(implied_pot - frame.pot_total) > self_consistency_tolerance:
+        deltas.append(("scraper_self_consistency:pot",
+                        frame.pot_total, implied_pot))
 
     # 4. private_cards: hero's hole cards (canonical sorted)
     scraper_hole_canon = _canonical_card_string(frame.hero_cards)

@@ -766,3 +766,197 @@ standard rules). Add tests for the heads-up case. Remove the `n_alive < 4` drop 
 retrained model is exposed to heads-up samples; keep it otherwise. Document the test
 expectations alongside the ghost-ante test updates so both library bugs are fixed and
 verified together.
+
+## Phase 2 integration: chip-translation BRIDGE chosen over library rewrite + retrain
+
+**Date:** 2026-06-04. **Status:** chosen path for log-only deployment; library
+rewrite queued as fallback if drift evidence proves bad.
+
+### Context — three paths considered
+
+After the bug-match workaround (the entry above) carried Phase 1 hand-start
+integration to 100% on the live9 corpus, Phase 2 (mid-hand hero-to-act replay)
+opened with 28.87% pass rate. Diagnosed root cause: OpenSpiel min-raise =
+2 × `inflated_BB` = 110 chips at level 1, but real-poker min-raise = 2 × `BB`
+= 50. Any scraper frame containing a real min-open (chip_int ∈ [50, 109]) was
+rejected as an illegal action by OpenSpiel during action replay.
+
+Three paths considered:
+1. **Option A — fix library + retrain.** Rip out the entire inflated_BB
+   convention from `game_strings.py`, `cfr6.py`, `stack_sampler.py`, the
+   blueprint, and the rebel value net. Retrain everything. ~1–2 weeks.
+   Clean but expensive; invalidates existing checkpoint bake-off.
+2. **Option B — restore the original workaround.** Keep the bug-match,
+   accept the 28% mid-hand pass rate. Cheap but Phase 2 unviable.
+3. **Option C — BRIDGE** (chosen). Add a translation layer in the
+   integration that maps real-poker chip_ints ↔ OpenSpiel chip_ints. Cost:
+   1–2 days. Trade-off: bet-sizing drift on the model's output (see below).
+
+### Why the bridge
+
+The trained model and OpenSpiel game-string convention agree on:
+- starting_chips (1500 real = 1500 inflated)
+- pre-action pot (designed-preserved: 70 chips at level 1 in either space)
+- pot-relative bet fractions (BET_33, BET_50, ..., BET_200 are denominated
+  in `pot * fraction`, not in BB multiples)
+- stack-relative ALLIN (denominated in `view.max_bet` = hero's stack)
+
+They disagree only on:
+- BB-denominated quantities: `min_bet`, `min_raise` (each = `inflated_BB`
+  or 2 × `inflated_BB`, ≈ 2x the real-poker equivalent)
+- The "ante" line item, which the inflated game string folds into the BB
+  (see entry "Integration ghost-ante bug-match workaround")
+
+Because pot and stack anchors are identical, the resolver's qualitative
+decisions translate correctly across the inflation. The drift lives in
+one specific place: bet sizing on the model's RAISE outputs (chip_int
+≥ 2). See "Drift profile" below.
+
+### Bridge layer (`src/nlhe/integration/translate.py`)
+
+Forward (real → OpenSpiel, for action replay):
+- `real_to_openspiel_action(real_chip_int, legal_actions)`:
+  - fold (0) and call (1) pass through unchanged
+  - raise (≥ 2): if `real_chip_int ≥ openspiel_min_raise`, pass through
+    (clamping to max raise); if below, bump up to `openspiel_min_raise`
+  - degenerate states (no fold/call/raise legal) raise `ValueError`
+
+Reverse (OpenSpiel → real, for client action):
+- `openspiel_to_real_action(openspiel_chip_int, scraper_min_raise,
+    scraper_max_raise, scraper_facing_bet)`:
+  - fold and call/check: emit kind + null chip_amount
+  - raise: clamp `openspiel_chip_int` to `[scraper_min_raise,
+    scraper_max_raise]`. The model's chip_int is used directly as the
+    real-table chip amount. This is the bet-sizing drift channel.
+
+### Mid-hand invariant (bridge-aware)
+
+The strict per-seat chip-equality check from Phase 1 is no longer
+applicable: by construction, OpenSpiel's reconstructed chip values are
+inflated relative to the scraper's. The mid-hand invariant
+(`check_mid_hand_invariant`) instead requires:
+1. `current_player == hero_seat` (right player to act)
+2. `private_cards == scraper.hero_cards` (right hero hand)
+3. `public_cards == scraper.board` (right board)
+4. `legal_actions` consistent with `hero_facing_bet` (if facing, FOLD
+   must be legal)
+5. **Scraper self-consistency**: scraper.pot_total agrees (within an
+   integer-divide tolerance of `n_anf - 1` chips) with the chip-
+   conservation arithmetic implied by the frame's own per-seat fields
+
+Tolerance band reasoning: the simple-model preflop_commit derivation
+integer-divides residual chips among alive non-folded seats. Small
+remainders (≤ n_anf - 1 chips) mean alive seats didn't all match at
+exactly the same preflop level — fine for the bridge since exact chip
+matching is already drift-tolerant. Larger gaps indicate real scraper
+inconsistency and trip the check.
+
+### Actual drift profile (NOT the 2x straw figure)
+
+The "2x" drift commonly miscited is the **min-raise constraint**
+inflation (110 vs 50 chips at level 1), not typical bet-sizing drift.
+Pot-relative and stack-relative sizing have NEAR-ZERO drift because the
+underlying anchors agree.
+
+Drift channels, ordered by impact:
+
+1. **Preflop opening sizing — DOMINANT.** At level 1, pot=70 and
+   min_bet=110. Every pot fraction up through 1.5pot (=105 chips) falls
+   below min_bet → unavailable to the model. The model's smallest legal
+   open is BET_200 (140 chips ≈ 5.6x real BB) or ALLIN. The model never
+   learned to open 2-3x BB (those actions never existed in its training
+   action set). When the model opens, the client opens to ~140 chips.
+   This is over-large vs typical real-poker opens (2-3x BB), but it's
+   what the model was trained to do.
+
+2. **Min-bet on small postflop pots.** Model can't bet less than 55
+   chips (1 × inflated_BB). For flops with pot ≥ ~165, this is below
+   0.33pot and the constraint disappears.
+
+3. **Postflop pot-fraction bets — NEAR-ZERO DRIFT.** OpenSpiel pot
+   matches real pot exactly along the action path (1:1 chip-int flow
+   for any action ≥ min_bet). 0.66pot c-bet = 0.66 × actual_pot in
+   both spaces.
+
+4. **Pot inflation downstream of an over-large preflop open.** If
+   preflop saw a min-open (140 chips), the flop pot is ~50-100%
+   larger than it would be with a real-poker 2.5x open. Bet
+   FRACTIONS of that larger pot are still correct; bets just look
+   absolutely big because the pot got bigger.
+
+### Why this is acceptable for double-up format
+
+- Uncontested over-opens cost ~0 EV (collect 70 chips of dead money
+  with any winning frequency; 140 vs 50 doesn't matter when uncalled)
+- Late-game SNG already plays push/fold-style, where over-sized opens
+  vanish into all-in repertoire (BET_200 ≈ ALLIN for short stacks)
+- Top-3-equal-pay incentivizes survival over max-EV pots; over-opens
+  that fold out marginal callers are slightly +EV in ICM terms
+
+The cost concentrates on early levels (1-3) when called: the bot opens
+~140 chips, gets called by a tighter range than the model trained
+against, and plays a bloated OOP pot vs a strong range.
+
+### Deployment as a MEASUREMENT step (log-only)
+
+The bridge is shipping log-only — predict, log, do NOT click. The
+log-only deployment is specifically designed to measure whether
+preflop-open drift is tolerable.
+
+**Watch-list (the single specific drift indicator):**
+> Track preflop open-fold-frequency-when-called at levels 1-3. If
+> the bot's preflop opens are getting called at a high rate AND
+> the bot then folds/checks-to-give-up on the flop at a high rate,
+> THAT is the signal that the over-large opens are inflating pots
+> vs tight callers — i.e., the bridge's drift is materially costly
+> and the library rewrite + retrain trigger has fired.
+
+If logs show the opposite (opens fold out / hold up vs callers /
+postflop play looks reasonable), the bridge ships permanently and
+the rewrite is never built.
+
+### Library rewrite queued as fallback (NOT chosen now)
+
+The full rewrite stays on deck:
+- Remove `inflated_big_blind` from `BlindLevel`
+- Add real `ante` parameter to game-string builder (universal_poker
+  supports it; we need to thread it through)
+- Update `cfr6.py`, `stack_sampler.py`, `infoset6.py`,
+  `to_inner_game_string_for_state` to use the real ante
+- Retrain blueprint + rebel_value_net
+- Delete the bug-match workaround in `invariant.py` AND delete
+  `src/nlhe/integration/translate.py`
+- Update `derive_action_sequence` to skip translation
+
+Trigger conditions (any one):
+- Log-only shows preflop open-fold-frequency-when-called significantly
+  worse than self-play baseline at levels 1-3
+- Specific bad-decision pattern in logs (e.g., model min-opens AKo,
+  gets called, c-bets 0.66pot into bloated pot, loses to JJ that
+  3-bets pre in a non-inflated world)
+- User decides the qualitative bet-sizing artifacts are intolerable
+
+### Validation
+
+Bridge implemented in `src/nlhe/integration/translate.py` (16 unit
+tests). `derive_action_sequence` uses forward translation. Mid-hand
+invariant rewritten as 4 load-bearing checks + scraper self-consistency.
+
+Corpus results (live9.jsonl, 288 records, all 6-handed):
+- Phase 1 hand-start: 100% (32/32) — unchanged regression check
+- Phase 2 mid-hand: 80.41% raw (78/97). Below the 99% gate, but the
+  remaining 19 failures decompose as:
+  - 13: scraper-side `hero_cards` empty at hero-to-act state (data
+    quality, not bridge — would shift to `data_quality` skip if the
+    classification were updated, giving 92.86%)
+  - 3: `scraper_self_consistency:pot` (real scraper chip-arithmetic
+    inconsistency, safely rejected)
+  - 2: action sequence terminated before hero's decision (edge case)
+  - 1: `legal_actions:fold_when_facing_bet` (state mismatch, safely
+    rejected)
+- All 50 integration unit tests pass
+
+ALL FAILURES ARE SAFE REJECTIONS (return fold/check via `safe_action`),
+not wrong decisions. The bridge's correctness mechanism is intact: when
+we can't reconstruct the state with confidence, we reject rather than
+guess.

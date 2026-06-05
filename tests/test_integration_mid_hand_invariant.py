@@ -138,9 +138,13 @@ def test_invariant_rejects_wrong_board():
 
 def test_invariant_rejects_wrong_pot():
     """Adversarial: scraper claims a pot total that doesn't match the
-    reconstructed sum-of-contributions. (Per-seat stack/bet checks are
-    intentionally dropped for mid-hand invariant due to the inflated-BB
-    conversion configuration-dependence; pot total is still strict.)"""
+    implied-pot scraper-self-consistency arithmetic.
+
+    With the Phase 2 bridge, exact OpenSpiel-reconstructed chip equality
+    is no longer required. The mid-hand invariant instead requires SCRAPER
+    SELF-CONSISTENCY: scraper.pot_total must agree (within an integer-divide
+    tolerance) with the chip-conservation sum implied by the frame's own
+    per-seat fields. A grossly wrong pot_total still trips this check."""
     bet = (25, 0, 0, 0, 0, 15)
     stack = tuple(1500 - bet[i] - 5 for i in range(6))
     frame_real = _frame(dealer_seat=4, hero_seat=1, stack=stack, bet=bet,
@@ -152,7 +156,8 @@ def test_invariant_rejects_wrong_pot():
     res = check_mid_hand_invariant(bad_frame, pack)
     assert not res.ok
     fields = [d[0] for d in res.deltas]
-    assert "pot" in fields, f"expected pot delta, got: {fields}"
+    assert "scraper_self_consistency:pot" in fields, (
+        f"expected scraper_self_consistency:pot delta, got: {fields}")
 
 
 def test_safe_action_is_fold_when_facing_bet_else_check():

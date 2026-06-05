@@ -386,7 +386,7 @@ def replay_to_decision(frame, structure):
                 f"{frame.hero_seat}; sequence under-emitted"
             )
         # Apply next action — verify seat matches expected
-        expected_seat, chip_int = action_seq[action_idx]
+        expected_seat, chip_int_real = action_seq[action_idx]
         actual_seat = state.current_player()
         if actual_seat != expected_seat:
             raise ReplayError(
@@ -395,6 +395,20 @@ def replay_to_decision(frame, structure):
                 f"action_seq mismatched OpenSpiel's action order"
             )
         legal = state.legal_actions()
+        # Bridge: translate the scraper-real chip_int to OpenSpiel-legal
+        # chip_int (bumps raises up to OpenSpiel's min-raise if needed).
+        # See src/nlhe/integration/translate.py docstring + DECISIONS.md
+        # "Phase 2 bridge" for the bet-sizing drift trade-off.
+        try:
+            from src.nlhe.integration.translate import real_to_openspiel_action
+        except ImportError:  # pragma: no cover
+            from translate import real_to_openspiel_action  # type: ignore
+        try:
+            chip_int = real_to_openspiel_action(chip_int_real, legal)
+        except ValueError as e:
+            raise ReplayError(
+                f"action_seq[{action_idx}]=(seat={expected_seat}, "
+                f"chip_int_real={chip_int_real}) translation failed: {e}")
         if chip_int not in legal:
             raise ReplayError(
                 f"action_seq[{action_idx}]=(seat={expected_seat}, "

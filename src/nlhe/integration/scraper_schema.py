@@ -479,6 +479,99 @@ def _street_idx_from_board(board: tuple) -> int:
     )
 
 
+def _repair_folded_from_chip_deductions(
+        frame: ScraperFrame, sb_seat: int, bb_seat: int
+        ) -> tuple[bool, ...]:
+    """Re-derive `folded` from per-seat chip deductions to work around
+    Ignition's stale folded-field bug.
+
+    Ignition's scraper doesn't update the per-seat `folded` flag when seats
+    fold preflop (verified on live_1500 corpus 2026-06-04 at ~30% rate on
+    postflop nominal hero-to-act frames). However, per-seat stack values
+    ARE updated reliably — a preflop folder lost only the ante (or
+    ante + own forced blind), whereas a non-folder lost the SAME chips as
+    every other non-folder (they all matched at the same preflop level,
+    whether that's bb for a limped pot or a higher amount for a raised
+    pot). The chip pattern distinguishes folders from non-folders.
+
+    Algorithm — STACK-EQUALITY iteration. Among the alive non-folded set,
+    all true non-folders should share the same stack value (= pre_hand
+    minus the shared deduction `ante + preflop_commit`). Any seat whose
+    stack is HIGHER (smaller deduction) committed less and must have
+    folded. Iteratively drop the highest-stack candidate (alive non-
+    folded, bet==0, not BB) until either:
+      (a) max(stack) - min(stack) == 0 across all non-folded (excluding
+          BB) — the surviving set is chip-consistent
+      (b) only 2 non-folded remain (heads-up postflop; can't drop further)
+      (c) no more drop candidates
+
+    BB is EXCLUDED from the equality check because BB-folded and BB-
+    checked-option are chip-indistinguishable (both lose exactly ante+bb).
+    The scraper's reported folded state for BB carries through unchanged.
+
+    SB IS included: SB folded loses ante+sb, SB completed (called the
+    preflop action) loses ante+bb (or more if raised); the difference of
+    at least (bb-sb) chips distinguishes them.
+
+    Cases handled correctly (verified by unit tests):
+      - Limped pot with non-blind folders (the DOMINANT live_1500 case)
+      - Limped pot with SB folded after just posting
+      - Preflop raise with non-blind folders
+      - All-checked-around preflop (no drops, no-op)
+      - Heads-up postflop (early termination)
+      - Pre-existing folded flags (treated as already dropped, augmented
+        if more chip-pattern folders are detected)
+
+    Returns a 6-tuple of booleans replacing frame.folded; does not modify
+    the frame.
+    """
+    repaired = list(frame.folded)
+    alive_seats = [i for i in range(NUM_SEATS) if frame.alive[i]]
+
+    # We compare `stack + bet` (the seat's TOTAL chip cost so far this
+    # hand), NOT stack alone. A c-bettor has lower stack but their bet
+    # chips are still in front of them — together with stack, this equals
+    # the same pre-hand-minus-deductions baseline shared by every other
+    # non-folder. Comparing stack alone wrongly flags a c-better's caller
+    # (no bet, same stack pattern as a folder) as folded.
+    def cost(i):
+        return frame.stack[i] + frame.bet[i]
+
+    while True:
+        non_folded = [i for i in alive_seats if not repaired[i]]
+        if len(non_folded) <= 2:
+            break
+        # Check (stack+bet) equality among non-folded (excluding BB which
+        # is chip-indistinguishable folded vs checked-option).
+        nf_for_check = [i for i in non_folded if i != bb_seat]
+        if len(nf_for_check) <= 1:
+            break
+        costs = [cost(i) for i in nf_for_check]
+        if max(costs) - min(costs) == 0:
+            break  # all non-folded share the same total cost → self-consistent
+        # Drop the highest-(stack+bet) drop candidate. Constraints:
+        #   - bet==0 (a seat with a visible bet has non-zero chips in
+        #     front and can't have folded)
+        #   - not BB (BB folded vs BB-checked-option is chip-
+        #     indistinguishable)
+        #   - not the hero (hero has controls present and hero_cards
+        #     visible — they're definitionally in the hand and must
+        #     never be dropped; without this guard the chip-equality
+        #     heuristic can spuriously flag hero in later levels where
+        #     pre-hand stacks vary across seats)
+        candidates = [
+            i for i in non_folded
+            if i != bb_seat and i != frame.hero_seat
+            and frame.bet[i] == 0
+        ]
+        if not candidates:
+            break
+        to_drop = max(candidates, key=cost)
+        repaired[to_drop] = True
+
+    return tuple(repaired)
+
+
 def _derive_pre_hand_and_preflop_commit_simple_model(
         frame: ScraperFrame, sb_seat: int, bb_seat: int
         ) -> tuple[tuple[int, ...], int]:
@@ -488,6 +581,11 @@ def _derive_pre_hand_and_preflop_commit_simple_model(
     bookkeeping when converting cumulative-OpenSpiel-contribution to
     current-street-scraper-bet on postflop frames.
 
+    Uses _repair_folded_from_chip_deductions to work around Ignition's stale
+    `folded` field — the function operates on the repaired folded array, not
+    on frame.folded directly. See helper docstring for the algorithm + the
+    known limitation around blind-seat folders.
+
     Returns (pre_hand_stacks: tuple[int,6], preflop_commit_per_alive: int).
     """
     alive_seats = [i for i in range(NUM_SEATS) if frame.alive[i]]
@@ -496,8 +594,10 @@ def _derive_pre_hand_and_preflop_commit_simple_model(
     sb = frame.blinds.sb
     bb = frame.blinds.bb
 
+    folded = _repair_folded_from_chip_deductions(frame, sb_seat, bb_seat)
+
     folded_commit_total = 0
-    folded_seats = [i for i in alive_seats if frame.folded[i]]
+    folded_seats = [i for i in alive_seats if folded[i]]
     for i in folded_seats:
         folded_commit_total += ante
         if i == sb_seat:
@@ -505,7 +605,7 @@ def _derive_pre_hand_and_preflop_commit_simple_model(
         elif i == bb_seat:
             folded_commit_total += bb
 
-    alive_non_folded = [i for i in alive_seats if not frame.folded[i]]
+    alive_non_folded = [i for i in alive_seats if not folded[i]]
     n_anf = len(alive_non_folded)
 
     if n_anf == 0:
@@ -520,7 +620,7 @@ def _derive_pre_hand_and_preflop_commit_simple_model(
     for i in range(NUM_SEATS):
         if not frame.alive[i]:
             pre.append(0)
-        elif frame.folded[i]:
+        elif folded[i]:
             blind_amt = sb if i == sb_seat else bb if i == bb_seat else 0
             pre.append(frame.stack[i] + ante + blind_amt)
         else:
@@ -593,6 +693,11 @@ def derive_action_sequence(frame: ScraperFrame
 
     street_idx = _street_idx_from_board(frame.board)
 
+    # Repaired folded array — works around Ignition's stale `folded` field
+    # by re-deriving from per-seat stack deductions. See
+    # _repair_folded_from_chip_deductions docstring.
+    folded = _repair_folded_from_chip_deductions(frame, sb_seat, bb_seat)
+
     # Per-seat pre-hand stacks via simple-model chip conservation. Works
     # for both hand-start (P_max=0) and postflop frames. See helper docstring
     # for the simple-model assumption and its failure modes.
@@ -646,7 +751,7 @@ def derive_action_sequence(frame: ScraperFrame
         for seat in range(NUM_SEATS):
             if not frame.alive[seat]:
                 continue
-            if frame.folded[seat]:
+            if folded[seat]:
                 preflop_commit[seat] = max(
                     0, total_committed[seat] - ante)
 
@@ -665,7 +770,7 @@ def derive_action_sequence(frame: ScraperFrame
         if street_idx == 0 and seat == frame.hero_seat:
             break
         seat_commit_pf = preflop_commit[seat]
-        if frame.folded[seat]:
+        if folded[seat]:
             actions.append((seat, 0))  # fold
             # Folded seats don't update running_max
             continue
@@ -697,7 +802,7 @@ def derive_action_sequence(frame: ScraperFrame
 
     # POSTFLOP: emit intermediate streets (all-checks) then current street
     pf_alive_post = postflop_action_order(
-        frame.dealer_seat, alive_seats, frame.folded)
+        frame.dealer_seat, alive_seats, folded)
     # Intermediate streets (1..street_idx-1): all checks
     for _ in range(1, street_idx):
         for seat in pf_alive_post:
