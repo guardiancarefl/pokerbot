@@ -960,3 +960,104 @@ ALL FAILURES ARE SAFE REJECTIONS (return fold/check via `safe_action`),
 not wrong decisions. The bridge's correctness mechanism is intact: when
 we can't reconstruct the state with confidence, we reject rather than
 guess.
+
+## Process learning: iter_500 throwaway probes are NOT valid for absolute deployment judgments
+
+**Date:** 2026-06-05. **Context:** the 8-cycle depth-distinction
+investigation (depth-blindness → sampler rebalance → depth feature →
+combined fix → capacity wall scare → trajectory-average → apples-to-
+apples → sample-mode probe → convergence probe).
+
+### The error
+
+Throughout the investigation, every "diagnosis" of model character
+(over-jamming, depth-blindness, polarization, oscillation, premium-
+folding) was based on iter_500 throwaway models. The production-validated
+k200 was trained to iter_2000. The throwaways were ~25% of production
+training depth.
+
+When the converged k200 iter_2000 model was finally probed in sample
+mode at the end of the arc, it showed:
+- Premium-fold rates of 3-7% (vs the iter_500 throwaways' 17-28%)
+- A clean depth-distinct mixed strategy: AA at 60bb plays 64% normal-
+  raise / 19% jam / 14% call / 4% fold; at 10bb plays 48% normal-raise
+  / 26% jam / 20% call / 7% fold
+- No signs of the "polarization" or "depth-blindness" that drove the
+  middle six cycles of the investigation
+
+**The iter_500 throwaway pathologies (premium-fold rates, oscillation,
+flattened depth-distinction) were not properties of the architecture,
+features, distribution, or capacity. They were artifacts of an
+under-converged Deep CFR policy.** The strategy buffer in Deep CFR
+saturates around iter_700-800 in this configuration; below that, the
+average policy is still being shaped by early-training noise, and any
+probe of "what the model has learned" reads transient regret dynamics
+rather than the converged equilibrium.
+
+### What's actually valid at iter_500
+
+iter_500 throwaways are valid for:
+- **Relative comparisons across configurations**, IF the comparison is
+  at the same training stage AND the metric being compared is robust to
+  oscillation magnitude (e.g., "does the gap exist directionally" is
+  more robust than "is the gap > N pp")
+- **Smoke tests** that the training pipeline runs end-to-end
+- **Sanity checks** that a code change didn't introduce a catastrophic
+  regression (model still trains, still produces a policy)
+
+iter_500 throwaways are NOT valid for:
+- **Absolute deployment judgments** ("can we ship this model?")
+- **Architecture/feature ablations** that depend on converged behavior
+  (the converged model's behavior differs qualitatively from the
+  iter_500 transient)
+- **Gate-against-thresholds** anchored on production model behavior
+  (the threshold reflects a converged model; the test reads an
+  unconverged one)
+
+### How to recognize the failure mode
+
+Symptoms of "reading an unconverged Deep CFR policy as if it were the
+converged equilibrium":
+- High premium-fold rates (>10% on AA/KK is a strong tell)
+- Large checkpoint-to-checkpoint oscillation in argmax behavior
+- Trajectory-average values significantly different from single-ckpt
+  reads
+- Sample-mode play that looks qualitatively wrong (e.g., folds best
+  hands, raises worst hands) even when the configuration matches a
+  validated production recipe
+
+When these appear in a throwaway probe, the first hypothesis should
+be undertraining, not architectural or distributional failure. The
+cheapest discriminator: probe the production iter_N model (where N
+matches the validated convergence point) under the same protocol. If
+the converged model behaves correctly under that protocol but the
+throwaway doesn't, the gap is convergence.
+
+### Cost
+
+The 8-cycle arc consumed ~20+ hours of session time + ~10 hours of
+training compute, all chasing what turned out to be the same root
+cause: iter_500 was the wrong observable. Two cheap probes at the start
+would have prevented it:
+1. Probe the production k200 ckpt under sample mode at the same depths
+   before launching any throwaway investigation
+2. Train a single throwaway to iter_2000 (full convergence) before
+   trying to diagnose anything from iter_500 behavior
+
+### Carryover for future investigations
+
+When a future probe shows model behavior that "looks broken" on a
+throwaway:
+- **First check**: probe the production-scale (convergence-time) model
+  under the same protocol. If it's fine, the throwaway is undertrained
+- **Then**: only after the throwaway has been trained to convergence,
+  treat the probe's output as load-bearing
+- **Default assumption**: "this iter_500 model looks weird" is a
+  convergence problem, not an architecture/distribution problem,
+  until proven otherwise
+
+The single real bug surfaced by the 8-cycle arc was the deployment
+flag (argmax → sample, see this file's `fix(deploy)` commit). The
+inflated_BB action-set patch was a different, earlier finding. Both
+fixes are independent of distribution tuning or depth features — both
+of which the data ultimately said weren't needed.
