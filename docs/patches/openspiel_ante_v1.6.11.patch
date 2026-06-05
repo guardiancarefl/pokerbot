@@ -1,0 +1,34 @@
+diff --git a/open_spiel/games/universal_poker/universal_poker.cc b/open_spiel/games/universal_poker/universal_poker.cc
+index 385319a..478047c 100644
+--- a/open_spiel/games/universal_poker/universal_poker.cc
++++ b/open_spiel/games/universal_poker/universal_poker.cc
+@@ -162,6 +162,14 @@ const GameType kGameType{
+         {"stack", GameParameter(std::string("1200 1200"))},
+         // The size of the blinds for each player (relative to the dealer)
+         {"blind", GameParameter(std::string("100 100"))},
++        // The size of per-player antes (space-separated, length=numPlayers).
++        // Default empty string = no antes (preserves pre-patch behavior
++        // bit-for-bit). When non-empty, antes are added to each seat's
++        // initial pot contribution; the min-raise floor stays at 2*max(blind)
++        // = 2*BB per NL convention. Added 2026-06-05 for tournament games
++        // with both blinds and antes (Ignition Double-Up Turbo). See
++        // docs/patches/openspiel_ante_v1.6.11.patch.
++        {"ante", GameParameter(std::string(""))},
+         // The size of raises on each round (for limit games only) as numrounds
+         // integers. It will be ignored for nolimit games.
+         {"raiseSize", GameParameter(std::string("100 100"))},
+@@ -1521,6 +1529,14 @@ std::string UniversalPokerGame::parseParameters(const GameParameters &map) {
+ 
+   absl::StrAppend(&generated_gamedef,
+                   "blind = ", ParameterValue<std::string>("blind"), "\n");
++
++  // Optional per-player antes — emit only when the parameter is non-empty
++  // so unchanged callers produce a GAMEDEF identical to pre-patch output.
++  std::string ante_param = ParameterValue<std::string>("ante");
++  if (!ante_param.empty()) {
++    absl::StrAppend(&generated_gamedef, "ante = ", ante_param, "\n");
++  }
++
+   absl::StrAppend(&generated_gamedef, "END GAMEDEF\n");
+ 
+   std::vector<std::string> blinds =

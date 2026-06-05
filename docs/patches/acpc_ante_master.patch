@@ -1,0 +1,124 @@
+diff --git a/project_acpc_server/game.cc b/project_acpc_server/game.cc
+index e7ed394..b6ebbed 100644
+--- a/project_acpc_server/game.cc
++++ b/project_acpc_server/game.cc
+@@ -157,7 +157,7 @@ static int readItems( const char *itemFormat, const int numItems,
+ 
+ Game *readGame( FILE *file )
+ {
+-  int stackRead, blindRead, raiseSizeRead, boardCardsRead, c, t;
++  int stackRead, blindRead, anteRead, raiseSizeRead, boardCardsRead, c, t;
+   char line[ MAX_LINE_LEN ];
+   Game *game;
+ 
+@@ -168,6 +168,14 @@ Game *readGame( FILE *file )
+     game->stack[ c ] = INT32_MAX;
+   }
+   blindRead = 0;
++  anteRead = 0;
++  /* Ante is optional; default all-zero so untouched games behave identically
++     to pre-ante-patch behavior. Game struct is malloc'd (not calloc'd) so
++     fields not explicitly set hold uninitialized bytes — we must zero
++     ante[] explicitly. */
++  for( c = 0; c < MAX_PLAYERS; ++c ) {
++    game->ante[ c ] = 0;
++  }
+   raiseSizeRead = 0;
+   game->bettingType = limitBetting;
+   game->numPlayers = 0;
+@@ -203,6 +211,10 @@ Game *readGame( FILE *file )
+ 
+       blindRead = readItems( "%" SCNd32, MAX_PLAYERS, &line[ 5 ],
+ 			     1, game->blind, 4, &c );
++    } else if( !strncasecmp( line, "ante", 4 ) ) {
++
++      anteRead = readItems( "%" SCNd32, MAX_PLAYERS, &line[ 4 ],
++			    1, game->ante, 4, &c );
+     } else if( !strncasecmp( line, "raisesize", 9 ) ) {
+ 
+       raiseSizeRead = readItems( "%" SCNd32, MAX_ROUNDS, &line[ 9 ],
+@@ -284,6 +296,24 @@ Game *readGame( FILE *file )
+     }
+   }
+ 
++  /* Validate antes (optional; if no `ante = ...` line, ante[] is all zeros
++     and these checks are no-ops). Each per-player ante must be non-negative,
++     and blind+ante must fit within stack. */
++  for( c = 0; c < game->numPlayers; ++c ) {
++    if( game->ante[ c ] < 0 ) {
++      fprintf( stderr, "negative ante for player %d\n", c + 1 );
++      free( game );
++      return NULL;
++    }
++    if( game->blind[ c ] + game->ante[ c ] > game->stack[ c ] ) {
++      fprintf( stderr,
++	       "blind + ante for player %d exceeds stack size\n",
++	       c + 1 );
++      free( game );
++      return NULL;
++    }
++  }
++
+   if( game->bettingType == limitBetting
+       && raiseSizeRead < game->numRounds ) {
+ 
+@@ -386,6 +416,23 @@ void printGame( FILE *file, const Game *game )
+   }
+   fprintf( file, "\n" );
+ 
++  /* Emit ante line only if any seat has a non-zero ante — keeps the
++     printed gamedef identical to historical format when no ante is set. */
++  {
++    int any_ante = 0;
++    int j;
++    for( j = 0; j < game->numPlayers; ++j ) {
++      if( game->ante[ j ] != 0 ) { any_ante = 1; break; }
++    }
++    if( any_ante ) {
++      fprintf( file, "ante =" );
++      for( j = 0; j < game->numPlayers; ++j ) {
++	fprintf( file, " %" PRId32, game->ante[ j ] );
++      }
++      fprintf( file, "\n" );
++    }
++  }
++
+   if( game->bettingType == limitBetting ) {
+ 
+     fprintf( file, "raiseSize =" );
+@@ -632,6 +679,17 @@ void initState( const Game *game, const uint32_t handId, State *state )
+     state->playerFolded[ p ] = 0;
+   }
+ 
++  /* Add antes to per-player spent (chips already in the pot from the
++     forced ante post). Antes are NOT included in maxSpent — by NL
++     convention, the min-raise floor is 2*BB regardless of ante. So
++     state->minNoLimitRaiseTo stays at 2*max(blind[]) = 2*BB. The
++     player's effective remaining stack (= game->stack[p] - state->spent[p])
++     decreases by ante[p], correctly reflecting that ante chips are
++     no longer behind the player. */
++  for( p = 0; p < game->numPlayers; ++p ) {
++    state->spent[ p ] += game->ante[ p ];
++  }
++
+   for( r = 0; r < game->numRounds; ++r ) {
+ 
+     state->numActions[ r ] = 0;
+diff --git a/project_acpc_server/game.h b/project_acpc_server/game.h
+index 2b2764c..5bffc4d 100644
+--- a/project_acpc_server/game.h
++++ b/project_acpc_server/game.h
+@@ -47,6 +47,13 @@ typedef struct {
+   /* entry fee for game, per player */
+   int32_t blind[ MAX_PLAYERS ];
+ 
++  /* per-player forced ante (0 = no ante for this player). Unlike blinds,
++     antes are dead money NOT included in the min-raise floor — by NL
++     convention, min-raise-to is 2*BB regardless of ante. OpenSpiel patch
++     for tournament-style games with both blinds and antes (added
++     2026-06-05, see docs/patches/openspiel_ante_v1.6.11.patch). */
++  int32_t ante[ MAX_PLAYERS ];
++
+   /* size of fixed raises for limitBetting games */
+   int32_t raiseSize[ MAX_ROUNDS ];
+ 
