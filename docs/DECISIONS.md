@@ -1061,3 +1061,83 @@ flag (argmax → sample, see this file's `fix(deploy)` commit). The
 inflated_BB action-set patch was a different, earlier finding. Both
 fixes are independent of distribution tuning or depth features — both
 of which the data ultimately said weren't needed.
+
+## k=1000 convergence proxy: compare against k=200 committed baseline
+
+**Date:** 2026-06-05. **Context:** decision deferred for the eventual
+k=1000 RunPod run, not the current k=200 retrain. Recording now so it's
+available when we pull onto RunPod and not re-derived under time pressure.
+
+### The k=1000 proxy strategy
+
+The k=1000 convergence proxy must compare **k1000-current vs the
+COMMITTED k200 baseline** — not just adjacent k1000 checkpoints. Log
+per checkpoint: margin in chips/hand of k1000-current vs k200-committed,
+played over a fixed CRN hand set.
+
+This is the cumulative "is k=1000 actually better than the reference"
+signal. Read two ways:
+
+- **(a) margin positive** = k1000 is beating the baseline at all (i.e.,
+  the larger card abstraction is buying something at this point in
+  training; if it's not, k=1000 isn't earning its compute)
+- **(b) margin stopped growing** = k1000 has converged to its
+  equilibrium edge over k200; further iterations don't add advantage
+
+Keep the **adjacent-delta proxy** (current ckpt vs the ckpt at half its
+iter) from the k=200 monitor recipe — that pulse tells you "still
+moving" vs "stuck/oscillating." But the **vs-baseline margin** is the
+load-bearing signal for both questions that matter:
+- Was k=1000 worth running at all? (sign of the margin)
+- When is k=1000 done? (the margin's trajectory flattens)
+
+### How to READ all margins (process discipline)
+
+Read ALL margins as **trajectories / column trends**, never single
+deltas. The 8-cycle investigation observed ±15pp swings in the
+depth-gap metric between adjacent checkpoints under unchanged
+training — single readings carry that much noise. **One reading
+lies; the shrinking/flattening series is the real signal.**
+
+Practical rule: for any "is it converged" question, plot the last
+5+ checkpoints and look for plateau in the linear-fit slope.
+Single-point reads of "margin = 0.18" or "depth_gap = 11pp" tell
+you almost nothing about convergence; the slope over many points does.
+
+### Why fold rates lie at k=1000 in particular
+
+The previous k=1000 run was undertrained at iter_527. The fold rates
+on premium hands hit their competence floor (≈ correct, not catastrophically
+folding aces) much earlier than the full strategy converges — likely
+because the policy-net's first learning task is "don't fold strong
+preflop hands," which gets handled relatively quickly even on a
+large card abstraction. Subsequent training is doing finer-grained work
+(postflop value, mixed-bet sizing, blocker-aware ranges) which doesn't
+show up in fold rates at all.
+
+**Implication: at k=1000, watch the vs-baseline MARGIN, not the fold
+rates, for when to stop.** Fold rates hit the competence floor early
+and falsely look done. The margin keeps growing until the policy is
+genuinely converged. **k=1000 needs MORE iterations than k=200 to
+converge** because the abstraction is finer and the strategy space
+larger.
+
+Concretely: do not stop k=1000 just because the iter_500 / iter_800
+behavioral probe looks like the k=200 baseline's converged behavior.
+Stop only when the vs-k200-baseline margin trajectory has flattened
+across multiple consecutive checkpoints (3+).
+
+### Why this entry is here
+
+This decision matters because we're about to pull the validated k=200
+recipe to RunPod for the k=1000 run. The convergence-monitoring tool
+built for the k=200 retrain (`scripts/monitor_k200_convergence.py` and
+its `convergence_log.csv`) becomes the template for the k=1000
+monitor. The k=1000 monitor needs ONE additional column:
+`margin_vs_k200_committed_chips_per_hand`, populated by playing the
+current k1000 ckpt vs the shipped k200 ckpt over a fixed CRN seed set.
+
+The earlier k=1000 run that stopped at iter_527 lacked this proxy. It
+saw "fold rates look fine, behavioral probes look reasonable" and
+called it done. Without the vs-baseline margin trajectory, there was
+no way to see that the run was still climbing. Don't repeat that.
