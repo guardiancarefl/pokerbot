@@ -95,10 +95,16 @@ def main():
     ap.add_argument("--abstraction", required=True)
     ap.add_argument("--structure",
                     default="configs/ignition_double_up_6max_turbo.yaml")
-    ap.add_argument("--mode", choices=["sample", "argmax"], default="argmax",
-                    help="argmax = deterministic (recommended for log-only "
-                         "decision-quality eval); sample = stochastic per "
-                         "trained policy distribution")
+    ap.add_argument("--mode", choices=["sample", "argmax"], default="sample",
+                    help="sample (DEFAULT) = stochastic per the trained "
+                         "policy distribution — the CFR-theoretic deployment "
+                         "of the average strategy; what the model converged "
+                         "to. argmax = deterministic plurality pick; useful "
+                         "for single-decision audit or reproducibility but "
+                         "NOT the deployment-correct mode for a mixed-strategy "
+                         "CFR policy. Flipped from argmax to sample on "
+                         "2026-06-05 after diagnosing that argmax was an "
+                         "artifact masking a depth-distinct mixed strategy.")
     ap.add_argument("--seed", type=int, default=0)
     args = ap.parse_args()
 
