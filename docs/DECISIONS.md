@@ -1412,3 +1412,82 @@ out of scope for the bridge code at `src/nlhe/integration/*`.
 
 All 64 tests on touched modules (scraper_schema, invariant, replay,
 premium_floor, short_stack_floor, bridge fixes) pass.
+
+---
+
+## Correction — bridge-vs-scraper split: 41 frames, not 61
+
+**Date:** 2026-06-08
+**Re:** prior entry "Bridge reconstruction (Issue 2) — closed" and commit f1a412b
+
+The prior entry and commit `f1a412b`'s message both stated the session's
+non-reconstructing frames as "**41 scraper_data_quality + 17
+scraper_suspect + 3 parse_error = 61**" — that math double-counts.
+The original `live_dryrun_20260608_152756.jsonl` used `skip_data_quality`
+as a single UNION bucket containing all three exception types
+(`ScraperSuspect`, `ScraperDataQuality`, `ScraperParseError`). The
+correct partition is:
+
+| sub-reason | count | % of session |
+|---|---|---|
+| `scraper_suspect` (image render / OCR confidence below threshold) | 17 | 8.5% |
+| `data_quality: dealer field missing/empty` | 17 | 8.5% |
+| `data_quality: dealer points to non-alive seat` (transient mid-hand) | 4 | 2.0% |
+| `parse_error: blinds string parse failure` (level transitions) | 3 | 1.5% |
+| **total scraper-side frames** | **41** | **20.5%** |
+
+Live dryrun's broader status breakdown remains:
+
+```
+not_hero_to_act       126   63.0%   (normal: between hands, opponent acting)
+invariant_pass         33   16.5%   (post-fix; was 31 pre-fix)
+scraper_side total     41   20.5%   (the 41 above)
+invariant_fail          0    0.0%   (post-fix; was 2 pre-fix: seq=170, seq=192)
+```
+
+(`63 + 16.5 + 20.5 + 0 = 100`. The bridge cleared 2/2 = 100% of its
+known failures.)
+
+### Hand-touch analysis — 0 hands sat out due to scraper
+
+The session segments into **10 hand-segments** (by `(dealer_seat, level)`
+across the 9.1-minute dry-run). Distribution:
+
+| metric | count |
+|---|---|
+| Total hand-segments | 10 |
+| Hands with ≥1 `invariant_pass` (bot got a real decision) | **9 pre-fix / 10 post-fix** |
+| Hands with ≥1 scraper-fail frame | 9 |
+| Hands BOTH played fine AND had scraper-fail frames (= scraper-fail was noise around played decisions) | 9 |
+| **Hands with 0 `invariant_pass` and ≥1 scraper-fail (= bot SAT OUT due to scraper)** | **0** |
+
+**In this session, the 41 scraper-side frames cost zero playable hands.**
+The redundancy of polling-rate captures absorbed every OCR/render
+glitch as long as at least one frame within each hand was clean —
+which it always was. The bridge's "drop and let the next frame retry"
+behavior was the right fallback for this noise level.
+
+The one hand where the bot DID effectively sit out pre-fix was the
+last AA hand (level 2, dealer=5, containing seq=170 + seq=192) — but
+that was a **bridge** failure (now fixed in `f1a412b`), not a scraper
+failure. That hand had 0 scraper-fail frames; the issue was the
+invariant rejecting valid frames due to the two reconstruction bugs.
+
+### Scraper prioritization (if/when)
+
+If scraper improvements are ever scheduled, **dealer-button detection
+is the highest-leverage target**: 21 of 41 failures (51% of scraper
+issues, 10.5% of all session frames) are dealer-related —
+`dealer field missing/empty` (17) + `dealer points to non-alive seat`
+(4). Fixing the dealer-OCR path would roughly halve the scraper
+failure count.
+
+The 17 `scraper_suspect` failures are heterogeneous (whatever triggers
+the scraper's "suspect" flag — likely a mix of rendering and OCR
+confidence reasons; not characterized here). The 3 `parse_error`
+failures are blinds-string parsing at level transitions —
+self-correcting on the next frame.
+
+**That said, scraper work has zero urgency for the next dry-run.** The
+present scraper noise floor did not block any hands in this session,
+and the redundancy-tolerant bridge handles it correctly.

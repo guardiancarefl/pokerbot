@@ -1,12 +1,138 @@
 # Project Status
 
-**Last updated:** 2026-06-01 (Session 6 late, post-S2(a))
-**Current phase:** Leduc proof DONE. Verdict S1. Next session = 6-max adaptive scaffold CPU-smoke (no GPU yet).
+**Last updated:** 2026-06-08
+**Current phase:** Live deployment readiness. Validated k200 blueprint
+  (`runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt`).
+  Bridge fixed end-to-end; three deployment-time policy floors shipped;
+  depth-confusion characterized and a retrain queued.
 
-> Note: this file was badly stale before Session 13 (it still read "Pre-Phase-1
-> setup, 2026-05-21"). Rewritten from git history + the docs. Cross-check
-> `git log --oneline` before trusting any single line here — STATUS can lag the
-> last commit.
+> Note: this file historically lagged commits badly. Always cross-check
+> `git log --oneline` before trusting any single line. The "Live deployment
+> readiness" entry below is the current load-bearing summary; the older
+> Leduc / sub-step 6 entries describe a research workstream that's
+> superseded by the deployment focus.
+
+## Live deployment readiness — 2026-06-08 — read this first
+
+The validated k200 blueprint is live-deployable. Live dry-run on
+`logs/live_dryrun_20260608_152756.jsonl` (200 frames, 9.1 min, 10 hands)
+exposed two distinct classes of problem; both have been characterized,
+the bridge bugs are fixed, the model gaps have deployment-time
+mitigations in place, and the underlying model fix is queued as the
+next major workstream.
+
+### Bridge — Issue 2 CLOSED (`f1a412b`)
+
+Two distinct invariant-failure bugs identified, root-caused, fixed, tested.
+Re-replay gate green: pre-fix 2 `invariant_fail` → post-fix 0; 196/200
+frames bit-identical; 2 FIX (seq=170, seq=192 — both AA hands); 2
+state-identical action-seq reorderings (seq=81, seq=83) with provably
+unchanged policy decisions; 0 regressions.
+
+- **seq=170 — derive-side**: blind-seat-as-limper misclassification in
+  `scraper_schema.py:derive_action_sequence` caused UTG opens to defer
+  when BB sat at exactly `bb_amount`. Fix: exclude blind seats at their
+  forced post from `limper_after_me_unemitted` when no raise above bb.
+- **seq=192 — view-side**: `openspiel_to_scraper_view`'s `matched_all_in`
+  branch on postflop used `preflop_max_chip_int` as subtractor, wrong
+  for postflop all-ins (over-subtracted current voluntary to 0). Fix:
+  subtract `preflop_commit_per_alive + ante`. The `- ante` is motivated
+  by the chip_int=pre_hand convention (invariant across both the
+  replay-fallback path AND the derive's `busted_mid_hand` emission
+  path), not by fallback inflation. Diagnostic at
+  `scripts/diag_seq192_legal_actions.py` confirmed chip_int=1515 is not
+  in OpenSpiel's `legal_actions`; only `[0, 1, 1525]` are legal at the
+  forced-all-in moment.
+
+Tests: `tests/test_bridge_seq170_seq192_fixes.py` (6 tests, all pass).
+64/64 tests pass on touched modules (scraper_schema, invariant, replay,
+plus all three floors).
+
+### Model — depth-confusion characterized + 3 deployment-time floors shipped
+
+The 236-d encoder normalizes chip features by `starting_stack=1500` and
+never uses `big_blind`. Depth-invariance probe
+(`scripts/depth_invariance_probe.py`) measured median TV distance 0.53–
+0.78 across blind levels at **fixed true BB-depth** (should be ≈ noise)
+vs 0.20–0.37 at **fixed chips** (should be high). Ratio 1.55–3.16 in
+the wrong direction: the model uses the chip-magnitude smear as a
+proxy for BB-depth and the proxy doesn't reconstruct depth correctly.
+
+Live-field paired A/B (`scripts/short_stack_floor_ab.py`,
+24,000 paired games at hpl=5 live-matched escalation):
+**paired ICM delta V1−V0 = +0.0100 ± 0.00255** (z=3.92, 95% CI
+[+0.005, +0.015]). Per-firing (diverged games only) **+0.256 ± 0.065**
+(z=3.95). Floor fires on 7.53% of V0 decisions live-matched.
+
+Three deployment-time floors now chain in
+`src/nlhe/integration/live_loop.py` (composed via
+`make_live_policy_filter`, default off in training and eval):
+
+1. **`apply_aa_kk_preflop_floor`** (`3999d58`) — mask FOLD when hero
+   holds AA/KK preflop. Categorically never +EV. 15 tests.
+2. **`apply_check_when_free_floor`** (`dfc37c2`) — mask FOLD when CHECK
+   is legal (to_call==0 with CALL in `legal_actions`). Strictly
+   dominated action: folding for free gives up free equity for zero
+   gain. Universal — any street, any depth, any hand. Covers seq=48
+   (BB 92o ~55% fold) and analogous spots at all depths.
+3. **`apply_short_stack_floor`** (`dfc37c2`) — at hero eff-stack ≤ 6 BB
+   (configurable `short_stack_floor_bb`, default 6.0):
+   facing action → keep {FOLD, CALL, ALLIN}; check spot → {CALL, ALLIN};
+   true unopened (no CALL legal) → {FOLD, ALLIN}. Intermediate bet
+   sizes masked, mass redistributed. Covers seq=461 (5.3 BB SB
+   min-raising to 2 BB facing action).
+
+Each fire logs to stdout for live dry-run audit:
+`[FLOOR] fired=[…]  eff_bb=X.XX  cp=N  street=S  pre_argmax=…  post_argmax=…`.
+
+Default `[OOD-WARN]` runtime log fires when blind level ≥ 8 OR hero
+effective stack < 2 BB (we don't sample those in training).
+
+### Scraper — characterized as NON-BLOCKING for this session
+
+Of the 200 session frames, **41 (20.5%) are scraper-side failures**
+(the original log used `skip_data_quality` as a UNION bucket — see the
+"Correction" entry in `DECISIONS.md`):
+- 17 `scraper_suspect` (image render / OCR confidence below threshold)
+- 17 `data_quality: dealer field missing/empty`
+-  4 `data_quality: dealer points to non-alive seat` (mid-hand transient)
+-  3 `parse_error: blinds string parse` (level-transition garbling)
+
+**Zero hands sat out due to scraper.** All 10 hand-segments had at
+least one valid hero-decision frame within them; the 41 failures were
+redundant captures absorbed by the bridge's "drop and retry on next
+frame" behavior.
+
+If/when scraper work is scheduled, **dealer-button detection is the
+highest-leverage target** (21 of 41 failures = 51% of scraper issues).
+Not urgent for the next dry-run.
+
+### Next major workstream — model retrain with `eff_stack_in_BB`
+
+Queued, **NOT before the next dry-run**: add a BB-normalized depth
+channel to the encoder (`eff_stack_in_BB = min(hero_stack, max alive
+opp stack) / big_blind`) and retrain. The model should learn to read
+BB-depth directly rather than from the chip-magnitude smear, and the
+short-stack floor should become a no-op.
+
+**Falsification test for the retrain:** re-run
+`scripts/short_stack_floor_ab.py` against the retrained checkpoint
+with the same paired-seed harness. A depth-aware model should drive
+both the firing-divergence rate AND the diverged-only delta toward
+zero. If the diverged-only delta stays near +0.25 after retrain, the
+feature didn't land — investigate before shipping.
+
+### Commits load-bearing for this state
+
+- `3999d58` feat(deploy): AA/KK preflop FOLD floor
+- `dfc37c2` feat(deploy): short-stack + check-when-free floors
+- `f1a412b` fix(bridge): close Issue 2 (seq=170, seq=192)
+
+Validation hashes (the deployed model):
+- `ckpt_iter_1500.pt`  sha256 = `b79e82dd0ce9e78e4eb666b7379df953dadbf2a6e026c6bd4b6eec695e9b1b11`
+- `abstraction.pkl`    sha256 = `0fc20800dc7ce89ea950c975decbd530ac6c6f3c164105e8ab99d24359de4c8e`
+
+---
 
 ## Leduc proof complete — S1 verdict (2026-06-01, Session 6 late) — read this first
 The Leduc CPU proof is DONE. Verdict: **S1 confirmed** — Leduc is too information-poor
