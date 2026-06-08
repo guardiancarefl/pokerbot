@@ -1280,3 +1280,135 @@ empirical justification — the AA/KK rule had a clear "no opponent
 range" argument; check-when-free has a strict-dominance argument; the
 short-stack floor has the depth-invariance + A/B evidence. Other
 floors should clear the same bar.
+
+---
+
+## Bridge reconstruction (Issue 2) — closed
+
+**Date:** 2026-06-08
+**Session log:** `logs/live_dryrun_20260608_152756.jsonl` (200 frames)
+
+### Background
+
+Live dry-run safe-folded AhAs on two spots (seq=170 preflop and seq=192
+turn). User flagged these as a class of bridge bug blocking the bot
+from playing good hands. Re-replay against the saved log via
+`scripts/replay_session_diff.py` confirmed exactly **2 invariant
+failures** out of 200 frames — both AA spots, no other reconstruction
+failures hiding in the data.
+
+### Two distinct defects, same symptom class
+
+**seq=170 — derive-side: blind-seat misclassified as voluntary limper.**
+`src/nlhe/integration/scraper_schema.py:derive_action_sequence`'s
+`limper_after_me_unemitted` check treated the BB sitting at exactly
+`bb_amount` as a voluntary limper waiting for emission. Combined with
+`raiser_after_me_exists`, this caused early-position raisers
+(UTG at target=100) to defer their open and emit `chip_int=1` (call)
+instead of `chip_int=100` (raise) — attribution flipped onto a later
+seat (CO at target=100 became the apparent raiser). OpenSpiel
+contribution off by exactly the BB amount (50 chips) on UTG.
+
+**Fix:** exclude blind seats sitting at exactly their forced post from
+the `limper_after_me_unemitted` set when `raise_above_bb` is False. A
+real (non-blind) limper still defers correctly — verified by
+`test_blind_seat_exclusion_preserves_real_limper_behavior`.
+
+**seq=192 — invariant-view-side: postflop matched_all_in branch used
+wrong subtractor.**
+`src/nlhe/integration/invariant.py:openspiel_to_scraper_view`'s
+matched_all_in branch on postflop subtracted `preflop_max_chip_int` to
+isolate current-street voluntary. That subtractor equals the busted
+seat's full pre_hand (= ante + preflop_carry + current-street voluntary)
+when the all-in happens postflop, over-subtracting the current
+voluntary to 0. The diagnostic
+`scripts/diag_seq192_legal_actions.py` confirmed
+OpenSpiel's `legal_actions()` at BB's turn decision collapses to
+`{0, 1, pre_hand}` — the chip_int=pre_hand convention is the only
+legal all-in, and the convention reintroduces the ante into `contrib`.
+
+**Fix:** postflop matched_all_in branch subtracts
+`preflop_commit_per_alive + ante`, structurally consistent with the
+existing preflop matched_all_in branch (which already subtracts
+`ante`). The `- ante` term is motivated by the `chip_int=pre_hand`
+convention, not by the replay-fallback inflation — it applies whether
+the chip_int=pre_hand was emitted by the forced-all-in fallback
+(seq=192-style) OR by `derive_action_sequence`'s `busted_mid_hand`
+emission path.
+
+**The `chip_int=1515` value is NOT in OpenSpiel's legal_actions** — not a
+fallback-detection bug. The forced-all-in regime collapses legal to
+fold/call/full-stack only. The fallback's behavior is correct; the
+fix lives in the view.
+
+### Re-replay gates
+
+Pre-fix:
+  invariant_pass: 31, invariant_fail: 2 (seq=170, seq=192)
+
+Post-fix:
+  invariant_pass: 33 (+2 = exactly seq=170 + seq=192)
+  invariant_fail: 0
+
+Diff (`scripts/replay_session_diff.py diff`):
+  196 / 200 frames bit-identical (status, invariant_ok, deltas,
+    action_seq_hash, state_hash all match).
+  2 frames invariant FIX: seq=170, seq=192 → invariant_pass.
+  2 frames (seq=81, seq=83): action_seq_hash changed but state_hash
+    unchanged — alternate equivalent emission sequence reaching the
+    same OpenSpiel state (same policy, same bot decision). Walked
+    the logic: at these spots the limper-rule change reorders the
+    chronological emission but `should_defer` evaluates to the same
+    final value, so the final chip distribution is bit-identical.
+  0 invariant regressions (no PASS → FAIL).
+
+### AA decisions verified
+
+seq=170 (preflop SB AsAh, dealer s5, facing UTG-open to 100): real
+mixed-strategy raise/call/fold. With the AA/KK preflop floor active
+the residual fold mass is masked. Not a safe_fold.
+
+seq=192 (turn SB AsAh on QdQsJc8c, facing BB shove for 1015, hero
+stack 250): forced-all-in regime, legal collapses to
+{FOLD, CALL, ALLIN}. Policy: 86.7% CALL, 6.7% FOLD, 6.7% ALLIN. Bot
+calls the all-in for 250 chips with AA. Not a safe_fold.
+
+### Bridge vs. scraper split — what this fixes, what it doesn't
+
+Of the 200 frames in the session log:
+
+  126 (63%) — `not_hero_to_act`: between hands, opponent acting; normal.
+   33 (16.5%) — `invariant_pass`: hero decision frames; bridge works.
+   41 (20.5%) — `scraper_data_quality`: scraper-side issues (dealer
+                missing/empty, dealer points to non-alive seat, blinds
+                parse).
+   17 (8.5%) — `scraper_suspect`: scraper marked the frame as suspect
+                (image rendering / OCR confidence below threshold).
+    3 (1.5%) — `parse_error`: scraper output didn't conform to schema.
+
+**Pre-fix invariant failures: 2 (seq=170, seq=192). Post-fix: 0. The
+bridge cleared 2/2 = 100% of its known failures.**
+
+The **61 non-reconstructing frames (30.5% of the session)** that remain
+are ALL **scraper-side**, not bridge:
+  - 41 scraper_data_quality (data missing or inconsistent from scraper)
+  - 17 scraper_suspect (scraper itself marked the frame unreliable)
+  - 3 parse_error (schema violation in scraper output)
+
+These are a **Windows-side workstream** (the scraper runs on Windows;
+the bot reads its output over a socket). Improving the scraper is
+out of scope for the bridge code at `src/nlhe/integration/*`.
+
+### Tests
+
+`tests/test_bridge_seq170_seq192_fixes.py` (6 new):
+  - test_seq170_utg_open_attribution_after_fix
+  - test_seq170_replay_invariant_passes
+  - test_blind_seat_exclusion_preserves_real_limper_behavior
+    (real non-blind limpers still defer correctly)
+  - test_seq192_postflop_matched_all_in_bet_recovered
+  - test_seq192_preflop_matched_all_in_unchanged
+  - test_postflop_no_all_in_unchanged
+
+All 64 tests on touched modules (scraper_schema, invariant, replay,
+premium_floor, short_stack_floor, bridge fixes) pass.

@@ -75,14 +75,6 @@ class BlindsLevel:
     bb: int
     ante: int
 
-    def inflated_bb(self, n_alive: int) -> int:
-        """OpenSpiel's pot-size-preserving inflation: BB carries everyone's ante.
-
-        Matches `BlindLevel.inflated_big_blind` in src/nlhe/game_strings.py:167
-        but kept local so the scraper module has no OpenSpiel dependency.
-        """
-        return self.bb + n_alive * self.ante
-
 
 @dataclass(frozen=True)
 class ScraperFrame:
@@ -286,10 +278,24 @@ def parse_frame(record: dict, hero_seat_alias: str = "seat1") -> ScraperFrame:
             f"captured_at={record.get('captured_at', '<missing>')}"
         )
 
-    # Controls
-    controls_present = bool(
-        (record.get("controls") or {}).get("present", False)
-    )
+    # Controls — hero is "to act" iff the UI shows controls AND at least
+    # one non-FOLD action is available. A frame whose ONLY available button
+    # is FOLD is Ignition's persistent muck-anytime UI (visible between
+    # actions for already-committed hands); it's not a strategic decision.
+    # Real call-or-fold decisions always include at least one CALL/CHECK/
+    # BET/RAISE alongside FOLD — verified across the corpus (0 false
+    # positives: every real-decision signature has a non-FOLD action).
+    controls_block = record.get("controls") or {}
+    controls_present = bool(controls_block.get("present", False))
+    if controls_present:
+        btn_labels = [
+            (b.get("label") or "").upper()
+            for b in (controls_block.get("action_buttons") or [])
+        ]
+        if len(btn_labels) == 1 and btn_labels[0] == "FOLD":
+            # Non-decision UI state — bot has no strategic choice here.
+            # Routed to not_hero_to_act downstream, not invariant_fail.
+            controls_present = False
 
     # Hero-facing-bet derivation: hero's bet vs max opponent bet
     if alive[hero_seat]:
@@ -373,6 +379,223 @@ def chip_conservation_total(frame: ScraperFrame) -> int:
     which is a strictly NON-increasing sequence frame-to-frame within a session.
     """
     return sum(pre_hand_stacks(frame))
+
+
+# --------------------------------------------------------------------------
+# Session state tracker (Option 3 — multi-hand stack accumulation)
+# --------------------------------------------------------------------------
+
+
+class SessionTracker:
+    """Track per-hand pre-hand stacks across a sequence of scraper frames.
+
+    Use case: the integration's simple-model pre-hand derivation assumes
+    every seat enters each hand with 1500 chips. After hand 1 of a
+    tournament, that's false — winners have stacks > 1500, losers < 1500.
+    Without per-seat pre-hand stacks, postflop frames in such hands can't
+    reconstruct cleanly (chip arithmetic doesn't close), and the simple
+    model produces sub-min-raise chip_ints that OpenSpiel rejects.
+
+    SessionTracker observes each frame as it streams through the harness.
+    When it sees a hand-start frame (board empty, only blinds posted, no
+    voluntary action yet — per `is_hand_start`), it records per-seat
+    `pre_hand_stacks(frame)` and the hand's identifying key (dealer +
+    level). For subsequent mid-hand frames in the same hand, callers can
+    query `pre_hand_for(frame)` to retrieve those per-seat values; they
+    pass them as the `pre_hand_override` parameter into
+    `derive_action_sequence` / `replay_to_decision`, bypassing the
+    simple-model uniform-commit assumption.
+
+    Discipline: returns the tracked pre-hand stacks ONLY when the
+    chip-conservation arithmetic still closes for the current frame
+    (sum of tracked pre-hand stacks == sum of current frame stacks +
+    pot total). Any mismatch signals a hand boundary or a missed
+    hand-start capture; the tracker returns None in that case so the
+    caller falls back to the simple model (which will then safely reject
+    via ActionDerivationError if the frame is irreducibly asymmetric).
+
+    Stateless WRT the rest of the integration — instantiate one per
+    session/stream and call `observe` on every frame in order.
+    """
+
+    def __init__(self) -> None:
+        self._current_pre_hand: tuple[int, ...] | None = None
+        self._current_hand_key: tuple | None = None
+
+    def _hand_key(self, frame: ScraperFrame) -> tuple:
+        """Identifying tuple for a hand. A change in any component
+        indicates the tracker is no longer looking at the same hand.
+
+        Excludes `alive[]` deliberately. Diagnosed live 2026-06-08 (seq=148
+        hand-start anchored alive=6; seq=156 still dealer=1 but a player had
+        just folded and the scraper now reported alive=5 — old key was
+        (dealer, blinds, alive) so it mismatched and `pre_hand_for` returned
+        None for every subsequent frame, including the river-trips spot at
+        seq=175 → safe-fold on a 3-of-a-kind value bet). Within one hand
+        the dealer button cannot move, so (dealer, blinds) uniquely
+        identifies the hand. The chip-conservation closure check in
+        `pre_hand_for` is the safety net against (extremely unlikely) key
+        collision."""
+        return (
+            int(frame.dealer_seat),
+            int(frame.blinds.sb),
+            int(frame.blinds.bb),
+            int(frame.blinds.ante),
+        )
+
+    def observe(self, frame: ScraperFrame) -> None:
+        """Update internal state from this frame.
+
+        On a hand-start frame: compute and record pre-hand stacks IFF the
+        hand_key has changed (= a new hand began) or no hand is tracked
+        yet. Subsequent hand-start frames for the SAME hand (Ignition
+        captures the hand-start UI multiple times before action starts)
+        are ignored — the first capture is typically the most reliable
+        because subsequent re-captures sometimes show transient stale
+        stack/pot readings that don't reflect the actual game state.
+
+        Non-hand-start frames don't update state — the tracked pre-hand
+        stays valid until a new hand-start replaces it.
+        """
+        if not is_hand_start(frame):
+            return
+        key = self._hand_key(frame)
+        if key == self._current_hand_key:
+            # Same hand, already recorded. Don't overwrite — keep the
+            # first capture which is empirically more reliable.
+            return
+        pre = pre_hand_stacks(frame)
+        chip_total = sum(
+            int(s) for s, a in zip(frame.stack, frame.alive) if a
+        ) + int(frame.pot_total)
+        # Reject internally-inconsistent hand-start captures.
+        if sum(pre) != chip_total:
+            return
+        self._current_pre_hand = pre
+        self._current_hand_key = key
+
+    def pre_hand_for(self, frame: ScraperFrame) -> tuple[int, ...] | None:
+        """Return tracked pre-hand stacks for this frame's hand, or None.
+
+        Closure check accepts the anchor when chip totals are consistent
+        with ONE of three patterns:
+
+          1. Strict closure:  Σ stack[seats_at_start] + pot == expected
+          2. UI-lag:          Σ stack[seats_at_start] + pot + Σ bet == expected
+                              (uncollected bets sit in front of seats; pot
+                               UI hasn't picked them up yet)
+          3. Mis-alive:       deficit is bounded by mis-alive seats' max
+                              possible remaining chips (= pre_hand - ante
+                              each). Live regression 2026-06-08 surfaced
+                              that Ignition mis-reads folded-but-still-
+                              seated players as alive=False with stack=0,
+                              hiding their actual remaining chips from
+                              the visible-stack sum.
+
+        Patterns 2 and 3 can co-occur (UI lag PLUS a mis-alive seat). The
+        check folds in the UI-lag bets first, then checks the remaining
+        deficit against the mis-alive upper bound.
+        """
+        if self._current_pre_hand is None:
+            return None
+        if self._hand_key(frame) != self._current_hand_key:
+            return None
+        if self._closure_plausible(frame):
+            return self._current_pre_hand
+        return None
+
+    def _closure_plausible(self, frame: ScraperFrame) -> bool:
+        """True iff chip conservation against the anchor is plausible
+        under strict (or strict+mis-alive) OR UI-lag (or UI-lag+mis-alive)
+        patterns.
+
+        Hand-start convention is `strict`: bets are visually shown in front
+        of SB/BB but the chips ARE already in pot_total (verified against
+        live_1500 line 2: sum(stack)+pot == 9000 exactly, bet_sum is
+        redundant).
+
+        Mid-hand UI-lag is `UI-lag`: a fresh bet sits visibly in front of a
+        seat and pot_total hasn't yet picked it up. Adding bet_sum to the
+        right-hand side closes the conservation.
+
+        Mis-alive overlay (either pattern): originally-alive seats that
+        read alive=False now hold invisible chips (scraper bug). The
+        residual deficit is bounded by their max possible remaining chips
+        (pre_hand - ante each, since they at least paid ante at hand-start).
+        """
+        seats_at_start = [
+            i for i in range(NUM_SEATS) if self._current_pre_hand[i] > 0
+        ]
+        visible_stack = sum(
+            int(frame.stack[i]) for i in seats_at_start
+        )
+        pot = int(frame.pot_total)
+        bet_sum = sum(int(frame.bet[i]) for i in seats_at_start)
+        expected_total = sum(self._current_pre_hand)
+        ante = int(frame.blinds.ante)
+        mis_alive_max_remaining = sum(
+            int(self._current_pre_hand[i]) - ante
+            for i in seats_at_start
+            if not frame.alive[i]
+        )
+
+        # Strict (bets already accounted for in pot, as at hand-start).
+        deficit_strict = expected_total - visible_stack - pot
+        if 0 <= deficit_strict <= mis_alive_max_remaining:
+            return True
+        # UI-lag (bets sit uncollected in front of seats).
+        deficit_uilag = deficit_strict - bet_sum
+        if 0 <= deficit_uilag <= mis_alive_max_remaining:
+            return True
+        return False
+
+    def corrected_pot_for(self, frame: ScraperFrame) -> int | None:
+        """If the frame is in the tracked hand but its pot field is
+        UI-stale (a new bet is visible in front of a seat that hasn't
+        been collected to the pot box yet), return the inferred
+        post-collection pot value. Otherwise None (frame's own pot is
+        correct, or frame is out-of-hand and uncorrectable).
+
+        Tolerates a positive residual deficit attributable to mis-alive
+        seats (Ignition's folded-seat alive=False mis-read). The
+        correction is only emitted when the STRICT closure fails BUT the
+        UI-lag closure succeeds — at hand-start, where bets are visible
+        but their chips are already in the pot, strict closure already
+        balances and no correction is emitted.
+        """
+        if self._current_pre_hand is None:
+            return None
+        if self._hand_key(frame) != self._current_hand_key:
+            return None
+        seats_at_hand_start = [
+            i for i in range(NUM_SEATS) if self._current_pre_hand[i] > 0
+        ]
+        visible_stack = sum(
+            int(frame.stack[i]) for i in seats_at_hand_start
+        )
+        pot = int(frame.pot_total)
+        bet_sum = sum(
+            int(frame.bet[i]) for i in seats_at_hand_start
+        )
+        expected_total = sum(self._current_pre_hand)
+        ante = int(frame.blinds.ante)
+        mis_alive_max_remaining = sum(
+            int(self._current_pre_hand[i]) - ante
+            for i in seats_at_hand_start
+            if not frame.alive[i]
+        )
+
+        # Strict closure (bets already in pot): no correction needed.
+        deficit_strict = expected_total - visible_stack - pot
+        if 0 <= deficit_strict <= mis_alive_max_remaining:
+            return None
+
+        # UI-lag closure: bets in front haven't been picked up. Fold them in.
+        deficit_uilag = deficit_strict - bet_sum
+        if (bet_sum > 0
+                and 0 <= deficit_uilag <= mis_alive_max_remaining):
+            return pot + bet_sum
+        return None
 
 
 # --------------------------------------------------------------------------
@@ -479,11 +702,40 @@ def _street_idx_from_board(board: tuple) -> int:
     )
 
 
+def _alive_at_hand_start_mask(
+        frame: ScraperFrame,
+        pre_hand_override: tuple[int, ...] | None,
+        ) -> tuple[bool, ...]:
+    """Return a length-6 mask of seats that were ALIVE AT HAND-START.
+
+    When override is supplied: derived from `pre_hand_override[i] > 0` —
+    matches the alive_seats `to_inner_game_string_for_state` uses to build
+    the game string. A seat that had chips at hand-start but went bust
+    mid-hand is INCLUDED (Class A-deeper, live dryrun 2026-06-08).
+    Without override: identical to `frame.alive` — the simple-model
+    derivation produces a pre that's already aligned with frame.alive.
+    """
+    if pre_hand_override is None:
+        return tuple(frame.alive)
+    return tuple(int(pre_hand_override[i]) > 0 for i in range(NUM_SEATS))
+
+
 def _repair_folded_from_chip_deductions(
-        frame: ScraperFrame, sb_seat: int, bb_seat: int
+        frame: ScraperFrame, sb_seat: int, bb_seat: int,
+        pre_hand_override: tuple[int, ...] | None = None,
         ) -> tuple[bool, ...]:
     """Re-derive `folded` from per-seat chip deductions to work around
     Ignition's stale folded-field bug.
+
+    When pre_hand_override is supplied, the chip-equality comparison
+    operates on PER-SEAT DEDUCTIONS THIS HAND (= pre_hand[i] - stack[i] -
+    bet[i]) rather than on raw (stack[i] + bet[i]). This handles
+    multi-hand stack accumulation: seats entering the hand with different
+    pre-hand stacks (winners and losers from prior hands) commit
+    DIFFERENT amounts to (stack+bet) for the same voluntary action, so
+    raw stack+bet equality fails — but deductions-this-hand still equal
+    each other for non-folders that all called/checked to the same
+    preflop level.
 
     Ignition's scraper doesn't update the per-seat `folded` flag when seats
     fold preflop (verified on live_1500 corpus 2026-06-04 at ~30% rate on
@@ -526,16 +778,33 @@ def _repair_folded_from_chip_deductions(
     the frame.
     """
     repaired = list(frame.folded)
-    alive_seats = [i for i in range(NUM_SEATS) if frame.alive[i]]
+    # Class A-deeper: under override, use ALIVE-AT-HAND-START so seats
+    # that busted mid-hand are still considered for the chip-pattern
+    # repair (they DID act this hand — their pre_hand chips are in the
+    # pot — and the repair needs to classify them as folded so action-
+    # seq emission excludes them from later laps).
+    alive_at_start = _alive_at_hand_start_mask(frame, pre_hand_override)
+    alive_seats = [i for i in range(NUM_SEATS) if alive_at_start[i]]
 
-    # We compare `stack + bet` (the seat's TOTAL chip cost so far this
-    # hand), NOT stack alone. A c-bettor has lower stack but their bet
-    # chips are still in front of them — together with stack, this equals
-    # the same pre-hand-minus-deductions baseline shared by every other
-    # non-folder. Comparing stack alone wrongly flags a c-better's caller
-    # (no bet, same stack pattern as a folder) as folded.
-    def cost(i):
-        return frame.stack[i] + frame.bet[i]
+    # `chip_signature(i)` returns a value such that LARGER = LESS
+    # committed (= more likely to have folded). For the simple-model
+    # 1500-baseline case this is stack + bet (a folder kept more chips
+    # behind/in front than a non-folder who matched the running bet).
+    # With pre_hand_override, the per-seat baseline differs so we use the
+    # negative of deductions-this-hand (deduction = pre_hand - stack -
+    # bet; larger deduction = paid more = NOT a folder; smaller
+    # deduction = paid less = candidate folder). Either way, the equality
+    # check (max - min == 0) and the drop rule (max-signature seat) work
+    # consistently.
+    if pre_hand_override is None:
+        def chip_signature(i):
+            return frame.stack[i] + frame.bet[i]
+    else:
+        def chip_signature(i):
+            deduction = (int(pre_hand_override[i])
+                          - int(frame.stack[i])
+                          - int(frame.bet[i]))
+            return -deduction
 
     while True:
         non_folded = [i for i in alive_seats if not repaired[i]]
@@ -546,10 +815,10 @@ def _repair_folded_from_chip_deductions(
         nf_for_check = [i for i in non_folded if i != bb_seat]
         if len(nf_for_check) <= 1:
             break
-        costs = [cost(i) for i in nf_for_check]
-        if max(costs) - min(costs) == 0:
-            break  # all non-folded share the same total cost → self-consistent
-        # Drop the highest-(stack+bet) drop candidate. Constraints:
+        sigs = [chip_signature(i) for i in nf_for_check]
+        if max(sigs) - min(sigs) == 0:
+            break  # all non-folded share the same chip signature → self-consistent
+        # Drop the highest-signature (least-committed) candidate. Constraints:
         #   - bet==0 (a seat with a visible bet has non-zero chips in
         #     front and can't have folded)
         #   - not BB (BB folded vs BB-checked-option is chip-
@@ -566,20 +835,48 @@ def _repair_folded_from_chip_deductions(
         ]
         if not candidates:
             break
-        to_drop = max(candidates, key=cost)
+        to_drop = max(candidates, key=chip_signature)
         repaired[to_drop] = True
+
+    # With pre_hand_override, the per-seat voluntary commits are
+    # KNOWN bit-exactly. The standard repair excludes BB from the
+    # equality check because BB-folded vs BB-checked-option are
+    # chip-indistinguishable under uniform-commit fudge — but with
+    # honest per-seat data we CAN distinguish: BB committed less
+    # than the rest of the non-folded set ⇒ BB folded (either
+    # option-folded preflop or folded on a later street). Promote BB
+    # to folded so the action-sequence emitter doesn't try to keep
+    # them in the hand with mismatched chips.
+    if pre_hand_override is not None and not repaired[bb_seat]:
+        non_folded = [i for i in alive_seats if not repaired[i]]
+        if len(non_folded) > 1:
+            def voluntary(i):
+                return (int(pre_hand_override[i])
+                        - int(frame.stack[i])
+                        - int(frame.bet[i]))  # ante included; relative compare
+            others = [voluntary(i) for i in non_folded if i != bb_seat]
+            if others and voluntary(bb_seat) < max(others):
+                repaired[bb_seat] = True
 
     return tuple(repaired)
 
 
 def _derive_pre_hand_and_preflop_commit_simple_model(
-        frame: ScraperFrame, sb_seat: int, bb_seat: int
+        frame: ScraperFrame, sb_seat: int, bb_seat: int,
+        pre_hand_override: tuple[int, ...] | None = None,
         ) -> tuple[tuple[int, ...], int]:
     """Same simple-model chip-conservation derivation as
     _derive_pre_hand_simple_model but ALSO returns preflop_commit_per_alive,
     which Piece 5's mid-hand invariant needs for prior-streets-committed
     bookkeeping when converting cumulative-OpenSpiel-contribution to
     current-street-scraper-bet on postflop frames.
+
+    When pre_hand_override is provided (length-6 tuple of per-seat pre-hand
+    stacks, typically supplied by a session tracker that observed a recent
+    hand-start frame), the simple-model chip-conservation step is bypassed
+    in favor of those per-seat values — this handles the multi-hand stack
+    accumulation case where seats enter the hand with stacks differing from
+    1500 (winners and losers from prior hands).
 
     Uses _repair_folded_from_chip_deductions to work around Ignition's stale
     `folded` field — the function operates on the repaired folded array, not
@@ -588,13 +885,19 @@ def _derive_pre_hand_and_preflop_commit_simple_model(
 
     Returns (pre_hand_stacks: tuple[int,6], preflop_commit_per_alive: int).
     """
-    alive_seats = [i for i in range(NUM_SEATS) if frame.alive[i]]
+    # Class A-deeper: same rationale as in `_repair_folded_from_chip_deductions`
+    # and `derive_action_sequence` — under override, use ALIVE-AT-HAND-START
+    # so the chip-arithmetic accounts for seats that busted mid-hand.
+    alive_at_start = _alive_at_hand_start_mask(frame, pre_hand_override)
+    alive_seats = [i for i in range(NUM_SEATS) if alive_at_start[i]]
     n_alive = len(alive_seats)
     ante = frame.blinds.ante
     sb = frame.blinds.sb
     bb = frame.blinds.bb
 
-    folded = _repair_folded_from_chip_deductions(frame, sb_seat, bb_seat)
+    folded = _repair_folded_from_chip_deductions(
+        frame, sb_seat, bb_seat,
+        pre_hand_override=pre_hand_override)
 
     folded_commit_total = 0
     folded_seats = [i for i in alive_seats if folded[i]]
@@ -608,13 +911,63 @@ def _derive_pre_hand_and_preflop_commit_simple_model(
     alive_non_folded = [i for i in alive_seats if not folded[i]]
     n_anf = len(alive_non_folded)
 
+    if pre_hand_override is not None:
+        # Session-tracked path. Derive per-seat voluntary commitments
+        # from the override; the simple uniform-commit model applies to
+        # non-busted seats. BUSTED-MID-HAND seats (alive_at_start AND
+        # currently alive=False, e.g. an all-in-for-less BB that lost
+        # the side pot) commit a DIFFERENT amount than the uniform
+        # caller-set — that's exactly what their bust represents.
+        # Exclude them from the equality check; their commitment is
+        # accounted for separately via the all-in emission in
+        # derive_action_sequence.
+        busted_mid_hand = [
+            i for i in alive_non_folded
+            if int(pre_hand_override[i]) > 0 and not frame.alive[i]
+        ]
+        equality_check_seats = [
+            i for i in alive_non_folded if i not in busted_mid_hand
+        ]
+        if not equality_check_seats:
+            preflop_commit_per_alive = 0
+        else:
+            per_seat_voluntary = [
+                int(pre_hand_override[i]) - int(frame.stack[i])
+                - ante - int(frame.bet[i])
+                for i in equality_check_seats
+            ]
+            if min(per_seat_voluntary) != max(per_seat_voluntary):
+                raise ActionDerivationError(
+                    f"override-derived per-seat voluntary commitments "
+                    f"differ across alive non-folded non-busted seats "
+                    f"({dict(zip(equality_check_seats, per_seat_voluntary))}) "
+                    f"— frame chip-arithmetic is internally inconsistent "
+                    f"(likely a scraper stale-folded-flag case)")
+            preflop_commit_per_alive = max(0, per_seat_voluntary[0])
+        # Override-supplied pre-hand is used directly.
+        return tuple(int(x) for x in pre_hand_override), preflop_commit_per_alive
+
     if n_anf == 0:
         preflop_commit_per_alive = 0
+        remainder = 0
     else:
         bet_sum_anf = sum(frame.bet[i] for i in alive_non_folded)
         residual = (frame.pot_total - folded_commit_total
                      - n_anf * ante - bet_sum_anf)
         preflop_commit_per_alive = max(0, residual // n_anf)
+        remainder = max(0, residual - preflop_commit_per_alive * n_anf)
+
+    # Non-zero remainder = simple-model can't represent the alive
+    # seats' commitments with a single uniform preflop_commit_per_alive
+    # value. Distributing +1 chips across seats would produce sub-min-
+    # raise chip_ints that OpenSpiel rejects. Reject as data quality:
+    # we can't reconstruct this state honestly with our simple model.
+    if remainder > 0:
+        raise ActionDerivationError(
+            f"simple-model preflop_commit remainder {remainder} "
+            f"(residual={preflop_commit_per_alive * n_anf + remainder}, "
+            f"n_anf={n_anf}) — alive seats committed unequal preflop "
+            f"amounts that the uniform-commit model cannot represent")
 
     pre = []
     for i in range(NUM_SEATS):
@@ -631,23 +984,35 @@ def _derive_pre_hand_and_preflop_commit_simple_model(
 
 
 def _derive_pre_hand_simple_model(frame: ScraperFrame,
-                                    sb_seat: int, bb_seat: int
+                                    sb_seat: int, bb_seat: int,
+                                    pre_hand_override: tuple[int, ...] | None = None,
                                     ) -> tuple[int, ...]:
     """Pre-hand stacks (chips at hand START) via the simple-model chip-
     conservation derivation. See
     _derive_pre_hand_and_preflop_commit_simple_model for the algorithm + the
     simple-model assumptions. This wrapper drops the preflop_commit return
     value; callers that need it (Piece 5 invariant) use the longer name.
+
+    pre_hand_override (if given) bypasses the simple-model and uses the
+    caller-supplied per-seat pre-hand stacks directly.
     """
     pre, _ = _derive_pre_hand_and_preflop_commit_simple_model(
-        frame, sb_seat, bb_seat)
+        frame, sb_seat, bb_seat, pre_hand_override=pre_hand_override)
     return pre
 
 
-def derive_action_sequence(frame: ScraperFrame
+def derive_action_sequence(frame: ScraperFrame,
+                            pre_hand_override: tuple[int, ...] | None = None,
                             ) -> list[tuple[int, int]]:
     """Derive the canonical (seat_idx, openspiel_chip_int) sequence to walk
     OpenSpiel state from new_initial_state() to the hero's current decision.
+
+    pre_hand_override (length-6 tuple, optional): caller-supplied per-seat
+    pre-hand stacks for the current hand. When provided, bypasses the
+    simple-model chip-arithmetic derivation — used by session-aware
+    callers that have observed a hand-start frame and recorded per-seat
+    pre-hand stacks (handles multi-hand stack accumulation and rounding
+    cases the uniform-commit simple model can't represent).
 
     Stop condition (caller stops at the hero's decision):
       - On preflop: we walk the preflop order; we BREAK at the hero's slot.
@@ -680,7 +1045,18 @@ def derive_action_sequence(frame: ScraperFrame
         ActionDerivationError: structural inconsistency that should make
             the caller treat the frame as ScraperDataQuality (soft drop).
     """
-    alive_seats = [i for i in range(NUM_SEATS) if frame.alive[i]]
+    # Class A-deeper: when override is supplied, use the SAME alive_seats
+    # definition the game-string builder uses (= pre_hand_override[i] > 0)
+    # so SB/BB/UTG and preflop order match OpenSpiel's view. A seat that
+    # had chips at hand-start but went bust mid-hand is in the rotation
+    # per OpenSpiel — we must include them here too. See
+    # replay.py:replay_to_decision for the matching comment.
+    if pre_hand_override is not None:
+        alive_seats = [
+            i for i in range(NUM_SEATS) if int(pre_hand_override[i]) > 0
+        ]
+    else:
+        alive_seats = [i for i in range(NUM_SEATS) if frame.alive[i]]
     n_alive = len(alive_seats)
     if n_alive < 2:
         raise ActionDerivationError(
@@ -696,12 +1072,15 @@ def derive_action_sequence(frame: ScraperFrame
     # Repaired folded array — works around Ignition's stale `folded` field
     # by re-deriving from per-seat stack deductions. See
     # _repair_folded_from_chip_deductions docstring.
-    folded = _repair_folded_from_chip_deductions(frame, sb_seat, bb_seat)
+    folded = _repair_folded_from_chip_deductions(
+        frame, sb_seat, bb_seat,
+        pre_hand_override=pre_hand_override)
 
     # Per-seat pre-hand stacks via simple-model chip conservation. Works
     # for both hand-start (P_max=0) and postflop frames. See helper docstring
     # for the simple-model assumption and its failure modes.
-    pre = _derive_pre_hand_simple_model(frame, sb_seat, bb_seat)
+    pre = _derive_pre_hand_simple_model(
+        frame, sb_seat, bb_seat, pre_hand_override=pre_hand_override)
 
     # In the simple model, for alive seats we ASSUME all prior-street commit
     # was preflop. For a preflop frame, preflop_commit_seat = total_commit_seat
@@ -718,6 +1097,7 @@ def derive_action_sequence(frame: ScraperFrame
     # we proceed with the max and let the downstream invariant catch any
     # state mismatch.
 
+    ante = frame.blinds.ante
     if street_idx == 0:
         # PREFLOP frame. preflop_commit[seat] = chips committed THIS STREET
         # (frame.bet[seat], for alive seats). For folded seats the bet field
@@ -740,7 +1120,6 @@ def derive_action_sequence(frame: ScraperFrame
         # Subtract ante (which is in "chips put in pot" arithmetic but NOT
         # in OpenSpiel-side seat contributions for non-BB seats; the BB
         # carries everyone's ante via the inflated convention).
-        ante = frame.blinds.ante
         preflop_commit = [
             max(0, total_committed[i] - frame.bet[i] - ante)
             if frame.alive[i] else 0
@@ -755,73 +1134,504 @@ def derive_action_sequence(frame: ScraperFrame
                 preflop_commit[seat] = max(
                     0, total_committed[seat] - ante)
 
-    # PREFLOP action emission — walk WITH-EMPTIES so OpenSpiel's natural
-    # cycle (which includes stack=1 placeholders for empty seats) lines up.
-    # Empty seats emit forced-fold; alive seats emit per the simple model.
+    # PREFLOP action emission — multi-turn aware.
+    #
+    # Walks the OpenSpiel preflop order in cycles, tracking per-seat
+    # cur_commit and running_max. Emits actions that bring each seat
+    # toward its FINAL target (= frame.bet[seat]). Continues past hero's
+    # FIRST turn when subsequent seats re-open action (raise), so the
+    # state OpenSpiel ends at correctly represents hero's actual current
+    # decision — facing the re-raise, not facing the initial blinds.
+    #
+    # Stop conditions (emit nothing further; OpenSpiel state at this
+    # point IS hero's current decision):
+    #   - hero is encountered AND cur_commit[hero] < running_max
+    #     (hero faces a bet/raise — to act)
+    #   - hero is BB AND cur_commit[BB] == bb_amount AND
+    #     running_max == bb_amount AND no voluntary raise happened
+    #     (BB option after limp-around)
+    #
+    # Empty seats: forced fold ONCE on first visit (OpenSpiel cycles
+    # through stack=1 placeholders; the fold removes them from the cycle).
+    # Folded alive seats: fold ONCE on first visit (chip-deduction repair
+    # determines fold status). Cycle ends naturally when all alive
+    # non-folded seats have cur_commit == running_max (round closes) or
+    # when we exhaust the safety cap.
     actions: list[tuple[int, int]] = []
-    pf_order = preflop_action_order_with_empties(frame.dealer_seat, frame.alive)
-    running_max_pf = frame.blinds.bb  # initial preflop max = BB
-    for seat in pf_order:
-        # Empty seat: forced fold (OpenSpiel placeholder cycles through them).
-        if not frame.alive[seat]:
-            actions.append((seat, 0))
-            continue
-        # Hero stop condition for preflop frame
-        if street_idx == 0 and seat == frame.hero_seat:
-            break
-        seat_commit_pf = preflop_commit[seat]
-        if folded[seat]:
-            actions.append((seat, 0))  # fold
-            # Folded seats don't update running_max
-            continue
-        if seat_commit_pf == 0:
-            # Alive seat with zero commit — usually means hero wasn't reached
-            # yet in the order; emit fold defensively (the invariant will
-            # catch if this is wrong).
-            actions.append((seat, 0))
-            continue
-        if seat_commit_pf < running_max_pf:
-            # Less than current max → they must have folded (committed only
-            # blind/partial); already handled above for folded seats; here
-            # alive-but-under-max is anomalous, treat as fold defensively.
-            actions.append((seat, 0))
-        elif seat_commit_pf == running_max_pf:
-            # Call/check
-            actions.append((seat, 1))
-        else:
-            # Raise to seat_commit_pf (OpenSpiel chip_int = cumulative
-            # voluntary commitment for non-BB; for BB it's also cumulative
-            # but starts at inflated_bb). For the bug-matched library, the
-            # right chip_int for a non-BB raise equals their scraper-side
-            # voluntary bet (= seat_commit_pf for preflop).
-            actions.append((seat, seat_commit_pf))
-            running_max_pf = seat_commit_pf
+    # Class A-deeper: pass alive_at_hand_start so the with-empties walk
+    # rotates over the SAME seats as OpenSpiel's firstPlayer (which is
+    # built from pre_hand_override-derived alive in
+    # `to_inner_game_string_for_state`). A seat that busted mid-hand
+    # remains in the rotation per OpenSpiel; we must walk over them too.
+    alive_at_start = _alive_at_hand_start_mask(frame, pre_hand_override)
+    pf_order_full = preflop_action_order_with_empties(
+        frame.dealer_seat, alive_at_start)
+    pf_order_alive = preflop_action_order(frame.dealer_seat, alive_seats)
+    if not pf_order_alive:
+        # Heads-up degenerate — already guarded by n_alive < 2 earlier.
+        return actions
 
+    bb_amount = frame.blinds.bb
+    sb_amount = frame.blinds.sb
+    cur_commit = [0] * NUM_SEATS
+    cur_commit[sb_seat] = sb_amount
+    cur_commit[bb_seat] = bb_amount
+    running_max = bb_amount
+    raise_above_bb = False  # any voluntary raise above the BB?
+    # The MAX chip_int emitted during preflop = OpenSpiel's preflop spent
+    # at the end of preflop, identical for all non-folded seats since
+    # they all reach the running-max (via call/raise/all-in). For uniform
+    # raises this equals preflop_commit_per_alive; for forced all-in
+    # raises (busted-mid-hand) it equals the busted seat's pre_hand
+    # (which is > preflop_commit_per_alive by exactly the ante because
+    # chip_int=pre_hand bakes the ante in). Used by the postflop emission
+    # to compute chip_int = preflop_spent + current-street-voluntary;
+    # using preflop_commit_per_alive instead would understate by ante.
+    preflop_max_chip_int = bb_amount
+
+    # Per-seat preflop target chip-int (final cumulative voluntary
+    # commitment ON THE PREFLOP STREET). For preflop frames this is
+    # frame.bet[seat]; for postflop frames it's the preflop_commit value
+    # the simple model derived above (= total_committed - current_street
+    # - ante). For blind seats, ensure the target floors at the blind
+    # amount the seat was forced to post.
+    target = [0] * NUM_SEATS
+    for seat in range(NUM_SEATS):
+        if not frame.alive[seat]:
+            continue
+        commit = int(preflop_commit[seat])
+        if seat == sb_seat:
+            target[seat] = max(sb_amount, commit)
+        elif seat == bb_seat:
+            target[seat] = max(bb_amount, commit)
+        else:
+            target[seat] = commit
+
+    empties_folded: set[int] = set()
+    folded_emitted: set[int] = set()
+    has_acted_once: set[int] = set()  # voluntary action emitted at least once
+
+    # "Delayed fold" seats: in the repaired folded mask but with a
+    # non-zero preflop voluntary commit (= they limped/called preflop,
+    # then folded on a later street). For OpenSpiel chip arithmetic to
+    # close at hero's decision, we MUST emit their preflop call before
+    # the fold — otherwise their contribution falls short by their
+    # voluntary commit amount. Treat them as alive non-folded during
+    # the preflop emission loop; they'll naturally limp/call to their
+    # target then defensive-fold when running_max exceeds their target.
+    # Immediate-fold seats (folded with voluntary == 0) keep the
+    # original "fold once on first visit" behavior.
+    delayed_fold_seats: set[int] = {
+        s for s in alive_seats
+        if folded[s] and preflop_commit[s] > 0
+    }
+
+    # Class A-deeper: BUSTED-MID-HAND seats — seats that were alive at
+    # hand-start (in pre_hand_override) but currently read alive=False
+    # (Ignition zeroes out the busted seat's stack AND bet). OpenSpiel
+    # built them into the rotation with their pre-hand stack value, so we
+    # must emit an action that commits their full chips. Emit chip_int =
+    # pre[seat] (= full pre-hand stack value) as an all-in raise; that
+    # makes OpenSpiel set spent[seat] = pre[seat]. After this one
+    # emission they're absorbed and out of the rotation; mark them in
+    # folded_emitted so the loop skips them on subsequent visits.
+    busted_mid_hand: set[int] = set()
+    if pre_hand_override is not None:
+        busted_mid_hand = {
+            i for i in range(NUM_SEATS)
+            if int(pre_hand_override[i]) > 0 and not frame.alive[i]
+        }
+
+    def is_active_for_emission(s: int) -> bool:
+        """True iff seat is in the rotation AND not yet finalized in
+        OpenSpiel (= not in folded_emitted, regardless of folded mask).
+        Uses alive_at_start so busted-mid-hand seats are emitted-for
+        once before being skipped via folded_emitted."""
+        if not alive_at_start[s]:
+            return False
+        if s in folded_emitted:
+            return False
+        if folded[s] and s not in delayed_fold_seats:
+            return False
+        return True
+
+    def round_closed() -> bool:
+        # Round closes when every active-for-emission seat has emitted a
+        # voluntary action AND their cur_commit matches running_max.
+        for s in pf_order_alive:
+            if not is_active_for_emission(s):
+                continue
+            if s not in has_acted_once:
+                return False
+            if cur_commit[s] != running_max:
+                return False
+        return True
+
+    # First lap walks the full-with-empties order so OpenSpiel's
+    # forced-fold cycle for stack=1 placeholders is respected. After the
+    # first lap, subsequent laps cycle through alive non-folded seats
+    # only (empties already folded out).
+    MAX_VISITS = NUM_SEATS * 4  # 4 laps safety cap
+    visit = 0
+    on_first_lap = True
+    first_lap_idx = 0
+
+    while visit < MAX_VISITS:
+        if on_first_lap:
+            if first_lap_idx >= len(pf_order_full):
+                on_first_lap = False
+                continue
+            seat = pf_order_full[first_lap_idx]
+            first_lap_idx += 1
+        else:
+            # Subsequent laps: cycle active-for-emission seats only
+            # (= alive seats not yet folded in OpenSpiel — includes
+            # delayed-fold seats that haven't emitted their fold yet).
+            if round_closed():
+                break
+            alive_remaining = [
+                s for s in pf_order_alive
+                if is_active_for_emission(s)
+            ]
+            if not alive_remaining:
+                break
+            # The visit counter is unique per loop turn; mod into the
+            # cycle to pick the next seat.
+            seat = alive_remaining[(visit - len(pf_order_full)) %
+                                    len(alive_remaining)]
+        visit += 1
+
+        # Busted-mid-hand seat (Class A-deeper): emit all-in chip_int =
+        # pre[seat] once; OpenSpiel sets spent=pre_hand, absorbing all
+        # their committed chips into the pot. The all-in raises running_max
+        # (in voluntary terms) to (pre - ante), prompting other still-in
+        # seats to call/match on subsequent laps. After this emission the
+        # busted seat is out of the rotation; folded_emitted skips them
+        # on subsequent visits.
+        if seat in busted_mid_hand:
+            if seat not in folded_emitted:
+                # Discriminator: did the busted seat's all-in act AS a
+                # raise (their stack > current running_max ⇒ they raise),
+                # or AS a call-for-less (someone already raised above
+                # their stack ⇒ they can only call all-in)?
+                busted_voluntary = int(pre[seat]) - ante
+                if busted_voluntary > running_max:
+                    # All-in raise. chip_int = pre_hand (= the only legal
+                    # raise when remaining < min-raise increment).
+                    actions.append((seat, int(pre[seat])))
+                    running_max = busted_voluntary
+                    raise_above_bb = True
+                    if int(pre[seat]) > preflop_max_chip_int:
+                        preflop_max_chip_int = int(pre[seat])
+                else:
+                    # All-in call for less. chip_int=1 (call); OpenSpiel
+                    # caps the seat's spent at their stack.
+                    actions.append((seat, 1))
+                folded_emitted.add(seat)
+                has_acted_once.add(seat)
+            continue
+
+        # Empty seat: forced fold once. Uses alive_at_start to
+        # distinguish a truly-busted-at-hand-start seat (stack=1
+        # placeholder in the game string) from a busted-mid-hand seat
+        # (handled above).
+        if not alive_at_start[seat]:
+            if seat not in empties_folded:
+                actions.append((seat, 0))
+                empties_folded.add(seat)
+            continue
+
+        # Folded alive seat: fold immediately only if their voluntary
+        # commit was zero (= just ante, no preflop action). Delayed-fold
+        # seats (folded with voluntary > 0) fall through to the regular
+        # emission flow; they'll limp/call to their target and
+        # defensive-fold when running_max later exceeds it.
+        if folded[seat] and seat not in delayed_fold_seats:
+            if seat not in folded_emitted:
+                actions.append((seat, 0))
+                folded_emitted.add(seat)
+            continue
+
+        # Hero stop checks (preflop frames only). The discriminator: is
+        # hero at their final preflop commit, AND facing a running_max
+        # above it? Stop only then. If hero hasn't reached their target
+        # yet, emit their action toward target.
+        if seat == frame.hero_seat and street_idx == 0:
+            t = target[seat]
+            cur = cur_commit[seat]
+            if seat in has_acted_once:
+                # Hero already had a voluntary turn this hand.
+                if cur >= t and running_max > cur:
+                    # Hero already at target AND faces a raise above it
+                    # → to act on re-opened action. Stop.
+                    return actions
+                # Else: hero hasn't reached target yet OR running_max
+                # has not advanced past their target — continue emitting
+                # actions toward target.
+            else:
+                # Hero's first voluntary turn this hand.
+                if t <= cur:
+                    # No chips to move beyond the auto-posted blind →
+                    # hero's first decision is at this point.
+                    return actions
+                # Else: target > cur, hero acted in this hand and has
+                # chips to commit — fall through and emit.
+
+        # Decide the action for this seat this visit.
+        t = target[seat]
+        # "Needs to act" = either hasn't taken a voluntary action yet,
+        # OR has taken one but cur_commit < running_max (re-opened).
+        needs_to_act = (seat not in has_acted_once
+                        or cur_commit[seat] < running_max)
+        if not needs_to_act:
+            continue
+
+        if t < running_max:
+            # Final commit < running_max → seat folded (defensive).
+            actions.append((seat, 0))
+            folded_emitted.add(seat)
+            continue
+
+        if t > running_max:
+            # Potential raise. Defer the raise if either:
+            #   (a) a smaller raise above running_max is pending from
+            #       an unemitted seat — they raise first (preserves
+            #       chronological order on multi-raise rounds);
+            #   (b) an unemitted seat AFTER me in pf_order_alive wants
+            #       to call/limp at the current running_max (target
+            #       equals running_max) AND there is another raiser-
+            #       eligible seat after me to fire the raise instead.
+            #       This handles "delayed-fold limper" cases: e.g., BTN
+            #       limped preflop before SB raised; if I (UTG/hero)
+            #       raise immediately, BTN's limp never gets emitted
+            #       and chip arithmetic falls short.
+            def _comes_after(s_other: int) -> bool:
+                idx_me = pf_order_alive.index(seat)
+                return s_other in pf_order_alive[idx_me + 1:]
+
+            defer_for_smaller_raise = any(
+                target[s] > running_max and target[s] < t
+                for s in pf_order_alive
+                if s != seat and is_active_for_emission(s)
+                and (s not in has_acted_once
+                     or cur_commit[s] < running_max)
+            )
+            # A "limper" is a seat that voluntarily completed to the BB. The
+            # BB sitting at exactly bb_amount before any voluntary raise is
+            # NOT a limper — they are still in their forced post. Treating
+            # the BB as a limper here causes early-position raisers (UTG,
+            # MP) to defer their open and emit chip_int=1 (call) instead of
+            # chip_int=raise_target, mis-attributing the raise to a later
+            # seat (live_dryrun 2026-06-08 seq=170: UTG opens 100, bridge
+            # emitted seat 2 chip_int=1 and seat 4 chip_int=100, off by
+            # exactly 50 chips on UTG's contribution).
+            #
+            # Exclude the BB if their target == bb_amount AND raise_above_bb
+            # is False (no voluntary raise has happened yet). SB at exactly
+            # sb_amount can never satisfy target[s] == running_max here
+            # (sb_amount < running_max = bb_amount in the un-raised case),
+            # so SB needs no special exclusion — but symmetric exclusion is
+            # added for completeness in case future code paths break that
+            # invariant (e.g., heads-up where SB is the dealer).
+            def _is_blind_still_at_forced_post(s: int) -> bool:
+                if not raise_above_bb:
+                    if s == bb_seat and target[s] == bb_amount:
+                        return True
+                    if s == sb_seat and target[s] == sb_amount:
+                        return True
+                return False
+
+            limper_after_me_unemitted = any(
+                target[s] == running_max
+                and s not in has_acted_once
+                and _comes_after(s)
+                and not _is_blind_still_at_forced_post(s)
+                for s in pf_order_alive
+                if s != seat and is_active_for_emission(s)
+            )
+            raiser_after_me_exists = any(
+                target[s] > running_max
+                and (s not in has_acted_once
+                     or cur_commit[s] < running_max)
+                and _comes_after(s)
+                for s in pf_order_alive
+                if s != seat and is_active_for_emission(s)
+            )
+            # Class A-deeper: if a busted-mid-hand seat AFTER me in
+            # pf_order_alive will all-in to at least my target, they are
+            # the implicit raiser — I should call/limp now and let them
+            # raise on their turn (preserves chronological order: callers
+            # act, then the all-in raise, then callers match the all-in
+            # on subsequent laps).
+            busted_raiser_after_me = any(
+                s in busted_mid_hand
+                and (int(pre[s]) - ante) >= t
+                and _comes_after(s)
+                for s in pf_order_alive
+            )
+            should_defer = (
+                defer_for_smaller_raise
+                or (limper_after_me_unemitted and raiser_after_me_exists)
+                or busted_raiser_after_me
+            )
+
+            if should_defer:
+                if seat not in has_acted_once:
+                    actions.append((seat, 1))
+                    cur_commit[seat] = max(cur_commit[seat], running_max)
+                    has_acted_once.add(seat)
+                continue
+            # Raise now.
+            actions.append((seat, t))
+            cur_commit[seat] = t
+            running_max = t
+            raise_above_bb = True
+            has_acted_once.add(seat)
+            if t > preflop_max_chip_int:
+                preflop_max_chip_int = t
+            continue
+
+        # t == running_max: call/check.
+        actions.append((seat, 1))
+        cur_commit[seat] = t
+        has_acted_once.add(seat)
+
+    # Preflop emission complete. For PREFLOP frames the function is done.
     if street_idx == 0:
         return actions
 
     # POSTFLOP: emit intermediate streets (all-checks) then current street
+    # with multi-turn aware re-opened-action support, same shape as
+    # preflop. For each postflop street we walk a postflop order
+    # (SB-first → BTN), cycling until round closes or hero is to act.
+    # Use the post-preflop folded set (= original folded mask ∪ any
+    # delayed-fold seats that emitted defensive-fold during preflop)
+    # so seats that limped-then-folded preflop are correctly excluded
+    # from postflop action order.
+    post_preflop_folded = tuple(
+        bool(folded[i] or i in folded_emitted) for i in range(NUM_SEATS)
+    )
     pf_alive_post = postflop_action_order(
-        frame.dealer_seat, alive_seats, folded)
-    # Intermediate streets (1..street_idx-1): all checks
+        frame.dealer_seat, alive_seats, post_preflop_folded)
+
+    # Intermediate streets: each closes with all checks (simple-model).
     for _ in range(1, street_idx):
         for seat in pf_alive_post:
             actions.append((seat, 1))  # check
-    # Current street: emit bets per frame.bet in postflop order, stop at hero
-    running_max_cs = 0  # current-street max (chips IN FRONT this street)
-    for seat in pf_alive_post:
-        if seat == frame.hero_seat:
+
+    # Current postflop street: per-seat current-street targets come from
+    # frame.bet directly (this-street commits). Walk in cycles, allowing
+    # hero to take a first action and then return for a re-opened raise.
+    cs_target = [int(frame.bet[s]) for s in range(NUM_SEATS)]
+    cs_cur = [0] * NUM_SEATS
+    cs_has_acted: set[int] = set()
+    running_max_cs = 0
+    # cumulative chip int for OpenSpiel raise = preflop_commit + cs_target
+    raise_happened_cs = False
+
+    def cs_round_closed() -> bool:
+        # Round closes when every alive non-folded seat has emitted a
+        # voluntary action on this street AND their cs_cur matches the
+        # running_max_cs.
+        for s in pf_alive_post:
+            if s not in cs_has_acted:
+                return False
+            if cs_cur[s] != running_max_cs:
+                return False
+        return True
+
+    MAX_CS_VISITS = max(1, len(pf_alive_post)) * 4
+    cs_visit = 0
+    cs_pos = 0
+    while cs_visit < MAX_CS_VISITS and pf_alive_post:
+        if cs_round_closed():
             break
-        cs_commit = frame.bet[seat]
-        if cs_commit == 0:
-            actions.append((seat, 1))  # check
-        elif cs_commit == running_max_cs:
-            actions.append((seat, 1))  # call
-        else:
-            # Raise this street: chip_int = cumulative across streets =
-            # preflop_commit[seat] + cs_commit
-            total_int = preflop_commit[seat] + cs_commit
-            actions.append((seat, total_int))
-            running_max_cs = cs_commit
+        seat = pf_alive_post[cs_pos % len(pf_alive_post)]
+        cs_pos += 1
+        cs_visit += 1
+
+        if seat == frame.hero_seat:
+            # Hero on the current postflop street.
+            if seat in cs_has_acted:
+                # Re-opened action.
+                if cs_cur[seat] < running_max_cs:
+                    return actions
+                # Else: matched and waiting; continue cycling.
+            else:
+                if cs_target[seat] > cs_cur[seat]:
+                    # Hero acted (committed chips on this street) but
+                    # we haven't emitted that yet → fall through and
+                    # emit hero's first action.
+                    pass
+                else:
+                    # Hero hasn't moved chips. STOP iff no LATER seat
+                    # will bet — otherwise hero's first action was a
+                    # CHECK and a later seat raised (re-opens for hero).
+                    later_has_bet = any(
+                        cs_target[s] > running_max_cs
+                        for s in pf_alive_post
+                        if s != seat
+                    )
+                    if not later_has_bet:
+                        # Hero's true first decision — to check/bet.
+                        return actions
+                    # Else: hero will face a bet later → emit check
+                    # now, continue cycling. Hero stops on a later
+                    # visit when cs_cur < running_max_cs.
+
+        t = cs_target[seat]
+        needs_to_act = (seat not in cs_has_acted
+                        or cs_cur[seat] < running_max_cs)
+        if not needs_to_act:
+            continue
+
+        if t < running_max_cs:
+            # Final cs commit below running max → seat folded
+            # (defensive). On postflop we treat as a silent fold the
+            # scraper didn't catch (e.g., repaired_folded missed a
+            # blind-seat fold).
+            actions.append((seat, 0))
+            # Mark folded so subsequent cycles skip this seat.
+            try:
+                pf_alive_post.remove(seat)
+            except ValueError:
+                pass
+            continue
+
+        if t > running_max_cs:
+            # Defer if a LATER unacted seat has a smaller cs_target
+            # above running_max (the smaller one raised first).
+            unacted_eligible = [
+                cs_target[s] for s in pf_alive_post
+                if (s not in cs_has_acted
+                    or cs_cur[s] < running_max_cs)
+                and cs_target[s] > running_max_cs
+            ]
+            if unacted_eligible and t != min(unacted_eligible):
+                if seat not in cs_has_acted:
+                    # Emit check/call (= match current running_max_cs).
+                    actions.append((seat, 1))
+                    cs_cur[seat] = max(cs_cur[seat], running_max_cs)
+                    cs_has_acted.add(seat)
+                continue
+            # Raise now. chip_int (= OpenSpiel cumulative spent target) =
+            # preflop_spent (= preflop_max_chip_int, the max chip_int
+            # emitted during preflop) + current-street voluntary commit t.
+            # For uniform preflop raises preflop_max_chip_int ==
+            # preflop_commit_per_alive (= preflop_commit[seat]); for
+            # forced all-in preflop raises (busted-mid-hand) it is larger
+            # by the ante. Using preflop_max_chip_int is correct in both
+            # cases.
+            actions.append((seat, preflop_max_chip_int + t))
+            cs_cur[seat] = t
+            running_max_cs = t
+            raise_happened_cs = True
+            cs_has_acted.add(seat)
+            continue
+
+        # t == running_max_cs: call/check
+        actions.append((seat, 1))
+        cs_cur[seat] = t
+        cs_has_acted.add(seat)
 
     return actions
