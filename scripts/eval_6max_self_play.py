@@ -109,6 +109,7 @@ def _sample_action_from_policy(
     state,
     rng: random.Random,
     mode: str = "sample",
+    policy_filter=None,
 ):
     """Use solver\'s 7-dim advantage network to pick an abstract action,
     then map it to a concrete chip action.
@@ -119,6 +120,13 @@ def _sample_action_from_policy(
       3. RM+ strategy = positive_advantages / sum, masked to legal
       4. sample or argmax from strategy
       5. map chosen DiscreteAction back to chip_action via the map
+
+    `policy_filter`: optional callable invoked AFTER `inference_policy` and
+    BEFORE sample/argmax, with signature
+      policy_filter(policy, legal_mask, parsed, state) -> new_policy
+    The live consumer uses this to apply the AA/KK preflop FOLD floor
+    (see src/nlhe/integration/live_loop.py:apply_aa_kk_preflop_floor).
+    Default None preserves the training/eval path bit-for-bit.
     """
     import numpy as np
 
@@ -145,6 +153,9 @@ def _sample_action_from_policy(
     # common v1 weighted case this is the identical distribution + rng.choices
     # call as before, so sample-mode behavior is preserved.
     policy = solver.policy_nets.inference_policy(cp, features, legal_mask)
+
+    if policy_filter is not None:
+        policy = policy_filter(policy, legal_mask, parsed, state)
 
     if mode == "argmax":
         chosen_da_idx = int(np.argmax(policy))
