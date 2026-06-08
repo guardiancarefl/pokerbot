@@ -1141,3 +1141,142 @@ The earlier k=1000 run that stopped at iter_527 lacked this proxy. It
 saw "fold rates look fine, behavioral probes look reasonable" and
 called it done. Without the vs-baseline margin trajectory, there was
 no way to see that the run was still climbing. Don't repeat that.
+
+---
+
+## Depth-confusion in the deployed model — short-stack floor SHIPPED, retrain QUEUED
+
+**Date:** 2026-06-08
+**Model:** ckpt_iter_1500.pt from runs/k200_real_ante_20260605_225847_PRESERVED/
+**Hash:** sha256 = b79e82dd0ce9e78e4eb666b7379df953dadbf2a6e026c6bd4b6eec695e9b1b11
+
+### Finding
+
+The 236-d feature vector normalizes every chip quantity by
+`starting_stack = 1500` and never uses `big_blind`. The strategically
+load-bearing quantity in tournament poker is effective stack in BB —
+but the encoder cannot represent this directly. The YAML comment in
+`configs/ignition_double_up_6max_turbo.yaml:56-66` already identified
+this gap ("the missing piece is the depth-conditioning FEATURE").
+
+### Probe — what the gap actually does
+
+`scripts/depth_invariance_probe.py` measured how the model's strategy
+varies across blind levels at fixed BB-depth (it should be constant)
+and at fixed chip count (it should vary):
+
+- **Fixed-BB sweep** (169 hands × 3 positions × 2 scenarios × 3
+  depths × levels {L2, L5, L8}, true depth identical): median TV
+  distance **0.53–0.78**, primary action flips **17–99%**.
+- **Fixed-chips mirror** (750 chips at L1/L5/L8 = 30/3.75/1.25 BB,
+  depth varies 24×): median TV **0.20–0.37**, flips **2–39%**.
+
+Ratio fixed-BB ÷ fixed-chips: **1.55–3.16**. A depth-aware model
+should have ratio << 1; depth-blind would be ≈ 1. Observed **> 1**
+means the model is **depth-CONFUSED, not just depth-blind** — it
+encodes level via the chip-magnitude smear (pot/to_call/contribution
+all `/1500`) and the smear correlates wrongly with strategy.
+
+Concrete example: AsAh BTN-unopened at true 4.8 BB. At L2 (250 chips)
+the model plays jam-heavy push/fold (1.1% fold). At L8 (3000 chips,
+identical true depth) the model folds AA **20.4%** of the time — the
+same anomaly the seq=48 / seq=227 AA-fold probes hit live.
+
+### A/B — what the gap costs in real ICM games
+
+`scripts/short_stack_floor_ab.py`: paired ICM games (V0 = raw,
+V1 = mask intermediate bet sizes at ≤6 BB) against 5×V0 opponents in
+full escalating-blind matches. 24,000 paired games per arm. The
+**hpl=5 arm matches the observed live Ignition turbo cadence** (Games
+2 + 3 of 2026-06-08 dry-runs averaged 5 hands/level); hpl=3 was kept
+as a faster-escalation sensitivity check.
+
+| metric | hpl=3 (stress) | **hpl=5 (live-matched)** |
+|---|---|---|
+| floor-firing rate (% V0 hero decisions) | 14.40% | **7.53%** |
+| % games diverged | 6.03% | **3.91%** |
+| all-games paired Δ V1−V0 ± SE | +0.01842 ± 0.00317 (z=5.81) | **+0.01000 ± 0.00255 (z=3.92)** |
+| diverged-only paired Δ ± SE | +0.305 ± 0.052 (z=5.88) | **+0.256 ± 0.065 (z=3.95)** |
+
+Diverged-only delta is escalation-invariant within noise — the
+per-firing physics is escalation-independent. All-games delta scales
+with firing rate, which scales with how much time hero spends at
+≤6 BB. **Live-field headline: +0.0100 ± 0.00255 ICM/game** (z=3.92,
+95% CI [+0.005, +0.015]). ≈1% ICM/game, ~6σ from noise.
+
+V0 incoherence at floor-fire spots (mass on intermediate bet sizes
+that the floor masks): mean **6.6%**, but **11.81% of decisions
+have >20% intermediate-bet mass** (seq=461-class errors — the model
+emitting min-raise / pot bets at 5-BB push/fold depth). 3.08% have
+>40% (strong); 0.79% >60% (severe). The headline gain comes from a
+minority of decisions being severely incoherent.
+
+H7b dose-response confirms the effect is concentrated where the floor
+fires multiple times: 0-fires games have delta=0 by construction;
+≥4-fires games have mean delta **+0.0153 ± 0.0044**. Low-fire games
+are no-ops (delta ≈ 0 within noise) — so there's **no downside risk**
+to enabling the floor universally.
+
+### Decision
+
+**Ship now (this commit):** short-stack floor + check-when-free floor
+added to `src/nlhe/integration/live_loop.py`, chained after the
+existing AA/KK preflop floor:
+
+  1. **AA/KK preflop floor** (existing): mask FOLD when hero holds AA/KK
+     and street_idx == 0.
+  2. **Check-when-free floor** (NEW): mask FOLD when CHECK is legal
+     (to_call == 0 with CALL in legal_actions). Universal — any street,
+     any depth, any hand. Strictly dominated action.
+  3. **Short-stack floor** (NEW): when hero's effective stack
+     (= min(my_stack, max alive opp stack)) ÷ BB ≤ 6.0 (configurable
+     `short_stack_floor_bb` kwarg, default 6.0):
+        - facing action (to_call > 0)            → keep {FOLD, CALL, ALLIN}
+        - to_call == 0 with CHECK legal          → keep {CALL, ALLIN}
+        - to_call == 0 with CHECK illegal (rare) → keep {FOLD, ALLIN}
+
+Each floor logs to stdout when it fires (level, eff-BB, current_player,
+street, pre/post argmax) for live dry-run audit. Default off in
+training and eval; the live path's composed filter is the only consumer.
+
+**Queued (next major workstream, NOT before next dry-run):** retrain
+with `eff_stack_in_BB` added to the encoder. The encoder change is a
+one-feature addition: drop the depth-confused smear as the model's only
+depth signal, provide a clean BB-normalized depth channel. This is the
+real fix; the floor is a deployment patch that lower-bounds the cost
+until then.
+
+### Falsification test for the retrain
+
+Re-run `scripts/short_stack_floor_ab.py` against the retrained model
+with the SAME paired-seed harness. A depth-aware model should:
+
+  - **firing-divergence rate drops toward zero**: V0 and V1 produce
+    identical actions because V0 already plays push/fold at ≤6 BB
+    (the floor's mask becomes a no-op);
+  - **diverged-only delta drops toward zero with widening SE**: the
+    few divergent decisions left should be approximately random
+    (V0's residual errors don't predict V1's wins);
+  - **all-games delta indistinguishable from zero** (within SE).
+
+If the retrained model still shows diverged-only delta near +0.25, the
+encoder change didn't deliver depth-awareness — investigate before
+shipping the retrain.
+
+### Why a floor is enough for live dry-runs
+
+The validated model still won the 23/24 ICM bake-off — depth confusion
+costs strategic correctness on the marginal short-stack spots, not the
+median spot. The seq=461-class error rate at field scale is **0.89%**
+of all V0 decisions (11.81% of 7.53%). The floor turns those incoherent
+0.89% into push/fold, which we know is the locally-correct strategy at
+that depth. Everything else is left untouched.
+
+### What's NOT decided
+
+Whether to add other "categorically never +EV" floors (QQ-vs-non-3bet
+preflop, 4-bet stacks, etc.) before retraining. Each requires its own
+empirical justification — the AA/KK rule had a clear "no opponent
+range" argument; check-when-free has a strict-dominance argument; the
+short-stack floor has the depth-invariance + A/B evidence. Other
+floors should clear the same bar.

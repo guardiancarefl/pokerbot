@@ -262,6 +262,192 @@ def apply_aa_kk_preflop_floor(policy, legal_mask, parsed, state):
     return new_policy.astype(policy.dtype)
 
 
+# --------------------------------------------------------------------------
+# Check-when-free FOLD floor (deployment-only policy patch)
+# --------------------------------------------------------------------------
+#
+# Folding when CHECK is available (to_call == 0 with CALL legal) is
+# CATEGORICALLY never +EV — you give up free continued equity for zero
+# gain. Universal_poker keeps FOLD in legal_actions() even at check
+# spots (so the trained model can assign mass there; the depth-invariance
+# probe found ~55% FOLD on 92o BB-check at seq=48). Strictly dominated,
+# safe to mask everywhere.
+#
+# Scope: any street, any depth, any hand — fires whenever (to_call == 0
+# AND CALL legal). Strictly additive: when CHECK isn't free, returns
+# the input policy reference unchanged.
+
+def apply_check_when_free_floor(policy, legal_mask, parsed, state):
+    """Mask FOLD when CHECK is available. Strictly dominated action."""
+    import numpy as np
+    from src.nlhe.actions import DiscreteAction
+
+    cp = parsed["current_player"]
+    contribs = parsed.get("contribution", [])
+    if not contribs:
+        return policy
+    to_call = int(max(contribs)) - int(contribs[cp])
+    if to_call > 0:
+        return policy
+
+    fold_idx = int(DiscreteAction.FOLD)
+    call_idx = int(DiscreteAction.CALL)
+    if legal_mask[call_idx] == 0.0:
+        return policy   # no CHECK option
+    if legal_mask[fold_idx] == 0.0 or float(policy[fold_idx]) == 0.0:
+        return policy   # nothing to mask
+
+    new_policy = policy.copy()
+    fold_mass = float(new_policy[fold_idx])
+    new_policy[fold_idx] = 0.0
+    remainder = 1.0 - fold_mass
+    if remainder <= 0.0:
+        keep = legal_mask.copy()
+        keep[fold_idx] = 0.0
+        n = float(keep.sum())
+        if n <= 0.0:
+            return policy
+        return (keep / n).astype(policy.dtype)
+    return (new_policy / remainder).astype(policy.dtype)
+
+
+# --------------------------------------------------------------------------
+# Short-stack floor (deployment-only policy patch)
+# --------------------------------------------------------------------------
+#
+# At ≤ threshold_bb effective stack, the depth-confused model still emits
+# meaningful mass on intermediate bet sizes (min-raise, half-pot, pot)
+# that are strategically incoherent at push/fold depth (depth-invariance
+# probe TV ratio 1.5-3.2 favoring chip-magnitude over BB-depth; seq=461
+# was a 5.3BB SB facing action picking BET_100 as a min-raise).
+#
+# Floored decision set: {FOLD, CALL, ALLIN}. Bet/raise sizes (BET_33,
+# BET_50, BET_66, BET_100, BET_150, BET_200) are masked out and their
+# mass is redistributed proportionally onto the kept set.
+#
+# Off-line A/B (hpl=5, live-matched escalation, 24000 paired games):
+# paired ICM delta V1−V0 = +0.0100 ± 0.00255 (z=3.92). Per-firing
+# (diverged games only) +0.256 ± 0.065 (z=3.95). Floor fires on 7.53%
+# of decisions in the live-matched arm.
+
+_DEFAULT_SHORT_STACK_FLOOR_BB = 6.0
+
+
+def _hero_eff_bb_from_parsed(parsed) -> tuple[float, int]:
+    """Return (eff-stack-in-BB, BB-amount). 0.0 / 0 if undetermined."""
+    bb = int(parsed.get("big_blind", 0))
+    if bb <= 0:
+        return 0.0, 0
+    cp = parsed["current_player"]
+    money = parsed.get("money", [])
+    if cp >= len(money):
+        return 0.0, bb
+    my_stack = int(money[cp])
+    opps = [int(money[i]) for i in range(len(money))
+            if i != cp and money[i] > 0]
+    eff = min(my_stack, max(opps)) if opps else my_stack
+    return float(eff) / bb, bb
+
+
+def apply_short_stack_floor(policy, legal_mask, parsed, state,
+                              threshold_bb: float = _DEFAULT_SHORT_STACK_FLOOR_BB):
+    """At hero eff-stack ≤ threshold_bb:
+       - facing action (to_call > 0)        → keep {FOLD, CALL, ALLIN}
+       - to_call==0 with CHECK legal        → keep {CALL, ALLIN}
+       - to_call==0 with CHECK illegal      → keep {FOLD, ALLIN}
+    Renormalize over kept legal mass. Strict no-op above threshold."""
+    import numpy as np
+    from src.nlhe.actions import DiscreteAction
+
+    eff_bb, bb = _hero_eff_bb_from_parsed(parsed)
+    if bb <= 0 or eff_bb > threshold_bb:
+        return policy
+
+    cp = parsed["current_player"]
+    contribs = parsed.get("contribution", [])
+    if not contribs:
+        return policy
+    to_call = int(max(contribs)) - int(contribs[cp])
+    facing = to_call > 0
+
+    fold_idx = int(DiscreteAction.FOLD)
+    call_idx = int(DiscreteAction.CALL)
+    allin_idx = int(DiscreteAction.ALLIN)
+    if facing:
+        keep_idxs = (fold_idx, call_idx, allin_idx)
+    elif legal_mask[call_idx] > 0:
+        keep_idxs = (call_idx, allin_idx)
+    else:
+        keep_idxs = (fold_idx, allin_idx)
+
+    keep_mask = np.zeros_like(policy)
+    for a in keep_idxs:
+        if legal_mask[a] > 0:
+            keep_mask[a] = 1.0
+    if keep_mask.sum() == 0:
+        return policy   # no legal kept action — fall back
+
+    new = policy * keep_mask
+    s = float(new.sum())
+    if s > 1e-12:
+        new = (new / s).astype(policy.dtype)
+    else:
+        new = (keep_mask / float(keep_mask.sum())).astype(policy.dtype)
+    return new
+
+
+# --------------------------------------------------------------------------
+# Live policy filter — composes all deployment-time floors with logging
+# --------------------------------------------------------------------------
+
+def make_live_policy_filter(short_stack_threshold_bb: float = _DEFAULT_SHORT_STACK_FLOOR_BB,
+                             *, log_prefix: str = "[FLOOR]"):
+    """Build the composed deployment-only policy filter.
+
+    Order: AA/KK preflop → check-when-free → short-stack.
+    Each filter is identity-short-circuited when its gate doesn't fire
+    (returns the same `policy` reference), so the chain's net cost when
+    nothing fires is three reference-equality checks.
+
+    Logs to stdout each time any floor changes the action distribution.
+    """
+    import numpy as np
+    from src.nlhe.actions import DiscreteAction
+
+    def composed_filter(policy, legal_mask, parsed, state):
+        p1 = apply_aa_kk_preflop_floor(policy, legal_mask, parsed, state)
+        aa_kk_fired = (p1 is not policy)
+        p2 = apply_check_when_free_floor(p1, legal_mask, parsed, state)
+        check_free_fired = (p2 is not p1)
+        p3 = apply_short_stack_floor(
+            p2, legal_mask, parsed, state,
+            threshold_bb=short_stack_threshold_bb)
+        ss_fired = (p3 is not p2)
+
+        if aa_kk_fired or check_free_fired or ss_fired:
+            fires = []
+            if aa_kk_fired: fires.append("AA/KK")
+            if check_free_fired: fires.append("check-free")
+            if ss_fired: fires.append("short-stack")
+            eff_bb, _ = _hero_eff_bb_from_parsed(parsed)
+            cp = parsed.get("current_player", -1)
+            # Best-effort argmax for pre/post audit
+            masked_pre = policy * legal_mask
+            masked_post = p3 * legal_mask
+            pre_a = int(np.argmax(masked_pre)) if masked_pre.sum() > 0 else -1
+            post_a = int(np.argmax(masked_post)) if masked_post.sum() > 0 else -1
+            pre_name = DiscreteAction(pre_a).name if pre_a >= 0 else "?"
+            post_name = DiscreteAction(post_a).name if post_a >= 0 else "?"
+            street = parsed.get("street_idx", -1)
+            print(f"{log_prefix} fired=[{','.join(fires)}]  "
+                  f"eff_bb={eff_bb:.2f}  cp={cp}  street={street}  "
+                  f"pre_argmax={pre_name}  post_argmax={post_name}",
+                  flush=True)
+        return p3
+
+    return composed_filter
+
+
 def _client_action_for_chip_int(chip_int: int, frame) -> dict:
     """Translate an OpenSpiel chip_int to a real-table client_action dict.
     Same shape as the inline dispatch in run_logonly_resolver.py."""
@@ -293,6 +479,7 @@ def make_decision(
     mode: str = "sample",
     seq: int | None = None,
     decision_cache: "DecisionCache | None" = None,
+    short_stack_floor_bb: float = _DEFAULT_SHORT_STACK_FLOOR_BB,
 ) -> LiveDecision:
     """Process one scraper record. Returns a LiveDecision.
 
@@ -368,6 +555,18 @@ def make_decision(
                 and bl.ante == frame.blinds.ante):
             out.level = int(bl.level)
             break
+
+    # OOD-warning: training_weights cover L1-L9; min stack-BB sampled
+    # ≥ ~2BB. Live drifting past those bounds is silent → log it.
+    if out.level is not None and (
+        out.level >= 8 or
+        (frame.blinds.bb > 0 and out.hero_stack and
+         out.hero_stack / frame.blinds.bb < 2.0)
+    ):
+        print(f"[OOD-WARN] live out-of-training-support: "
+              f"level={out.level} hero_stack={out.hero_stack} "
+              f"({(out.hero_stack or 0)/max(1,frame.blinds.bb):.1f} BB) "
+              f"captured_at={frame.captured_at}", flush=True)
 
     # 4. Hero-to-act gate. Hand-start frames + FOLD-only UI captures
     # have controls_present=False after the parse_frame filter.
@@ -454,7 +653,8 @@ def make_decision(
         try:
             chip_int = _sample_action_from_policy(
                 solver, parsed, pack.state, rng, mode=mode,
-                policy_filter=apply_aa_kk_preflop_floor,
+                policy_filter=make_live_policy_filter(
+                    short_stack_threshold_bb=short_stack_floor_bb),
             )
         except Exception as e:  # pragma: no cover (defensive)
             out.status = "safe_fold"
