@@ -124,6 +124,21 @@ def parse_state_6max(state: Any, observer: int | None = None) -> dict:
     m = _RE_SEQUENCES.search(info)
     out["sequences"] = m.group(1) if m else ""
 
+    # Big blind (raw, NOT inflated_BB). Read from the OpenSpiel game's
+    # parameter dict — `blind` is a space-separated per-seat string like
+    # "15 25 0 0 0 0" (real-ante convention) or "15 55 0 0 0 0" (legacy
+    # inflated-BB convention). BB is the max value across the array (the
+    # BB seat's amount); robust to dealer rotation. With the patched
+    # universal_poker accepting native `ante`, real-ante game strings
+    # produce raw BB here (= 25 at level 1). For depth-feature use; the
+    # encoder normalizes effective stack by this value to produce a
+    # standard "stack in BB" depth measure.
+    try:
+        blind_str = str(state.get_game().get_parameters().get("blind", "0"))
+        out["big_blind"] = max(int(x) for x in blind_str.split()) if blind_str else 0
+    except Exception:
+        out["big_blind"] = 0
+
     return out
 
 
