@@ -1,0 +1,88 @@
+{
+ "streams": {
+  "live_dryrun_20260608_152756__s1": {
+   "frames": 200,
+   "suspect_frames": 17,
+   "reasons": {
+    "board card N changed Nh->Nd": 1,
+    "board shrank N->N": 4,
+    "seatN bet N > stack N + pot N": 1,
+    "pot total spike N->N": 2,
+    "duplicate cards: Nh": 1,
+    "board card N changed Ns->Ns": 1,
+    "invalid hero count N": 1,
+    "duplicate cards: Nc": 2,
+    "board card N changed Nc->Nc": 1,
+    "table not rendered (wrong window / loading)": 3,
+    "pot total N < main N": 1,
+    "duplicate cards: Ns": 1,
+    "seatN stack jump N->N": 2
+   }
+  },
+  "live_dryrun_20260609_154557__s1": {
+   "frames": 121,
+   "suspect_frames": 32,
+   "reasons": {
+    "pot total spike N->N": 3,
+    "seatN stack jump N->N": 28,
+    "duplicate cards: Ns": 1,
+    "board shrank N->N": 2,
+    "invalid board count N": 1
+   }
+  },
+  "live_dryrun_20260609_154557__s2": {
+   "frames": 450,
+   "suspect_frames": 77,
+   "reasons": {
+    "seatN stack jump N->N": 43,
+    "duplicate cards: Nh": 3,
+    "board shrank N->N": 2,
+    "invalid board count N": 4,
+    "board card N changed Qd->Nc": 2,
+    "pot total spike N->N": 8,
+    "bet controls mid-update (box != RAISE button)": 4,
+    "seatN bet N > stack N + pot N": 1,
+    "board card N changed Th->Qd": 1,
+    "duplicate cards: Nd": 1,
+    "board card N changed Qd->Th": 1,
+    "duplicate cards: Qd": 1,
+    "table not rendered (wrong window / loading)": 2,
+    "board card N changed Nd->Qd": 1,
+    "board card N changed Ac->Tc": 2,
+    "board card N changed Tc->Qc": 1,
+    "board card N changed Nc->Nc": 1,
+    "invalid hero count N": 1,
+    "board card N changed Nh->Nh": 1
+   }
+  },
+  "live_dryrun_20260609_192543__s1": {
+   "frames": 402,
+   "suspect_frames": 53,
+   "reasons": {
+    "invalid hero count N": 2,
+    "table not rendered (wrong window / loading)": 10,
+    "pot total spike N->N": 6,
+    "seatN bet N > stack N + pot N": 7,
+    "board card N changed Kc->Kh": 1,
+    "seatN stack jump N->N": 8,
+    "board card N changed Nd->Ns": 1,
+    "bet controls mid-update (box != RAISE button)": 15,
+    "duplicate cards: Ns": 1,
+    "board shrank N->N": 3,
+    "duplicate cards: Ad": 1,
+    "board card N changed Ts->Ad": 1,
+    "board card N changed Kc->Nc": 1
+   }
+  },
+  "live_dryrun_verify1_20260609_202137__s1": {
+   "frames": 90,
+   "suspect_frames": 16,
+   "reasons": {
+    "invalid board count N": 1,
+    "board shrank N->N": 1,
+    "bet controls mid-update (box != RAISE button)": 1,
+    "seatN stack jump N->N": 13
+   }
+  }
+ }
+}
