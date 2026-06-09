@@ -1,6 +1,6 @@
 # Project Status
 
-**Last updated:** 2026-06-08
+**Last updated:** 2026-06-09
 **Current phase:** Live deployment readiness. Validated k200 blueprint
   (`runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt`).
   Bridge fixed end-to-end; three deployment-time policy floors shipped;
@@ -11,6 +11,47 @@
 > readiness" entry below is the current load-bearing summary; the older
 > Leduc / sub-step 6 entries describe a research workstream that's
 > superseded by the deployment focus.
+
+## Suspect-frame stack recovery (Layer 1) — 2026-06-09 — CLOSED (`7d47e86`)
+
+The verify1 blackout (seq 83-94: stable stuck-digit hero-stack OCR →
+SanityChecker suspect-flagged 12 consecutive otherwise-clean frames → 4
+hero-to-act moments dropped → 38.4s freeze → hero busted) is closed
+bridge-side. When a suspect frame's only flag is ONE seat's stack jump,
+the bridge derives that stack from the clean hand-start anchor via chip
+conservation and re-validates through the unchanged replay+invariant gate
+(`status=decision_recovered`, `recovered_fields` audit trail; every gate
+failure drops exactly as before, reason annotated). Gate evidence: 692
+frames / 3 dry-run logs replayed → 0 behavioral diffs on non-suspect
+frames; the 3 recoveries are exactly verify1 seq 88/92/94 with derived
+values confirmed against the seq=95 post-hand ground truth. 15 new tests
+(`tests/test_suspect_recovery.py`); verification harness
+`scripts/replay_make_decision_diff.py`.
+
+NOTE the diagnosis correction recorded in SESSION_LOG 2026-06-09: the
+prior session's "second unflagged bad field (seat5)" claim was an
+analysis artifact — the incident was pure single-field corruption, and
+layer 1 alone rescues all three real decisions.
+
+**Open, in priority order:**
+
+- **Layer 2 — Windows scraper (route to Windows CC):** the
+  SanityChecker's last-good reference froze during the suspect run and
+  kept rejecting the *correct* OCR (`150` at seq 93/94 flagged as "jump
+  1260->150"). Spec: decay the reference, or re-accept a value stable
+  for N consecutive frames; per-seat suspect flagging would also help.
+  Binding sub-case: **anchor starvation** — a suspect run surviving into
+  the next hand's hand-start frame leaves the bridge unable to anchor
+  (observe() is deliberately blind to suspect frames), disabling layer-1
+  recovery for that entire hand. Scraper-side repair is the root-cause
+  fix.
+- **Layer 3 — contribution ledger: DESIGNED, NOT BUILT, build gated on
+  user approval.** `docs/LAYER3_CONTRIBUTION_LEDGER_DESIGN.md`. With the
+  corrected evidence it is no longer kick-risk-critical (0 additionally
+  rescuable hero-to-act frames in any replayed corpus); the build
+  trigger is observable in dry-run logs as a hero-to-act suspect frame
+  declined for "no in-range closure candidate" / "ambiguous" / "no
+  candidate passed replay+invariant".
 
 ## Live deployment readiness — 2026-06-08 — read this first
 

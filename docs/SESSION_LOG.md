@@ -6,6 +6,31 @@ Format: most recent session at the top. Each session block notes date, what was 
 
 ---
 
+## Live-deploy session — 2026-06-09 (evening) — Layer-1 suspect-frame stack recovery (`7d47e86`)
+
+### What was done
+- **Root-caused the verify1 blackout** (`logs/live_dryrun_verify1_20260609_202137.jsonl`, seq 83-94): hero's stack OCR'd as a stable `11101` (stuck digit; actual 1110). The scraper's SanityChecker correctly rejected the jump but its all-or-nothing drop policy discarded 12 consecutive frames whose every other field was clean — 4 hero-to-act moments lost (seq 88/92/93/94), 38.4s freeze, hero busted. Kick-risk blocker for auto-clicking.
+- **CORRECTED a prior-session diagnosis error:** the earlier analysis claimed a second, unflagged bad field (seat5 "frozen at 1347") made the incident double-corrupt and layer-1 recovery useless for it. Wrong — the analysis printed only `stacks.seat1` per frame and extrapolated. Full re-extraction shows seat5 tracked correctly throughout (1347→1197→717→0→87, matching the seq=95 ground truth). The incident is pure single-field corruption.
+- **Built Layer 1 — single-field stack recovery** (`7d47e86`): when a suspect frame's only flag is one seat's stack jump, the bridge derives that stack from the clean hand-start anchor via chip conservation (strict + UI-lag closure candidates) and re-validates through the unchanged replay+invariant gate. Survivor → `status=decision_recovered` + `recovered_fields` audit trail; any gate failure → the exact pre-existing safe-fold drop with a `(recovery declined: …)` annotation. `parse_frame(allow_suspect=True)` is recovery-path-only; `tracker.observe()` stays blind to suspect frames (clean-frame anchors only); strict/UI-lag dual survivors are treated as ambiguity and dropped.
+- **Verification gate (all green):** new `scripts/replay_make_decision_diff.py` replays raw_records through `make_decision` (checkpoint + seed mirroring live) and diffs behavioral fields pre/post. 692 frames across 3 dry-run logs: 0 behavioral diffs on non-suspect frames (and 692/692 bit-identical at the parse/replay/invariant layer via `replay_session_diff.py`). 83 suspect frames: 80 decline-and-drop-as-before, 3 recover = exactly verify1 seq 88/92/94, derived values 1110/1110/150 all confirmed against seq=95 ground truth (seq 93 correctly declined — FOLD-only muck UI, not a decision). 15 new tests in `tests/test_suspect_recovery.py` incl. the real seq=88 record as a regression fixture and a double-corruption case proving re-validation rejects a wrong-but-in-range derivation; 108 bridge/integration tests pass. (Unrelated pre-existing failures in solver6/dashboard/subgame tests confirmed identical on stashed tree — they belong to the uncommitted infoset6/stack_sampler work, not this change.)
+- **Wrote `docs/LAYER3_CONTRIBUTION_LEDGER_DESIGN.md`** (design only, build gated on user approval): per-street contribution ledger from bet observations, with full desync analysis (missed frames → per-frame pot audit marks ledger diverged; transients → 2-frame stability vote + within-street monotonicity; street-boundary UI lag → collection requires board-change AND bets-cleared; missed hands → zero cross-hand state, auto-resync at next clean hand-start; everything gated by the same replay+invariant bar).
+
+### What was decided
+- **Layer 1 shipped; Layer 3 held.** With the corrected evidence the observed incident class is fully closed by layer 1; across all replayed corpora there are 0 hero-to-act suspect frames a ledger would additionally rescue. The decline-reason annotations make the build trigger directly observable in future dry-run logs (see design doc §6).
+- **Layer 2 (Windows scraper) is the binding residual risk** — routed to Windows CC separately: the SanityChecker's last-good reference froze for 12 frames and kept rejecting the *correct* OCR (`150` at seq 93/94, flagged as "jump 1260->150"). Needs reference decay or N-consecutive-frame re-acceptance. Critical sub-case: **anchor starvation** — a suspect run surviving into the next hand's hand-start frame leaves the bridge with no clean anchor, disabling layer-1 recovery for that entire hand.
+
+### What was learned / surprises
+- **Print all the fields before concluding multi-field corruption.** The "second bad field" was an artifact of dumping only `stacks.seat1` per frame and extrapolating seat5 from an earlier frame. It nearly redirected the whole fix toward a stateful ledger that the incident didn't need. Ground-truth cross-checks (seq=95 post-hand stacks) settle these questions cheaply.
+- The suspect-frame taxonomy across 83 frames: 21 single-seat stack jumps (the recoverable class), the rest card/board corruption, controls mid-update, pot spikes, bet>stack+pot inconsistencies — all correctly non-recoverable by design (cards have zero redundancy; controls-corrupt frames shouldn't decide at all). 7 single pot-spike frames are a possible future closure-solve extension; not built.
+- The recovered seq=94 value (150) equaled the raw OCR the scraper had rejected — recovery doubles as a false-positive un-flagger when the conservation solve confirms the on-screen read.
+
+### Queued for next session
+1. Route layer-2 spec to Windows CC (last-good decay / re-acceptance + per-seat flagging; see STATUS).
+2. Next live dry-run: watch for `decision_recovered` statuses and for declined hero-to-act recoveries (the layer-3 build trigger).
+3. Layer-3 design awaits user approval of desync handling before any build.
+
+---
+
 ## Session 9 — 2026-05-23 (early morning)
 **Focus:** Open Phase 4e.3b (external-sampling CFR traversal for 6-max). Stretch goals: 4e.3c (training loop wiring) and 4e.3d (config + script + smoke validation), to clear the path to 4f (GPU rental + first 6-max blueprint training run).
 
