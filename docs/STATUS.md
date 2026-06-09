@@ -45,6 +45,15 @@ layer 1 alone rescues all three real decisions.
   (observe() is deliberately blind to suspect frames), disabling layer-1
   recovery for that entire hand. Scraper-side repair is the root-cause
   fix.
+  **2026-06-09 update:** mechanism decided (P1 relax-after-stale N=4 +
+  consensus-derived chips-in-play ceiling; P2 new-hand widening +
+  board-shrank ordering fix; per-field propagation held). Validation
+  fixture packaged at `tools/scraper_sanity_fixture/` (`9e4c007`): 5
+  streams / 1263 frames, gates (a)-(d) with a stdlib verifier; includes
+  the second incident (154557: 9907 admitted clean AT hand-start under
+  the 13000 constant → 23 correct reads rejected against the poisoned
+  reference) and the 17917-hand-start counterexample that mandates
+  CONSENSUS ceiling derivation over single-frame.
 - **Layer 3 — contribution ledger: DESIGNED, NOT BUILT, build gated on
   user approval.** `docs/LAYER3_CONTRIBUTION_LEDGER_DESIGN.md`. With the
   corrected evidence it is no longer kick-risk-critical (0 additionally
