@@ -242,6 +242,13 @@ def _sample_stack_distribution(
     # Deep stage: stacks above bb are nearly equal.
     # Mid stage: moderate variance.
     # Short stage: high variance, one chip leader emerging.
+    # REVERTED 2026-06-05 to original σ values for the depth-feature
+    # isolation throwaway. Both prior σ tweaks (deep 0.05→0.10 for
+    # realism, mid 0.40→0.30 for order-statistic-min correction) reverted
+    # so the depth feature is the ONLY changed variable in the next
+    # throwaway. If the feature alone enables depth-distinct learning,
+    # the σ corrections weren't needed; if not, we'll re-introduce them
+    # one at a time on top of the feature with attribution preserved.
     if stage == "deep":
         weights = [1.0 + rng.gauss(0, 0.05) for _ in range(alive_count)]
     elif stage == "mid":

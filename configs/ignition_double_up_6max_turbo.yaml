@@ -53,6 +53,17 @@ blind_schedule:
 # Heavily over-weights early-to-mid levels where most real games are decided.
 # Levels 11+ get token weight (still need exposure for edge cases).
 training_weights:
+  # REVERTED 2026-06-05 to original distribution for the depth-feature
+  # isolation throwaway. The hands-played × P(survive) rebalance attempt
+  # produced a depth-blind model (flat normal-raise strategy across all
+  # depths), revealing that the missing piece is the depth-conditioning
+  # FEATURE, not the training distribution. Original weights below are
+  # the test bed: known reference that produced a model jamming correctly
+  # at short stacks (the strength we need to preserve) while over-jamming
+  # at deep (the bug). Adding the eff_stack_in_BB feature (encoder
+  # change) on this distribution isolates the feature's effect — if it
+  # alone produces depth-distinct play, distribution didn't need
+  # rebalancing.
   level_1:  0.1837
   level_2:  0.1837
   level_3:  0.1531
