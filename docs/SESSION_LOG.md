@@ -4,6 +4,12 @@ Append-only record of what happened in each working session and why. STATUS.md t
 
 Format: most recent session at the top. Each session block notes date, what was done, what was decided, what was learned, and what's queued for next time.
 
+> **Coverage gap (noted 2026-06-09):** below the 2026-06-09 entry, this file
+> jumps back to Session 9 (2026-05-23). Sessions 10+ (2026-05-24 → 2026-06-08
+> — subgame solver, resolver retirement, Leduc proof, integration/bridge,
+> k200_real_ante retrain) are NOT back-filled here; they live in commit
+> messages, STATUS.md, DECISIONS.md, and docs/sessions/.
+
 ---
 
 ## Live-deploy session — 2026-06-09 (evening) — Layer-1 suspect-frame stack recovery (`7d47e86`)

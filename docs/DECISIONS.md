@@ -1809,3 +1809,121 @@ peakpin logs, train-log tail showing iter 1538, launch script). The
 24-profile bake-off that used ckpt_1500 as its baseline is preserved at
 `evals/bakeoff_20260607/`. Fuller doc corrections are a separately
 queued task.
+
+
+## Correction — hands WERE sat out due to scraper (sat-out count was a segmentation artifact)
+
+**Date:** 2026-06-09. **Re:** the "Correction — bridge-vs-scraper split:
+41 frames, not 61" entry (this file, ~line 1418) and the former
+STATUS.md "Zero hands sat out due to scraper" claim (now corrected
+inline in STATUS.md).
+
+The hand-touch analysis segmented hands by `(dealer_seat, level)` —
+blind to any hand whose EVERY frame lost the dealer button, which is
+precisely what the dominant skip class does. Re-analysis using
+`raw_record` hero-card/button evidence:
+
+- `logs/live_dryrun_20260608_152756.jsonl` (the session the claim was
+  made about): **1/11 hands sat out** — the 8dKc hand: seq=92 shows
+  hero action buttons `['CALL','FOLD','RAISE']` but was killed by
+  `dealer field missing/empty`; seq=97 (`['BET','CHECK']`) killed by
+  `ScraperSuspect`; the hand produced 0 decision frames.
+- `logs/live_dryrun_20260609_154557.jsonl`: **14/41 hands lost (34%)**
+  — 12 missed-decision hands (incl. AdKd fully lost to suspect frames,
+  seqs 106–118) + 2 safe-fold-only hands.
+
+Root cause (positional, not stage-related): dealer-button OCR failed
+whenever the button sat at the HERO's seat — raw `dealer` parsed as
+seat1 ZERO times in every session through 154557 (e.g. 154557 raw
+counts: `<empty>`:138, seat2:100, seat3:94, seat5:136, seat6:102,
+seat1:0), so ~every hero-BTN orbit slot produced an invisible hand.
+The apparent early/mid/bubble skip gradient (9.4→18.6→29.1% in 004502;
+0→21.5→39.8% in 154557) is mechanically explained by orbit shrinkage
+(hero is BTN 1/6 of hands at 6-alive but 1/4 at 4-alive) plus
+dealer-on-dead-seat requiring a busted seat — not by bubble-specific
+UI behavior.
+
+## Scraper dealer-at-hero-seat fix — landed Windows-side 2026-06-09 (recorded here; fix lives outside this repo)
+
+**Date:** 2026-06-09. The Windows scraper's dealer-button OCR could not
+read the button at the hero's own seat (bottom-center). A fix landed
+between 16:09 and 19:25 UTC on 2026-06-09 — i.e., after session
+`live_dryrun_20260609_154557.jsonl` and before
+`live_dryrun_20260609_192543.jsonl`. Evidence (log-derived; the scraper
+code is not in this repo):
+
+- raw `dealer == seat1` appears **76×** in 192543 and 16× in verify1,
+  vs **0×** in every prior session;
+- dealer-OCR skip rate collapsed **24.0% → 2.2%** of frames
+  (154557 → 192543; verify1: 3.3%);
+- first hero-BTN decision frames ever recorded (192543:
+  `dealer_seat=0` on 10 decision frames).
+
+This entry exists so the repo's record is not silent about a
+load-bearing change that happened outside it; the bridge-side Issue 4
+fix (`2c0b71b`) was surfaced by exactly these newly-arriving
+dealer=seat1 frames.
+
+## Correction — KillPhilMTT loss figures: two unrecorded caveats
+
+**Date:** 2026-06-09. **Re:** SHIP_BAKEOFF.md:87-103 ("It is
+structural; no non-adaptive fix exists in our constraint stack") and
+the 24-profile bake-off table (evals/bakeoff_20260607/,
+killphilmtt −0.0153 ± 0.0012, 12.7σ). SHIP_BAKEOFF.md itself is left
+unedited as a historical record.
+
+1. **All bake-off killphilmtt numbers were measured against a
+   misconfigured opponent.** SHIP_BAKEOFF.md:194-196's own follow-up
+   records that `opponentsattable` was NOT wired to the live
+   alive-count for Shanky bots. KillPhilMTT's fold-or-jam mode gating
+   is predicate-dependent (`FoldOrGoAllInWhenOpponentsAtTableLessThan
+   = 5`, and its preflop tiers branch on `OpponentsAtTable`), so the
+   −0.0153 figure is against a profile whose table-size predicates did
+   not see the real table. Re-measurement with bubble-aware Shanky
+   opponents is queued (C1a).
+2. **Transfer to real Ignition opponents is unmeasured.** No
+   population evidence exists anywhere in this repo that
+   killphilmtt-style play occurs at measurable frequency among real
+   Ignition opponents, nor that the loss was ever observed against a
+   non-Shanky opponent. SHIP_BAKEOFF's "Real recreational poker
+   populations are dominated by loose play" is an unsourced assertion.
+   The structural claim that DOES generalize from the diagnosis
+   (REBEL_KILLPHIL_DIAG_FINDINGS.md): any opponent whose shove range
+   is materially tighter than the model's effective belief collects
+   the same <10bb call-vs-shove EV.
+
+## Deployment reversal record — deployed agent is the k200_real_ante blueprint, superseding SHIP_BAKEOFF's "ship rebel" verdict
+
+**Date:** recorded 2026-06-09 (events 2026-06-04 → 2026-06-07). Closes
+a gap in the record: SHIP_BAKEOFF.md (2026-06-04) verdicts "Ship
+`rebel_value_net_full` (d3k150 resolver)", but the deployed agent is
+the k200_real_ante blueprint
+(`runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt`).
+The reversal chain, reconstructed from the existing record:
+
+1. **The Jun-4 bake-off was invalidated the next day.**
+   HANDOFF_RETRAIN.md (2026-06-05): the inflated-BB action-set
+   distortion was verified by direct policy query (2.4% BTN open rate,
+   0% CO at deep stacks — "correct would be 40-50% / 25-35%"), and the
+   handoff explicitly reopened the ship decision: "Re-decide the ship
+   model from scratch: The prior winner (rebel_d3k150 …) is REOPENED —
+   no longer the default ship candidate" (HANDOFF_RETRAIN.md:222-228).
+2. **Only the blueprint was retrained under the corrected (real-ante)
+   convention** (`scripts/train_k200_real_ante.py`, 2026-06-05→07).
+   The rebel value net's retrain was queued "after blueprint
+   stabilizes" (HANDOFF_RETRAIN.md:154) and has not happened; the
+   resolver had independently been retired as a development path
+   ("Blueprint-alone is the reference agent", this file ~line 520;
+   "Foundation pivot", ~line 543; bubble-slice closure net-negative).
+3. **The re-decided candidate validated:** convergence-monitored
+   training, deliberate iter-1500 stop (this file, entry above), and
+   the Jun-7 24-profile bake-off (wins 23/24;
+   evals/bakeoff_20260607/). The iter_500-probe process learning
+   (~line 964) confirmed the earlier "model looks broken" reads were
+   under-convergence artifacts, not architecture failures.
+
+**Honesty note:** no contemporaneous document says in one sentence
+"k200_real_ante replaces rebel as the ship agent" — the rationale was
+not fully recorded at the time; this entry reconstructs it from
+HANDOFF_RETRAIN.md, the resolver-retirement entries, and the
+validation chain, all of which are in-repo.

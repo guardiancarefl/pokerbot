@@ -127,7 +127,12 @@ Each fire logs to stdout for live dry-run audit:
 `[FLOOR] fired=[…]  eff_bb=X.XX  cp=N  street=S  pre_argmax=…  post_argmax=…`.
 
 Default `[OOD-WARN]` runtime log fires when blind level ≥ 8 OR hero
-effective stack < 2 BB (we don't sample those in training).
+effective stack < 2 BB. Precision (corrected 2026-06-09): training DOES
+sample L8 (5.1% weight) and L9 (2.04%) per the yaml `training_weights`;
+only L10+ and stacks < ~2 BB are genuinely unsampled. The warning fires
+inside the thin sampled tail by design. (The warning STRING in
+`live_loop.py` still says "out-of-training-support" — queued nit, code
+change out of scope for the doc pass.)
 
 ### Scraper — characterized as NON-BLOCKING for this session
 
@@ -139,14 +144,27 @@ Of the 200 session frames, **41 (20.5%) are scraper-side failures**
 -  4 `data_quality: dealer points to non-alive seat` (mid-hand transient)
 -  3 `parse_error: blinds string parse` (level-transition garbling)
 
-**Zero hands sat out due to scraper.** All 10 hand-segments had at
-least one valid hero-decision frame within them; the 41 failures were
-redundant captures absorbed by the bridge's "drop and retry on next
-frame" behavior.
+**CORRECTED 2026-06-09 — hands WERE sat out due to scraper.** The
+original "zero hands sat out" claim segmented hands by
+`(dealer_seat, level)`, which is blind to any hand whose EVERY frame
+lost the dealer button — exactly the failure mode of the dominant skip
+class. Re-analysis using `raw_record` hero-card/button evidence:
+- This session (152756): **1/11 hands sat out** — the 8dKc hand
+  (seq=92 shows hero action buttons CALL/FOLD/RAISE, killed by
+  `dealer field missing/empty`; seq=97 killed by `ScraperSuspect`;
+  0 decision frames in the hand).
+- Session 154557: **14/41 hands lost (34%)** — 12 missed decisions
+  (incl. an AdKd hand fully lost to suspect frames, seqs 106–118)
+  + 2 safe-fold-only hands.
+Root cause: dealer-button OCR failed on every hero-button hand — the
+raw `dealer` field NEVER parsed as seat1 (hero) in any session through
+154557. See DECISIONS.md "Correction — hands sat out" + "Scraper
+dealer-at-hero-seat fix" entries (2026-06-09).
 
-If/when scraper work is scheduled, **dealer-button detection is the
-highest-leverage target** (21 of 41 failures = 51% of scraper issues).
-Not urgent for the next dry-run.
+Dealer-button detection WAS the highest-leverage target (understated:
+55% of 154557's data-quality frames were dealer-related, 24% of all
+its frames). A Windows-side fix landed 2026-06-09 between sessions
+154557 and 192543; dealer-OCR skips collapsed 24.0% → 2.2% of frames.
 
 ### Next major workstream — model retrain with `eff_stack_in_BB`
 
