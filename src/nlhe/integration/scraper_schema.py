@@ -23,6 +23,7 @@ calibration ONLY; the real-deployment format is 1500.
 """
 from __future__ import annotations
 
+import dataclasses
 import re
 from dataclasses import dataclass, field
 from typing import Optional
@@ -171,7 +172,8 @@ def _seat_dict_to_array(d: dict, default, kind: str) -> tuple:
     return tuple(out)
 
 
-def parse_frame(record: dict, hero_seat_alias: str = "seat1") -> ScraperFrame:
+def parse_frame(record: dict, hero_seat_alias: str = "seat1",
+                allow_suspect: bool = False) -> ScraperFrame:
     """Parse a single scraper JSON record into a ScraperFrame.
 
     Args:
@@ -179,15 +181,22 @@ def parse_frame(record: dict, hero_seat_alias: str = "seat1") -> ScraperFrame:
         hero_seat_alias: which scraper seat is the hero. Default 'seat1'
             (the standard Ignition UI bottom-center convention). Change if
             the scraper indexes seats differently.
+        allow_suspect: parse a suspect:true record instead of raising
+            ScraperSuspect. ONLY for the single-field recovery path
+            (live_loop._attempt_suspect_stack_recovery), which re-validates
+            the frame through replay + invariant before any use. Every
+            other caller must keep the default — a suspect frame's flagged
+            field is known-bad and must never reach the model raw.
 
     Raises:
-        ScraperSuspect: if record['suspect'] is True. Caller must drop.
+        ScraperSuspect: if record['suspect'] is True (and allow_suspect is
+            False, the default). Caller must drop.
         ScraperParseError: schema malformed in a non-recoverable way.
     """
     if not isinstance(record, dict):
         raise ScraperParseError(f"record is not a dict: {type(record).__name__}")
 
-    if record.get("suspect", False):
+    if record.get("suspect", False) and not allow_suspect:
         raise ScraperSuspect(
             f"frame marked suspect by scraper; dropping. captured_at="
             f"{record.get('captured_at', '<missing>')}"
@@ -504,6 +513,24 @@ class SessionTracker:
             return self._current_pre_hand
         return None
 
+    def anchor_for(self, frame: ScraperFrame) -> tuple[int, ...] | None:
+        """Tracked pre-hand stacks for this frame's hand WITHOUT the
+        chip-conservation closure check.
+
+        For the suspect-recovery path ONLY: closure cannot hold on a frame
+        whose flagged stack field is wrong — that broken closure is the
+        thing recovery solves for. The caller must re-validate the
+        recovered frame through the full replay + invariant gate before
+        any use. Never use this as a general pre_hand_for substitute:
+        without the closure check there is no evidence the anchor still
+        describes the current hand beyond the (dealer, blinds) key.
+        """
+        if self._current_pre_hand is None:
+            return None
+        if self._hand_key(frame) != self._current_hand_key:
+            return None
+        return self._current_pre_hand
+
     def _closure_plausible(self, frame: ScraperFrame) -> bool:
         """True iff chip conservation against the anchor is plausible
         under strict (or strict+mis-alive) OR UI-lag (or UI-lag+mis-alive)
@@ -596,6 +623,131 @@ class SessionTracker:
                 and 0 <= deficit_uilag <= mis_alive_max_remaining):
             return pot + bet_sum
         return None
+
+
+# --------------------------------------------------------------------------
+# Suspect-frame single-field stack recovery (Layer 1 — 2026-06-09 blackout
+# postmortem). The scraper's SanityChecker is all-or-nothing: one impossible
+# stack read (stuck OCR digit, e.g. 1110 -> "11101") marks the whole frame
+# suspect even when board/pot/controls/bets all parsed cleanly, and a STABLE
+# misread defeats polling redundancy — 12 consecutive frames dropped, 4
+# hero-to-act moments lost, 38.4s freeze, hero busted. These helpers let the
+# bridge derive the one flagged stack from the clean hand-start anchor via
+# chip conservation; live_loop re-validates the result through the full
+# replay + invariant gate before it can become a decision. The invariant is
+# NOT loosened: recovery only adds one derived candidate that must clear the
+# same bar every clean frame clears.
+# --------------------------------------------------------------------------
+
+
+# The scraper's stack-jump suspect reason, e.g. "seat1 stack jump 1260->11101".
+# Recovery is offered ONLY for this reason shape — any other suspect reason
+# (pot jump, card flicker, multi-field) means the frame's corruption is not
+# the single-stack class and the frame must drop as before.
+_SUSPECT_STACK_JUMP_RE = re.compile(
+    r"^seat([1-6])\s+stack\s+jump\s+\d+\s*->\s*\d+$"
+)
+
+
+def recoverable_suspect_seat(record: dict) -> int | None:
+    """If this suspect record is recovery-eligible, return the 0-indexed
+    seat whose stack the scraper flagged; else None.
+
+    Eligible iff suspect_reasons is a non-empty list, EVERY reason is a
+    stack-jump on the SAME seat (the scraper may emit one per polling
+    cycle), and no other reason type appears. Multi-seat or non-stack
+    reasons -> None (frame-level corruption; drop as before).
+    """
+    reasons = record.get("suspect_reasons") or []
+    if not isinstance(reasons, list) or not reasons:
+        return None
+    seats = set()
+    for r in reasons:
+        m = _SUSPECT_STACK_JUMP_RE.match(str(r).strip())
+        if not m:
+            return None
+        seats.add(int(m.group(1)) - 1)
+    if len(seats) != 1:
+        return None
+    return seats.pop()
+
+
+def _rebuild_frame_with_stack(frame: ScraperFrame, seat: int,
+                              new_stack: int) -> ScraperFrame:
+    """Return a copy of `frame` with stack[seat] replaced and the derived
+    fields (alive, hero_facing_bet) recomputed with parse_frame's exact
+    formulas, so a recovered frame is indistinguishable from a cleanly
+    parsed one downstream."""
+    stack = list(frame.stack)
+    stack[seat] = int(new_stack)
+    alive = tuple(
+        (not frame.empty[i]) and (stack[i] > 0 or frame.bet[i] > 0)
+        for i in range(NUM_SEATS)
+    )
+    if alive[frame.hero_seat]:
+        max_opp_bet = max(
+            (frame.bet[i] for i in range(NUM_SEATS)
+             if i != frame.hero_seat and alive[i]),
+            default=0,
+        )
+        hero_facing_bet = max_opp_bet > frame.bet[frame.hero_seat]
+    else:
+        hero_facing_bet = False
+    return dataclasses.replace(
+        frame, stack=tuple(stack), alive=alive,
+        hero_facing_bet=hero_facing_bet)
+
+
+def build_stack_recovery_candidates(
+    frame: ScraperFrame, bad_seat: int, pre_hand: tuple[int, ...],
+) -> list[tuple[ScraperFrame, str]]:
+    """Solve the chip-conservation closure for the single flagged stack.
+
+    One unknown, one equation: with the anchored pre-hand stacks and every
+    OTHER field of the frame taken as observed,
+        strict:  stack[bad] = Σpre − Σother_stacks − pot
+        uilag:   stack[bad] = Σpre − Σother_stacks − pot − Σbets
+    (uilag = fresh bets sit visibly in front of seats, pot hasn't picked
+    them up yet — same two conventions SessionTracker._closure_plausible
+    accepts). When Σbets == 0 the conventions coincide; only strict is
+    emitted. When both are emitted the caller must treat survival of BOTH
+    through re-validation as ambiguity and drop the frame.
+
+    Mis-alive seats (pre_hand > 0 but reading alive=False with stack 0) are
+    NOT special-cased: a genuinely all-in seat contributes 0 to the stack
+    sum and the solve stays exact; a scraper mis-alive hides chips and the
+    solved value is wrong by exactly the hidden amount — which the replay +
+    invariant re-validation then rejects (per-seat stack equality is exact).
+
+    Returns [] when no candidate lies in the feasible range
+    (0, pre_hand[bad] − ante]: a mid-hand stack is positive (an all-in seat
+    has no decision UI, so a hero-to-act frame can't be recovering to 0)
+    and can't exceed pre-hand minus the posted ante.
+    """
+    seats_at_start = [
+        i for i in range(NUM_SEATS) if int(pre_hand[i]) > 0
+    ]
+    if bad_seat not in seats_at_start:
+        return []
+    expected_total = sum(int(pre_hand[i]) for i in seats_at_start)
+    others_visible = sum(
+        int(frame.stack[i]) for i in seats_at_start if i != bad_seat
+    )
+    pot = int(frame.pot_total)
+    bet_sum = sum(int(frame.bet[i]) for i in seats_at_start)
+    upper = int(pre_hand[bad_seat]) - int(frame.blinds.ante)
+
+    strict_cand = expected_total - others_visible - pot
+    candidates = [(strict_cand, "strict")]
+    if bet_sum > 0:
+        candidates.append((strict_cand - bet_sum, "uilag"))
+
+    out = []
+    for cand, label in candidates:
+        if 0 < cand <= upper:
+            out.append((_rebuild_frame_with_stack(frame, bad_seat, cand),
+                        label))
+    return out
 
 
 # --------------------------------------------------------------------------

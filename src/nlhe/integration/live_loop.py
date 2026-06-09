@@ -57,12 +57,22 @@ class LiveDecision:
     #                              hand/street/bet-state; returning the locked-
     #                              in action to prevent the per-frame re-sample
     #                              lottery (CFR mixed strategies → sample once)
+    #   "decision_recovered"     — decision on a scraper-suspect frame whose
+    #                              single flagged stack field was derived from
+    #                              the clean hand-start anchor via chip
+    #                              conservation and re-validated through the
+    #                              full replay+invariant gate (Layer 1,
+    #                              2026-06-09 blackout postmortem)
+    #   "decision_recovered_cached" — ditto, action came from DecisionCache
     #   "safe_fold"              — invariant fail / replay error → no plan
     #   "skip_not_hero_to_act"   — frame parsed, hero not to act
     #   "skip_data_quality"      — parse_frame raised or hero-cards missing
     status: str = "..."
     skip_reason: str | None = None
     pre_hand_override_used: bool = False
+    # On status decision_recovered*: audit trail of derived fields, e.g.
+    # ["stack.seat1=1110 (strict)"]. None on every other path.
+    recovered_fields: list[str] | None = None
 
     # On status == "decision" or "decision_cached"
     client_action: dict | None = None
@@ -470,6 +480,98 @@ def _client_action_for_chip_int(chip_int: int, frame) -> dict:
             "raw_openspiel_chip_int": int(chip_int)}
 
 
+def _attempt_suspect_stack_recovery(record: dict, structure, tracker):
+    """Layer-1 single-field recovery for scraper-suspect frames
+    (2026-06-09 blackout postmortem: a stable stuck-digit hero-stack OCR
+    suspect-flagged 12 consecutive otherwise-clean frames; 4 hero-to-act
+    moments dropped; hero busted on the freeze).
+
+    Returns (frame, recovered_fields, why):
+      frame is None  -> recovery declined; `why` is the audit string the
+                        caller appends to the unchanged safe-fold reason.
+      frame is set   -> a re-validated recovered ScraperFrame;
+                        recovered_fields like ["stack.seat1=1110 (strict)"].
+
+    Gates — ALL must hold, else decline (caller drops the frame exactly as
+    before this path existed):
+      1. suspect_reasons name exactly ONE seat, stack-jump reasons only
+      2. the record parses cleanly apart from the suspect flag
+      3. the frame is a hero-to-act decision (recovery exists to prevent
+         dropped decisions; non-decision suspect frames stay dropped)
+      4. hero cards visible, pot > 0 (mirrors make_decision's own guards)
+      5. a clean-frame pre-hand anchor exists for this hand-key
+      6. the closure solve yields a candidate in (0, pre_hand − ante]
+      7. the candidate frame passes replay_to_decision WITH the anchor
+         (no simple-model fallback — the derived value's trust argument
+         rests on the anchor) AND check_mid_hand_invariant
+      8. if strict and UI-lag candidates BOTH survive 7 → ambiguous → decline
+
+    The invariant is not loosened anywhere: the recovered frame clears the
+    same replay+invariant bar as every clean frame, with the per-seat
+    exactness of the five other stacks, all bets, pot, current_player,
+    street and cards carrying the independent verification (the recovered
+    seat's own stack equality and the pot-conservation check are satisfied
+    by construction — documented power loss, see SESSION_LOG 2026-06-09).
+    """
+    from src.nlhe.integration.scraper_schema import (
+        parse_frame, recoverable_suspect_seat,
+        build_stack_recovery_candidates,
+        ScraperParseError, ScraperDataQuality,
+    )
+    from src.nlhe.integration.replay import replay_to_decision, ReplayError
+    from src.nlhe.integration.invariant import check_mid_hand_invariant
+
+    bad_seat = recoverable_suspect_seat(record)
+    if bad_seat is None:
+        return None, None, "suspect_reasons not a single-seat stack jump"
+    try:
+        frame = parse_frame(record, allow_suspect=True)
+    except (ScraperParseError, ScraperDataQuality) as e:
+        return None, None, (f"suspect frame failed clean parse: "
+                            f"{type(e).__name__}")
+    if not frame.controls_present:
+        return None, None, "not a hero-to-act frame"
+    if frame.alive[frame.hero_seat] and not frame.hero_cards:
+        return None, None, "hero cards missing"
+    if frame.pot_total <= 0:
+        return None, None, "pot_total <= 0"
+    anchor = tracker.anchor_for(frame)
+    if anchor is None:
+        return None, None, "no clean pre-hand anchor for this hand-key"
+    candidates = build_stack_recovery_candidates(frame, bad_seat, anchor)
+    if not candidates:
+        return None, None, "no in-range closure candidate"
+
+    validated = []
+    for cand_frame, label in candidates:
+        # Mirror make_decision's pot handling exactly so the surviving
+        # candidate behaves identically when it re-runs the main pipeline.
+        eff = cand_frame
+        corrected = tracker.corrected_pot_for(cand_frame)
+        if corrected is not None:
+            eff = dataclasses.replace(cand_frame, pot_total=int(corrected))
+        try:
+            pack = replay_to_decision(
+                eff, structure, pre_hand_override=anchor)
+        except ReplayError:
+            continue
+        inv = check_mid_hand_invariant(eff, pack)
+        if not inv.ok:
+            continue
+        validated.append((cand_frame, label))
+
+    if not validated:
+        return None, None, "no candidate passed replay+invariant re-validation"
+    if len(validated) > 1:
+        return None, None, ("ambiguous: strict and uilag candidates both "
+                            "reconstruct with different stacks")
+    cand_frame, label = validated[0]
+    recovered = [
+        f"stack.seat{bad_seat + 1}={int(cand_frame.stack[bad_seat])} ({label})"
+    ]
+    return cand_frame, recovered, "ok"
+
+
 def make_decision(
     record: dict,
     structure,
@@ -523,7 +625,23 @@ def make_decision(
     # 1. Parse the record. Soft drops surface as skip status.
     try:
         frame = parse_frame(record)
-    except (ScraperParseError, ScraperSuspect, ScraperDataQuality) as e:
+    except ScraperSuspect as e:
+        # 1b. Layer-1 single-field recovery. A suspect frame whose ONLY
+        # flagged problem is one seat's stack jump may be recoverable by
+        # deriving that stack from the clean hand-start anchor via chip
+        # conservation, then re-validating through the full replay +
+        # invariant gate. Every decline path below is byte-for-byte the
+        # pre-recovery drop, plus an audit note.
+        frame, recovered, why = _attempt_suspect_stack_recovery(
+            record, structure, tracker)
+        if frame is None:
+            out.status = "skip_data_quality"
+            out.skip_reason = (f"{type(e).__name__}: {str(e)[:160]} "
+                                f"(recovery declined: {why})")
+            out.click_plan = click_plan_for_safe_fold(out.skip_reason)
+            return out
+        out.recovered_fields = recovered
+    except (ScraperParseError, ScraperDataQuality) as e:
         out.status = "skip_data_quality"
         out.skip_reason = f"{type(e).__name__}: {str(e)[:160]}"
         out.click_plan = click_plan_for_safe_fold(out.skip_reason)
@@ -531,7 +649,11 @@ def make_decision(
 
     # 2. Update tracker; apply UI-lag pot correction if the chip math
     # closes via (sum_stacks + pot + sum_bets == expected).
-    tracker.observe(frame)
+    # Recovered frames must NOT feed the tracker: pre-hand anchors come
+    # from clean frames exclusively (a derived value anchoring future
+    # derivations would be circular trust).
+    if out.recovered_fields is None:
+        tracker.observe(frame)
     corrected_pot = tracker.corrected_pot_for(frame)
     if corrected_pot is not None:
         frame = dataclasses.replace(frame, pot_total=int(corrected_pot))
@@ -682,5 +804,9 @@ def make_decision(
     out.click_plan = compute_click_target(
         client_action, record.get("controls") or {})
 
-    out.status = "decision_cached" if cached_from_cache else "decision"
+    if out.recovered_fields is not None:
+        out.status = ("decision_recovered_cached" if cached_from_cache
+                       else "decision_recovered")
+    else:
+        out.status = "decision_cached" if cached_from_cache else "decision"
     return out
