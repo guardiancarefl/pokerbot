@@ -1,0 +1,29 @@
+=== slope_1500_vs_1000 ===
+  A: runs/k200_real_ante_20260605_225847/ckpt_iter_1500.pt
+  B: runs/k200_real_ante_20260605_225847/ckpt_iter_1000.pt
+  pairs=5000  seed_base=20260607
+  (positive margin = A beats B)
+Loading abstraction...
+Loading solver A...
+DeepCFR6MaxSolver  device=cpu  feature_dim=236  payout_mode=double_up  payouts=[2.0, 2.0, 2.0]
+Loading solver B...
+DeepCFR6MaxSolver  device=cpu  feature_dim=236  payout_mode=double_up  payouts=[2.0, 2.0, 2.0]
+  pair 500/5000  elapsed=18s  rate=27.3/s  eta=165s  running_mean=+0.0111
+  pair 1000/5000  elapsed=36s  rate=28.1/s  eta=142s  running_mean=+0.0109
+  pair 1500/5000  elapsed=52s  rate=28.8/s  eta=121s  running_mean=+0.0096
+  pair 2000/5000  elapsed=70s  rate=28.8/s  eta=104s  running_mean=+0.0072
+  pair 2500/5000  elapsed=87s  rate=28.9/s  eta=87s  running_mean=+0.0042
+  pair 3000/5000  elapsed=103s  rate=29.0/s  eta=69s  running_mean=+0.0033
+  pair 3500/5000  elapsed=124s  rate=28.3/s  eta=53s  running_mean=+0.0044
+  pair 4000/5000  elapsed=141s  rate=28.3/s  eta=35s  running_mean=+0.0050
+  pair 4500/5000  elapsed=158s  rate=28.5/s  eta=18s  running_mean=+0.0049
+  pair 5000/5000  elapsed=179s  rate=27.9/s  eta=0s  running_mean=+0.0056
+
+=== RESULT: slope_1500_vs_1000 ===
+  n_paired_hands = 5000
+  mean A-B chip delta = +0.0056
+  sd = 0.1966   sem = 0.0028
+  t = mean / sem = +2.020
+  95% CI ≈ [+0.0002, +0.0111]
+  2σ window = [+0.0001, +0.0112]
+  verdict: A SIGNIFICANTLY BEATS B (>2σ positive)

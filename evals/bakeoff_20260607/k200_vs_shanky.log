@@ -1,0 +1,352 @@
+02:33:54  loading dependencies...
+02:33:58  loading structure from configs/ignition_double_up_6max_turbo.yaml
+02:33:58    wrapped with _RealAnteStructure
+02:33:58  loading challenger abstraction: runs/abstraction_20260521_223018_retrofit/abstraction.pkl
+02:33:58    challenger postflop k = 200
+02:33:58  loading challenger: k200 from runs/k200_real_ante_20260605_225847/ckpt_iter_1500.pt
+DeepCFR6MaxSolver  device=cpu  feature_dim=236  payout_mode=double_up  payouts=[2.0, 2.0, 2.0]
+02:34:00  loading shanky pool from data/shanky_profiles
+02:34:00  loaded shanky:6pack
+02:34:03  loaded shanky:gushansenmtt
+02:34:03  loaded shanky:killphilmtt
+02:34:04  loaded shanky:lionmttv.10
+02:34:04  loaded shanky:loosenluckymtt
+02:34:04  loaded shanky:lucky1_6max
+02:34:06  loaded shanky:millenniummttv.49
+02:34:06  loaded shanky:minestackermttv.7.3
+02:34:06  loaded shanky:sevenv.2
+02:34:07  loaded shanky:thefixersng
+02:34:07  loaded shanky:webbermtt
+02:34:07  loaded shanky:beep
+02:34:07  loaded shanky:fixedlimitheadsup
+02:34:08  loaded shanky:itmstrikea
+02:34:10  loaded shanky:itmstrikec
+02:34:11  loaded shanky:kamakazi
+02:34:11  loaded shanky:littlegreen
+02:34:11  loaded shanky:littlegreen2
+02:34:11  loaded shanky:modernmikecash
+02:34:13  loaded shanky:modernmikemtt
+02:34:13  loaded shanky:mtt
+02:34:13  loaded shanky:ticketmaster
+02:34:13  loaded shanky:timidtom
+02:34:13  loaded shanky:wildbillmtt
+02:34:13    -> 24 shanky profiles loaded
+02:34:13  Bake-off: challenger=k200, 24 opponent(s), 10000 hands/matchup, mode=sample
+02:34:13  ============================================================
+02:34:13  [1/24] Matchup: k200 vs 6pack
+02:34:24    [k200 vs 6pack]  1000/10000  diff=+0.0253 +/- 0.0037  capped=0  [10.6s, 94.1 h/s]
+02:34:35    [k200 vs 6pack]  2000/10000  diff=+0.0226 +/- 0.0025  capped=0  [21.6s, 92.8 h/s]
+02:34:45    [k200 vs 6pack]  3000/10000  diff=+0.0267 +/- 0.0020  capped=0  [31.6s, 95.0 h/s]
+02:34:55    [k200 vs 6pack]  4000/10000  diff=+0.0230 +/- 0.0017  capped=0  [41.9s, 95.5 h/s]
+02:35:05    [k200 vs 6pack]  5000/10000  diff=+0.0237 +/- 0.0016  capped=0  [52.2s, 95.7 h/s]
+02:35:16    [k200 vs 6pack]  6000/10000  diff=+0.0240 +/- 0.0015  capped=0  [62.3s, 96.2 h/s]
+02:35:26    [k200 vs 6pack]  7000/10000  diff=+0.0230 +/- 0.0013  capped=0  [72.6s, 96.4 h/s]
+02:35:36    [k200 vs 6pack]  8000/10000  diff=+0.0223 +/- 0.0012  capped=0  [83.0s, 96.3 h/s]
+02:35:46    [k200 vs 6pack]  9000/10000  diff=+0.0221 +/- 0.0012  capped=0  [92.5s, 97.3 h/s]
+02:35:57    [k200 vs 6pack] 10000/10000  diff=+0.0217 +/- 0.0011  capped=0  [104.3s, 95.9 h/s]
+02:35:57  ============================================================
+02:35:57  [2/24] Matchup: k200 vs gushansenmtt
+02:36:40    [k200 vs gushansenmtt]  1000/10000  diff=+0.0165 +/- 0.0029  capped=0  [42.1s, 23.7 h/s]
+02:37:21    [k200 vs gushansenmtt]  2000/10000  diff=+0.0189 +/- 0.0022  capped=0  [83.6s, 23.9 h/s]
+02:38:01    [k200 vs gushansenmtt]  3000/10000  diff=+0.0161 +/- 0.0018  capped=0  [123.3s, 24.3 h/s]
+02:38:41    [k200 vs gushansenmtt]  4000/10000  diff=+0.0138 +/- 0.0016  capped=0  [163.1s, 24.5 h/s]
+02:39:20    [k200 vs gushansenmtt]  5000/10000  diff=+0.0141 +/- 0.0014  capped=0  [202.5s, 24.7 h/s]
+02:39:59    [k200 vs gushansenmtt]  6000/10000  diff=+0.0120 +/- 0.0012  capped=0  [241.3s, 24.9 h/s]
+02:40:41    [k200 vs gushansenmtt]  7000/10000  diff=+0.0127 +/- 0.0012  capped=0  [283.4s, 24.7 h/s]
+02:41:17    [k200 vs gushansenmtt]  8000/10000  diff=+0.0139 +/- 0.0011  capped=0  [320.0s, 25.0 h/s]
+02:41:57    [k200 vs gushansenmtt]  9000/10000  diff=+0.0132 +/- 0.0011  capped=0  [359.3s, 25.1 h/s]
+02:42:33    [k200 vs gushansenmtt] 10000/10000  diff=+0.0136 +/- 0.0010  capped=0  [395.9s, 25.3 h/s]
+02:42:33  ============================================================
+02:42:33  [3/24] Matchup: k200 vs killphilmtt
+02:42:49    [k200 vs killphilmtt]  1000/10000  diff=-0.0112 +/- 0.0041  capped=0  [15.9s, 62.7 h/s]
+02:43:06    [k200 vs killphilmtt]  2000/10000  diff=-0.0128 +/- 0.0027  capped=0  [32.9s, 60.8 h/s]
+02:43:23    [k200 vs killphilmtt]  3000/10000  diff=-0.0136 +/- 0.0022  capped=0  [50.0s, 60.0 h/s]
+02:43:40    [k200 vs killphilmtt]  4000/10000  diff=-0.0137 +/- 0.0018  capped=0  [66.4s, 60.2 h/s]
+02:43:57    [k200 vs killphilmtt]  5000/10000  diff=-0.0119 +/- 0.0016  capped=0  [83.6s, 59.8 h/s]
+02:44:15    [k200 vs killphilmtt]  6000/10000  diff=-0.0144 +/- 0.0015  capped=0  [101.8s, 59.0 h/s]
+02:44:33    [k200 vs killphilmtt]  7000/10000  diff=-0.0154 +/- 0.0014  capped=0  [119.9s, 58.4 h/s]
+02:44:50    [k200 vs killphilmtt]  8000/10000  diff=-0.0153 +/- 0.0013  capped=0  [137.1s, 58.4 h/s]
+02:45:13    [k200 vs killphilmtt]  9000/10000  diff=-0.0155 +/- 0.0013  capped=0  [159.5s, 56.4 h/s]
+02:45:32    [k200 vs killphilmtt] 10000/10000  diff=-0.0153 +/- 0.0012  capped=0  [179.2s, 55.8 h/s]
+02:45:32  ============================================================
+02:45:32  [4/24] Matchup: k200 vs lionmttv.10
+02:45:51    [k200 vs lionmttv.10]  1000/10000  diff=+0.0013 +/- 0.0037  capped=0  [18.6s, 53.9 h/s]
+02:46:08    [k200 vs lionmttv.10]  2000/10000  diff=+0.0043 +/- 0.0028  capped=0  [35.1s, 56.9 h/s]
+02:46:26    [k200 vs lionmttv.10]  3000/10000  diff=+0.0050 +/- 0.0022  capped=0  [53.3s, 56.3 h/s]
+02:46:43    [k200 vs lionmttv.10]  4000/10000  diff=+0.0036 +/- 0.0019  capped=0  [70.6s, 56.7 h/s]
+02:47:01    [k200 vs lionmttv.10]  5000/10000  diff=+0.0031 +/- 0.0017  capped=0  [88.7s, 56.3 h/s]
+02:47:20    [k200 vs lionmttv.10]  6000/10000  diff=+0.0014 +/- 0.0015  capped=0  [107.3s, 55.9 h/s]
+02:47:36    [k200 vs lionmttv.10]  7000/10000  diff=+0.0017 +/- 0.0014  capped=0  [123.0s, 56.9 h/s]
+02:47:54    [k200 vs lionmttv.10]  8000/10000  diff=+0.0015 +/- 0.0013  capped=0  [141.3s, 56.6 h/s]
+02:48:12    [k200 vs lionmttv.10]  9000/10000  diff=+0.0015 +/- 0.0012  capped=0  [159.2s, 56.5 h/s]
+02:48:29    [k200 vs lionmttv.10] 10000/10000  diff=+0.0006 +/- 0.0011  capped=0  [176.3s, 56.7 h/s]
+02:48:29  ============================================================
+02:48:29  [5/24] Matchup: k200 vs loosenluckymtt
+02:48:42    [k200 vs loosenluckymtt]  1000/10000  diff=+0.0220 +/- 0.0039  capped=0  [13.0s, 77.1 h/s]
+02:48:56    [k200 vs loosenluckymtt]  2000/10000  diff=+0.0148 +/- 0.0028  capped=0  [27.2s, 73.4 h/s]
+02:49:09    [k200 vs loosenluckymtt]  3000/10000  diff=+0.0136 +/- 0.0023  capped=0  [40.6s, 73.8 h/s]
+02:49:23    [k200 vs loosenluckymtt]  4000/10000  diff=+0.0157 +/- 0.0020  capped=0  [54.6s, 73.3 h/s]
+02:49:36    [k200 vs loosenluckymtt]  5000/10000  diff=+0.0153 +/- 0.0018  capped=0  [67.2s, 74.4 h/s]
+02:49:49    [k200 vs loosenluckymtt]  6000/10000  diff=+0.0143 +/- 0.0016  capped=0  [80.4s, 74.7 h/s]
+02:50:03    [k200 vs loosenluckymtt]  7000/10000  diff=+0.0129 +/- 0.0015  capped=0  [94.7s, 73.9 h/s]
+02:50:18    [k200 vs loosenluckymtt]  8000/10000  diff=+0.0131 +/- 0.0014  capped=0  [109.7s, 72.9 h/s]
+02:50:33    [k200 vs loosenluckymtt]  9000/10000  diff=+0.0130 +/- 0.0013  capped=0  [124.6s, 72.2 h/s]
+02:50:48    [k200 vs loosenluckymtt] 10000/10000  diff=+0.0126 +/- 0.0012  capped=0  [139.6s, 71.7 h/s]
+02:50:48  ============================================================
+02:50:48  [6/24] Matchup: k200 vs lucky1_6max
+02:50:58    [k200 vs lucky1_6max]  1000/10000  diff=+0.0156 +/- 0.0020  capped=0  [9.7s, 103.0 h/s]
+02:51:09    [k200 vs lucky1_6max]  2000/10000  diff=+0.0107 +/- 0.0014  capped=0  [20.4s, 97.9 h/s]
+02:51:19    [k200 vs lucky1_6max]  3000/10000  diff=+0.0119 +/- 0.0011  capped=0  [30.9s, 97.1 h/s]
+02:51:30    [k200 vs lucky1_6max]  4000/10000  diff=+0.0113 +/- 0.0009  capped=0  [41.5s, 96.3 h/s]
+02:51:40    [k200 vs lucky1_6max]  5000/10000  diff=+0.0117 +/- 0.0008  capped=0  [51.9s, 96.4 h/s]
+02:51:50    [k200 vs lucky1_6max]  6000/10000  diff=+0.0121 +/- 0.0008  capped=0  [61.9s, 97.0 h/s]
+02:51:59    [k200 vs lucky1_6max]  7000/10000  diff=+0.0128 +/- 0.0007  capped=0  [70.8s, 98.9 h/s]
+02:52:08    [k200 vs lucky1_6max]  8000/10000  diff=+0.0131 +/- 0.0006  capped=0  [79.7s, 100.4 h/s]
+02:52:17    [k200 vs lucky1_6max]  9000/10000  diff=+0.0131 +/- 0.0006  capped=0  [88.7s, 101.4 h/s]
+02:52:28    [k200 vs lucky1_6max] 10000/10000  diff=+0.0134 +/- 0.0006  capped=0  [99.4s, 100.7 h/s]
+02:52:28  ============================================================
+02:52:28  [7/24] Matchup: k200 vs millenniummttv.49
+02:52:55    [k200 vs millenniummttv.49]  1000/10000  diff=+0.0041 +/- 0.0026  capped=0  [27.2s, 36.8 h/s]
+02:53:22    [k200 vs millenniummttv.49]  2000/10000  diff=+0.0082 +/- 0.0019  capped=0  [54.1s, 37.0 h/s]
+02:53:50    [k200 vs millenniummttv.49]  3000/10000  diff=+0.0114 +/- 0.0015  capped=0  [82.6s, 36.3 h/s]
+02:54:19    [k200 vs millenniummttv.49]  4000/10000  diff=+0.0097 +/- 0.0014  capped=0  [111.5s, 35.9 h/s]
+02:54:48    [k200 vs millenniummttv.49]  5000/10000  diff=+0.0096 +/- 0.0012  capped=0  [139.9s, 35.7 h/s]
+02:55:17    [k200 vs millenniummttv.49]  6000/10000  diff=+0.0100 +/- 0.0011  capped=0  [169.1s, 35.5 h/s]
+02:55:47    [k200 vs millenniummttv.49]  7000/10000  diff=+0.0085 +/- 0.0010  capped=0  [199.0s, 35.2 h/s]
+02:56:17    [k200 vs millenniummttv.49]  8000/10000  diff=+0.0088 +/- 0.0009  capped=0  [229.1s, 34.9 h/s]
+02:56:47    [k200 vs millenniummttv.49]  9000/10000  diff=+0.0087 +/- 0.0009  capped=0  [259.1s, 34.7 h/s]
+02:57:17    [k200 vs millenniummttv.49] 10000/10000  diff=+0.0088 +/- 0.0009  capped=0  [289.4s, 34.6 h/s]
+02:57:17  ============================================================
+02:57:17  [8/24] Matchup: k200 vs minestackermttv.7.3
+02:57:40    [k200 vs minestackermttv.7.3]  1000/10000  diff=-0.0032 +/- 0.0035  capped=0  [23.5s, 42.6 h/s]
+02:58:02    [k200 vs minestackermttv.7.3]  2000/10000  diff=-0.0038 +/- 0.0024  capped=0  [44.6s, 44.8 h/s]
+02:58:24    [k200 vs minestackermttv.7.3]  3000/10000  diff=-0.0030 +/- 0.0019  capped=0  [67.2s, 44.6 h/s]
+02:58:47    [k200 vs minestackermttv.7.3]  4000/10000  diff=-0.0027 +/- 0.0016  capped=0  [90.1s, 44.4 h/s]
+02:59:09    [k200 vs minestackermttv.7.3]  5000/10000  diff=-0.0035 +/- 0.0014  capped=0  [111.9s, 44.7 h/s]
+02:59:30    [k200 vs minestackermttv.7.3]  6000/10000  diff=-0.0022 +/- 0.0013  capped=0  [133.0s, 45.1 h/s]
+02:59:51    [k200 vs minestackermttv.7.3]  7000/10000  diff=-0.0004 +/- 0.0012  capped=0  [153.8s, 45.5 h/s]
+03:00:15    [k200 vs minestackermttv.7.3]  8000/10000  diff=-0.0001 +/- 0.0011  capped=0  [177.5s, 45.1 h/s]
+03:00:38    [k200 vs minestackermttv.7.3]  9000/10000  diff=-0.0003 +/- 0.0010  capped=0  [201.3s, 44.7 h/s]
+03:01:01    [k200 vs minestackermttv.7.3] 10000/10000  diff=-0.0013 +/- 0.0009  capped=0  [224.2s, 44.6 h/s]
+03:01:01  ============================================================
+03:01:01  [9/24] Matchup: k200 vs sevenv.2
+03:01:22    [k200 vs sevenv.2]  1000/10000  diff=+0.0099 +/- 0.0029  capped=0  [20.5s, 48.8 h/s]
+03:01:41    [k200 vs sevenv.2]  2000/10000  diff=+0.0118 +/- 0.0020  capped=0  [39.8s, 50.2 h/s]
+03:02:00    [k200 vs sevenv.2]  3000/10000  diff=+0.0086 +/- 0.0017  capped=0  [58.8s, 51.0 h/s]
+03:02:21    [k200 vs sevenv.2]  4000/10000  diff=+0.0070 +/- 0.0014  capped=0  [79.6s, 50.3 h/s]
+03:02:38    [k200 vs sevenv.2]  5000/10000  diff=+0.0057 +/- 0.0013  capped=0  [97.2s, 51.4 h/s]
+03:02:56    [k200 vs sevenv.2]  6000/10000  diff=+0.0047 +/- 0.0011  capped=0  [115.1s, 52.1 h/s]
+03:03:16    [k200 vs sevenv.2]  7000/10000  diff=+0.0056 +/- 0.0011  capped=0  [135.1s, 51.8 h/s]
+03:03:36    [k200 vs sevenv.2]  8000/10000  diff=+0.0065 +/- 0.0010  capped=0  [154.6s, 51.8 h/s]
+03:03:53    [k200 vs sevenv.2]  9000/10000  diff=+0.0063 +/- 0.0009  capped=0  [171.6s, 52.5 h/s]
+03:04:12    [k200 vs sevenv.2] 10000/10000  diff=+0.0070 +/- 0.0009  capped=0  [190.5s, 52.5 h/s]
+03:04:12  ============================================================
+03:04:12  [10/24] Matchup: k200 vs thefixersng
+03:04:24    [k200 vs thefixersng]  1000/10000  diff=+0.0068 +/- 0.0028  capped=0  [12.2s, 82.0 h/s]
+03:04:35    [k200 vs thefixersng]  2000/10000  diff=+0.0033 +/- 0.0020  capped=0  [23.7s, 84.3 h/s]
+03:04:46    [k200 vs thefixersng]  3000/10000  diff=+0.0054 +/- 0.0015  capped=0  [34.3s, 87.5 h/s]
+03:04:58    [k200 vs thefixersng]  4000/10000  diff=+0.0056 +/- 0.0013  capped=0  [46.0s, 86.9 h/s]
+03:05:11    [k200 vs thefixersng]  5000/10000  diff=+0.0062 +/- 0.0011  capped=0  [58.9s, 84.9 h/s]
+03:05:23    [k200 vs thefixersng]  6000/10000  diff=+0.0069 +/- 0.0010  capped=0  [70.9s, 84.6 h/s]
+03:05:34    [k200 vs thefixersng]  7000/10000  diff=+0.0063 +/- 0.0010  capped=0  [82.8s, 84.6 h/s]
+03:05:47    [k200 vs thefixersng]  8000/10000  diff=+0.0058 +/- 0.0009  capped=0  [95.2s, 84.1 h/s]
+03:06:00    [k200 vs thefixersng]  9000/10000  diff=+0.0052 +/- 0.0009  capped=0  [108.4s, 83.0 h/s]
+03:06:16    [k200 vs thefixersng] 10000/10000  diff=+0.0056 +/- 0.0008  capped=0  [123.9s, 80.7 h/s]
+03:06:16  ============================================================
+03:06:16  [11/24] Matchup: k200 vs webbermtt
+03:06:34    [k200 vs webbermtt]  1000/10000  diff=+0.0026 +/- 0.0034  capped=0  [18.4s, 54.2 h/s]
+03:06:50    [k200 vs webbermtt]  2000/10000  diff=+0.0060 +/- 0.0024  capped=0  [34.6s, 57.8 h/s]
+03:07:08    [k200 vs webbermtt]  3000/10000  diff=+0.0033 +/- 0.0020  capped=0  [52.0s, 57.7 h/s]
+03:07:23    [k200 vs webbermtt]  4000/10000  diff=+0.0059 +/- 0.0017  capped=0  [67.0s, 59.7 h/s]
+03:07:39    [k200 vs webbermtt]  5000/10000  diff=+0.0033 +/- 0.0016  capped=0  [83.0s, 60.2 h/s]
+03:07:55    [k200 vs webbermtt]  6000/10000  diff=+0.0046 +/- 0.0014  capped=0  [99.4s, 60.4 h/s]
+03:08:11    [k200 vs webbermtt]  7000/10000  diff=+0.0056 +/- 0.0013  capped=0  [115.8s, 60.4 h/s]
+03:08:27    [k200 vs webbermtt]  8000/10000  diff=+0.0065 +/- 0.0012  capped=0  [131.1s, 61.0 h/s]
+03:08:43    [k200 vs webbermtt]  9000/10000  diff=+0.0064 +/- 0.0012  capped=0  [147.7s, 60.9 h/s]
+03:09:00    [k200 vs webbermtt] 10000/10000  diff=+0.0062 +/- 0.0011  capped=0  [164.2s, 60.9 h/s]
+03:09:00  ============================================================
+03:09:00  [12/24] Matchup: k200 vs beep
+03:09:10    [k200 vs beep]  1000/10000  diff=+0.0194 +/- 0.0016  capped=0  [10.1s, 98.9 h/s]
+03:09:18    [k200 vs beep]  2000/10000  diff=+0.0133 +/- 0.0013  capped=0  [18.5s, 108.2 h/s]
+03:09:28    [k200 vs beep]  3000/10000  diff=+0.0133 +/- 0.0011  capped=0  [28.0s, 107.2 h/s]
+03:09:38    [k200 vs beep]  4000/10000  diff=+0.0135 +/- 0.0009  capped=0  [38.2s, 104.7 h/s]
+03:09:47    [k200 vs beep]  5000/10000  diff=+0.0134 +/- 0.0008  capped=0  [47.4s, 105.4 h/s]
+03:09:56    [k200 vs beep]  6000/10000  diff=+0.0136 +/- 0.0007  capped=0  [56.6s, 106.0 h/s]
+03:10:07    [k200 vs beep]  7000/10000  diff=+0.0137 +/- 0.0006  capped=0  [67.1s, 104.3 h/s]
+03:10:18    [k200 vs beep]  8000/10000  diff=+0.0149 +/- 0.0006  capped=0  [78.0s, 102.6 h/s]
+03:10:27    [k200 vs beep]  9000/10000  diff=+0.0156 +/- 0.0005  capped=0  [87.6s, 102.7 h/s]
+03:10:36    [k200 vs beep] 10000/10000  diff=+0.0156 +/- 0.0005  capped=0  [95.9s, 104.3 h/s]
+03:10:36  ============================================================
+03:10:36  [13/24] Matchup: k200 vs fixedlimitheadsup
+03:10:53    [k200 vs fixedlimitheadsup]  1000/10000  diff=+0.0656 +/- 0.0054  capped=0  [17.3s, 57.7 h/s]
+03:11:13    [k200 vs fixedlimitheadsup]  2000/10000  diff=+0.0582 +/- 0.0040  capped=0  [37.4s, 53.4 h/s]
+03:11:31    [k200 vs fixedlimitheadsup]  3000/10000  diff=+0.0608 +/- 0.0033  capped=0  [55.1s, 54.4 h/s]
+03:11:49    [k200 vs fixedlimitheadsup]  4000/10000  diff=+0.0580 +/- 0.0029  capped=0  [73.1s, 54.7 h/s]
+03:12:10    [k200 vs fixedlimitheadsup]  5000/10000  diff=+0.0577 +/- 0.0026  capped=0  [94.6s, 52.9 h/s]
+03:12:27    [k200 vs fixedlimitheadsup]  6000/10000  diff=+0.0583 +/- 0.0024  capped=0  [111.2s, 54.0 h/s]
+03:12:44    [k200 vs fixedlimitheadsup]  7000/10000  diff=+0.0575 +/- 0.0022  capped=0  [127.8s, 54.8 h/s]
+03:13:01    [k200 vs fixedlimitheadsup]  8000/10000  diff=+0.0579 +/- 0.0020  capped=0  [144.8s, 55.3 h/s]
+03:13:17    [k200 vs fixedlimitheadsup]  9000/10000  diff=+0.0579 +/- 0.0019  capped=0  [161.1s, 55.9 h/s]
+03:13:36    [k200 vs fixedlimitheadsup] 10000/10000  diff=+0.0570 +/- 0.0018  capped=0  [180.0s, 55.6 h/s]
+03:13:36  ============================================================
+03:13:36  [14/24] Matchup: k200 vs itmstrikea
+03:13:51    [k200 vs itmstrikea]  1000/10000  diff=+0.0001 +/- 0.0037  capped=0  [15.1s, 66.1 h/s]
+03:14:06    [k200 vs itmstrikea]  2000/10000  diff=+0.0003 +/- 0.0024  capped=0  [29.8s, 67.1 h/s]
+03:14:22    [k200 vs itmstrikea]  3000/10000  diff=+0.0029 +/- 0.0021  capped=0  [46.2s, 64.9 h/s]
+03:14:36    [k200 vs itmstrikea]  4000/10000  diff=+0.0031 +/- 0.0017  capped=0  [60.5s, 66.1 h/s]
+03:14:50    [k200 vs itmstrikea]  5000/10000  diff=+0.0015 +/- 0.0016  capped=0  [74.6s, 67.0 h/s]
+03:15:08    [k200 vs itmstrikea]  6000/10000  diff=+0.0032 +/- 0.0015  capped=0  [92.2s, 65.1 h/s]
+03:15:22    [k200 vs itmstrikea]  7000/10000  diff=+0.0023 +/- 0.0014  capped=0  [105.8s, 66.2 h/s]
+03:15:36    [k200 vs itmstrikea]  8000/10000  diff=+0.0032 +/- 0.0013  capped=0  [120.5s, 66.4 h/s]
+03:15:52    [k200 vs itmstrikea]  9000/10000  diff=+0.0033 +/- 0.0012  capped=0  [136.0s, 66.2 h/s]
+03:16:08    [k200 vs itmstrikea] 10000/10000  diff=+0.0045 +/- 0.0011  capped=0  [152.6s, 65.5 h/s]
+03:16:08  ============================================================
+03:16:08  [15/24] Matchup: k200 vs itmstrikec
+03:16:24    [k200 vs itmstrikec]  1000/10000  diff=+0.0107 +/- 0.0036  capped=0  [15.2s, 65.8 h/s]
+03:16:37    [k200 vs itmstrikec]  2000/10000  diff=+0.0088 +/- 0.0025  capped=0  [28.5s, 70.2 h/s]
+03:16:52    [k200 vs itmstrikec]  3000/10000  diff=+0.0090 +/- 0.0021  capped=0  [43.8s, 68.6 h/s]
+03:17:11    [k200 vs itmstrikec]  4000/10000  diff=+0.0064 +/- 0.0018  capped=0  [62.3s, 64.2 h/s]
+03:17:26    [k200 vs itmstrikec]  5000/10000  diff=+0.0059 +/- 0.0016  capped=0  [78.0s, 64.1 h/s]
+03:17:42    [k200 vs itmstrikec]  6000/10000  diff=+0.0062 +/- 0.0015  capped=0  [93.2s, 64.4 h/s]
+03:17:57    [k200 vs itmstrikec]  7000/10000  diff=+0.0051 +/- 0.0014  capped=0  [108.5s, 64.5 h/s]
+03:18:11    [k200 vs itmstrikec]  8000/10000  diff=+0.0052 +/- 0.0013  capped=0  [122.8s, 65.1 h/s]
+03:18:28    [k200 vs itmstrikec]  9000/10000  diff=+0.0049 +/- 0.0012  capped=0  [139.3s, 64.6 h/s]
+03:18:41    [k200 vs itmstrikec] 10000/10000  diff=+0.0052 +/- 0.0012  capped=0  [153.0s, 65.4 h/s]
+03:18:41  ============================================================
+03:18:41  [16/24] Matchup: k200 vs kamakazi
+03:18:52    [k200 vs kamakazi]  1000/10000  diff=+0.0122 +/- 0.0020  capped=0  [10.8s, 92.7 h/s]
+03:19:04    [k200 vs kamakazi]  2000/10000  diff=+0.0129 +/- 0.0012  capped=0  [22.8s, 87.8 h/s]
+03:19:18    [k200 vs kamakazi]  3000/10000  diff=+0.0136 +/- 0.0010  capped=0  [37.2s, 80.7 h/s]
+03:19:30    [k200 vs kamakazi]  4000/10000  diff=+0.0132 +/- 0.0009  capped=0  [49.0s, 81.6 h/s]
+03:19:42    [k200 vs kamakazi]  5000/10000  diff=+0.0137 +/- 0.0008  capped=0  [60.8s, 82.3 h/s]
+03:19:53    [k200 vs kamakazi]  6000/10000  diff=+0.0131 +/- 0.0007  capped=0  [72.1s, 83.2 h/s]
+03:20:07    [k200 vs kamakazi]  7000/10000  diff=+0.0131 +/- 0.0006  capped=0  [85.8s, 81.5 h/s]
+03:20:19    [k200 vs kamakazi]  8000/10000  diff=+0.0131 +/- 0.0006  capped=0  [97.8s, 81.8 h/s]
+03:20:32    [k200 vs kamakazi]  9000/10000  diff=+0.0134 +/- 0.0006  capped=0  [110.3s, 81.6 h/s]
+03:20:43    [k200 vs kamakazi] 10000/10000  diff=+0.0138 +/- 0.0005  capped=0  [121.9s, 82.0 h/s]
+03:20:43  ============================================================
+03:20:43  [17/24] Matchup: k200 vs littlegreen
+03:20:54    [k200 vs littlegreen]  1000/10000  diff=+0.0202 +/- 0.0030  capped=0  [10.4s, 96.5 h/s]
+03:21:06    [k200 vs littlegreen]  2000/10000  diff=+0.0170 +/- 0.0021  capped=0  [22.7s, 88.2 h/s]
+03:21:18    [k200 vs littlegreen]  3000/10000  diff=+0.0161 +/- 0.0016  capped=0  [34.5s, 86.9 h/s]
+03:21:29    [k200 vs littlegreen]  4000/10000  diff=+0.0169 +/- 0.0014  capped=0  [45.4s, 88.1 h/s]
+03:21:39    [k200 vs littlegreen]  5000/10000  diff=+0.0163 +/- 0.0012  capped=0  [56.1s, 89.1 h/s]
+03:21:50    [k200 vs littlegreen]  6000/10000  diff=+0.0149 +/- 0.0012  capped=0  [66.5s, 90.3 h/s]
+03:22:01    [k200 vs littlegreen]  7000/10000  diff=+0.0145 +/- 0.0011  capped=0  [77.8s, 90.0 h/s]
+03:22:13    [k200 vs littlegreen]  8000/10000  diff=+0.0143 +/- 0.0010  capped=0  [90.0s, 88.9 h/s]
+03:22:24    [k200 vs littlegreen]  9000/10000  diff=+0.0134 +/- 0.0009  capped=0  [100.9s, 89.2 h/s]
+03:22:35    [k200 vs littlegreen] 10000/10000  diff=+0.0133 +/- 0.0009  capped=0  [111.7s, 89.6 h/s]
+03:22:35  ============================================================
+03:22:35  [18/24] Matchup: k200 vs littlegreen2
+03:22:48    [k200 vs littlegreen2]  1000/10000  diff=+0.0158 +/- 0.0034  capped=0  [13.2s, 75.6 h/s]
+03:23:00    [k200 vs littlegreen2]  2000/10000  diff=+0.0185 +/- 0.0022  capped=0  [24.8s, 80.8 h/s]
+03:23:11    [k200 vs littlegreen2]  3000/10000  diff=+0.0172 +/- 0.0018  capped=0  [36.4s, 82.5 h/s]
+03:23:22    [k200 vs littlegreen2]  4000/10000  diff=+0.0164 +/- 0.0015  capped=0  [47.5s, 84.1 h/s]
+03:23:34    [k200 vs littlegreen2]  5000/10000  diff=+0.0156 +/- 0.0014  capped=0  [59.4s, 84.2 h/s]
+03:23:45    [k200 vs littlegreen2]  6000/10000  diff=+0.0148 +/- 0.0013  capped=0  [70.0s, 85.7 h/s]
+03:23:56    [k200 vs littlegreen2]  7000/10000  diff=+0.0144 +/- 0.0012  capped=0  [81.1s, 86.3 h/s]
+03:24:09    [k200 vs littlegreen2]  8000/10000  diff=+0.0158 +/- 0.0011  capped=0  [93.7s, 85.4 h/s]
+03:24:19    [k200 vs littlegreen2]  9000/10000  diff=+0.0166 +/- 0.0010  capped=0  [104.3s, 86.3 h/s]
+03:24:30    [k200 vs littlegreen2] 10000/10000  diff=+0.0163 +/- 0.0010  capped=0  [114.7s, 87.2 h/s]
+03:24:30  ============================================================
+03:24:30  [19/24] Matchup: k200 vs modernmikecash
+03:24:43    [k200 vs modernmikecash]  1000/10000  diff=+0.0253 +/- 0.0023  capped=0  [13.5s, 73.8 h/s]
+03:24:55    [k200 vs modernmikecash]  2000/10000  diff=+0.0242 +/- 0.0016  capped=0  [25.5s, 78.5 h/s]
+03:25:10    [k200 vs modernmikecash]  3000/10000  diff=+0.0250 +/- 0.0014  capped=0  [40.4s, 74.2 h/s]
+03:25:22    [k200 vs modernmikecash]  4000/10000  diff=+0.0238 +/- 0.0012  capped=0  [52.8s, 75.8 h/s]
+03:25:36    [k200 vs modernmikecash]  5000/10000  diff=+0.0219 +/- 0.0011  capped=0  [66.9s, 74.7 h/s]
+03:25:51    [k200 vs modernmikecash]  6000/10000  diff=+0.0211 +/- 0.0010  capped=0  [81.8s, 73.3 h/s]
+03:26:05    [k200 vs modernmikecash]  7000/10000  diff=+0.0208 +/- 0.0009  capped=0  [95.7s, 73.2 h/s]
+03:26:18    [k200 vs modernmikecash]  8000/10000  diff=+0.0201 +/- 0.0009  capped=0  [108.7s, 73.6 h/s]
+03:26:32    [k200 vs modernmikecash]  9000/10000  diff=+0.0202 +/- 0.0008  capped=0  [122.9s, 73.2 h/s]
+03:26:45    [k200 vs modernmikecash] 10000/10000  diff=+0.0199 +/- 0.0008  capped=0  [135.7s, 73.7 h/s]
+03:26:45  ============================================================
+03:26:45  [20/24] Matchup: k200 vs modernmikemtt
+03:27:01    [k200 vs modernmikemtt]  1000/10000  diff=+0.0096 +/- 0.0027  capped=0  [16.2s, 61.9 h/s]
+03:27:16    [k200 vs modernmikemtt]  2000/10000  diff=+0.0107 +/- 0.0019  capped=0  [31.0s, 64.6 h/s]
+03:27:30    [k200 vs modernmikemtt]  3000/10000  diff=+0.0132 +/- 0.0016  capped=0  [45.0s, 66.6 h/s]
+03:27:47    [k200 vs modernmikemtt]  4000/10000  diff=+0.0122 +/- 0.0014  capped=0  [61.7s, 64.8 h/s]
+03:28:00    [k200 vs modernmikemtt]  5000/10000  diff=+0.0129 +/- 0.0013  capped=0  [74.5s, 67.1 h/s]
+03:28:14    [k200 vs modernmikemtt]  6000/10000  diff=+0.0115 +/- 0.0012  capped=0  [89.2s, 67.2 h/s]
+03:28:30    [k200 vs modernmikemtt]  7000/10000  diff=+0.0102 +/- 0.0011  capped=0  [104.9s, 66.8 h/s]
+03:28:44    [k200 vs modernmikemtt]  8000/10000  diff=+0.0103 +/- 0.0010  capped=0  [119.2s, 67.1 h/s]
+03:28:59    [k200 vs modernmikemtt]  9000/10000  diff=+0.0100 +/- 0.0010  capped=0  [133.9s, 67.2 h/s]
+03:29:12    [k200 vs modernmikemtt] 10000/10000  diff=+0.0107 +/- 0.0009  capped=0  [147.0s, 68.0 h/s]
+03:29:12  ============================================================
+03:29:12  [21/24] Matchup: k200 vs mtt
+03:29:25    [k200 vs mtt]  1000/10000  diff=+0.0144 +/- 0.0021  capped=0  [12.8s, 78.0 h/s]
+03:29:37    [k200 vs mtt]  2000/10000  diff=+0.0147 +/- 0.0018  capped=0  [24.9s, 80.4 h/s]
+03:29:49    [k200 vs mtt]  3000/10000  diff=+0.0136 +/- 0.0015  capped=0  [36.4s, 82.4 h/s]
+03:30:02    [k200 vs mtt]  4000/10000  diff=+0.0138 +/- 0.0012  capped=0  [49.4s, 81.0 h/s]
+03:30:14    [k200 vs mtt]  5000/10000  diff=+0.0123 +/- 0.0011  capped=0  [61.4s, 81.4 h/s]
+03:30:28    [k200 vs mtt]  6000/10000  diff=+0.0112 +/- 0.0010  capped=0  [75.5s, 79.5 h/s]
+03:30:41    [k200 vs mtt]  7000/10000  diff=+0.0109 +/- 0.0009  capped=0  [88.5s, 79.1 h/s]
+03:30:53    [k200 vs mtt]  8000/10000  diff=+0.0112 +/- 0.0008  capped=0  [101.0s, 79.2 h/s]
+03:31:06    [k200 vs mtt]  9000/10000  diff=+0.0113 +/- 0.0008  capped=0  [113.7s, 79.1 h/s]
+03:31:21    [k200 vs mtt] 10000/10000  diff=+0.0114 +/- 0.0007  capped=0  [128.7s, 77.7 h/s]
+03:31:21  ============================================================
+03:31:21  [22/24] Matchup: k200 vs ticketmaster
+03:31:32    [k200 vs ticketmaster]  1000/10000  diff=+0.0011 +/- 0.0026  capped=0  [10.8s, 93.0 h/s]
+03:31:42    [k200 vs ticketmaster]  2000/10000  diff=-0.0005 +/- 0.0018  capped=0  [20.7s, 96.5 h/s]
+03:31:52    [k200 vs ticketmaster]  3000/10000  diff=+0.0001 +/- 0.0016  capped=0  [31.1s, 96.5 h/s]
+03:32:03    [k200 vs ticketmaster]  4000/10000  diff=-0.0001 +/- 0.0014  capped=0  [41.8s, 95.8 h/s]
+03:32:14    [k200 vs ticketmaster]  5000/10000  diff=+0.0007 +/- 0.0013  capped=0  [52.6s, 95.0 h/s]
+03:32:24    [k200 vs ticketmaster]  6000/10000  diff=-0.0001 +/- 0.0012  capped=0  [62.8s, 95.5 h/s]
+03:32:35    [k200 vs ticketmaster]  7000/10000  diff=-0.0015 +/- 0.0011  capped=0  [74.0s, 94.6 h/s]
+03:32:45    [k200 vs ticketmaster]  8000/10000  diff=-0.0003 +/- 0.0010  capped=0  [84.5s, 94.7 h/s]
+03:32:56    [k200 vs ticketmaster]  9000/10000  diff=-0.0002 +/- 0.0010  capped=0  [95.1s, 94.6 h/s]
+03:33:07    [k200 vs ticketmaster] 10000/10000  diff=+0.0006 +/- 0.0009  capped=0  [106.4s, 94.0 h/s]
+03:33:07  ============================================================
+03:33:07  [23/24] Matchup: k200 vs timidtom
+03:33:19    [k200 vs timidtom]  1000/10000  diff=+0.0152 +/- 0.0017  capped=0  [11.9s, 84.2 h/s]
+03:33:29    [k200 vs timidtom]  2000/10000  diff=+0.0175 +/- 0.0012  capped=0  [21.3s, 93.7 h/s]
+03:33:39    [k200 vs timidtom]  3000/10000  diff=+0.0168 +/- 0.0010  capped=0  [31.4s, 95.6 h/s]
+03:33:50    [k200 vs timidtom]  4000/10000  diff=+0.0185 +/- 0.0008  capped=0  [42.5s, 94.1 h/s]
+03:34:01    [k200 vs timidtom]  5000/10000  diff=+0.0166 +/- 0.0008  capped=0  [53.4s, 93.6 h/s]
+03:34:10    [k200 vs timidtom]  6000/10000  diff=+0.0167 +/- 0.0007  capped=0  [62.5s, 96.0 h/s]
+03:34:20    [k200 vs timidtom]  7000/10000  diff=+0.0165 +/- 0.0006  capped=0  [72.3s, 96.8 h/s]
+03:34:30    [k200 vs timidtom]  8000/10000  diff=+0.0158 +/- 0.0006  capped=0  [82.6s, 96.9 h/s]
+03:34:40    [k200 vs timidtom]  9000/10000  diff=+0.0157 +/- 0.0006  capped=0  [92.7s, 97.1 h/s]
+03:34:50    [k200 vs timidtom] 10000/10000  diff=+0.0158 +/- 0.0005  capped=0  [102.3s, 97.8 h/s]
+03:34:50  ============================================================
+03:34:50  [24/24] Matchup: k200 vs wildbillmtt
+03:35:00    [k200 vs wildbillmtt]  1000/10000  diff=+0.0127 +/- 0.0038  capped=0  [10.2s, 98.3 h/s]
+03:35:15    [k200 vs wildbillmtt]  2000/10000  diff=+0.0053 +/- 0.0027  capped=0  [25.4s, 78.8 h/s]
+03:35:29    [k200 vs wildbillmtt]  3000/10000  diff=+0.0058 +/- 0.0022  capped=0  [39.7s, 75.5 h/s]
+03:35:41    [k200 vs wildbillmtt]  4000/10000  diff=+0.0054 +/- 0.0020  capped=0  [51.1s, 78.3 h/s]
+03:35:52    [k200 vs wildbillmtt]  5000/10000  diff=+0.0075 +/- 0.0017  capped=0  [62.8s, 79.6 h/s]
+03:36:05    [k200 vs wildbillmtt]  6000/10000  diff=+0.0060 +/- 0.0016  capped=0  [75.3s, 79.7 h/s]
+03:36:16    [k200 vs wildbillmtt]  7000/10000  diff=+0.0064 +/- 0.0014  capped=0  [86.7s, 80.8 h/s]
+03:36:27    [k200 vs wildbillmtt]  8000/10000  diff=+0.0058 +/- 0.0014  capped=0  [97.5s, 82.0 h/s]
+03:36:39    [k200 vs wildbillmtt]  9000/10000  diff=+0.0058 +/- 0.0013  capped=0  [109.7s, 82.1 h/s]
+03:36:51    [k200 vs wildbillmtt] 10000/10000  diff=+0.0051 +/- 0.0012  capped=0  [120.9s, 82.7 h/s]
+03:36:51  ============================================================
+03:36:51  SUMMARY: k200 vs 24 opponent(s) (elapsed 62.6 min)
+03:36:51    opponent                                  diff   stderr  sigma  capped
+03:36:51    ----------------------------------- ---------- -------- ------  ------
+03:36:51    shanky:killphilmtt                     -0.0153   0.0012   12.7       0
+03:36:51    shanky:minestackermttv.7.3             -0.0013   0.0009    1.4       0
+03:36:51    shanky:ticketmaster                    +0.0006   0.0009    0.6       0
+03:36:51    shanky:lionmttv.10                     +0.0006   0.0011    0.5       0
+03:36:51    shanky:itmstrikea                      +0.0045   0.0011    3.9       0
+03:36:51    shanky:wildbillmtt                     +0.0051   0.0012    4.2       0
+03:36:51    shanky:itmstrikec                      +0.0052   0.0012    4.4       0
+03:36:51    shanky:thefixersng                     +0.0056   0.0008    6.6       0
+03:36:51    shanky:webbermtt                       +0.0062   0.0011    5.6       0
+03:36:51    shanky:sevenv.2                        +0.0070   0.0009    8.0       0
+03:36:51    shanky:millenniummttv.49               +0.0088   0.0009   10.2       0
+03:36:51    shanky:modernmikemtt                   +0.0107   0.0009   11.5       0
+03:36:51    shanky:mtt                             +0.0114   0.0007   15.2       0
+03:36:51    shanky:loosenluckymtt                  +0.0126   0.0012   10.1       0
+03:36:51    shanky:littlegreen                     +0.0133   0.0009   14.9       0
+03:36:51    shanky:lucky1_6max                     +0.0134   0.0006   23.8       0
+03:36:51    shanky:gushansenmtt                    +0.0136   0.0010   13.7       0
+03:36:51    shanky:kamakazi                        +0.0138   0.0005   25.6       0
+03:36:51    shanky:beep                            +0.0156   0.0005   29.9       0
+03:36:51    shanky:timidtom                        +0.0158   0.0005   29.6       0
+03:36:51    shanky:littlegreen2                    +0.0163   0.0010   16.3       0
+03:36:51    shanky:modernmikecash                  +0.0199   0.0008   25.1       0
+03:36:51    shanky:6pack                           +0.0217   0.0011   19.0       0
+03:36:51    shanky:fixedlimitheadsup               +0.0570   0.0018   31.1       0
+03:36:51    Aggregate diff (mean): +0.0109
+03:36:51  wrote /tmp/bakeoff/k200_vs_shanky.json

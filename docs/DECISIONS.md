@@ -1785,3 +1785,27 @@ One game's kick-risk is a sample, not a measurement. Until the
 position space is broadly exercised (= multiple games covering
 varying dealer rotations, alive-seat configurations, and postflop
 action shapes), each "clean" report is provisional.
+
+
+## k200_real_ante iter-1500 stop — deliberate operator convergence call
+
+**Date:** 2026-06-07 (recorded 2026-06-09). **Run:** `runs/k200_real_ante_20260605_225847` (target 2000 iters).
+
+Training did NOT crash at 1500: the train log shows it ran to iter
+1538/2000 and was killed externally at ~02:07 UTC with no traceback.
+`ckpt_iter_1500.pt` is simply the last checkpoint boundary before the
+kill; iters 1501–1538 were trained and discarded.
+
+The stop was a convergence call backed by two evals run that night:
+- `slope_1500_vs_1000` (5,000 paired-CRN hands): +0.0056 chips/hand,
+  t=2.02 — barely-significant residual improvement over 500 iterations.
+- `peakpin_1100_vs_1500`: 1500 beats 1100 (t=−2.76) — no earlier peak.
+Plus flat adv_loss (0.636–0.644 over iters 1100–1500) in
+`convergence_log.csv`.
+
+Evidence preserved (copied from volatile /tmp on 2026-06-09):
+`runs/k200_real_ante_20260605_225847_PRESERVED/stop_evidence/` (slope +
+peakpin logs, train-log tail showing iter 1538, launch script). The
+24-profile bake-off that used ckpt_1500 as its baseline is preserved at
+`evals/bakeoff_20260607/`. Fuller doc corrections are a separately
+queued task.

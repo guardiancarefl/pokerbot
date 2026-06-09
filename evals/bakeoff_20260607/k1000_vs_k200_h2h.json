@@ -1,0 +1,29 @@
+{
+  "mode": "h2h",
+  "challenger_name": "k1000",
+  "challenger_ckpt": "/home/quant/k1000_bakeoff_bundle/ckpt_iter_1000.pt",
+  "challenger_abstraction": "/home/quant/k1000_bakeoff_bundle/abstraction.pkl",
+  "structure": "configs/ignition_double_up_6max_turbo.yaml",
+  "real_ante": true,
+  "n_hands_per_matchup": 10000,
+  "base_seed": 314159,
+  "action_mode": "sample",
+  "elapsed_min": 5.706276718775431,
+  "results": [
+    {
+      "opponent": "dcfr:k200",
+      "n_hands": 10000,
+      "n_capped": 0,
+      "avg_challenger": -0.0012915348010618616,
+      "avg_opponent": 0.0017438086032150071,
+      "diff": -0.0030353434042768687,
+      "stderr": 0.0013834936469076596,
+      "sigma": 2.193969889967598,
+      "per_hand": null,
+      "seed": 314159
+    }
+  ],
+  "opponent_name": "k200",
+  "opponent_ckpt": "runs/k200_real_ante_20260605_225847/ckpt_iter_1500.pt",
+  "opponent_abstraction": "runs/abstraction_20260521_223018_retrofit/abstraction.pkl"
+}

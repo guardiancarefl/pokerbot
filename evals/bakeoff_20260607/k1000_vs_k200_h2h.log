@@ -1,0 +1,31 @@
+02:33:58  loading dependencies...
+02:34:01  loading structure from configs/ignition_double_up_6max_turbo.yaml
+02:34:01    wrapped with _RealAnteStructure
+02:34:01  loading challenger abstraction: /home/quant/k1000_bakeoff_bundle/abstraction.pkl
+02:34:01    challenger postflop k = 1000
+02:34:01  loading challenger: k1000 from /home/quant/k1000_bakeoff_bundle/ckpt_iter_1000.pt
+DeepCFR6MaxSolver  device=cpu  feature_dim=1036  payout_mode=double_up  payouts=[2.0, 2.0, 2.0]
+02:34:04  loading opponent abstraction: runs/abstraction_20260521_223018_retrofit/abstraction.pkl
+02:34:04    opponent postflop k = 200
+02:34:04  loading opponent: k200 from runs/k200_real_ante_20260605_225847/ckpt_iter_1500.pt
+DeepCFR6MaxSolver  device=cpu  feature_dim=236  payout_mode=double_up  payouts=[2.0, 2.0, 2.0]
+02:34:04  Bake-off: challenger=k1000, 1 opponent(s), 10000 hands/matchup, mode=sample
+02:34:04  ============================================================
+02:34:04  [1/1] Matchup: k1000 vs k200
+02:34:36    [k1000 vs k200]  1000/10000  diff=-0.0027 +/- 0.0043  capped=0  [31.5s, 31.7 h/s]
+02:35:12    [k1000 vs k200]  2000/10000  diff=+0.0029 +/- 0.0031  capped=0  [67.4s, 29.7 h/s]
+02:35:49    [k1000 vs k200]  3000/10000  diff=+0.0012 +/- 0.0025  capped=0  [104.9s, 28.6 h/s]
+02:36:19    [k1000 vs k200]  4000/10000  diff=+0.0002 +/- 0.0021  capped=0  [135.4s, 29.5 h/s]
+02:36:53    [k1000 vs k200]  5000/10000  diff=+0.0027 +/- 0.0019  capped=0  [168.9s, 29.6 h/s]
+02:37:28    [k1000 vs k200]  6000/10000  diff=+0.0013 +/- 0.0018  capped=0  [203.4s, 29.5 h/s]
+02:38:04    [k1000 vs k200]  7000/10000  diff=+0.0001 +/- 0.0017  capped=0  [240.2s, 29.1 h/s]
+02:38:36    [k1000 vs k200]  8000/10000  diff=-0.0013 +/- 0.0016  capped=0  [272.3s, 29.4 h/s]
+02:39:10    [k1000 vs k200]  9000/10000  diff=-0.0018 +/- 0.0015  capped=0  [306.1s, 29.4 h/s]
+02:39:46    [k1000 vs k200] 10000/10000  diff=-0.0030 +/- 0.0014  capped=0  [342.4s, 29.2 h/s]
+02:39:46  ============================================================
+02:39:46  SUMMARY: k1000 vs 1 opponent(s) (elapsed 5.7 min)
+02:39:46    opponent                                  diff   stderr  sigma  capped
+02:39:46    ----------------------------------- ---------- -------- ------  ------
+02:39:46    dcfr:k200                              -0.0030   0.0014    2.2       0
+02:39:46    Aggregate diff (mean): -0.0030
+02:39:46  wrote /tmp/bakeoff/k1000_vs_k200_h2h.json
