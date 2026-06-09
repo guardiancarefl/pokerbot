@@ -427,9 +427,27 @@ class SessionTracker:
     session/stream and call `observe` on every frame in order.
     """
 
+    # Chips-in-play ceiling for the anchor guard (2026-06-09,
+    # docs/OBSERVE_CEILING_GUARD_DESIGN.md). Derived from the
+    # deployment-format pins above (STARTING_CHIPS x NUM_SEATS = 9000):
+    # chips never leave a single-table SNG, so the true table total is
+    # constant for the whole match. Load-bearing format config that the
+    # entire training/eval/replay stack already depends on — NOT a
+    # hand-tuned tolerance of the scraper's STACK_IMPOSSIBLE=13000 class.
+    # The observed-mode cross-check in observe() covers the remaining
+    # failure mode (wrong table format mounted under this config).
+    _CHIPS_IN_PLAY_CEILING: int = STARTING_CHIPS * NUM_SEATS
+
+    # Minimum accepted anchors before the observed-mode cross-check is
+    # meaningful (early under-read transients would false-alarm it).
+    _OOD_MIN_ANCHORS: int = 5
+
     def __init__(self) -> None:
         self._current_pre_hand: tuple[int, ...] | None = None
         self._current_hand_key: tuple | None = None
+        # Accepted-anchor chip sums for the [ANCHOR-OOD] cross-check.
+        self._anchor_sums: dict[int, int] = {}
+        self._ood_warned: bool = False
 
     def _hand_key(self, frame: ScraperFrame) -> tuple:
         """Identifying tuple for a hand. A change in any component
@@ -452,7 +470,7 @@ class SessionTracker:
             int(frame.blinds.ante),
         )
 
-    def observe(self, frame: ScraperFrame) -> None:
+    def observe(self, frame: ScraperFrame) -> bool | None:
         """Update internal state from this frame.
 
         On a hand-start frame: compute and record pre-hand stacks IFF the
@@ -465,23 +483,82 @@ class SessionTracker:
 
         Non-hand-start frames don't update state — the tracked pre-hand
         stays valid until a new hand-start replaces it.
+
+        Returns:
+            True  — a new anchor was accepted from this frame.
+            False — this frame was a new hand-start whose anchor was
+                    REFUSED by the chips-in-play ceiling guard (caller
+                    may surface this for audit, e.g. LiveDecision.
+                    anchor_refused).
+            None  — no-op (not a hand-start, same hand already anchored,
+                    or internally-inconsistent capture).
         """
         if not is_hand_start(frame):
-            return
+            return None
         key = self._hand_key(frame)
         if key == self._current_hand_key:
             # Same hand, already recorded. Don't overwrite — keep the
             # first capture which is empirically more reliable.
-            return
+            return None
         pre = pre_hand_stacks(frame)
+
+        # Chips-in-play ceiling guard (2026-06-09 design, approved).
+        # A poisoned hand-start (stuck-digit stack, e.g. seat6=9907 ->
+        # sum(pre)=17917) passes the self-consistency check below because
+        # both sides of that equation use the same wrong stack — and a
+        # poisoned ANCHOR is the one input the recovery/invariant gate
+        # cannot independently verify (replayed 154557: 7 poisoned
+        # decision_recovered outputs, phantom seat6 stacks 9822/9897/9907).
+        # Upper bounds only: 30/178 corpus hand-starts legitimately sum
+        # BELOW the ceiling (mis-alive hidden chips) and must keep
+        # anchoring. Strict `>`: equality is unreachable — parse_frame
+        # rejects n_alive < 4 and every alive seat holds > 0 chips, so a
+        # single pre-hand stack is <= total - 3 in any frame that gets
+        # here; a seat equal to the full chips-in-play implies the match
+        # is over. Per-seat bound is mathematically implied by the sum
+        # bound (pre-hand values are non-negative) — kept because it
+        # names the offending seat in the audit log and stands on its
+        # own if a future change ever makes components signed.
+        ceiling = self._CHIPS_IN_PLAY_CEILING
+        over_seats = [
+            i for i in range(NUM_SEATS) if int(pre[i]) > ceiling
+        ]
+        if over_seats or sum(pre) > ceiling:
+            detail = (
+                ", ".join(f"seat{i+1} pre_hand={pre[i]}"
+                          for i in over_seats)
+                or f"sum(pre_hand)={sum(pre)}"
+            )
+            print(f"[ANCHOR-REFUSED] hand-start anchor fails "
+                  f"chips-in-play ceiling ({ceiling}): {detail}  "
+                  f"captured_at={frame.captured_at}", flush=True)
+            return False
+
         chip_total = sum(
             int(s) for s, a in zip(frame.stack, frame.alive) if a
         ) + int(frame.pot_total)
         # Reject internally-inconsistent hand-start captures.
         if sum(pre) != chip_total:
-            return
+            return None
         self._current_pre_hand = pre
         self._current_hand_key = key
+
+        # Observed-mode cross-check (design Q1 option C): if the mode of
+        # accepted anchor sums disagrees with the config-derived ceiling,
+        # the mounted table's format doesn't match the config — every
+        # layer above is OOD, not just this guard. Log once, loudly.
+        s = sum(pre)
+        self._anchor_sums[s] = self._anchor_sums.get(s, 0) + 1
+        if not self._ood_warned and (
+                sum(self._anchor_sums.values()) >= self._OOD_MIN_ANCHORS):
+            mode = max(self._anchor_sums, key=self._anchor_sums.get)
+            if mode != ceiling:
+                self._ood_warned = True
+                print(f"[ANCHOR-OOD] observed hand-start chip-sum mode "
+                      f"({mode}, n={self._anchor_sums[mode]}) != config "
+                      f"chips-in-play ({ceiling}) — wrong table format "
+                      f"mounted under this config?", flush=True)
+        return True
 
     def pre_hand_for(self, frame: ScraperFrame) -> tuple[int, ...] | None:
         """Return tracked pre-hand stacks for this frame's hand, or None.

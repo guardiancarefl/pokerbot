@@ -36,6 +36,7 @@ BEHAVIORAL_KEYS = (
     "pre_hand_override_used", "street_idx", "facing_bet",
     "client_action", "chip_int", "decision_identity",
     "invariant_deltas", "click_plan", "recovered_fields",
+    "anchor_refused",
 )
 
 
@@ -87,6 +88,7 @@ def process(log_path: str, out_path: str, checkpoint: str,
             row["click_plan"] = (plan_as_dict(d.click_plan)
                                  if d.click_plan is not None else None)
             row["recovered_fields"] = getattr(d, "recovered_fields", None)
+            row["anchor_refused"] = bool(getattr(d, "anchor_refused", False))
             rows.append(row)
 
     with open(out_path, "w") as f:
@@ -101,9 +103,20 @@ def process(log_path: str, out_path: str, checkpoint: str,
 
 
 def diff(pre_path: str, post_path: str, ignore_skip_reason_on_suspect: bool):
-    pre = {r["seq"]: r for r in (json.loads(l) for l in open(pre_path))}
-    post = {r["seq"]: r for r in (json.loads(l) for l in open(post_path))}
-    assert set(pre) == set(post), "seq sets differ"
+    # Key by captured_at: seq numbers COLLIDE across sub-sessions when the
+    # Windows sender reconnects mid-log (e.g. 154557 holds 571 frames but
+    # only 450 unique seqs — a seq-keyed diff silently drops 121 frames).
+    def _load(path):
+        out = {}
+        for r in (json.loads(l) for l in open(path)):
+            key = r.get("captured_at") or f"seq:{r['seq']}"
+            assert key not in out, f"duplicate captured_at {key} in {path}"
+            out[key] = r
+        return out
+
+    pre = _load(pre_path)
+    post = _load(post_path)
+    assert set(pre) == set(post), "frame sets differ"
     changed = []
     for s in sorted(pre):
         a, b = pre[s], post[s]

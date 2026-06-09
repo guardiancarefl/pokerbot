@@ -73,6 +73,13 @@ class LiveDecision:
     # On status decision_recovered*: audit trail of derived fields, e.g.
     # ["stack.seat1=1110 (strict)"]. None on every other path.
     recovered_fields: list[str] | None = None
+    # True iff this frame was a new hand-start whose anchor the
+    # SessionTracker REFUSED under the chips-in-play ceiling guard
+    # (poisoned hand-start, e.g. stuck-digit 9907 -> sum 17917). The
+    # frame's own decision output is unaffected (hand-start frames are
+    # not hero-to-act); this flag is the audit trail for why later
+    # frames of the hand have no anchor.
+    anchor_refused: bool = False
 
     # On status == "decision" or "decision_cached"
     client_action: dict | None = None
@@ -653,7 +660,7 @@ def make_decision(
     # from clean frames exclusively (a derived value anchoring future
     # derivations would be circular trust).
     if out.recovered_fields is None:
-        tracker.observe(frame)
+        out.anchor_refused = tracker.observe(frame) is False
     corrected_pot = tracker.corrected_pot_for(frame)
     if corrected_pot is not None:
         frame = dataclasses.replace(frame, pot_total=int(corrected_pot))
