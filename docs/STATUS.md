@@ -33,6 +33,23 @@ prior session's "second unflagged bad field (seat5)" claim was an
 analysis artifact — the incident was pure single-field corruption, and
 layer 1 alone rescues all three real decisions.
 
+**Poisoned-anchor defect FOUND AND CLOSED (`af417d9`):** replaying
+154557 (a log OUTSIDE layer 1's original 3-log gate corpus) showed
+layer-1 recovery consumed a poisoned hand-start anchor (seat6
+stuck-digit 9907, Σpre=17917 — passes observe()'s self-consistency
+check) 7 times, producing decision_recovered outputs with phantom seat6
+stacks (9897/9822×5/9907) that the invariant validated self-consistently
+— including overwriting a CORRECT 905 read with poisoned-derived 9822.
+Fix: observe() chips-in-play ceiling guard (per-seat + sum upper bounds,
+strict >, ceiling = STARTING_CHIPS×NUM_SEATS with [ANCHOR-OOD]
+observed-mode cross-check; refusals log [ANCHOR-REFUSED] and surface as
+LiveDecision.anchor_refused). Design + verification record:
+`docs/OBSERVE_CEILING_GUARD_DESIGN.md`. Argmax-isolated 4-log diff:
+deltas at exactly the 9 expected frames over 1263; verify1's 3 and
+154557's 6 legitimate recoveries byte-identical. Standing rule from the
+audit hole: behavioral gates replay ALL raw-record dry-run logs, not a
+subset.
+
 **Open, in priority order:**
 
 - **Layer 2 — Windows scraper (route to Windows CC):** the

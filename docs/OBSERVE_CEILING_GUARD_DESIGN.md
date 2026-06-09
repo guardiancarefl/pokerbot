@@ -1,7 +1,16 @@
 # observe() consensus-ceiling anchor guard — Design for review
 
-**Status: DESIGN ONLY — not built. User approval required before build.**
-(Gate set 2026-06-09; same protocol as layer 1 and the layer-3 ledger.)
+**Status: APPROVED AND BUILT (`af417d9`, 2026-06-09).** Q1=C (config
+product + observed-mode cross-check), Q2=both bounds upper-only, Q3=
+strict `>`. Verification result: argmax (rng-isolated) 4-log diff =
+deltas at exactly the 9 expected frames over 1263, nowhere else;
+sample-mode adds 25 fully-classified rng-cascade deltas (status-class
+preserving, sampled-action fields only, 0 unexplained — inherent to
+removing 7 draws from the shared rng stream, not a guard effect).
+Implementation note discovered during build: with non-negative pre-hand
+values the per-seat bound is mathematically implied by the sum bound;
+it is retained because it names the offending seat in [ANCHOR-REFUSED]
+and stands alone if components ever become signed.
 
 ## 0. Why this is a correctness fix, not defense-in-depth
 

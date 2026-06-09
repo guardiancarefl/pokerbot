@@ -12,6 +12,32 @@ Format: most recent session at the top. Each session block notes date, what was 
 
 ---
 
+## Live-deploy session — 2026-06-09 (late evening) — observe() ceiling anchor guard (`af417d9`) + scraper validation fixture (`9e4c007`)
+
+### What was done
+- **Found a live defect in just-shipped layer 1 while preparing the scraper P1/P2 validation fixture.** Replaying `live_dryrun_20260609_154557.jsonl` (NOT in layer 1's original 3-log gate corpus) through current code: `SessionTracker.observe()` accepted two poisoned hand-starts (seat6 stuck-digit `9907`, Σpre=17917 — its self-consistency check passes because both sides of the equation use the same wrong stack), and layer-1 recovery consumed the poisoned anchor **7 times** (`anchor_for()` skips the closure check by design), emitting `decision_recovered` with phantom seat6 stacks (9897/9822×5/9907). The invariant validated them self-consistently because it reconstructs from the same poisoned `pre_hand_stacks` — at `115104_614` recovery overwrote a CORRECT 905 read with poisoned-derived 9822. The anchor was the one input the layer-1 trust argument never independently verified.
+- **Built the observe() chips-in-play ceiling guard** (`af417d9`, design reviewed and approved first — `docs/OBSERVE_CEILING_GUARD_DESIGN.md`): refuse a new hand-start anchor when any per-seat pre-hand stack or the pre-hand sum exceeds `STARTING_CHIPS × NUM_SEATS` (= 9000, load-bearing format config, not a tuned tolerance). Upper bounds only — the 30/178 legitimately sub-9000 under-read hand-starts keep anchoring. Strict `>` (equality unreachable: n_alive ≥ 4 + every alive seat > 0 chips). Observed-mode cross-check fires `[ANCHOR-OOD]` once if the session's accepted-anchor sum mode disagrees with config (wrong table format mounted). Refusals log `[ANCHOR-REFUSED]` and surface as `LiveDecision.anchor_refused`. Refusal degrades to the existing missed-hand-start path — no new states.
+- **Verification under the 4-log gate** (mandatory correction after the audit hole): argmax-isolated diff (rng-free) over 1263 frames = **deltas at exactly the 9 expected frames, nowhere else** (7 poisoned recoveries → "no clean pre-hand anchor" safe-folds + 2 `anchor_refused` flags); verify1's 3 recoveries (1110/1110/150) and 154557's 6 legitimate recoveries (940×2/896/846×3) byte-identical. Sample-mode diff additionally shows 25 rng-cascade deltas — removing 7 draws shifts the shared rng stream — every one status-class-preserving with only the sampled-action triple changed, 0 unexplained. 10 new tests (`tests/test_observe_ceiling_guard.py`) incl. a full-corpus sweep asserting refusals at exactly the 2 poisoned hand-starts; 118 bridge/integration tests pass. `replay_make_decision_diff` now keys frames by `captured_at` (seq collides across sender reconnects; the seq-keyed diff silently dropped 121 of 154557's 571 frames).
+- **Packaged the Windows scraper P1/P2 validation fixture** (`9e4c007`, `tools/scraper_sanity_fixture/`): 5 sub-session streams / 1263 frames, machine-generated gates — 18 over-ceiling must-rejects (incl. the 2 currently-clean 9907 hand-starts), 43 relax-class must-admits, 12 board-shrank false-flags, per-stream consensus ceilings (9000 ×5) — with a stdlib-only verifier self-tested in both directions (no-op AFTER fails 43+2+2; simulated-correct passes). Scraper P1/P2 implementation itself is Windows-side (SanityChecker source not on this box).
+
+### What was decided
+- **Q1**: bridge ceiling = config product (`STARTING_CHIPS × NUM_SEATS`) cross-checked against observed mode — pure observed-consensus has a bridge-side bootstrap hole (a poisoned hand 1 becomes its own consensus); the asymmetry vs the scraper's observed-mode ceiling is deliberate.
+- **Q2**: per-seat AND table-total bounds, upper only. (Build note: per-seat is mathematically implied by the sum bound for non-negative values; kept for audit-log precision and signed-component future-proofing.)
+- **Q3**: strict `>`, unreachability of `==` documented at the site.
+- **Standing rule from the audit hole: behavioral gates replay ALL raw-record dry-run logs, never a subset.** The 3-log corpus is exactly what hid the poisoned-anchor defect.
+
+### What was learned / surprises
+- A self-consistency check that uses the suspect value on both sides of the equation verifies nothing — observe()'s `sum(pre) == chip_total` passed the 17917 hand-start because both sums contained the same 9907. Plausibility (against an external invariant: chips-in-play) is the right gate, exactly as with the scraper's stability-vs-plausibility lesson.
+- Recovery + invariant compose soundly ONLY above a verified anchor: every downstream gate reconstructs FROM the anchor, so anchor errors cancel instead of being caught. Guard the inputs, not just the outputs.
+- Sample-mode bit-identity is the wrong gate for changes that alter decision COUNT — the shared rng stream shifts every later draw. The rng-isolated (argmax) diff is the right instrument for footprint claims; sample-mode cascade is then classified, not gated.
+
+### Queued for next session
+1. Windows CC: implement scraper P1/P2 against `tools/scraper_sanity_fixture/` (gates (a)-(d); show before/after).
+2. Next live dry-run: watch `[ANCHOR-REFUSED]` / `[ANCHOR-OOD]` lines and `anchor_refused` rows.
+3. Layer-3 ledger still design-gated (unchanged).
+
+---
+
 ## Live-deploy session — 2026-06-09 (evening) — Layer-1 suspect-frame stack recovery (`7d47e86`)
 
 ### What was done
