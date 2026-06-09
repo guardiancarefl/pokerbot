@@ -261,6 +261,18 @@ def build_game_context(parsed: dict, state: Any, big_blind_chips: int = 100) -> 
     # Opponents alive
     opponents_active = sum(1 for i, m in enumerate(money) if i != cp and m > 0)
 
+    # Opponents seated at the table (tournament-alive, including folded
+    # this hand). Busted seats in single-hand game strings are stack=1 /
+    # ante=0 placeholders that never act (game_strings.
+    # to_inner_game_string_for_state); every genuinely seated player either
+    # has more than the placeholder chip behind or has posted chips this
+    # hand, so money + contribution > 1 separates seated from busted.
+    seated = sum(
+        1 for i in range(len(money))
+        if money[i] + (contribution[i] if i < len(contribution) else 0) > 1
+    )
+    opponents_at_table = max(0, seated - 1)
+
     # Position name
     position = _position_name(cp, num_players)
 
@@ -288,7 +300,10 @@ def build_game_context(parsed: dict, state: Any, big_blind_chips: int = 100) -> 
         bigblindsize=1.0,        # always 1.0 since chip amounts already in BBs
         totalinvested=to_bb(my_contrib),
         opponents=opponents_active,
-        opponentsattable=num_players - 1,    # any seated, including folded
+        opponentsattable=opponents_at_table,  # live alive-count − 1 (was
+                                              # num_players−1: every table-size
+                                              # predicate in every profile was
+                                              # dead at shorthanded tables)
         opponentsonflop=opponents_active,    # approximation; deserves dedicated tracking
         stilltoact=0,                         # OpenSpiel doesn't expose; safe default
         position=position,
