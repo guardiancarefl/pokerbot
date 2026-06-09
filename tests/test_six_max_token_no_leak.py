@@ -297,6 +297,9 @@ def test_A6_parse_state_exposes_only_hero_observer_fields():
     expected_keys = {
         "num_players", "street_idx", "current_player", "pot", "money",
         "contribution", "private_cards", "public_cards", "sequences",
+        # public information: blind level is visible to all players; read
+        # from the game's construction parameters, zero leakage surface.
+        "big_blind",
     }
     rng = random.Random(2026)
     for _ in range(20):
