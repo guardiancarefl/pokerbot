@@ -1683,3 +1683,105 @@ than a series of predicate iterations, each of which requires its own
 audit/re-replay round-trip and risks regressing a previously-passing
 frame.
 
+
+
+## Bridge reconstruction (Issue 4) — closed: seq=101 postflop hero-stop / cycle-index-shift
+
+**Date:** 2026-06-09
+**Session log:** `logs/live_dryrun_20260609_192543.jsonl` (402 frames, first
+post-5f24ed7 dry-run, first to exercise dealer=seat1 postflop frames).
+
+### Defect
+
+`derive_action_sequence`'s postflop emission loop mutated `pf_alive_post`
+mid-iteration (`pf_alive_post.remove(seat)` on defensive fold). The
+cycle's modular index (`cs_pos % len(pf_alive_post)`) shifted under
+the removal and skipped past hero — and any seat between the removed
+position and hero — on the next iteration. Two distinct symptoms:
+hero-stop check missed (loop continued past hero's turn) AND a
+fabricated downstream action emitted (the seat the cycle landed on
+after the wrap, typically SB folding to its re-opened decision —
+chronologically future relative to hero's decision).
+
+seq=101 instance: 6-handed flop, dealer=hero=BTN, UTG/MP folded
+preflop, SB/BB/CO/BTN limped. Flop: SB check, BB bet 98, CO defensive
+fold. Correct sequence stops at hero (BTN). Pre-fix sequence emitted
+an extra `(1, 0)` SB fold and replay failed with
+`action_seq[9] expects seat 1 but state.current_player()=0`.
+
+### Root cause vs. preflop equivalent
+
+The preflop loop (lines 1499-1518) uses `folded_emitted: set` as a
+per-seat filter; pf_order_alive is never mutated, the cycle's index
+walk stays stable across folds. The postflop loop diverged from this
+pattern by removing seats from the cycle list — a structural defect.
+
+### Fix
+
+`cs_folded: set` replaces `pf_alive_post.remove()`. The main loop's
+top-of-iteration check (`if seat in cs_folded: continue`),
+`cs_round_closed()`, the `unacted_eligible` comprehension, and the
+hero-stop's `later_has_bet` scan all filter via the set. Mirrors the
+preflop pattern. No mid-loop list mutation.
+
+### Generality
+
+The bug fired whenever any postflop seat defensive-folded at cycle
+position k while hero was at position k+1 or later in the original
+`pf_alive_post`. With multiple folds, the skip cascades — intermediate
+folds get dropped from the action sequence, producing OpenSpiel state
+divergence (seats appear "alive" in OpenSpiel that the scraper shows
+folded). Affected positions: hero=BTN with any fold before, hero=CO/MP
+with folds before, hero=UTG with folds before — i.e., any non-SB hero
+facing defensive folds upstream in the postflop walk.
+
+### Why it surfaced now
+
+The seat1 zone fix (committed earlier this session) unlocked
+dealer=seat1=hero-on-BTN frames. With hero at the END of the postflop
+cycle, ANY upstream defensive fold triggers the bug. Prior corpora
+had no dealer=BTN postflop frames; the bug was latent in every such
+frame requiring a defensive-fold-before-hero — just hadn't been
+exercised.
+
+### Re-replay gate
+
+Pre-fix on the verify-game log: 65 invariant_pass, 1 replay_error
+(seq=101).
+Post-fix: **66 invariant_pass, 0 replay_error**, 401/401 non-changed
+frames bit-identical, zero regressions. seq=101 the only changed
+frame (replay_error → invariant_pass).
+
+Test coverage (4 class-coverage tests in
+`tests/test_bridge_seq101_postflop_loop_fix.py`):
+- seq=101 reconstructs (hero=BTN single fold)
+- hero=CO with earlier defensive fold
+- cascading: 3 folds before hero, ALL emitted in correct order
+  (explicit assertion on the fold-seats-in-order, not just hero-stop)
+- no defensive folds → bit-identical no-op guard
+
+### Process principle — masking layers
+
+This is the SECOND time in this project that removing an upstream
+mask exposed a latent downstream bug:
+
+1. The scraper's noise masked the original bridge reconstruction bugs
+   (Issue 2 + Issue 3 seq=170/seq=192/seq=246/seq=364) — once frames
+   reached the bridge cleanly, the bridge's own defects became visible.
+2. The seat1 zone fix masked the postflop loop's `pf_alive_post.remove`
+   bug (Issue 4 seq=101) — once dealer=seat1 postflop frames reached
+   the loop, the iterator's structural defect produced wrong action
+   sequences.
+
+**The principle**: fixing a layer exposes the next layer's dormant
+bugs. Code paths that were never exercised carry latent defects that
+only surface when upstream stops masking them. A clean kick-risk
+ratio on game N reflects the position space that game N happened to
+sample — NOT a verified upper bound on the bridge's correctness.
+
+**Operational consequence**: verification runs must span MULTIPLE
+games before any kick-risk rate is trusted for autoclicker gating.
+One game's kick-risk is a sample, not a measurement. Until the
+position space is broadly exercised (= multiple games covering
+varying dealer rotations, alive-seat configurations, and postflop
+action shapes), each "clean" report is provisional.

@@ -1715,15 +1715,24 @@ def derive_action_sequence(frame: ScraperFrame,
     cs_target = [int(frame.bet[s]) for s in range(NUM_SEATS)]
     cs_cur = [0] * NUM_SEATS
     cs_has_acted: set[int] = set()
+    # cs_folded: seats that defensive-folded on the current postflop
+    # street. Tracked as a set rather than removed from pf_alive_post so
+    # the cycle iteration's modular index stays stable across removals.
+    # Mirrors the preflop loop's folded_emitted pattern; mutating
+    # pf_alive_post mid-loop shifts indices and causes the iterator to
+    # skip past hero (seq=101 hero=BTN regression, 2026-06-09).
+    cs_folded: set[int] = set()
     running_max_cs = 0
     # cumulative chip int for OpenSpiel raise = preflop_commit + cs_target
     raise_happened_cs = False
 
     def cs_round_closed() -> bool:
-        # Round closes when every alive non-folded seat has emitted a
-        # voluntary action on this street AND their cs_cur matches the
-        # running_max_cs.
+        # Round closes when every alive non-folded seat (excluding seats
+        # that defensive-folded this street) has emitted a voluntary
+        # action on this street AND their cs_cur matches running_max_cs.
         for s in pf_alive_post:
+            if s in cs_folded:
+                continue
             if s not in cs_has_acted:
                 return False
             if cs_cur[s] != running_max_cs:
@@ -1733,12 +1742,17 @@ def derive_action_sequence(frame: ScraperFrame,
     MAX_CS_VISITS = max(1, len(pf_alive_post)) * 4
     cs_visit = 0
     cs_pos = 0
-    while cs_visit < MAX_CS_VISITS and pf_alive_post:
+    while (cs_visit < MAX_CS_VISITS and pf_alive_post
+           and len(cs_folded) < len(pf_alive_post)):
         if cs_round_closed():
             break
         seat = pf_alive_post[cs_pos % len(pf_alive_post)]
         cs_pos += 1
         cs_visit += 1
+        # Skip seats that have folded on this street (cycle position
+        # preserved; index modulo doesn't shift).
+        if seat in cs_folded:
+            continue
 
         if seat == frame.hero_seat:
             # Hero on the current postflop street.
@@ -1760,7 +1774,7 @@ def derive_action_sequence(frame: ScraperFrame,
                     later_has_bet = any(
                         cs_target[s] > running_max_cs
                         for s in pf_alive_post
-                        if s != seat
+                        if s != seat and s not in cs_folded
                     )
                     if not later_has_bet:
                         # Hero's true first decision — to check/bet.
@@ -1779,13 +1793,10 @@ def derive_action_sequence(frame: ScraperFrame,
             # Final cs commit below running max → seat folded
             # (defensive). On postflop we treat as a silent fold the
             # scraper didn't catch (e.g., repaired_folded missed a
-            # blind-seat fold).
+            # blind-seat fold). Track in cs_folded (NOT remove from
+            # pf_alive_post) so the cycle index stays stable.
             actions.append((seat, 0))
-            # Mark folded so subsequent cycles skip this seat.
-            try:
-                pf_alive_post.remove(seat)
-            except ValueError:
-                pass
+            cs_folded.add(seat)
             continue
 
         if t > running_max_cs:
@@ -1793,8 +1804,9 @@ def derive_action_sequence(frame: ScraperFrame,
             # above running_max (the smaller one raised first).
             unacted_eligible = [
                 cs_target[s] for s in pf_alive_post
-                if (s not in cs_has_acted
-                    or cs_cur[s] < running_max_cs)
+                if s not in cs_folded
+                and (s not in cs_has_acted
+                     or cs_cur[s] < running_max_cs)
                 and cs_target[s] > running_max_cs
             ]
             if unacted_eligible and t != min(unacted_eligible):
