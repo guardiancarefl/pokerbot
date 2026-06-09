@@ -232,6 +232,19 @@ def openspiel_to_scraper_view(
             # the busted raiser themselves or a caller who matched.
             if int(contrib[i]) >= preflop_max_chip_int:
                 matched_all_in[i] = True
+    # All-in-for-less detection (seq=246, audit 2026-06-09): a seat that
+    # committed every chip they had via a CALL action (chip_int=1, capped
+    # at remaining stack) has money[i] == 0. For these seats the OpenSpiel
+    # patch does NOT credit the ante back into money (verified empirically:
+    # call all-in keeps lifetime=pre AND money=0, whereas raise all-in
+    # keeps lifetime=pre AND money=ante via the absorption credit).
+    # Their contrib therefore includes ante and the no-ante-subtract
+    # matched_all_in branch produces the correct scraper_bet. This trigger
+    # only fires on call-for-less because raise-all-in seats always have
+    # money[i] >= ante (audit: seq=97/106/170/427/428 all have money>=ante).
+    for i in range(NUM_SEATS):
+        if frame_alive[i] and int(money[i]) == 0:
+            matched_all_in[i] = True
 
     for i in range(NUM_SEATS):
         if not frame_alive[i]:

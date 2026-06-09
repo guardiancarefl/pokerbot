@@ -37,13 +37,22 @@ STRUCT_YAML = "configs/ignition_double_up_6max_turbo.yaml"
 
 def run_one(record: dict, structure: TournamentStructure,
             hero_seat_alias: str = "seat1",
-            verbose: bool = False
+            verbose: bool = False,
+            tracker=None,
             ) -> tuple[str, dict]:
     """Run parse -> hero-to-act detect -> replay_to_decision ->
     check_mid_hand_invariant on one record. Returns (status, info).
     Statuses:
       parse_error, suspect, data_quality, not_hero_to_act,
       replay_error, invariant_fail, pass
+
+    tracker (optional SessionTracker): updated with each parsed frame and
+    consulted for a per-seat pre_hand_override. When the tracker has a
+    valid per-hand pre-hand recording for this frame's hand, that override
+    is passed into replay_to_decision (bypassing the simple-model uniform-
+    commit assumption, which fails for multi-hand stack accumulation
+    cases). Caller is responsible for instantiating + sharing the tracker
+    across frames in sequence.
     """
     info: dict = {"captured_at": record.get("captured_at", "")}
     try:
@@ -57,6 +66,19 @@ def run_one(record: dict, structure: TournamentStructure,
     except ScraperParseError as e:
         info["reason"] = str(e)
         return "parse_error", info
+
+    # Update tracker BEFORE checking hero-to-act so we still record
+    # hand-start frames (which are not hero-to-act).
+    if tracker is not None:
+        tracker.observe(frame)
+        # UI-lag recovery: scraper sometimes captures a new bet in
+        # front of a seat before the pot UI updates. SessionTracker
+        # detects this from chip arithmetic and returns a corrected
+        # pot; we replace the frame's pot_total with that.
+        corrected_pot = tracker.corrected_pot_for(frame)
+        if corrected_pot is not None:
+            import dataclasses
+            frame = dataclasses.replace(frame, pot_total=corrected_pot)
 
     # Phase 2 corpus filter: only frames where it's actually hero's turn
     # to act. Hand-start frames have controls.present=False; they're
@@ -98,11 +120,29 @@ def run_one(record: dict, structure: TournamentStructure,
                           "(raw `pot: None` or between-hands)")
         return "data_quality", info
 
+    pre_hand_override = (
+        tracker.pre_hand_for(frame) if tracker is not None else None
+    )
     try:
-        pack = replay_to_decision(frame, structure)
+        pack = replay_to_decision(
+            frame, structure, pre_hand_override=pre_hand_override)
     except ReplayError as e:
-        info["reason"] = str(e).split('\n')[0][:200]
-        return "replay_error", info
+        # Override path failed (typically because honest per-seat
+        # chip arithmetic exposes asymmetric commitments — a stale-
+        # folded-flag scraper case). Fall back to the simple-model
+        # uniform-commit path which handles these via averaging.
+        # If the fallback also fails, the frame is irreducibly bad
+        # and we safe-fold via replay_error.
+        if pre_hand_override is not None:
+            try:
+                pack = replay_to_decision(
+                    frame, structure, pre_hand_override=None)
+            except ReplayError as e2:
+                info["reason"] = str(e2).split('\n')[0][:200]
+                return "replay_error", info
+        else:
+            info["reason"] = str(e).split('\n')[0][:200]
+            return "replay_error", info
 
     info["sb_seat"] = pack.sb_seat
     info["bb_seat"] = pack.bb_seat
@@ -133,6 +173,12 @@ def run_jsonl(path: Path, structure: TournamentStructure,
     n_pass = 0
     failures = []
 
+    # SessionTracker maintains per-hand pre-hand stacks across frames so
+    # mid-hand frames in hands with multi-hand stack accumulation (winners
+    # entering at >1500 chips, losers at <1500) reconstruct correctly.
+    from src.nlhe.integration.scraper_schema import SessionTracker
+    tracker = SessionTracker()
+
     t0 = time.time()
     with open(path) as fh:
         for line_no, line in enumerate(fh, 1):
@@ -147,7 +193,8 @@ def run_jsonl(path: Path, structure: TournamentStructure,
                 continue
             status, info = run_one(record, structure,
                                     hero_seat_alias=hero_seat_alias,
-                                    verbose=False)
+                                    verbose=False,
+                                    tracker=tracker)
             counts[status] += 1
             # Hero-to-act denominator excludes drops/non-hero-to-act
             if status in ("replay_error", "invariant_fail", "pass"):

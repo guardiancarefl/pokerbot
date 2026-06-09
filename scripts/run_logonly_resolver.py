@@ -58,7 +58,35 @@ from src.nlhe.integration.replay import ReplayError, replay_to_decision
 from src.nlhe.integration.scraper_schema import (
     ScraperDataQuality, ScraperParseError, ScraperSuspect, parse_frame,
 )
-from src.nlhe.integration.translate import openspiel_to_real_action
+def _openspiel_chip_to_client_action(
+    chip_int: int,
+    scraper_min_raise: int,
+    scraper_max_raise: int,
+    scraper_facing_bet: bool,
+) -> dict:
+    """Map the solver's OpenSpiel chip int to a real-table action dict.
+
+    Under the real-ante convention chip ints are 1:1 with real-table chip
+    amounts (no inflation), so this is a 3-case dispatch with bounds
+    clamping for the raise case.
+
+    Returns dict with:
+      kind:        "fold" | "call" | "check" | "raise_to"
+      chip_amount: int (raise target) or None (fold/call/check)
+      raw_openspiel_chip_int: original int (audit field)
+    """
+    if chip_int == 0:
+        return {"kind": "fold", "chip_amount": None,
+                "raw_openspiel_chip_int": 0}
+    if chip_int == 1:
+        kind = "call" if scraper_facing_bet else "check"
+        return {"kind": kind, "chip_amount": None,
+                "raw_openspiel_chip_int": 1}
+    raise_amount = max(scraper_min_raise,
+                       min(int(chip_int), scraper_max_raise))
+    return {"kind": "raise_to",
+            "chip_amount": int(raise_amount),
+            "raw_openspiel_chip_int": int(chip_int)}
 
 
 WATCHLIST_LEVELS = {1, 2, 3}
@@ -126,6 +154,14 @@ def main():
     out_path = Path(args.out)
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
+    # SessionTracker observes hand-start frames to anchor per-seat
+    # pre-hand stacks, which lets mid-hand frames in hands with multi-
+    # hand stack accumulation (winners entering at >1500, losers at
+    # <1500) reconstruct correctly. Fall back to the simple model on
+    # frames where the override path detects inconsistent chip math.
+    from src.nlhe.integration.scraper_schema import SessionTracker
+    tracker = SessionTracker()
+
     t0 = time.time()
     with open(args.jsonl) as fin, open(out_path, "w") as fout:
         for line_no, line in enumerate(fin, start=1):
@@ -143,6 +179,7 @@ def main():
             except (ScraperParseError, ScraperSuspect, ScraperDataQuality):
                 n_skip += 1
                 continue
+            tracker.observe(frame)
             if not frame.controls_present:
                 n_skip += 1
                 continue
@@ -153,11 +190,21 @@ def main():
                 n_skip += 1
                 continue
 
+            pre_hand_override = tracker.pre_hand_for(frame)
             try:
-                pack = replay_to_decision(frame, structure)
+                pack = replay_to_decision(
+                    frame, structure, pre_hand_override=pre_hand_override)
             except ReplayError:
-                n_skip += 1
-                continue
+                if pre_hand_override is not None:
+                    try:
+                        pack = replay_to_decision(
+                            frame, structure, pre_hand_override=None)
+                    except ReplayError:
+                        n_skip += 1
+                        continue
+                else:
+                    n_skip += 1
+                    continue
             inv = check_mid_hand_invariant(frame, pack)
             if not inv.ok:
                 n_skip += 1
@@ -183,7 +230,7 @@ def main():
             )
             scraper_max_raise = (frame.stack[frame.hero_seat]
                                   + frame.bet[frame.hero_seat])
-            client_action = openspiel_to_real_action(
+            client_action = _openspiel_chip_to_client_action(
                 chip_int,
                 scraper_min_raise=scraper_min_raise,
                 scraper_max_raise=scraper_max_raise,

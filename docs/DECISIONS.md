@@ -1491,3 +1491,195 @@ self-correcting on the next frame.
 **That said, scraper work has zero urgency for the next dry-run.** The
 present scraper noise floor did not block any hands in this session,
 and the redundancy-tolerant bridge handles it correctly.
+
+
+## Bridge reconstruction (Issue 3) — closed: seq=246 + seq=364 dead-SB + all-in-for-less
+
+**Date:** 2026-06-09
+**Session log:** `logs/live_dryrun_20260609_154557.jsonl` (571 frames)
+
+### Background
+
+Second live dry-run surfaced two new reconstruction failures the Issue
+2 fixes did not cover: **seq=246** (invariant_fail, BTN all-in 2166 with
+SB all-in for less 615, deltas off by ~2000 chips on BTN's
+contribution) and **seq=364** (replay_error, hero is BB in an Ignition
+dead-SB rotation where the natural-SB-this-hand seat busted between the
+prior hand and this one). Re-replay against the 571-frame log via
+`scripts/replay_session_diff.py --log` confirmed exactly those 2
+failures out of 571 frames, both in the same all-in-for-less family.
+
+### Four distinct defects, one user-visible frame each
+
+**seq=364 — dead-SB rotation not modeled (frame-only detection required).**
+Ignition uses forward-moving button: each hand the button advances one
+position; SB is whoever was BB last hand; BB is the next alive seat
+after that. When the player-who-was-BB-last-hand busts between hands,
+this hand's SB position is dead (no SB posted, only BB). The bridge's
+prior rule (`SB = next alive after dealer`) cannot distinguish this
+case from a long-stable empty seat past the rotation
+(seq=55: dealer=2, idx 3 empty for many hands, SB=idx 4 LIVE) — same
+geometry, opposite correct answer.
+
+**Fix:** `_detect_blinds_from_bb_post` (Predicate 1) in
+`src/nlhe/integration/scraper_schema.py`. Walks alive seats clockwise
+from `(dealer+1)` absolute, tracks the SB poster (bet==sb_amount) and
+BB poster (bet==bb_amount). If a BB poster is found with no SB poster
+between them and the dealer AND the absolute `(dealer+1) % NUM_SEATS`
+seat is empty, dead-SB confirmed. Returns `(None, bb_seat)` for
+caller to thread through. Falls back to the H1 default (next-alive-
+after-dealer) when posting evidence is ambiguous (mid-hand frame where
+SB has acted past the forced post) — those frames either reconstruct
+under H1 or invariant_fail loudly (safe-fold).
+
+**Frame-only design rationale:** the user rejected a session-history
+button-position tracker because the scraper drops hands, and a tracker
+would desync silently on a missed hand and produce a wrong-but-confident
+SB/BB assignment — the worst failure mode. Predicate 1 reads the
+posted-blind evidence actually on the table, so it self-corrects across
+missed hands; ambiguous frames fall to the invariant → safe-fold.
+
+**Threading discipline (load-bearing):**
+`game_strings.to_inner_game_string_for_state` accepts `sb_seat` /
+`bb_seat` parameters and uses them verbatim — it MUST NOT recompute
+SB/BB from `(dealer, alive_seats)` independently. A second derivation
+site would re-introduce the dead-SB misclassification at the OpenSpiel
+game-string layer (the seq=55-class regression we observed when only
+`scraper_schema` was patched). `_derive_blinds_and_action_order` in
+`scraper_schema.py` is the single source of truth; `replay.py` threads
+the resolved `(sb_seat, bb_seat)` through to game_strings.
+`test_seq364_single_source_of_truth_game_string_consumes_resolved_sb`
+guards this — asserts blind_array on the OpenSpiel game string matches
+the Predicate 1 resolution, not an independent recomputation.
+
+**seq=246 layer 1 — defer-for-smaller-raise triggered on a seat that
+couldn't actually raise.** `defer_for_smaller_raise` in
+`derive_action_sequence` would defer the BTN's all-in (chip_int=2166)
+because SB had `target=615 > running_max=100` — but SB's max possible
+voluntary commit was `pre - ante = 615`, which equals their target
+(they're all-in for less). The defer caused BTN to emit `chip_int=1`
+(call) instead of the raise, under-attributing BTN's contribution by
+~2000 chips.
+
+**Fix (Predicate 2):** add discriminator
+`int(pre[s]) - ante > int(target[s])` to `defer_for_smaller_raise`.
+Defer only to seats that could keep raising past their current target
+(= max voluntary STRICTLY greater than target). Seats fully committed
+at target (`pre-ante == target`) are all-in-for-less and chronologically
+subordinate to a larger raise above their target. Refinement post-
+seq=428 audit: `> target`, not `>= t` — the initial discriminator
+incorrectly excluded partial-raise seats whose pre-ante was below t
+but above their target (seq=428 hero 3-bet to 1200 with 281 chips
+remaining = partial raise, not all-in).
+
+**seq=246 layer 2 — call-for-less seat folded instead of called.** After
+Predicate 2 unblocked BTN's raise, SB visited the loop with
+`target=615 < running_max=2166` and took the `t < running_max → fold`
+branch, emitting `chip_int=0` — losing SB's 615 committed chips from
+the OpenSpiel pot. The branch collapsed two semantically distinct
+cases (true fold with no voluntary commit vs. all-in-for-less call
+below the running_max).
+
+**Fix:** surgical discriminator in the `t < running_max` branch of
+`derive_action_sequence`. If `pre[seat] - ante == t` AND `t > 0` AND
+`frame.stack[seat] == 0` (= committed every chip available, stack-
+capped at target), emit `chip_int=1` (call; OpenSpiel caps at remaining
+stack so the committed chips land in the pot). Otherwise the original
+defensive fold. The earlier proposal to broaden `busted_mid_hand` to
+include alive-but-all-in seats was REJECTED in audit — it would have
+routed raising-all-in seats (seq=97/106/170/427/428 currently passing)
+through the `chip_int=pre_hand` convention, regressing the Class B
+`chip_int=bet` contract they rely on.
+
+**seq=246 layer 3 — OpenSpiel ante-absorption asymmetric between RAISE
+and CALL all-in actions.** With the call-for-less emission correct, the
+OpenSpiel state was chip-arithmetically right but the invariant's
+`openspiel_to_scraper_view` compared off by 15 chips (= ante). Empirical
+finding: the patched universal_poker absorbs ante (credits back into
+`money[i]`, subtracts from `contrib[i]`) for RAISE all-in
+(seq=170 BTN: `money=15`, `contrib=2809` excluding ante), but NOT for
+CALL all-in-for-less (seq=246 SB: `money=0`, `contrib=630` including
+ante). The existing `matched_all_in` branch already handles "spent
+includes ante" via the no-ante-subtract formula, but its detection
+`contrib >= preflop_max_chip_int` only caught the chip_int=pre_hand
+convention.
+
+**Fix:** extend `matched_all_in` detection in
+`src/nlhe/integration/invariant.py:openspiel_to_scraper_view` to also
+flag `frame_alive[i] AND money[i] == 0` — the unambiguous signature of
+an all-in-via-call seat where the ante wasn't credited back.
+Empirically verified safe by the 12-frame audit
+(`/tmp/money_zero_audit.py` — 0 misfires: raising-all-in seats all
+have `money >= ante`, only call-for-less seats have `money == 0`).
+
+### Re-replay gate
+
+Baseline (`logs/live_dryrun_20260609_154557.jsonl`, pre-fix):
+- invariant_pass: 59
+- invariant_fail: 1 (seq=246)
+- replay_error: 1 (seq=364)
+
+Post-fix (all five pieces together):
+- invariant_pass: **61** (+2: seq=246, seq=364 both reconstruct)
+- invariant_fail: 0
+- replay_error: 0
+- bit-identical to baseline: **448 / 450** non-changed frames
+- changed frames: exactly 2 (both target fixes flipping FAIL/ERROR → PASS)
+- ZERO regressions
+
+Money==0 trigger audit across all 12 effectively-all-in frames in the
+corpus: 0 misfires, correctly fires only on the 2 call-for-less seats
+(seq=246/247 SB).
+
+Test suite: 145 integration tests pass (7 new in
+`tests/test_bridge_seq246_seq364_fixes.py` plus the synthetic Class B
+test updated to assert the semantically correct chip_int=1 for the
+call-for-less emission).
+
+### Process lesson — end-to-end chronology trace BEFORE predicate fixes
+
+**The principle:** when a frame fails at multiple pipeline layers,
+trace its full real-game chronology end-to-end and diff against the
+bridge's emission at every stage BEFORE writing predicates. Each
+layer's corruption masks the next, and predicate-first fixing discovers
+them serially.
+
+**What happened on seq=246 (the cautionary tale):** four bugs in the
+same frame, discovered one at a time. Each fix unblocked a new code
+path that revealed the next defect:
+1. Fix Predicate 2 (defer) → BTN now raises → revealed SB takes the
+   fold branch (call-for-less emission gap)
+2. Fix call-for-less branch → SB now emits call → revealed OpenSpiel's
+   ante-absorption asymmetry (invariant view gap)
+3. Fix invariant extension → revealed Predicate 2 was too strict (broke
+   seq=428's partial-raise hero)
+4. Refine Predicate 2 (`> target` instead of `>= t`) → all four
+   pieces work together
+
+**What would have surfaced all four in one analysis pass:** trace
+seq=246's actual real-game chronology FIRST — hero BB posts, UTG/MP
+fold, BTN all-in 2166, SB all-in for-less 615, hero to-act facing
+2166 — then walk the bridge stage by stage:
+- Action-sequence emitter: what does it emit for each seat in pf_order?
+- OpenSpiel state after apply_action: what's contrib/money for each seat?
+- Invariant view: how does it translate contrib → scraper_bet?
+- Compare each stage's output to what the real frame shows.
+
+Every divergence is a bug. All four would have appeared in this
+trace before any predicate was written.
+
+**Why predicate-first failed here:** I started at the defer rule
+because it was the most visibly-suspicious code, fixed it, and assumed
+that closed the failure. But the failure mode was a chain — the defer
+bug was the topmost of four, each one masking the next. Without
+having the full chronology vs. emission diff in hand, there was no way
+to see the chain.
+
+**The standard going forward:** for any multi-layer reconstruction
+failure (= any frame where a single fix to the most-visible layer
+doesn't immediately produce invariant_pass), do the full chronology
+trace before writing or refining any predicate. The trace is cheaper
+than a series of predicate iterations, each of which requires its own
+audit/re-replay round-trip and risks regressing a previously-passing
+frame.
+

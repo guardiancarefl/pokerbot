@@ -286,3 +286,79 @@ def test_postflop_facing_bet_on_flop():
         (5, 125),
     ]
     assert actions == expected
+
+
+# ---- All-in chip_int regression (Class B, seq=228 of live dryrun 2026-06-08) ----
+
+LV2 = BlindsLevel(sb=25, bb=50, ante=10)
+
+
+def test_all_in_for_less_emits_call_not_fold():
+    """Class B contract for the all-in-for-less case: when a seat
+    voluntarily committed all their chips below the running_max, the
+    bridge must emit chip_int=1 (call — OpenSpiel caps at remaining
+    stack) — NOT chip_int=0 (fold, which loses their committed chips
+    from the OpenSpiel pot).
+
+    Setup: L2 (ante=10), dealer=5, hero=seat 4 (CO). UTG (seat 2) opens
+    to 200. Seat 3 (MP) has only 200 chips total = 10 ante + 190
+    voluntary; they're effectively all-in for 190 (a CALL for less since
+    they can't match UTG's 200). Hero faces 200.
+
+    The semantically correct action sequence: UTG raises to 200, MP
+    calls all-in for less (chip_int=1, OpenSpiel caps at 190 voluntary
+    + 10 ante = 200 total spent). Hero faces 200.
+
+    Earlier (pre-2026-06-09) this test asserted chip_int=190 for MP's
+    emission. That assertion relied on the buggy defer-for-smaller-raise
+    path (later fixed by Predicate 2: defer only to seats whose
+    pre[s]-ante >= my t). With the correct defer behavior, UTG raises
+    directly, MP falls into the `t < running_max` branch, and the
+    surgical call-for-less discriminator there emits chip_int=1 —
+    which is what OpenSpiel actually needs for an all-in-for-less call.
+    """
+    pre_hand = (1500, 1500, 1500, 200, 1500, 1500)
+    bet = (25, 50, 200, 190, 0, 0)
+    stack = (1465, 1440, 1290, 0, 1490, 1490)
+    pot_total = 10 * 6
+    frame = _frame(
+        dealer_seat=5, hero_seat=4,
+        stack=stack, bet=bet, board=(),
+        pot_total=pot_total, blinds=LV2,
+    )
+    actions = derive_action_sequence(frame, pre_hand_override=pre_hand)
+    # UTG must raise to bet[2]=200 (NOT defer — MP can't match 200 with
+    # only 190 voluntary, so the defer-for-smaller-raise rule must skip).
+    utg_emit = next((c for s, c in actions if s == 2), None)
+    assert utg_emit == 200, (
+        f"UTG must raise directly to 200 (NOT defer to MP's smaller "
+        f"all-in); got chip_int={utg_emit}. actions={actions}"
+    )
+    # MP must emit chip_int=1 (call all-in for less), NOT 0 (fold)
+    # which would drop their 190 committed chips from the pot.
+    mp_emit = next((c for s, c in actions if s == 3), None)
+    assert mp_emit == 1, (
+        f"MP must emit chip_int=1 (call all-in for less); "
+        f"got chip_int={mp_emit}. actions={actions}"
+    )
+
+
+def test_normal_raise_still_emits_voluntary_chip_int():
+    """Regression guard: non-all-in raises emit voluntary chip_int (= bet)."""
+    pre_hand = (1500,) * 6
+    bet = (15, 25, 75, 0, 0, 0)
+    stack = (1480, 1470, 1420, 1495, 1495, 1495)
+    pot_total = 5 * 6 + 15 + 25
+    frame = _frame(
+        dealer_seat=5, hero_seat=0,
+        stack=stack, bet=bet, board=(),
+        pot_total=pot_total, blinds=LV1,
+    )
+    actions = derive_action_sequence(frame, pre_hand_override=pre_hand)
+    seat_2_raises = [a for a in actions if a[0] == 2 and a[1] > 1]
+    assert seat_2_raises, f"seat 2 must emit a raise; actions={actions}"
+    for seat, chip_int in seat_2_raises:
+        assert chip_int == 75, (
+            f"normal raise must emit voluntary chip_int = bet[seat] = 75; "
+            f"got {chip_int}; full actions={actions}"
+        )

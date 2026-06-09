@@ -13,10 +13,10 @@ replay passes):
 
 The hand-start state is the simplest reconstruction target: state is at the
 INITIAL chance node (no cards dealt yet) immediately after blinds + antes
-have been posted via the inflated_big_blind encoding. The scraper's
-observable fields (pot, per-seat stack, per-seat bet, dealer position) all
-have known equivalents at this state, modulo OpenSpiel's ante-inflation
-convention which we explicitly convert.
+have been posted via the native real-ante convention (per-seat `ante=...`
+array in the universal_poker game string). Scraper observable fields (pot,
+per-seat stack, per-seat bet, dealer position) map 1:1 to OpenSpiel chip
+ints — no inflation, no translation.
 
 Phase 2 prerequisite — empirically verified 6-max hole-card deal order:
 universal_poker deals all of seat 0's hole cards (both), then all of
@@ -260,7 +260,7 @@ class MidHandState:
     preflop_commit_per_alive: int
 
 
-def replay_to_decision(frame, structure):
+def replay_to_decision(frame, structure, pre_hand_override=None):
     """Walk OpenSpiel from new_initial_state() to the hero's current decision.
 
     Combines Pieces 1, 2, 3:
@@ -270,7 +270,9 @@ def replay_to_decision(frame, structure):
 
     Step-by-step:
       1. Build pre-hand stacks via the simple-model chip-conservation
-         helper from scraper_schema (same one derive_action_sequence uses).
+         helper from scraper_schema (same one derive_action_sequence uses)
+         — OR use a caller-supplied pre_hand_override (from session state)
+         when the simple-model uniform-commit assumption doesn't hold.
       2. Build game string via to_inner_game_string_for_state with those
          pre-hand stacks + dealer.
       3. Load + new_initial_state() -> at the first hole-card chance node.
@@ -283,6 +285,16 @@ def replay_to_decision(frame, structure):
          applied (ReplayError).
       6. Return a MidHandState ready for the generalised invariant.
 
+    Args:
+      frame: parsed ScraperFrame.
+      structure: TournamentStructure (real-ante convention).
+      pre_hand_override: optional length-6 tuple of per-seat pre-hand
+        stacks. When supplied (typically by a SessionTracker that observed
+        a recent hand-start frame), the simple-model chip-arithmetic step
+        is bypassed and the override is used directly. This handles
+        multi-hand stack accumulation cases (winners and losers from
+        prior hands have stacks != 1500 entering subsequent hands).
+
     Raises ReplayError if any step inconsistency: action not in legal_actions,
     state goes terminal before reaching hero, hero_seat mismatch at end, etc.
     Callers should treat ReplayError as a soft-drop (ScraperDataQuality
@@ -293,39 +305,98 @@ def replay_to_decision(frame, structure):
         from src.nlhe.integration.scraper_schema import (
             _derive_pre_hand_and_preflop_commit_simple_model,
             derive_action_sequence, _street_idx_from_board,
-            ActionDerivationError,
+            ActionDerivationError, _derive_blinds_and_action_order,
         )
     except ImportError:  # pragma: no cover (only the /tmp dev shim path)
         from scraper_schema import (  # type: ignore
             _derive_pre_hand_and_preflop_commit_simple_model,
             derive_action_sequence, _street_idx_from_board,
-            ActionDerivationError,
+            ActionDerivationError, _derive_blinds_and_action_order,
         )
 
-    alive_seats = [i for i in range(NUM_SEATS) if frame.alive[i]]
+    # Class A-deeper: the rotation must be computed against
+    # ALIVE-AT-HAND-START, not currently-alive — `to_inner_game_string_for_state`
+    # uses `[i for i, s in enumerate(stacks) if s > 0]` as alive_seats when
+    # building the game string. If a seat had chips at hand-start but went
+    # bust mid-hand, the game string includes them in the rotation, but
+    # `frame.alive[i]=False` excludes them here → SB/BB/UTG misaligned →
+    # action_seq walks against an inconsistent OpenSpiel state. When an
+    # override is supplied (= we know hand-start composition), derive
+    # alive_at_hand_start from `pre_hand_override[i] > 0` to match the game
+    # string's alive_seats exactly. Without override, frame.alive is the
+    # best signal we have (and `_derive_pre_hand_simple_model` already
+    # produces a pre that's consistent with it).
+    if pre_hand_override is not None:
+        alive_seats = [
+            i for i in range(NUM_SEATS) if int(pre_hand_override[i]) > 0
+        ]
+    else:
+        alive_seats = [i for i in range(NUM_SEATS) if frame.alive[i]]
     n_alive = len(alive_seats)
     if n_alive < 2:
         raise ReplayError(f"n_alive={n_alive} < 2; no hand possible")
 
-    # Match SB/BB by the same alive-seat rotation the library uses
-    sb_seat, bb_seat = _sb_bb_seats(frame.dealer_seat, alive_seats)
+    # SB/BB via the SINGLE SOURCE OF TRUTH in scraper_schema. Routes
+    # through Predicate 1 (dead-SB detection from posted-blind evidence
+    # in `frame.bet`); sb_seat may be None under Ignition's dead-SB
+    # rotation. The resolved values are threaded to
+    # to_inner_game_string_for_state below — game_strings does NOT
+    # recompute SB/BB when these are passed in.
+    sb_seat, bb_seat, _, _, _ = _derive_blinds_and_action_order(
+        frame.dealer_seat, alive_seats, frame=frame)
 
     blind_level = _find_blind_level(structure, frame.blinds)
 
     # Pre-hand stacks via the simple-model chip-conservation helper;
-    # also capture preflop_commit_per_alive for the mid-hand invariant
-    pre, preflop_commit_per_alive = (
-        _derive_pre_hand_and_preflop_commit_simple_model(
-            frame, sb_seat, bb_seat))
+    # also capture preflop_commit_per_alive for the mid-hand invariant.
+    # ActionDerivationError indicates the simple uniform-commit model
+    # can't represent this frame (e.g., remainder in residual division)
+    # — surface as ReplayError so the caller safe-folds.
+    try:
+        pre, preflop_commit_per_alive = (
+            _derive_pre_hand_and_preflop_commit_simple_model(
+                frame, sb_seat, bb_seat,
+                pre_hand_override=pre_hand_override))
+    except ActionDerivationError as e:
+        raise ReplayError(f"pre-hand derivation failed: {e}")
     stacks = list(pre)
     street_idx = _street_idx_from_board(frame.board)
 
-    # Game string + initial state
+    # Belt-and-suspenders short-stack guard. to_inner_game_string_for_state
+    # caps blind+ante so load_game won't crash on a seat whose pre-hand stack
+    # is below the forced posting amount — but our action-sequence derivation
+    # and invariant haven't been validated against the all-in-from-blinds
+    # case yet. Refuse these frames here so they safe-fold rather than
+    # exercising an unvalidated reconstruction path.
+    for i in alive_seats:
+        if i == bb_seat:
+            required = blind_level.big_blind + blind_level.ante
+            posting = "BB+ante"
+        elif sb_seat is not None and i == sb_seat:
+            required = blind_level.small_blind + blind_level.ante
+            posting = "SB+ante"
+        else:
+            required = blind_level.ante
+            posting = "ante"
+        if stacks[i] < required:
+            raise ReplayError(
+                f"short-stack forced money: seat {i} pre-hand stack "
+                f"{stacks[i]} < {posting} {required} "
+                f"(SB={blind_level.small_blind} BB={blind_level.big_blind} "
+                f"ante={blind_level.ante}); player would post all-in for "
+                f"less — reconstruction of this path is not yet validated"
+            )
+
+    # Game string + initial state. Thread the resolved (sb_seat, bb_seat)
+    # so game_strings uses the SAME assignment Predicate 1 produced — NOT
+    # its own independent next-alive-after-dealer recomputation.
     try:
         game_str = structure.to_inner_game_string_for_state(
             blind_level=blind_level,
             stacks=stacks,
             dealer_seat=frame.dealer_seat,
+            sb_seat=sb_seat,
+            bb_seat=bb_seat,
         )
         game = pyspiel.load_game(game_str)
         state = game.new_initial_state()
@@ -337,7 +408,8 @@ def replay_to_decision(frame, structure):
 
     # Derive canonical action sequence
     try:
-        action_seq = derive_action_sequence(frame)
+        action_seq = derive_action_sequence(
+            frame, pre_hand_override=pre_hand_override)
     except ActionDerivationError as e:
         raise ReplayError(f"action sequence derivation failed: {e}")
 
@@ -395,27 +467,40 @@ def replay_to_decision(frame, structure):
                 f"action_seq mismatched OpenSpiel's action order"
             )
         legal = state.legal_actions()
-        # Bridge: translate the scraper-real chip_int to OpenSpiel-legal
-        # chip_int (bumps raises up to OpenSpiel's min-raise if needed).
-        # See src/nlhe/integration/translate.py docstring + DECISIONS.md
-        # "Phase 2 bridge" for the bet-sizing drift trade-off.
-        try:
-            from src.nlhe.integration.translate import real_to_openspiel_action
-        except ImportError:  # pragma: no cover
-            from translate import real_to_openspiel_action  # type: ignore
-        try:
-            chip_int = real_to_openspiel_action(chip_int_real, legal)
-        except ValueError as e:
-            raise ReplayError(
-                f"action_seq[{action_idx}]=(seat={expected_seat}, "
-                f"chip_int_real={chip_int_real}) translation failed: {e}")
+        # Real-ante convention: scraper chip ints == OpenSpiel chip ints,
+        # no translation needed. Min-raise-to in OpenSpiel == real-table
+        # min-raise (2 × real_BB) because the game string carries native
+        # antes rather than inflating the BB.
+        chip_int = chip_int_real
         if chip_int not in legal:
-            raise ReplayError(
-                f"action_seq[{action_idx}]=(seat={expected_seat}, "
-                f"chip_int={chip_int}) not in legal_actions={legal[:10]}"
-                f"{' ...' if len(legal) > 10 else ''}; "
-                f"derive_action_sequence emitted an illegal action"
+            # FORCED-ALL-IN fallback (Class B, live dryrun 2026-06-08
+            # seq=228). derive_action_sequence emits chip_int = bet[seat]
+            # (voluntary-only convention; the invariant's
+            # openspiel_to_scraper_view treats contribution as scraper
+            # bet without ante subtraction). For NON-forced all-ins, the
+            # legal-raise range is continuous and chip_int=bet is
+            # accepted (verified on live_1500 lines 336/413). For FORCED
+            # all-ins (seat remaining < min-raise-increment), OpenSpiel
+            # collapses legal_actions to {fold, call, pre_hand} only;
+            # chip_int=bet is one ante short and rejected. Detect this
+            # narrow case: seat going all-in (stack==0, bet>0) AND the
+            # only legal raise IS the seat's pre_hand value. Retry with
+            # chip_int=stacks[seat]; if still illegal, propagate the
+            # original error unchanged.
+            seat_all_in = (
+                frame.alive[expected_seat]
+                and int(frame.stack[expected_seat]) == 0
+                and int(frame.bet[expected_seat]) > 0
             )
+            if seat_all_in and stacks[expected_seat] in legal:
+                chip_int = int(stacks[expected_seat])
+            else:
+                raise ReplayError(
+                    f"action_seq[{action_idx}]=(seat={expected_seat}, "
+                    f"chip_int={chip_int}) not in legal_actions={legal[:10]}"
+                    f"{' ...' if len(legal) > 10 else ''}; "
+                    f"derive_action_sequence emitted an illegal action"
+                )
         try:
             state.apply_action(int(chip_int))
         except Exception as e:
@@ -500,8 +585,8 @@ def replay_hand_start(frame: ScraperFrame, structure: TournamentStructure
       - dealer_seat must be alive
 
     Post-condition: returned HandStartState.state is at a chance node (about
-    to deal hole cards), with blinds + antes already encoded in the per-seat
-    contribution via OpenSpiel's inflated_big_blind convention.
+    to deal hole cards), with blinds + antes already encoded via the native
+    real-ante convention (per-seat `ante=...` array in the game string).
     """
     if not is_hand_start(frame):
         raise ReplayError(
@@ -518,27 +603,46 @@ def replay_hand_start(frame: ScraperFrame, structure: TournamentStructure
     if n_alive < 2:
         raise ReplayError(f"need >= 2 alive seats, got {n_alive}")
 
-    sb_seat, bb_seat = _sb_bb_seats(frame.dealer_seat, alive_seats)
+    # SB/BB via the SINGLE SOURCE OF TRUTH (see replay_to_decision for the
+    # full threading-discipline note). sb_seat may be None under Ignition's
+    # dead-SB rotation.
+    try:
+        from src.nlhe.integration.scraper_schema import (
+            _derive_blinds_and_action_order,
+        )
+    except ImportError:  # pragma: no cover (only the /tmp dev shim path)
+        from scraper_schema import (  # type: ignore
+            _derive_blinds_and_action_order,
+        )
+    sb_seat, bb_seat, _, _, _ = _derive_blinds_and_action_order(
+        frame.dealer_seat, alive_seats, frame=frame)
 
-    # Build the game string. to_inner_game_string_for_state requires:
-    #   - all alive-seat stacks >= bb_inflated (since those seats can post a blind)
-    #   - dealer_seat is alive
-    inflated = blind_level.inflated_big_blind(NUM_SEATS)
-    if stacks[bb_seat] < inflated:
+    # Real-ante convention: BB seat must cover real BB + own ante; SB seat
+    # (if alive) must cover real SB + own ante. (universal_poker forced-action
+    # will auto-allin if a seat can't cover the blind + ante — we reject the
+    # frame here to surface that the scraper's pre-hand stack reading is
+    # inconsistent with the format.)
+    bb_required = blind_level.big_blind + blind_level.ante
+    if stacks[bb_seat] < bb_required:
         raise ReplayError(
             f"BB seat {bb_seat} has pre-hand stack {stacks[bb_seat]} < "
-            f"inflated_bb {inflated}; cannot post (real game would auto-allin)"
+            f"bb+ante {bb_required}; cannot post (real game would auto-allin)"
         )
-    if stacks[sb_seat] < blind_level.small_blind:
-        raise ReplayError(
-            f"SB seat {sb_seat} has pre-hand stack {stacks[sb_seat]} < "
-            f"sb {blind_level.small_blind}; cannot post"
-        )
+    if sb_seat is not None:
+        sb_required = blind_level.small_blind + blind_level.ante
+        if stacks[sb_seat] < sb_required:
+            raise ReplayError(
+                f"SB seat {sb_seat} has pre-hand stack {stacks[sb_seat]} < "
+                f"sb+ante {sb_required}; cannot post"
+            )
 
+    # Thread resolved (sb_seat, bb_seat) — game_strings does NOT recompute.
     game_str = structure.to_inner_game_string_for_state(
         blind_level=blind_level,
         stacks=stacks,
         dealer_seat=frame.dealer_seat,
+        sb_seat=sb_seat,
+        bb_seat=bb_seat,
     )
 
     try:

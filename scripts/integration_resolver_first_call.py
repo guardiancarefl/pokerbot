@@ -23,7 +23,29 @@ from src.nlhe.game_strings import TournamentStructure
 from src.nlhe.integration.invariant import check_mid_hand_invariant
 from src.nlhe.integration.replay import replay_to_decision
 from src.nlhe.integration.scraper_schema import parse_frame
-from src.nlhe.integration.translate import openspiel_to_real_action
+def _openspiel_chip_to_client_action(
+    chip_int: int,
+    scraper_min_raise: int,
+    scraper_max_raise: int,
+    scraper_facing_bet: bool,
+) -> dict:
+    """Map the solver's OpenSpiel chip int to a real-table action dict.
+
+    Real-ante convention: chip ints are 1:1 with real-table chip amounts
+    (no inflation). 3-case dispatch with bounds clamping for raises.
+    """
+    if chip_int == 0:
+        return {"kind": "fold", "chip_amount": None,
+                "raw_openspiel_chip_int": 0}
+    if chip_int == 1:
+        kind = "call" if scraper_facing_bet else "check"
+        return {"kind": kind, "chip_amount": None,
+                "raw_openspiel_chip_int": 1}
+    raise_amount = max(scraper_min_raise,
+                       min(int(chip_int), scraper_max_raise))
+    return {"kind": "raise_to",
+            "chip_amount": int(raise_amount),
+            "raw_openspiel_chip_int": int(chip_int)}
 
 
 def find_first_passing_mid_hand(jsonl_path: str, structure):
@@ -130,7 +152,7 @@ def main():
     scraper_min_raise = max(frame.blinds.bb,
                              2 * max((b for b in frame.bet), default=0))
     scraper_max_raise = frame.stack[frame.hero_seat] + frame.bet[frame.hero_seat]
-    client_action = openspiel_to_real_action(
+    client_action = _openspiel_chip_to_client_action(
         chosen_chip_int,
         scraper_min_raise=scraper_min_raise,
         scraper_max_raise=scraper_max_raise,

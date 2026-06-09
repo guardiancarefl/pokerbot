@@ -71,17 +71,21 @@ def to_inner_game_string_real_ante(self, level: int = 1) -> str:
 
 
 class _RealAnteStructure:
-    """Duck-typed TournamentStructure with both game-string methods
-    overridden to emit real-ante variants."""
+    """Duck-typed TournamentStructure with the level-1 fixed-state
+    game-string emitter overridden to use the real-ante variant.
+
+    NOTE: `to_inner_game_string_for_state` was promoted into the library
+    as canonical real-ante (src/nlhe/game_strings.py) so it no longer
+    needs an override here. We still override `to_inner_game_string`
+    (level-1, fixed) because that method continues to use the
+    inflated-BB encoder pending follow-up cleanup.
+    """
     def __init__(self, inner):
         object.__setattr__(self, "_inner", inner)
     def __getattr__(self, name):
         return getattr(self._inner, name)
     def to_inner_game_string(self, level=1):
         return to_inner_game_string_real_ante(self._inner, level)
-    def to_inner_game_string_for_state(self, blind_level, stacks, dealer_seat):
-        return to_inner_game_string_for_state_real_ante(
-            self._inner, blind_level, stacks, dealer_seat)
 
 
 def main():

@@ -608,78 +608,206 @@ class ActionDerivationError(Exception):
     as ScraperDataQuality (the safe-fallback path)."""
 
 
-def preflop_action_order(dealer_seat: int, alive_seats: list[int]) -> list[int]:
-    """Return seats in OpenSpiel preflop action order, ONE FULL LAP.
+def _detect_blinds_from_bb_post(
+    frame: "ScraperFrame", dealer_seat: int, alive_seats: list[int]
+) -> tuple[int | None, int | None]:
+    """Predicate 1: detect Ignition's dead-SB rotation from posted-blind
+    evidence in the frame's `bet` field.
 
-    Matches `to_inner_game_string_for_state`'s alive-seat rotation
-    (game_strings.py:397-423) for ALIVE seats only. EMPTY (non-alive) seats
-    are NOT in this list — but the replay engine MUST account for them, since
-    OpenSpiel cycles through all seats including the stack=1 placeholders.
-    `preflop_action_order_with_empties` is the version that includes empties
-    and is the right one for replay sequence emission.
+    Walks alive seats clockwise from (dealer + 1) absolute. Tracks the
+    first SB poster (bet == sb_amount) and the first BB poster
+    (bet == bb_amount) encountered. Stops at the BB poster.
 
-    Use this version for ALGORITHMIC reasoning (UTG/SB/BB identification);
-    use the _with_empties version for emitting action sequences fed to
-    OpenSpiel's state.apply_action.
+    Returns (sb_seat, bb_seat). Either may be None:
+      - (sb, bb) both ints: live-SB confirmed by visible SB+BB posters.
+      - (None, bb): dead-SB — the BB poster was found AND no alive seat
+        between dealer and BB posted the SB amount AND the absolute
+        (dealer+1) % NUM_SEATS seat is empty/busted.
+      - (None, None): signal not clean (no visible BB poster, or an
+        alive seat between dealer and BB has a bet that's neither 0,
+        sb_amount, nor bb_amount — could be raised SB / mid-hand state).
+        Caller falls back to the H1 default (next-alive-after-dealer).
+
+    Strict refusal on any unrecognized intervening bet prevents false-
+    positive dead-SB on OCR-noisy frames or mid-hand frames where SB
+    has acted past their forced post.
+    """
+    n = NUM_SEATS
+    sb_amt = frame.blinds.sb
+    bb_amt = frame.blinds.bb
+    sb_poster: int | None = None
+    bb_poster: int | None = None
+    for off in range(1, n + 1):
+        c = (dealer_seat + off) % n
+        if c not in alive_seats:
+            continue
+        b = frame.bet[c]
+        if b == sb_amt and sb_poster is None and bb_poster is None:
+            sb_poster = c
+            continue
+        if b == bb_amt:
+            bb_poster = c
+            break
+        if b == 0:
+            # Alive seat with no current bet — folded or yet-to-act in
+            # mid-hand frame. Continue scanning past.
+            continue
+        # Any other bet (raised, OCR noise, etc.) — signal not clean.
+        return None, None
+    if bb_poster is None:
+        return None, None
+    if sb_poster is not None:
+        return sb_poster, bb_poster
+    sb_candidate_abs = (dealer_seat + 1) % n
+    if sb_candidate_abs not in alive_seats:
+        return None, bb_poster  # confirmed dead-SB
+    # SB-candidate alive but no SB-amount poster seen → ambiguous
+    # (SB may have acted past their forced post). Defer to H1.
+    return None, None
+
+
+def _derive_blinds_and_action_order(
+    dealer_seat: int,
+    alive_seats: list[int],
+    *,
+    frame: "ScraperFrame | None" = None,
+) -> tuple[int | None, int | None, list[int], list[int], int | None]:
+    """SINGLE SOURCE OF TRUTH for SB/BB seat assignment AND action order
+    under Ignition's forward-moving-button rule.
+
+    Returns (sb_seat, bb_seat, pf_order_alive, pf_order_with_empties,
+              postflop_first_seat).
+      sb_seat: int seat index, or None for Ignition dead-SB rotation.
+      bb_seat: int seat index. Always set for n_alive >= 2.
+      pf_order_alive: alive seats in preflop action order, one full lap
+        from UTG (= next alive after BB).
+      pf_order_with_empties: NUM_SEATS absolute seat indices clockwise
+        from UTG (for OpenSpiel emission, which cycles empties as
+        forced-fold stack=1 placeholders).
+      postflop_first_seat: first-to-act postflop (= SB if alive, else BB).
+
+    When `frame` is provided, applies Predicate 1
+    (_detect_blinds_from_bb_post) to detect dead-SB from the bet field.
+    When `frame` is None OR Predicate 1 returns ambiguous, falls back to
+    H1 (live-SB default: SB = next alive after dealer, BB = next alive
+    after SB).
+
+    TRIPWIRE: this function is the ONLY site that resolves SB/BB from
+    positional + frame evidence. ALL downstream consumers
+    (derive_action_sequence, to_inner_game_string_for_state via
+    replay.py) MUST thread the resolved (sb_seat, bb_seat) through and
+    MUST NOT recompute independently. Recomputing at a second site
+    re-introduces the dead-SB misclassification one layer down — the
+    seq=55-class regression mode rolled back on 2026-06-09.
+
+    Upstream-guard tripwire (for the dead-SB branch specifically): this
+    function relies on parse_frame's two upstream filters:
+      - scraper_schema.py:255 rejects dead-button frames (dealer-on-empty)
+      - scraper_schema.py:272 rejects sub-4-alive frames (heads-up etc.)
+    If either guard is loosened, the n_alive == 2 branch below becomes
+    reachable and the dealer-alive assumption in Predicate 1's walk
+    needs to be revisited.
     """
     n_alive = len(alive_seats)
     if n_alive < 2:
-        return []
-    dpos = alive_seats.index(dealer_seat)
+        return (None, None, [], [], None)
+
+    n = NUM_SEATS
+
     if n_alive == 2:
-        bb_seat = alive_seats[(dpos + 2) % n_alive]  # = dealer (library bug)
-        sb_seat = alive_seats[(dpos + 1) % n_alive]
-        return [bb_seat, sb_seat]
-    return [alive_seats[(dpos + 3 + i) % n_alive] for i in range(n_alive)]
+        # Heads-up: button posts SB. OpenSpiel preflop order [BB, SB]
+        # (library convention; see prior preflop_action_order impl).
+        sb_seat = dealer_seat
+        bb_seat = next(s for s in alive_seats if s != dealer_seat)
+        pf_order_alive = [bb_seat, sb_seat]
+        return (sb_seat, bb_seat, pf_order_alive,
+                pf_order_alive, sb_seat)
+
+    # Default H1: SB = next alive after dealer, BB = next alive after SB.
+    dpos = alive_seats.index(dealer_seat)
+    sb_h1 = alive_seats[(dpos + 1) % n_alive]
+    bb_h1 = alive_seats[(dpos + 2) % n_alive]
+    sb_seat: int | None = sb_h1
+    bb_seat: int = bb_h1
+
+    if frame is not None:
+        det_sb, det_bb = _detect_blinds_from_bb_post(
+            frame, dealer_seat, alive_seats)
+        if det_bb is not None:
+            sb_seat = det_sb  # may be None (dead-SB) or int (live-SB)
+            bb_seat = det_bb
+
+    # UTG = first alive walking forward (absolute) from bb_seat + 1.
+    utg_seat = None
+    for offset in range(1, n + 1):
+        cand = (bb_seat + offset) % n
+        if cand in alive_seats:
+            utg_seat = cand
+            break
+
+    utg_alive_idx = alive_seats.index(utg_seat)
+    pf_order_alive = [
+        alive_seats[(utg_alive_idx + i) % n_alive] for i in range(n_alive)
+    ]
+    pf_order_with_empties = [
+        (utg_seat + offset) % n for offset in range(n)
+    ]
+    postflop_first_seat = sb_seat if sb_seat is not None else bb_seat
+    return (sb_seat, bb_seat, pf_order_alive,
+            pf_order_with_empties, postflop_first_seat)
+
+
+def preflop_action_order(dealer_seat: int, alive_seats: list[int],
+                          *, frame: "ScraperFrame | None" = None
+                          ) -> list[int]:
+    """Return alive seats in OpenSpiel preflop action order, ONE FULL LAP.
+
+    Without `frame`: defaults to live-SB rotation (matches existing
+    behavior for callers that don't have frame data — primarily tests).
+    With `frame`: routes through the centralized
+    _derive_blinds_and_action_order which applies Predicate 1 dead-SB
+    detection. Used by derive_action_sequence to keep the rotation
+    consistent with the resolved SB/BB.
+    """
+    _, _, pf_alive, _, _ = _derive_blinds_and_action_order(
+        dealer_seat, alive_seats, frame=frame)
+    return pf_alive
 
 
 def preflop_action_order_with_empties(dealer_seat: int,
-                                        alive: tuple[bool, ...]) -> list[int]:
-    """Like preflop_action_order but includes EMPTY (non-alive) seats in
-    their OpenSpiel cycle position. OpenSpiel rotates through ALL six seats
-    (including stack=1 placeholders for empties), so the action sequence
-    must emit an action for each empty seat too (it's a forced fold).
-
-    The order starts at UTG-among-alive and walks clockwise through ALL
-    seat indices 0..5, in absolute order rotating from UTG. Empty seats
-    that fall in the natural clockwise position are kept.
-    """
+                                        alive: tuple[bool, ...],
+                                        *,
+                                        frame: "ScraperFrame | None" = None
+                                        ) -> list[int]:
+    """Like preflop_action_order but includes EMPTY seats in their
+    absolute clockwise position. OpenSpiel cycles through ALL six seats
+    (stack=1 placeholders for empties), so the action sequence must emit
+    an action for each empty seat too (forced fold)."""
     alive_seats = [i for i in range(NUM_SEATS) if alive[i]]
-    n_alive = len(alive_seats)
-    if n_alive < 2:
-        return []
-    if n_alive == 2:
-        # Heads-up: only the two alive seats get cycled (we don't model the
-        # empties' "forced fold" turns for heads-up since the n_alive<4
-        # soft-drop rejects these frames anyway).
-        return preflop_action_order(dealer_seat, alive_seats)
-    # UTG = (dealer + 3) % NUM_SEATS in ABSOLUTE seat numbering when all
-    # seats are alive. Shorthanded: UTG is the third ALIVE seat clockwise
-    # from dealer (library convention).
-    dpos = alive_seats.index(dealer_seat)
-    utg_seat = alive_seats[(dpos + 3) % n_alive]
-    # From utg_seat, walk clockwise through ALL 6 seats once
-    return [(utg_seat + offset) % NUM_SEATS for offset in range(NUM_SEATS)]
+    _, _, _, pf_empties, _ = _derive_blinds_and_action_order(
+        dealer_seat, alive_seats, frame=frame)
+    return pf_empties
 
 
 def postflop_action_order(dealer_seat: int, alive_seats: list[int],
-                           folded: tuple[bool, ...]) -> list[int]:
+                           folded: tuple[bool, ...],
+                           *, frame: "ScraperFrame | None" = None
+                           ) -> list[int]:
     """Return alive-non-folded seats in OpenSpiel postflop action order
-    (SB first, then clockwise; folded seats skipped).
+    (first-to-act first, then clockwise; folded seats skipped).
 
-    SB is alive_seats[(dpos+1) % n_alive]. We walk clockwise from there and
-    skip any seat that's folded. n_alive == 2 case: SB acts first postflop
-    (= non-dealer; this matches both real-poker and the library's
-    `postflop_actor = sb_seat + 1` line, so no convention-bug here for
-    postflop)."""
+    First-to-act is SB if alive, else BB (dead-SB rotation under Ignition's
+    forward-moving button). Heads-up: SB acts first postflop (= non-dealer).
+    """
     n_alive = len(alive_seats)
     if n_alive < 2:
         return []
-    dpos = alive_seats.index(dealer_seat)
-    sb_alive_idx = (dpos + 1) % n_alive
+    _, _, _, _, first_seat = _derive_blinds_and_action_order(
+        dealer_seat, alive_seats, frame=frame)
+    first_idx = alive_seats.index(first_seat)
     order = []
     for offset in range(n_alive):
-        seat = alive_seats[(sb_alive_idx + offset) % n_alive]
+        seat = alive_seats[(first_idx + offset) % n_alive]
         if not folded[seat]:
             order.append(seat)
     return order
@@ -974,7 +1102,14 @@ def _derive_pre_hand_and_preflop_commit_simple_model(
         if not frame.alive[i]:
             pre.append(0)
         elif folded[i]:
-            blind_amt = sb if i == sb_seat else bb if i == bb_seat else 0
+            # sb_seat may be None under dead-SB rotation. Use explicit
+            # None-check rather than relying on `i == None == False`.
+            if sb_seat is not None and i == sb_seat:
+                blind_amt = sb
+            elif i == bb_seat:
+                blind_amt = bb
+            else:
+                blind_amt = 0
             pre.append(frame.stack[i] + ante + blind_amt)
         else:
             pre.append(frame.stack[i] + ante
@@ -1062,10 +1197,12 @@ def derive_action_sequence(frame: ScraperFrame,
         raise ActionDerivationError(
             f"n_alive={n_alive} < 2; no hand possible")
 
-    dpos = alive_seats.index(frame.dealer_seat)
-    sb_seat = alive_seats[(dpos + 1) % n_alive]
-    bb_seat = alive_seats[(dpos + 2) % n_alive] if n_alive >= 3 \
-        else alive_seats[(dpos + 2) % n_alive]
+    # SINGLE SOURCE OF TRUTH for SB/BB: routed through the centralizer
+    # which applies Predicate 1 (dead-SB detection from posted-blind
+    # evidence in `frame.bet`). sb_seat may be None under Ignition's
+    # forward-moving-button dead-SB rotation.
+    sb_seat, bb_seat, _, _, _ = _derive_blinds_and_action_order(
+        frame.dealer_seat, alive_seats, frame=frame)
 
     street_idx = _street_idx_from_board(frame.board)
 
@@ -1164,9 +1301,12 @@ def derive_action_sequence(frame: ScraperFrame,
     # `to_inner_game_string_for_state`). A seat that busted mid-hand
     # remains in the rotation per OpenSpiel; we must walk over them too.
     alive_at_start = _alive_at_hand_start_mask(frame, pre_hand_override)
+    # Pass frame= so the helpers route through Predicate 1 — guaranteeing
+    # the action-order uses the SAME (sb_seat, bb_seat) resolved above.
     pf_order_full = preflop_action_order_with_empties(
-        frame.dealer_seat, alive_at_start)
-    pf_order_alive = preflop_action_order(frame.dealer_seat, alive_seats)
+        frame.dealer_seat, alive_at_start, frame=frame)
+    pf_order_alive = preflop_action_order(
+        frame.dealer_seat, alive_seats, frame=frame)
     if not pf_order_alive:
         # Heads-up degenerate — already guarded by n_alive < 2 earlier.
         return actions
@@ -1174,7 +1314,9 @@ def derive_action_sequence(frame: ScraperFrame,
     bb_amount = frame.blinds.bb
     sb_amount = frame.blinds.sb
     cur_commit = [0] * NUM_SEATS
-    cur_commit[sb_seat] = sb_amount
+    # sb_seat is None under Ignition's dead-SB rotation; no seat posted SB.
+    if sb_seat is not None:
+        cur_commit[sb_seat] = sb_amount
     cur_commit[bb_seat] = bb_amount
     running_max = bb_amount
     raise_above_bb = False  # any voluntary raise above the BB?
@@ -1387,8 +1529,32 @@ def derive_action_sequence(frame: ScraperFrame,
             continue
 
         if t < running_max:
-            # Final commit < running_max → seat folded (defensive).
-            actions.append((seat, 0))
+            # Distinguish (a) truly-folded seat (no voluntary commit at
+            # all, or a partial commit below all-in) from (b) all-in-for-
+            # less seat that committed every chip they had below the
+            # running_max. For (b), emit chip_int=1 (call); OpenSpiel
+            # caps the seat's spent at their remaining stack so the
+            # committed chips land correctly in the pot. For (a), the
+            # original defensive-fold (chip_int=0) stays.
+            #
+            # Discriminator: pre[s] - ante == t (= they committed all
+            # available chips to this target) AND t > 0 (excludes
+            # ante-only contributions) AND frame.stack[s] == 0 (no
+            # chips behind).
+            #
+            # NOTE: this is the surgical fix for the all-in-for-less
+            # case (seq=246 SB, audit 2026-06-09). The earlier proposal
+            # to broaden busted_mid_hand was rejected because it would
+            # have re-routed alive-but-all-in raising seats (seq=97,
+            # seq=170, seq=428 etc.) through the chip_int=pre_hand
+            # convention, regressing the Class B chip_int=bet contract
+            # those seats currently satisfy.
+            is_all_in_for_less = (
+                int(pre[seat]) - ante == int(t)
+                and int(t) > 0
+                and int(frame.stack[seat]) == 0
+            )
+            actions.append((seat, 1 if is_all_in_for_less else 0))
             folded_emitted.add(seat)
             continue
 
@@ -1409,8 +1575,28 @@ def derive_action_sequence(frame: ScraperFrame,
                 idx_me = pf_order_alive.index(seat)
                 return s_other in pf_order_alive[idx_me + 1:]
 
+            # Predicate 2 (seq=246, refined post-seq=428 audit 2026-06-09):
+            # only defer to a seat whose max possible voluntary commit
+            # (= pre[s] - ante) is STRICTLY GREATER than their current
+            # target — i.e., they could keep raising past their target
+            # if they wanted. A seat with pre-ante == target is fully
+            # committed at target (all-in-for-less at that level); their
+            # commit is fixed and chronologically subordinate to a
+            # larger raise above their target. Deferring to them is
+            # wrong because they can't actually raise further.
+            #
+            # seq=246 SB: pre=630, ante=15, target=615, pre-ante==target
+            #   → don't defer (correct; SB is all-in for less below BTN).
+            # seq=428 hero: pre=1511, ante=30, target=1200, pre-ante=1481
+            #   > target=1200 → defer (correct; hero 3-bet partially, has
+            #   281 chips left, their 1200 commit IS chronologically
+            #   before UTG's 4-bet to 1938).
+            # Legit multi-raise (MP pre=2000, target=200): pre-ante=1990
+            #   > 200 → defer (correct; MP's 200 limp/call IS before
+            #   the larger raiser's lap-2 re-raise).
             defer_for_smaller_raise = any(
                 target[s] > running_max and target[s] < t
+                and (int(pre[s]) - ante > int(target[s]))
                 for s in pf_order_alive
                 if s != seat and is_active_for_emission(s)
                 and (s not in has_acted_once
@@ -1437,7 +1623,10 @@ def derive_action_sequence(frame: ScraperFrame,
                 if not raise_above_bb:
                     if s == bb_seat and target[s] == bb_amount:
                         return True
-                    if s == sb_seat and target[s] == sb_amount:
+                    # sb_seat may be None under dead-SB; no seat posted SB.
+                    if (sb_seat is not None
+                            and s == sb_seat
+                            and target[s] == sb_amount):
                         return True
                 return False
 
@@ -1512,7 +1701,8 @@ def derive_action_sequence(frame: ScraperFrame,
         bool(folded[i] or i in folded_emitted) for i in range(NUM_SEATS)
     )
     pf_alive_post = postflop_action_order(
-        frame.dealer_seat, alive_seats, post_preflop_folded)
+        frame.dealer_seat, alive_seats, post_preflop_folded,
+        frame=frame)
 
     # Intermediate streets: each closes with all checks (simple-model).
     for _ in range(1, street_idx):

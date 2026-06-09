@@ -571,8 +571,10 @@ def test_for_state_full_table_blinds_correct():
     gs = ts.to_inner_game_string_for_state(
         blind_level=ts.level(1), stacks=stacks, dealer_seat=0,
     )
-    # SB=15 on seat 1, BB=55 (inflated) on seat 2
-    assert "blind=0 15 55 0 0 0" in gs
+    # Real-ante convention: SB=15 on seat 1, BB=25 on seat 2 (NOT inflated),
+    # native per-seat ante array.
+    assert "blind=0 15 25 0 0 0" in gs
+    assert "ante=5 5 5 5 5 5" in gs
     # firstPlayer: UTG=4 (1-indexed=4), postflop=SB=2 (1-indexed=2)
     assert "firstPlayer=4 2 2 2" in gs
 
@@ -600,9 +602,11 @@ def test_for_state_sb_bb_rotate_over_alive_seats():
     gs = ts.to_inner_game_string_for_state(
         blind_level=ts.level(1), stacks=stacks, dealer_seat=2,
     )
-    # SB should land on seat 4 (next alive after dealer 2, skipping busted seat 3)
-    # BB on seat 5 (next alive after seat 4)
-    assert "blind=0 0 0 0 15 55" in gs
+    # SB should land on seat 4 (next alive after dealer 2, skipping busted seat 3).
+    # BB on seat 5 (next alive after seat 4). Real-ante: BB=25 (not inflated);
+    # busted seat 3 gets ante=0 (no posting).
+    assert "blind=0 0 0 0 15 25" in gs
+    assert "ante=5 5 5 0 5 5" in gs
 
 
 def test_for_state_dealer_must_be_alive():
@@ -630,3 +634,83 @@ def test_for_state_produces_loadable_game():
     assert game.num_players() == 6
     state = game.new_initial_state()
     assert state.is_chance_node()
+
+
+# ---- short-stack blind/ante capping (regression: live-dryrun segfault) ----
+
+def test_for_state_short_stack_bb_does_not_crash():
+    """BB seat pre-hand stack < bb+ante must NOT segfault load_game.
+
+    ACPC's C-level readGame returns NULL when blind[c] > stack[c] or
+    blind+ante > stack[c]; the universal_poker wrapper dereferences that
+    NULL → SIGSEGV. The integration's to_inner_game_string_for_state
+    caps per-seat blind+ante to stack, encoding the standard-poker
+    'all-in for less than the blind' semantics so the C check never trips.
+    """
+    ts = TournamentStructure.from_yaml(
+        "configs/ignition_double_up_6max_turbo.yaml"
+    )
+    bl = ts.level(3)  # SB=50 BB=100 ante=15
+    # Dealer=3, alive=all → SB=seat4, BB=seat5. BB stack=80 < bb+ante=115.
+    stacks = [1500, 1500, 1500, 1500, 1500, 80]
+    gs = ts.to_inner_game_string_for_state(
+        blind_level=bl, stacks=stacks, dealer_seat=3,
+    )
+    # Capped: BB seat posts ante=15 + blind=65 (= stack=80, all-in).
+    assert "blind=0 0 0 0 50 65" in gs
+    assert "ante=15 15 15 15 15 15" in gs
+    game = _pyspiel_state.load_game(gs)
+    assert game.num_players() == 6
+    state = game.new_initial_state()
+    assert state.is_chance_node()
+
+
+def test_for_state_short_stack_sb_does_not_crash():
+    """SB seat pre-hand stack < sb+ante caps blind, BB unchanged."""
+    ts = TournamentStructure.from_yaml(
+        "configs/ignition_double_up_6max_turbo.yaml"
+    )
+    bl = ts.level(3)
+    # Dealer=3 → SB=seat4. SB stack=40 < sb+ante=65.
+    stacks = [1500, 1500, 1500, 1500, 40, 1500]
+    gs = ts.to_inner_game_string_for_state(
+        blind_level=bl, stacks=stacks, dealer_seat=3,
+    )
+    # SB capped: ante=15 + blind=25 (= stack=40, all-in). BB unchanged.
+    assert "blind=0 0 0 0 25 100" in gs
+    assert "ante=15 15 15 15 15 15" in gs
+    _pyspiel_state.load_game(gs).new_initial_state()  # must not crash
+
+
+def test_for_state_blind_seat_cannot_cover_ante():
+    """BB seat stack < ante: all chips go to ante, blind=0."""
+    ts = TournamentStructure.from_yaml(
+        "configs/ignition_double_up_6max_turbo.yaml"
+    )
+    bl = ts.level(3)  # ante=15
+    # BB seat (5) has stack=10 < ante=15.
+    stacks = [1500, 1500, 1500, 1500, 1500, 10]
+    gs = ts.to_inner_game_string_for_state(
+        blind_level=bl, stacks=stacks, dealer_seat=3,
+    )
+    # BB capped: ante=10 (all chips), blind=0.
+    assert "blind=0 0 0 0 50 0" in gs
+    assert "ante=15 15 15 15 15 10" in gs
+    _pyspiel_state.load_game(gs).new_initial_state()
+
+
+def test_for_state_non_blind_seat_cannot_cover_ante():
+    """Non-SB/non-BB seat stack < ante: ante capped at stack."""
+    ts = TournamentStructure.from_yaml(
+        "configs/ignition_double_up_6max_turbo.yaml"
+    )
+    bl = ts.level(3)  # ante=15
+    # Seat 0 (UTG-ish) has stack=5 < ante=15.
+    stacks = [5, 1500, 1500, 1500, 1500, 1500]
+    gs = ts.to_inner_game_string_for_state(
+        blind_level=bl, stacks=stacks, dealer_seat=3,
+    )
+    # Seat 0 ante capped to 5; blinds for SB/BB unchanged.
+    assert "ante=5 15 15 15 15 15" in gs
+    assert "blind=0 0 0 0 50 100" in gs
+    _pyspiel_state.load_game(gs).new_initial_state()

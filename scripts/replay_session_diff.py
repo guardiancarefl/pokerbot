@@ -40,11 +40,11 @@ def _hash(*parts) -> str:
     return h.hexdigest()[:16]
 
 
-def process(out_path: str):
+def process(out_path: str, log_path: str = LOG):
     structure = TournamentStructure.from_yaml(STRUCTURE_YAML)
     # Load all records
     records = []
-    with open(LOG) as f:
+    with open(log_path) as f:
         for line in f:
             r = json.loads(line)
             records.append(r)
@@ -232,12 +232,13 @@ def main():
     sub = ap.add_subparsers(dest="cmd", required=True)
     p1 = sub.add_parser("run")
     p1.add_argument("--out", required=True)
+    p1.add_argument("--log", default=LOG)
     p2 = sub.add_parser("diff")
     p2.add_argument("--pre", required=True)
     p2.add_argument("--post", required=True)
     args = ap.parse_args()
     if args.cmd == "run":
-        process(args.out)
+        process(args.out, log_path=args.log)
     elif args.cmd == "diff":
         diff(args.pre, args.post)
 

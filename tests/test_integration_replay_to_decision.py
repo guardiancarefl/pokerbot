@@ -217,3 +217,40 @@ def test_replay_returns_replay_error_on_inconsistent_frame():
                    pot_total=999)
     with pytest.raises(ReplayError):
         replay_to_decision(frame, _structure())
+
+
+# ---- Class B forced-all-in fallback (live dryrun 2026-06-08 seq=228) ----
+
+LV2 = BlindsLevel(sb=25, bb=50, ante=10)
+
+
+def test_replay_forced_all_in_fallback_to_pre_hand():
+    """Live dryrun seq=228 regression: when a seat is forced all-in for less
+    than the min-raise increment, OpenSpiel's legal_actions collapse to
+    {fold, call, pre_hand}; the voluntary-only chip_int from
+    derive_action_sequence (= bet[seat]) is rejected. replay_to_decision
+    catches this and retries with chip_int=stacks[seat] (= pre_hand) when
+    the failing seat is going all-in.
+
+    Constructed scenario (L2, ante=10): hero=seat 4 (mid-stack). Dealer=5
+    → SB=seat 0, BB=seat 1, UTG=seat 2. UTG opens to 200; seat 3 (short
+    stack pre_hand=200) is forced all-in for less since their full stack
+    < min-raise (2×200=400). bet[3] = 200 - 10 = 190 visible. Action
+    returns to hero.
+    """
+    pre_hand = (1500, 1500, 1500, 200, 1500, 1500)
+    bet = (25, 50, 200, 190, 0, 0)
+    stack = (1465, 1440, 1290, 0, 1490, 1490)
+    pot_total = 10 * 6  # antes only; blinds/raises still in front
+    frame = _frame(
+        dealer_seat=5, hero_seat=4,
+        stack=stack, bet=bet, board=(),
+        pot_total=pot_total, hero_cards=("Ah", "Jh"),
+        blinds=LV2,
+    )
+    # Without the replay fallback this raises ReplayError (chip_int=190
+    # rejected, legal=[0,1,200]). With the fallback it lands at hero.
+    pack = replay_to_decision(
+        frame, _structure(), pre_hand_override=pre_hand)
+    assert pack.final_current_player == 4
+    assert pack.street_idx == 0
