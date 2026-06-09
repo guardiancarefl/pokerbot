@@ -29,6 +29,10 @@ Common flags
   --abstraction PATH  Matching abstraction (236-dim).
   --structure PATH    Tournament structure YAML.
   --mode {sample,argmax}   Default sample (production deployment).
+                      argmax additionally requires --unsafe-argmax: sample
+                      is the deployment invariant (DECISIONS.md "Process
+                      learning: iter_500 throwaway probes" — the argmax
+                      deployment flag was the one real deployment bug).
   --seed N            RNG seed for sample mode.
   --out PATH          JSONL log output (every processed record, including
                       skips and safe-folds — full audit trail).
@@ -40,14 +44,17 @@ which is implemented in a separate runner.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import pickle
 import random
 import socket
+import subprocess
 import sys
 import time
 from dataclasses import asdict
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterator
 
@@ -357,9 +364,62 @@ def socket_records(bind_host: str, port: int) -> Iterator[tuple[int | None, dict
                 pass
 
 
+# ─── Session identity stamping ─────────────────────────────────────────
+
+def _sha256_of_file(path: str | Path) -> str:
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def _git_identity() -> tuple[str, bool]:
+    """(HEAD sha, dirty?) of the repo this script runs from. dirty counts
+    TRACKED modifications only — this working tree permanently carries
+    untracked artifact dirs, which would make the flag uninformative."""
+    repo = Path(__file__).resolve().parent.parent
+    try:
+        head = subprocess.check_output(
+            ["git", "-C", str(repo), "rev-parse", "HEAD"],
+            text=True).strip()
+        porcelain = subprocess.check_output(
+            ["git", "-C", str(repo), "status", "--porcelain",
+             "--untracked-files=no"], text=True)
+        return head, bool(porcelain.strip())
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return "unknown", False
+
+
+def build_session_header(args: argparse.Namespace,
+                          short_stack_bb: float) -> dict:
+    """Run-identity header — the first record of every session log.
+
+    sha256s are computed here from the file bytes at the same paths the
+    loaders read, immediately before loading; never from recorded
+    constants."""
+    head, dirty = _git_identity()
+    return {
+        "record_type": "session_header",
+        "mode": args.mode,
+        "seed": int(args.seed),
+        "ckpt_path": str(Path(args.checkpoint).resolve()),
+        "ckpt_sha256": _sha256_of_file(args.checkpoint),
+        "abstraction_sha256": _sha256_of_file(args.abstraction),
+        "floors": {
+            "aa_kk": True,
+            "check_when_free": True,
+            "short_stack_bb": float(short_stack_bb),
+        },
+        "git_head": head,
+        "git_dirty": dirty,
+        "started_utc": datetime.now(timezone.utc).isoformat(),
+    }
+
+
 # ─── Main loop ─────────────────────────────────────────────────────────
 
-def main() -> int:
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     ap = argparse.ArgumentParser(
         description="Stage 1 of the staged auto-clicker — DRY-RUN.")
     src = ap.add_mutually_exclusive_group(required=True)
@@ -378,15 +438,38 @@ def main() -> int:
                      default="configs/ignition_double_up_6max_turbo.yaml")
     ap.add_argument("--mode", default="sample",
                      choices=["sample", "argmax"])
+    ap.add_argument("--unsafe-argmax", action="store_true",
+                     help="Required alongside --mode argmax. Sample mode is "
+                          "the deployment invariant; argmax was the old "
+                          "deployment bug (DECISIONS.md iter_500 entry).")
     ap.add_argument("--seed", type=int, default=2026)
     ap.add_argument("--out", required=True,
                      help="JSONL log output (one row per processed record).")
     ap.add_argument("--stall-warn-seconds", type=float, default=2.0,
                      help="(socket mode) Warn if no message arrives within "
                           "this many seconds. Default 2.0s.")
-    args = ap.parse_args()
+    args = ap.parse_args(argv)
+
+    if args.mode == "argmax" and not args.unsafe_argmax:
+        ap.error(
+            "--mode argmax requires --unsafe-argmax. Sample mode is the "
+            "deployment invariant: DECISIONS.md 'Process learning: iter_500 "
+            "throwaway probes' records the argmax deployment flag as the one "
+            "real deployment bug of the 8-cycle arc (fixed argmax → sample); "
+            "argmax caricatures the mixed strategy and is for audits only.")
+
+    return args
+
+
+def main() -> int:
+    args = parse_args()
 
     structure = TournamentStructure.from_yaml(args.structure)
+
+    # Run-identity header: hash the exact files about to be loaded, then load.
+    from src.nlhe.integration.live_loop import _DEFAULT_SHORT_STACK_FLOOR_BB
+    header = build_session_header(
+        args, short_stack_bb=_DEFAULT_SHORT_STACK_FLOOR_BB)
 
     print(_color("[run_live_dryrun] loading model + abstraction…",
                   CYAN), flush=True)
@@ -401,6 +484,10 @@ def main() -> int:
     out_path = Path(args.out)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     log_fh = open(out_path, "a", buffering=1)  # line-buffered
+
+    header_line = json.dumps(header)
+    log_fh.write(header_line + "\n")
+    print(header_line, flush=True)
 
     n_total = n_decision = n_decision_cached = n_safe_fold = n_skip = 0
 
