@@ -1964,3 +1964,79 @@ every profile's settings header (header lines are parsed for no one).
 an i.i.d. `sample_starting_state` draw at a fixed 6-seat game string —
 shorthanded states ARE sampled (54% of queries at n_alive 4-5), but no
 busts occur within a match and no bubble trajectory exists.
+
+
+## Placeholder pot misassignment — scoring-path fix (C0)
+
+**Date:** 2026-06-10. **Commits:** `6b6a98b` (fix + tests), `9793b69`
+(SNG harness). **Artifacts:** `evals/bakeoff_20260610_conserving/`.
+
+### Defect
+`game_strings.to_inner_game_string_for_state` models busted seats as
+`stack=1 / ante=0 / blind=0` placeholders (universal_poker cannot drop
+seats). A placeholder posts nothing and is never in `firstPlayer`
+rotation, so it never acts — but universal_poker treats an unacted
+player as LIVE. When all alive players fold preflop and the fold-around
+lands on a placeholder, it wins the pot as "last live player"; the
+chips (all contributed by alive seats) are then destroyed when the
+caller zeroes placeholder stacks. Measured 1.5–7.7% of shorthanded
+hands (opponent-fold-rate dependent), always exactly one placeholder.
+Empirically 203/203 leaks are PREFLOP: 194 all-alive-fold + 9
+single-survivor, ZERO showdown. Pre-existing in the audited A/B harness
+and (at lower stakes) the single-hand bake-off.
+
+### Decision memo — two shapes evaluated
+- **(a) k-player game for dynamics + translation to the 6-seat
+  placeholder view for hero queries.** R1 trivially satisfied. R2 RISK:
+  HIGH — requires reproducing, byte-for-byte, what
+  `parse_state_6max` + the encoder emit for the 6-seat placeholder
+  state, from a different (k-player) underlying game. A large, fragile
+  byte-identity surface (num_players, seat indices, placeholder
+  chip values, betting sequence string, buckets).
+- **(b) keep the 6-seat placeholder game; detect-and-rescore terminals**
+  where a placeholder ends with positive return, awarding per poker
+  rules among alive seats; + a dealer-rotation blind guard. R2 RISK:
+  LOW — the in-hand game and the parser are UNTOUCHED, so hero
+  observation is byte-identical by construction; only the terminal
+  return vector (which no player observes as a feature) changes.
+
+**CHOSEN: (b).** R2 is decisive — (a)'s translation layer is exactly the
+kind of byte-identity surface the deployed model's training convention
+(`DECISIONS:679` bug-match, unpaired-from-its-fix) forbids us to risk.
+(b) preserves it for free.
+
+### Implementation
+`icm_returns.conserving_chip_returns` (pure) reassigns placeholder
+winnings to the rightful alive winner: sole survivor; last-alive-to-fold
+for the all-fold class; treys showdown for the theoretical ≥2-non-folded
+class. `conserving_returns_for_terminal` (state-aware wrapper) resolves
+the showdown winner. Wired into the SCORING paths (`eval_pool`,
+`sng_baseline`) only — NOT training (`cfr6`): the deployed model was
+trained on the uncorrected convention and is not being retrained.
+A separate odd-chip-split rounding leak in the integer stack carry is
+fixed by largest-remainder integerization (`sng_baseline`). The SNG loop
+gained a `_blind_guard` (closing the 0-chip-blind SpielError).
+
+### R1 — conservation
+10,000-hand fuzz (alive 3–6, all dealer positions): zero nonconserving.
+2 named regression repros (`tests/test_placeholder_pot_fix.py`).
+
+### R2 — observation invariance (PROOF, git-stash pre/post, CRN seed=13, 800 hands)
+```
+DECISION TRACE byte-identical (parsed-state + sampled action at every
+  hero/opp decision): True   (6667 / 6667 records, 0 differing)
+equity-delta hands corrected: 60 / 800   (leak hands only; scoring-only)
+```
+The fold-tracking reads the applied action (no RNG/policy perturbation);
+the conserving call runs after the loop.
+
+### Step 3 — retroactive impact (both prior headlines SURVIVE)
+- **A/B floor (+0.0100 ± 0.00255):** paired V1−V0 with the fix toggled
+  on identical seeds (4,000 games, hpl=5): OFF +0.00850, ON +0.00700;
+  paired shift **−0.0015 ± 0.0032 (not significant; 0.9% of games
+  changed)**. The paired CRN design cancels most of the leak (identical
+  in both arms pre-divergence). Headline survives, positive and ~3σ.
+- **Single-hand bake-off vs the 2026-06-09 wired table** (24×10k, same
+  seed 2026): all 24 rows shift slightly negative (hero edge shrinks),
+  **zero rows move >2σ**; panel +0.0105 → +0.0101. killphilmtt
+  −0.0153 → −0.0157 (−0.2σ) — the C3 gate metric is robust to the fix.
