@@ -1,0 +1,13 @@
+{
+  "record_type": "selfplay_calibration_merged",
+  "n_shards": 8,
+  "n_scored": 2000,
+  "n_tainted": 0,
+  "n_capped": 0,
+  "hero_net_per_game": -0.042,
+  "stderr": 0.022340948950302,
+  "sigma_from_zero": 1.8799559541284505,
+  "mean_hands_per_game": 16.1975,
+  "criterion": "|net/game| < 2*stderr",
+  "verdict": "PASS"
+}

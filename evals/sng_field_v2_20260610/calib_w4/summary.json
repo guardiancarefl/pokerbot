@@ -1,0 +1,54 @@
+{
+  "record_type": "summary",
+  "kind": "selfplay_calibration",
+  "ckpt_path": "/home/quant/pokerbot/runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt",
+  "ckpt_sha256": "b79e82dd0ce9e78e4eb666b7379df953dadbf2a6e026c6bd4b6eec695e9b1b11",
+  "abstraction_sha256": "0fc20800dc7ce89ea950c975decbd530ac6c6f3c164105e8ab99d24359de4c8e",
+  "config": {
+    "ckpt": "runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt",
+    "abstraction": "runs/abstraction_20260521_223018_retrofit/abstraction.pkl",
+    "structure": "configs/ignition_double_up_6max_turbo.yaml",
+    "games": 2000,
+    "game_start": 1000,
+    "game_count": 250,
+    "master_seed": 2026,
+    "hands_per_level": 5,
+    "max_hands": 200,
+    "mode": "sample",
+    "out_dir": "evals/sng_field_v2_20260610/calib_w4",
+    "log_every": 50,
+    "check_dealer_only": false,
+    "merge": null
+  },
+  "game_range": [
+    1000,
+    1250
+  ],
+  "dealer_balance": {
+    "counts": [
+      346,
+      337,
+      340,
+      332,
+      335,
+      310
+    ],
+    "expected_per_seat": 333.3333333333333,
+    "chi2": 2.302,
+    "df": 5,
+    "p_value": 0.80597307927273,
+    "balanced": true
+  },
+  "git_head": "e888b11983e8dee95afee530d5ce04617697aff8",
+  "git_dirty": false,
+  "started_utc": "2026-06-10T04:24:49.750241+00:00",
+  "n_scored": 250,
+  "n_tainted": 0,
+  "n_capped": 0,
+  "hero_net_per_game": 0.008,
+  "stderr": 0.06324352931328232,
+  "sigma_from_zero": 0.12649515431644087,
+  "mean_hands_per_game": 15.704,
+  "elapsed_s": 98.74902009963989,
+  "finished_utc": "2026-06-10T04:26:30.860303+00:00"
+}

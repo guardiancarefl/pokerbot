@@ -373,6 +373,90 @@
         "shanky",
         "archetype"
       ]
+    },
+    {
+      "name": "shanky-ticketmaster3",
+      "path": "data/shanky_profiles/ticketmaster3.txt",
+      "metadata": {
+        "policy_type": "shanky",
+        "source_file": "ticketmaster3.txt",
+        "n_rules": 67,
+        "big_blind_chips": 100
+      },
+      "tags": [
+        "shanky",
+        "archetype"
+      ]
+    },
+    {
+      "name": "shanky-ticketmaster5",
+      "path": "data/shanky_profiles/ticketmaster5.txt",
+      "metadata": {
+        "policy_type": "shanky",
+        "source_file": "ticketmaster5.txt",
+        "n_rules": 66,
+        "big_blind_chips": 100
+      },
+      "tags": [
+        "shanky",
+        "archetype"
+      ]
+    },
+    {
+      "name": "shanky-tighttom",
+      "path": "data/shanky_profiles/tighttom.txt",
+      "metadata": {
+        "policy_type": "shanky",
+        "source_file": "tighttom.txt",
+        "n_rules": 148,
+        "big_blind_chips": 100
+      },
+      "tags": [
+        "shanky",
+        "archetype"
+      ]
+    },
+    {
+      "name": "shanky-trappertom",
+      "path": "data/shanky_profiles/trappertom.txt",
+      "metadata": {
+        "policy_type": "shanky",
+        "source_file": "trappertom.txt",
+        "n_rules": 169,
+        "big_blind_chips": 100
+      },
+      "tags": [
+        "shanky",
+        "archetype"
+      ]
+    },
+    {
+      "name": "shanky-trickytom",
+      "path": "data/shanky_profiles/trickytom.txt",
+      "metadata": {
+        "policy_type": "shanky",
+        "source_file": "trickytom.txt",
+        "n_rules": 163,
+        "big_blind_chips": 100
+      },
+      "tags": [
+        "shanky",
+        "archetype"
+      ]
+    },
+    {
+      "name": "shanky-tyranttom",
+      "path": "data/shanky_profiles/tyranttom.txt",
+      "metadata": {
+        "policy_type": "shanky",
+        "source_file": "tyranttom.txt",
+        "n_rules": 251,
+        "big_blind_chips": 100
+      },
+      "tags": [
+        "shanky",
+        "archetype"
+      ]
     }
   ]
 }

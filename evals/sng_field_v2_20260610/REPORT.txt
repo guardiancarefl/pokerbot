@@ -1,0 +1,100 @@
+=== SNG FIELD v2 — 7 additive profiles on the v1 yardstick (same harness, master seed 2026, 2000 games each) ===
+
+SELF-PLAY CALIBRATION ROW (hero ckpt in all 6 seats, per-seat RNG, dealer rotation chi2=2.30 p=0.806 BALANCED):
+  net/game -0.0420 +/- 0.0223  (1.88 sigma from 0; criterion |net|<2 sigma) -> PASS  [n=2000, tainted=0, hands/game=16.2]
+  NOTE: pass is marginal (1.88 sigma, two-sided p~0.06). Read any |row| < ~0.045 with that grain of salt;
+  every v2 row is >30 sigma from the gate boundary, so no v2 conclusion is at risk.
+
+V2 ROWS (v1 table format: net/game, stderr, sigma, hands/game, tainted):
+profile                     net/game  stderr  sigma  hands  taint
+tyranttom                    +0.5820  0.0182   32.0   25.0      0
+trappertom                   +0.6400  0.0172   37.2   24.6      0
+trickytom                    +0.6680  0.0166   40.1   24.7      0
+tighttom                     +0.6680  0.0166   40.1   24.7      0
+ticketmaster3                +0.8090  0.0131   61.5   35.8      0
+sng                          +0.8810  0.0106   83.3   35.5      0
+ticketmaster5                +0.9160  0.0090  102.1   35.0      0
+
+EXCEPTION GATE: total tainted games across all 7 profiles = 0
+
+=== ticketmaster3 vs the stage-decomposition backdrop (pre-committed C3 gate criterion) ===
+
+Panel backdrop (v1, edge per hand by hand-start alive count): 6h +0.0203, 5h +0.0117, 4h +0.0037.
+
+  ticketmaster3:        6h +0.0208 (56476 hands), 5h +0.0219 (12072), 4h +0.0145 (3133)
+  ticketmaster5:        6h +0.0254 (59423),       5h +0.0190 (7968),  4h +0.0131 (2539)
+  ticketmaster (v1):    6h +0.0067 (35839),       5h +0.0088 (21739), 4h +0.0059 (11154)
+
+PRE-COMMITTED CRITERION: net/game < +0.10 -> second C3 gate metric; negative -> primary gate.
+RESULT: +0.8090 +/- 0.0131. NEITHER branch triggers. ticketmaster3 does NOT join the gate set;
+killphilmtt (-0.174) remains the sole C3 gate metric.
+
+Reading: tm3's bubble code is LIVE in our adapter (gated on opponentsattable/stacksize, both
+correctly tracked) and it does not attack the measured weak zone — it folds everything but
+AA/KK/AKs/QQ when short-handed with >6bb, which bleeds ICM to an escalating-blind structure.
+Hero's 4-handed edge vs tm3 (+0.0145/hand) is ~4x the panel-average weak-zone edge (+0.0037)
+and ~2.5x v1 ticketmaster's (+0.0059). tm3/tm5 are SOFTER than v1 ticketmaster (+0.81/+0.92
+vs +0.27), not harder. The intake hypothesis ("format-matched bubble specialist beats the
+half-faithful killphil clone as a target") is REFUTED by measurement.
+
+=== Tom ladder sanity (tyrant/tricky/trapper/tight; timid in v1 at +1.0000) ===
+
+Observed: tyrant +0.582 < trapper +0.640 < tricky = tight +0.668 << timid +1.000 (v1).
+Broad ladder shape is plausible: the most aggressive Tom is hardest, the maximally passive
+one is free money.
+
+TWO ANOMALIES, BOTH EXPLAINED:
+1. tighttom == trickytom EXACTLY (byte-identical per-game logs, md5 fbf704ca...; shadow-play
+   probe: 58,301 decisions, 0 divergent). The source files genuinely differ (235 diff lines —
+   open-range tweaks like T9s, trap user-flags). ROOT CAUSE: every behavioral difference
+   between the two profiles sits inside rules gated on `stilltoact` (34 references each), and
+   the adapter hardcodes stilltoact=0 (src/nlhe/scripted_bots/policy.py:308, documented
+   "OpenSpiel doesn't expose; safe default"). All stilltoact>=k rules are dead, in ALL
+   profiles, v1 included (v1 ticketmaster has the same 11 dead references as tm3/tm5). The
+   Toms' positional open-range architecture is dead in both; the live remainder of the two
+   rule sets is identical, hence identical play. This is a KNOWN-LIMITATION finding about
+   profile fidelity, not a harness-correctness bug: all rows remain valid measurements of
+   "hero vs profile-as-our-adapter-plays-it."
+2. trapper (+0.640) vs tricky (+0.668) inverts the nominal ladder order by 0.028 (~1.2 sigma
+   on the paired stderr) — within noise, and partially moot given (1): tricky's distinctive
+   trap logic is largely stilltoact/user-flag-gated.
+
+=== RIDER 1 — hands/game reconciliation (v1 27-34 vs live 15/~26, levels <=5) ===
+
+Side-by-side (same harness, same hpl=5 unless noted):
+
+  v1 vs Shanky field (48,000 games):  hands/game mean 29.2, p5-p95 = 15-38, median 30
+    level_end: 56.9% of games end at L7+; 19.1% of all HANDS played at L6+
+  self-play calibration (2,000 games): hands/game mean 16.2, median 15, p95 28
+    level_end mode L3-L4; 10% of games reach L6+
+  live corpus (re-derived from logs/live_dryrun_*.jsonl, hand = hero-hole-card run):
+    sessions: 15, 20, 31, 37, 10, (plus <10-hand fragments); levels observed L1-L5 ONLY
+    hands-per-level observed: 3-14, pooled mean ~5.7 (vs harness hpl=5)
+    3 of 5 substantive sessions end with hero bust at 4-5 alive (hero-censored record)
+  [segmentation caveat: audit 9b counted "complete games at 15 and ~26 hands"; this
+   re-derivation finds 15 and 31/37 — different hand-boundary rules, same qualitative story]
+
+DECOMPOSITION OF THE GAP (v1 29.2 vs live ~15-37, levels <=5):
+1. TIGHT-FIELD ARTIFACT — DOMINANT. Swap only the opponents (Shanky field -> hero-clones,
+   identical harness/hpl/seeds): 29.2 -> 16.2 hands/game, right on the live distribution.
+   Shanky profiles bust ~2x slower than realistic opposition; games then grind into L6-L8
+   where blinds force terminations.
+2. HERO-BUST CENSORING — SECONDARY. v1 hands/game counts the FULL TABLE to the 3-alive
+   terminal, including hands after hero busts. The live record stops when hero busts.
+   Replay probe (exact v1 seeds, hero_net cross-check 0/2000 mismatches): table 27.1 ->
+   hero-observed 20.1 vs killphil; 34.4 -> 28.5 vs ticketmaster; 29.4 -> 28.8 littlegreen;
+   34.4 -> 33.7 vs mtt. Effect -1 to -7 hands depending on hero bust rate.
+3. ESCALATION CADENCE — MINOR. Live shows ~5.7 hands/level pooled (range 3-14) vs hpl=5:
+   harness escalates slightly FASTER than live, which shortens games — it cannot explain
+   v1 running long. Not the driver. (One live session ran ~9/level; live levels are
+   time-based, so hpl is an approximation by design.)
+4. HARNESS ISSUE — RULED OUT for game length: chip conservation + 3-alive terminal verified
+   (calibration row, 0 tainted, hands/game distribution sane), replay determinism exact.
+
+C3 TRAINING-DISTRIBUTION CONSEQUENCE (the actual finding): harvesting states from
+vs-Shanky-field games OVERSAMPLES high-level/short-stack states that live play never
+reaches — 19.1% of v1 hands are at L6+, live corpus has ZERO hands above L5. A C3 harvest
+should either (a) draw from self-play-paced games (16 hands/game, level distribution matches
+live), or (b) importance-weight/truncate the vs-field games at the live level distribution.
+"Looks fine" it is not: an unweighted v1 harvest trains ~1 in 5 decisions on states with
+no live counterpart.

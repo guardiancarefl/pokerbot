@@ -1,0 +1,49 @@
+04:28:43  run header: {"record_type": "run_header", "ckpt_path": "/home/quant/pokerbot/runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt", "ckpt_sha256": "b79e82dd0ce9e78e4eb666b7379df953dadbf2a6e026c6bd4b6eec695e9b1b11", "abstraction_sha256": "0fc20800dc7ce89ea950c975decbd530ac6c6f3c164105e8ab99d24359de4c8e", "config": {"ckpt": "runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt", "abstraction": "runs/abstraction_20260521_223018_retrofit/abstraction.pkl", "structure": "configs/ignition_double_up_6max_turbo.yaml", "shanky_dir": "data/shanky_profiles", "profiles": "tighttom", "games": 2000, "master_seed": 2026, "hands_per_level": 5, "max_hands": 200, "mode": "sample", "out_dir": "evals/sng_field_v2_20260610/w5", "log_every": 200}, "master_seed": 2026, "git_head": "e888b11983e8dee95afee530d5ce04617697aff8", "git_dirty": true, "started_utc": "2026-06-10T04:28:43.204930+00:00"}
+04:28:45  loaded shanky:6pack
+04:28:47  loaded shanky:gushansenmtt
+04:28:47  loaded shanky:killphilmtt
+04:28:48  loaded shanky:lionmttv.10
+04:28:49  loaded shanky:loosenluckymtt
+04:28:49  loaded shanky:lucky1_6max
+04:28:50  loaded shanky:millenniummttv.49
+04:28:51  loaded shanky:minestackermttv.7.3
+04:28:51  loaded shanky:sevenv.2
+04:28:52  loaded shanky:thefixersng
+04:28:52  loaded shanky:webbermtt
+04:28:52  loaded shanky:beep
+04:28:52  loaded shanky:fixedlimitheadsup
+04:28:54  loaded shanky:itmstrikea
+04:28:56  loaded shanky:itmstrikec
+04:28:58  loaded shanky:kamakazi
+04:28:58  loaded shanky:littlegreen
+04:28:58  loaded shanky:littlegreen2
+04:28:58  loaded shanky:modernmikecash
+04:29:00  loaded shanky:modernmikemtt
+04:29:00  loaded shanky:mtt
+04:29:00  loaded shanky:sng
+04:29:00  loaded shanky:ticketmaster
+04:29:00  loaded shanky:ticketmaster3
+04:29:00  loaded shanky:ticketmaster5
+04:29:01  loaded shanky:tighttom
+04:29:02  loaded shanky:timidtom
+04:29:02  loaded shanky:trappertom
+04:29:02  loaded shanky:trickytom
+04:29:02  loaded shanky:tyranttom
+04:29:02  loaded shanky:wildbillmtt
+DeepCFR6MaxSolver  device=cpu  feature_dim=236  payout_mode=double_up  payouts=[2.0, 2.0, 2.0]
+04:29:02  1 profile(s), 2000 games each, hpl=5, master_seed=2026
+04:29:02  [1/1] tighttom
+04:29:53      200/2000 games  net/game=+0.7200  [51s]
+04:30:50      400/2000 games  net/game=+0.6800  [108s]
+04:31:43      600/2000 games  net/game=+0.6800  [161s]
+04:32:38      800/2000 games  net/game=+0.6825  [216s]
+04:33:33      1000/2000 games  net/game=+0.6700  [271s]
+04:34:24      1200/2000 games  net/game=+0.6717  [322s]
+04:35:13      1400/2000 games  net/game=+0.6614  [371s]
+04:36:04      1600/2000 games  net/game=+0.6713  [422s]
+04:36:54      1800/2000 games  net/game=+0.6611  [472s]
+04:37:43      2000/2000 games  net/game=+0.6680  [521s]
+04:37:43    tighttom: net/game=+0.6680 +/- 0.0166  hands/game=24.7 tainted=0 capped=0 [521s]
+04:37:43  wrote evals/sng_field_v2_20260610/w5/summary.json
+04:37:43  SUMMARY (ascending hero net/game):
+04:37:43    shanky:tighttom                   +0.6680 +/- 0.0166  hands=24.7 tainted=0

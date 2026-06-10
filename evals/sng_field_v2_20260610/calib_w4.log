@@ -1,0 +1,9 @@
+dealer balance over 2000 game seeds: counts=[346, 337, 340, 332, 335, 310] chi2=2.30 (df=5) p=0.8060 -> BALANCED
+run header: {"record_type": "run_header", "kind": "selfplay_calibration", "ckpt_path": "/home/quant/pokerbot/runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt", "ckpt_sha256": "b79e82dd0ce9e78e4eb666b7379df953dadbf2a6e026c6bd4b6eec695e9b1b11", "abstraction_sha256": "0fc20800dc7ce89ea950c975decbd530ac6c6f3c164105e8ab99d24359de4c8e", "config": {"ckpt": "runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt", "abstraction": "runs/abstraction_20260521_223018_retrofit/abstraction.pkl", "structure": "configs/ignition_double_up_6max_turbo.yaml", "games": 2000, "game_start": 1000, "game_count": 250, "master_seed": 2026, "hands_per_level": 5, "max_hands": 200, "mode": "sample", "out_dir": "evals/sng_field_v2_20260610/calib_w4", "log_every": 50, "check_dealer_only": false, "merge": null}, "game_range": [1000, 1250], "dealer_balance": {"counts": [346, 337, 340, 332, 335, 310], "expected_per_seat": 333.3333333333333, "chi2": 2.302, "df": 5, "p_value": 0.80597307927273, "balanced": true}, "git_head": "e888b11983e8dee95afee530d5ce04617697aff8", "git_dirty": false, "started_utc": "2026-06-10T04:24:49.750241+00:00"}
+DeepCFR6MaxSolver  device=cpu  feature_dim=236  payout_mode=double_up  payouts=[2.0, 2.0, 2.0]
+  50/250 games  net/game=+0.0400  [18s]
+  100/250 games  net/game=+0.0000  [40s]
+  150/250 games  net/game=+0.0000  [59s]
+  200/250 games  net/game=+0.0000  [78s]
+  250/250 games  net/game=+0.0080  [99s]
+shard done: n=250 net/game=+0.0080 +/- 0.0632 tainted=0 [99s]
