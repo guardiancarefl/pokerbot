@@ -253,6 +253,29 @@ class TrainConfig6Max:
     parallel_groups: int = 0                # 0 = sequential (legacy); >0 = orchestrator at G groups
     parallel_use_processes: bool = True     # True = mp.fork workers; False = serial in-process (debug only)
 
+    # --- C3 retrain bundle. All defaults preserve pre-C3 behavior and let
+    # old checkpoints (whose config_dict lacks these keys) reconstruct
+    # bit-identically through _load_solver's saved.get(..., default).
+    #
+    # encoder_eff_bb: adds the effective-stack-in-BB depth channel
+    # (feature_dim 236 -> 237). Old 236-d checkpoints load with False.
+    encoder_eff_bb: bool = False
+    # ante_convention: the game-string convention this model was trained
+    # under, stamped into every checkpoint via config_dict. "real" =
+    # per-seat native antes (canonical to_inner_game_string_for_state,
+    # patched pyspiel); "inflated_bb" = the legacy bb+N*ante hack. The
+    # live bridge refuses to serve non-"real" checkpoints (see
+    # src/nlhe/conventions.py) — convention dispatch is per-checkpoint,
+    # never a global flip.
+    ante_convention: str = "real"
+    # empirical_dist_path: path to a training_dist_v* artifact (see
+    # scripts/harvest_training_dist.py). When set (requires
+    # tournament_structure_path), per-traversal starting states are drawn
+    # uniformly from the harvested hand-start rows instead of
+    # stack_sampler.sample_starting_state — the C3 fix for the
+    # parametric sampler's L6+ oversampling (Rider 1, 2026-06-10).
+    empirical_dist_path: Optional[str] = None
+
     seed: int = 2026
 
     def __post_init__(self):
@@ -275,6 +298,23 @@ class TrainConfig6Max:
                 f"self-play); got archetype_mix={self.archetype_mix}, "
                 f"league_mix={self.league_mix}, "
                 f"sum={self.archetype_mix + self.league_mix}"
+            )
+        if self.parallel_groups > 0 and (self.encoder_eff_bb
+                                         or self.empirical_dist_path):
+            raise ValueError(
+                "encoder_eff_bb / empirical_dist_path are not wired into the "
+                "parallel worker protocol (WorkerInput); run sequential "
+                "(parallel_groups=0) or extend src/nlhe/parallel first."
+            )
+        if self.ante_convention not in ("real", "inflated_bb"):
+            raise ValueError(
+                f"ante_convention must be 'real' or 'inflated_bb', "
+                f"got {self.ante_convention!r}"
+            )
+        if self.empirical_dist_path and not self.tournament_structure_path:
+            raise ValueError(
+                "empirical_dist_path requires tournament_structure_path "
+                "(the artifact rows reference the structure's blind levels)"
             )
         # archetype_profiles, when given, must be a subset of the named
         # archetypes. Config-only check (no runtime objects) → __post_init__.
@@ -354,6 +394,7 @@ class DeepCFR6MaxSolver:
             starting_stack=config.starting_stack,
             max_bucket_dim=max_bucket_dim,
             bucket_runouts=config.bucket_runouts,
+            include_eff_bb=config.encoder_eff_bb,
         )
 
         # Six advantage networks. PlayerNetworks6Max owns nets, optimizers,
@@ -390,6 +431,27 @@ class DeepCFR6MaxSolver:
                 f"  tournament mode: loaded "
                 f"{self.tournament_structure.format_name} "
                 f"({len(self.tournament_structure.blind_schedule)} levels)"
+            )
+
+        # C3 empirical training distribution: load the harvested hand-start
+        # rows once. Sampled per traversal with rng_stack_t (same RNG slot
+        # the parametric sampler used, so the seed schedule is unchanged).
+        self.empirical_rows = None
+        if config.empirical_dist_path is not None:
+            import gzip as _gzip
+            import json as _json
+            p = str(config.empirical_dist_path)
+            raw = (_gzip.open(p, "rb").read() if p.endswith(".gz")
+                   else open(p, "rb").read())
+            artifact = _json.loads(raw)
+            self.empirical_rows = artifact["hand_starts"]
+            if not self.empirical_rows:
+                raise ValueError(
+                    f"empirical_dist_path {p} has no hand_starts rows")
+            self.log(
+                f"  empirical distribution: {len(self.empirical_rows)} "
+                f"hand starts from {artifact.get('n_games', '?')} games "
+                f"({artifact.get('version', 'unversioned')})"
             )
 
         # League play: load registry + construct pool when both fields set.
@@ -786,11 +848,22 @@ class DeepCFR6MaxSolver:
                         (self.cfg.seed * 1_000_003 + it * 9_973 + t + STACK_SAMPLE_SALT)
                         & 0x7FFFFFFFFFFFFFFF
                     )
-                    sampled = sample_starting_state(
-                        self.tournament_structure,
-                        rng_stack_t,
-                        num_paid=self.cfg.num_paid,
-                    )
+                    if self.empirical_rows is not None:
+                        # C3 path: draw a harvested hand-start row. Same RNG
+                        # slot as the parametric sampler.
+                        row = rng_stack_t.choice(self.empirical_rows)
+                        sampled = {
+                            "blind_level": self.tournament_structure.level(
+                                row["level"]),
+                            "stacks": list(row["stacks"]),
+                            "dealer_seat": row["dealer"],
+                        }
+                    else:
+                        sampled = sample_starting_state(
+                            self.tournament_structure,
+                            rng_stack_t,
+                            num_paid=self.cfg.num_paid,
+                        )
                     gs = self.tournament_structure.to_inner_game_string_for_state(
                         blind_level=sampled["blind_level"],
                         stacks=sampled["stacks"],

@@ -18,9 +18,15 @@ Feature layout (default config, k=200 postflop):
   - effective stack between hero and current best villain (1)
   - betting-history features (5): bets-this-street, raises-this-street,
     last-bet-size-frac, n-actions-this-street, is-facing-bet
+  - [C3, include_eff_bb=True only] effective stack in BIG BLINDS (1):
+    min(hero, max alive opp) / big_blind, scaled by 1/EFF_BB_SCALE.
+    Same quantity as the deployment floors' _hero_eff_bb so depth reads
+    consistently across the stack. Appended at the END so the first 236
+    offsets are byte-identical to the legacy layout.
 
-Total feature dimension: 200 + 4 + 6 + 6 + 6 + 6 + 1 + 1 + 1 + 5 = 236.
-Higher than HUNL [214] because of the 6x repeated per-player features.
+Total feature dimension: 200 + 4 + 6 + 6 + 6 + 6 + 1 + 1 + 1 + 5 = 236
+(+1 = 237 with include_eff_bb). Higher than HUNL [214] because of the
+6x repeated per-player features.
 
 NOT integrated with the solver yet — that's Phase 4e. This module is
 the validated building block.
@@ -163,6 +169,11 @@ def parse_state_6max(state: Any, observer: int | None = None) -> dict:
 
 POSITIONS_6MAX = ["UTG", "MP", "CO", "BTN", "SB", "BB"]
 
+# Linear scaling for the include_eff_bb depth feature: eff_bb / EFF_BB_SCALE.
+# 60bb (a full L1 starting stack at bb=25) encodes as 0.6, keeping the
+# channel in the same magnitude band as the other normalized features.
+EFF_BB_SCALE = 100.0
+
 
 def position_for_seat(seat: int, num_players: int = 6) -> int:
     """Return position-index (0=UTG, 1=MP, ..., 5=BB) for a seat.
@@ -206,6 +217,11 @@ class InfosetEncoder6Max:
     starting_stack: int = 20000
     max_bucket_dim: int = 200
     bucket_runouts: int = 200
+    # C3 depth channel (236 -> 237). False preserves the legacy layout
+    # bit-for-bit; old checkpoints are loaded with False (see
+    # TrainConfig6Max.encoder_eff_bb and _load_solver's config_dict
+    # pass-through).
+    include_eff_bb: bool = False
 
     # Per-traversal cache, keyed by (frozenset(hero), tuple(board)) -> bucket id.
     _bucket_cache: dict = field(default_factory=dict)
@@ -217,8 +233,9 @@ class InfosetEncoder6Max:
     def feature_dim(self) -> int:
         """Total feature vector dimension."""
         # 200 bucket + 4 street + 6 position + 6 stacks + 6 active + 6 contribution
-        # + 1 pot + 1 tocall + 1 effstack + 5 betting
-        return self.max_bucket_dim + 4 + 6 + 6 + 6 + 6 + 1 + 1 + 1 + 5
+        # + 1 pot + 1 tocall + 1 effstack + 5 betting (+ 1 eff_bb if enabled)
+        return (self.max_bucket_dim + 4 + 6 + 6 + 6 + 6 + 1 + 1 + 1 + 5
+                + (1 if self.include_eff_bb else 0))
 
     def encode(self, state: Any, rng: random.Random | None = None) -> np.ndarray:
         """Encode an OpenSpiel state into a feature vector for the network.
@@ -341,6 +358,25 @@ class InfosetEncoder6Max:
         feat[offset + 3] = b["n_actions_street"]
         feat[offset + 4] = 1.0 if b["is_facing_bet"] else 0.0
         offset += 5
+
+        # C3 depth channel: effective stack in big blinds. Quantity matches
+        # the deployment floors' _hero_eff_bb (min(hero, max alive opp) / bb,
+        # 0.0 when the BB is unknown); scaled by 1/EFF_BB_SCALE for the net.
+        # `big_blind` comes from parse_state_6max (game-param blind array max,
+        # raw BB under the real-ante convention); repeated_poker parses carry
+        # it as `current_big_blind`.
+        if self.include_eff_bb:
+            bb = int(parsed.get("big_blind")
+                     or parsed.get("current_big_blind") or 0)
+            if bb > 0:
+                opp_stacks = [
+                    parsed["money"][i] for i in range(6)
+                    if i != cp and parsed["money"][i] > 0
+                ]
+                eff_chips = (min(my_stack, max(opp_stacks)) if opp_stacks
+                             else my_stack)
+                feat[offset] = (eff_chips / bb) / EFF_BB_SCALE
+            offset += 1
 
         assert offset == self.feature_dim, f"offset {offset} != feature_dim {self.feature_dim}"
         return feat

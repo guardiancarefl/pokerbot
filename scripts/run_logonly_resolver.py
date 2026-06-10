@@ -147,6 +147,11 @@ def main():
         _load_solver, _sample_action_from_policy,
     )
     solver = _load_solver(args.checkpoint, abstraction, structure)
+    # Convention gate (C3): refuse unstamped/inflated checkpoints on the
+    # live path. See src/nlhe/conventions.py.
+    from src.nlhe.conventions import require_live_servable
+    print(f"ante convention: {require_live_servable(args.checkpoint)} "
+          f"(servable)")
     from src.nlhe.infoset6 import parse_state_6max
 
     rng = random.Random(args.seed)

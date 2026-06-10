@@ -476,6 +476,14 @@ def main() -> int:
     abstr = Abstraction.load(args.abstraction)
     from scripts.eval_6max_self_play import _load_solver
     solver = _load_solver(args.checkpoint, abstr, structure)
+    # Convention gate (C3): the clean bridge view serves real-ante models
+    # only; refuse anything unstamped/inflated. Reads the checkpoint's RAW
+    # config_dict (or the sha whitelist) — per-checkpoint dispatch, never a
+    # global flip. See src/nlhe/conventions.py.
+    from src.nlhe.conventions import require_live_servable
+    conv = require_live_servable(args.checkpoint)
+    print(_color(f"[run_live_dryrun] ante convention: {conv} (servable)",
+                  CYAN), flush=True)
 
     tracker = SessionTracker()
     decision_cache = DecisionCache()

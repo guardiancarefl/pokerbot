@@ -1,0 +1,67 @@
+# C3 retrain bundle (2026-06-10). Recipe = the deployed k200_real_ante
+# recipe (which is the validated candC k200 recipe on the real-ante
+# convention), changed ONLY by the three operator-approved C3 deltas:
+#
+#   1. encoder_eff_bb: true        — 237-dim encoder (eff stack in BB,
+#                                    floors' _hero_eff_bb convention)
+#   2. empirical_dist_path         — starting states drawn from the
+#                                    20k-game self-play harvest
+#                                    (training_dist_v1; H1 gate PASS,
+#                                    L6+ mass 2.43%) instead of the
+#                                    parametric stack_sampler
+#   3. ante_convention: real       — explicit convention stamp in every
+#                                    checkpoint (the game strings were
+#                                    already canonical real-ante)
+#
+# The ~2.2x BB open action (Step 4) was evaluated and DROPPED — the
+# 9-action enum sizes every net head, floor mask, and bridge translation
+# globally; widening it makes the deployed 9-dim checkpoint unloadable
+# without a dispatch layer across the live path. See the C3 readiness
+# report / SESSION_LOG 2026-06-10.
+#
+# Fresh start (no resume), n_iterations=2000 cap, checkpoint every 100,
+# sequential traversals (parallel_groups=0: the empirical sampler and
+# 237-d encoder are not wired into the worker protocol — enforced by a
+# TrainConfig6Max guard).
+#
+# Use:
+#   python -m scripts.train_c3 --config configs/c3_retrain_k200.yaml
+
+tag: c3_retrain_k200
+abstraction_path: runs/abstraction_20260521_223018_retrofit/abstraction.pkl
+
+# Game shape (ignored in tournament mode but required by dataclass).
+starting_stack: 1500
+big_blind: 100
+small_blind: 50
+payout_mode: double_up
+buy_in: 1.0
+first_share: 0.65
+
+# Tournament-aware training.
+tournament_structure_path: configs/ignition_double_up_6max_turbo.yaml
+num_paid: 3
+
+# C3 deltas.
+encoder_eff_bb: true
+empirical_dist_path: data/training_dist_v1.json.gz
+ante_convention: real
+
+# Training hyperparameters — identical to the deployed k200_real_ante run.
+hidden_dim: [256, 256]
+n_iterations: 2000
+traversals_per_iter: 150
+train_steps_per_iter: 200
+batch_size: 64
+learning_rate: 0.001
+buffer_capacity: 500000
+
+cfr_variant: linear
+dcfr_exponent: 1.0
+
+bucket_runouts: 30
+max_traversal_depth: 200
+seed: 2026
+
+checkpoint_every: 100
+parallel_groups: 0

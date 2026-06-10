@@ -15,6 +15,8 @@ manifest records what exists on the Contabo working tree at cc8a9ae so their abs
 | `.claude/` | 1 | 117.0 B | — | — |
 | `evals/sng_baseline_20260610/` (`w*/games_*.jsonl`) | 24 | 7.0 MB | `evals/sng_baseline_20260610/w0/games_6pack.jsonl` | `b265eae849345364394057a45c7ff55fa4e33fa84be3ee33f6cf3e941d71483c` |
 | `evals/sng_field_v2_20260610/` (`w*/games_*.jsonl` + `calib_w*/games.jsonl`) | 15 | 2.4 MB | `evals/sng_field_v2_20260610/w0/games_ticketmaster3.jsonl` | `4b6e1330993e002dc8baa5b767b2b448a568f013bda2dd79a220630085d0552f` |
+| `evals/c3_harvest_20260610/` (`harvest_w*/hand_starts.jsonl`) | 8 | 36 MB | `evals/c3_harvest_20260610/harvest_w0/hand_starts.jsonl` | `aad557eb784b4d09b4fc6522b930de0080fc3d044cac8ed56f78fdfa7fd35f9d` |
+| `data/training_dist_v1.json.gz` | 1 | 5.1 MB | (itself) | `f87aaab2ac180dd9d2a6c437316e38ce7517e2a3305f4fa2d2db138c08edece5` |
 
 - `evals/short_stack_floor_ab/` — Paired A/B decision+game logs, V0 vs V1 short-stack floor, hpl=3 stress arm (4 shards x 6,000 games)
 - `evals/short_stack_floor_ab_hpl5/` — Paired A/B decision+game logs, hpl=5 live-matched arm (4 shards x 6,000 games) - source of the +0.0100 ICM/game headline
@@ -23,6 +25,8 @@ manifest records what exists on the Contabo working tree at cc8a9ae so their abs
 - `.claude/` — Local Claude Code session settings - machine-local tooling, not a project artifact
 - `evals/sng_baseline_20260610/w*/games_*.jsonl` — SNG baseline v1 raw per-game logs (24 files, 24 profiles x 2000 games = 48,000 records, 7.0 MB total). Regenerable (deterministic, master seed 2026, `scripts/sng_baseline.py`). Committed artifacts: `summary_merged.json` + `REPORT.txt` + per-worker `summary.json`/`.log`.
 - `evals/sng_field_v2_20260610/` raw per-game logs — v2 field expansion (7 profiles x 2000 games) + self-play calibration row (8 shards x 250 games). Regenerable (deterministic, master seed 2026, `scripts/sng_baseline.py` / `scripts/sng_selfplay_calibration.py`). Committed artifacts: `summary_merged.json` + `REPORT.txt` + `calibration_merged.json` + `rider1_hero_observed_probe.json` + per-worker `summary.json`/`.log`.
+- `evals/c3_harvest_20260610/` raw hand-start shards — C3 empirical-distribution harvest (20,000 self-play SNGs, 322,546 hand starts, 0 tainted). Regenerable (deterministic: master seed 2026 + deployed ckpt b79e82dd, `scripts/harvest_training_dist.py`). Committed: per-shard `summary.json` + `.log`.
+- `data/training_dist_v1.json.gz` — the merged C3 sampling artifact consumed by `configs/c3_retrain_k200.yaml` (`empirical_dist_path`). 5.1 MB (>5MB policy line) + regenerable: `python -m scripts.harvest_training_dist --merge evals/c3_harvest_20260610 --artifact data/training_dist_v1.json.gz`. H1 gate PASS recorded inside the artifact (`h1_gate`).
 - `logs/` — **CANONICAL LIVE-PLAY RECORD** (gitignored, host-only). The `live_*`/`live_dryrun_*` JSONL families are the sole and permanent record of live play — no official hand-history source exists for this site/format. Never delete; gzip sessions >30 days old. See `logs/README.md` (committed via `git add -f`). Other files here (`*_train.log`, `gate_*.log`, `diag_*.log`) are reproducible run artifacts, not live records.
 
 ## Loose uncommitted eval files (small; left untracked pending triage)

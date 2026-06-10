@@ -1,0 +1,13 @@
+DeepCFR6MaxSolver  device=cpu  feature_dim=236  payout_mode=double_up  payouts=[2.0, 2.0, 2.0]
+harvest shard games [17500,20000) master_seed=2026
+  250/2500 games  3965 hand starts  [82s]
+  500/2500 games  8090 hand starts  [170s]
+  750/2500 games  12106 hand starts  [254s]
+  1000/2500 games  16214 hand starts  [348s]
+  1250/2500 games  20172 hand starts  [436s]
+  1500/2500 games  23919 hand starts  [524s]
+  1750/2500 games  28012 hand starts  [619s]
+  2000/2500 games  31968 hand starts  [703s]
+  2250/2500 games  36066 hand starts  [787s]
+  2500/2500 games  40263 hand starts  [898s]
+shard done: 40263 hand starts, tainted=0 [898s]

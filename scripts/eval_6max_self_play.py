@@ -96,6 +96,15 @@ def _load_solver(
         seed=0,
         tournament_structure_path=None,
         num_paid=saved.get("num_paid", 3),
+        # C3 fields. Old checkpoints lack these keys; the defaults reproduce
+        # the legacy 236-d encoder exactly, so pre-C3 checkpoints (including
+        # the deployed b79e82dd real-ante model) load and serve untouched.
+        # NOTE ante_convention here is metadata pass-through only — live
+        # serving authority is src/nlhe/conventions.resolve_ante_convention,
+        # which does NOT trust this default for unstamped checkpoints.
+        encoder_eff_bb=saved.get("encoder_eff_bb", False),
+        ante_convention=saved.get("ante_convention", "real"),
+        empirical_dist_path=None,
     )
     game = pyspiel.load_game(six_max_sng(starting_stack=cfg.starting_stack))
     solver = DeepCFR6MaxSolver(game=game, abstraction=abstraction, config=cfg)

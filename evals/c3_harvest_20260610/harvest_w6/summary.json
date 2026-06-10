@@ -1,0 +1,14 @@
+{
+  "record_type": "harvest_shard_summary",
+  "ckpt_sha256": "b79e82dd0ce9e78e4eb666b7379df953dadbf2a6e026c6bd4b6eec695e9b1b11",
+  "game_range": [
+    15000,
+    17500
+  ],
+  "n_games": 2500,
+  "n_tainted": 0,
+  "n_hand_starts": 40744,
+  "master_seed": 2026,
+  "hands_per_level": 5,
+  "elapsed_s": 950.5631611347198
+}
