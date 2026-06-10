@@ -1,0 +1,68 @@
+02:59:21  run header: {"record_type": "run_header", "ckpt_path": "/home/quant/pokerbot/runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt", "ckpt_sha256": "b79e82dd0ce9e78e4eb666b7379df953dadbf2a6e026c6bd4b6eec695e9b1b11", "abstraction_sha256": "0fc20800dc7ce89ea950c975decbd530ac6c6f3c164105e8ab99d24359de4c8e", "config": {"ckpt": "runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt", "abstraction": "runs/abstraction_20260521_223018_retrofit/abstraction.pkl", "structure": "configs/ignition_double_up_6max_turbo.yaml", "shanky_dir": "data/shanky_profiles", "profiles": "lionmttv.10,beep,modernmikemtt", "games": 2000, "master_seed": 2026, "hands_per_level": 5, "max_hands": 200, "mode": "sample", "out_dir": "evals/sng_baseline_20260610/w3", "log_every": 200}, "master_seed": 2026, "git_head": "ac385ea1df76b4eb0cca21115965fe89b833887d", "git_dirty": false, "started_utc": "2026-06-10T02:59:21.022826+00:00"}
+02:59:23  loaded shanky:6pack
+02:59:25  loaded shanky:gushansenmtt
+02:59:26  loaded shanky:killphilmtt
+02:59:27  loaded shanky:lionmttv.10
+02:59:27  loaded shanky:loosenluckymtt
+02:59:27  loaded shanky:lucky1_6max
+02:59:29  loaded shanky:millenniummttv.49
+02:59:29  loaded shanky:minestackermttv.7.3
+02:59:30  loaded shanky:sevenv.2
+02:59:31  loaded shanky:thefixersng
+02:59:31  loaded shanky:webbermtt
+02:59:31  loaded shanky:beep
+02:59:31  loaded shanky:fixedlimitheadsup
+02:59:33  loaded shanky:itmstrikea
+02:59:35  loaded shanky:itmstrikec
+02:59:36  loaded shanky:kamakazi
+02:59:36  loaded shanky:littlegreen
+02:59:36  loaded shanky:littlegreen2
+02:59:36  loaded shanky:modernmikecash
+02:59:38  loaded shanky:modernmikemtt
+02:59:39  loaded shanky:mtt
+02:59:39  loaded shanky:ticketmaster
+02:59:39  loaded shanky:timidtom
+02:59:39  loaded shanky:wildbillmtt
+DeepCFR6MaxSolver  device=cpu  feature_dim=236  payout_mode=double_up  payouts=[2.0, 2.0, 2.0]
+02:59:39  3 profile(s), 2000 games each, hpl=5, master_seed=2026
+02:59:39  [1/3] lionmttv.10
+03:01:13      200/2000 games  net/game=+0.1100  [94s]
+03:02:45      400/2000 games  net/game=+0.0900  [186s]
+03:04:20      600/2000 games  net/game=+0.1500  [280s]
+03:05:51      800/2000 games  net/game=+0.1475  [371s]
+03:07:26      1000/2000 games  net/game=+0.1660  [467s]
+03:09:00      1200/2000 games  net/game=+0.1900  [561s]
+03:10:31      1400/2000 games  net/game=+0.1743  [652s]
+03:12:05      1600/2000 games  net/game=+0.1688  [746s]
+03:13:35      1800/2000 games  net/game=+0.1644  [836s]
+03:15:02      2000/2000 games  net/game=+0.1620  [923s]
+03:15:02    lionmttv.10: net/game=+0.1620 +/- 0.0221  hands/game=23.5 tainted=0 capped=0 [923s]
+03:15:02  [2/3] beep
+03:15:28      200/2000 games  net/game=+1.0000  [26s]
+03:15:55      400/2000 games  net/game=+1.0000  [52s]
+03:16:23      600/2000 games  net/game=+1.0000  [80s]
+03:16:48      800/2000 games  net/game=+1.0000  [105s]
+03:17:16      1000/2000 games  net/game=+1.0000  [134s]
+03:17:42      1200/2000 games  net/game=+1.0000  [160s]
+03:18:08      1400/2000 games  net/game=+1.0000  [185s]
+03:18:33      1600/2000 games  net/game=+1.0000  [211s]
+03:18:57      1800/2000 games  net/game=+1.0000  [235s]
+03:19:21      2000/2000 games  net/game=+1.0000  [259s]
+03:19:21    beep: net/game=+1.0000 +/- 0.0000  hands/game=32.2 tainted=0 capped=0 [259s]
+03:19:21  [3/3] modernmikemtt
+03:20:28      200/2000 games  net/game=+0.4600  [66s]
+03:21:37      400/2000 games  net/game=+0.4100  [136s]
+03:22:46      600/2000 games  net/game=+0.3533  [205s]
+03:23:50      800/2000 games  net/game=+0.3650  [268s]
+03:24:54      1000/2000 games  net/game=+0.3960  [333s]
+03:26:04      1200/2000 games  net/game=+0.3967  [403s]
+03:27:16      1400/2000 games  net/game=+0.4057  [475s]
+03:28:28      1600/2000 games  net/game=+0.4288  [547s]
+03:29:33      1800/2000 games  net/game=+0.4289  [611s]
+03:30:43      2000/2000 games  net/game=+0.4260  [681s]
+03:30:43    modernmikemtt: net/game=+0.4260 +/- 0.0202  hands/game=32.1 tainted=0 capped=0 [681s]
+03:30:43  wrote evals/sng_baseline_20260610/w3/summary.json
+03:30:43  SUMMARY (ascending hero net/game):
+03:30:43    shanky:lionmttv.10                +0.1620 +/- 0.0221  hands=23.5 tainted=0
+03:30:43    shanky:modernmikemtt              +0.4260 +/- 0.0202  hands=32.1 tainted=0
+03:30:43    shanky:beep                       +1.0000 +/- 0.0000  hands=32.2 tainted=0

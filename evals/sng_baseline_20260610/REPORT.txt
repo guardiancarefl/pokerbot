@@ -1,0 +1,62 @@
+=== SNG BASELINE v1 — 24 profiles, per-game hero ICM net (+1 cash / -1 bust) ===
+
+profile                   net/game  stderr  sigma  hands  taint | 1hand-diff   extrap  div(σ)
+killphilmtt                -0.1740  0.0220    7.9   27.0      0 |    -0.0157  -0.4226  +11.3 *
+itmstrikea                 +0.0330  0.0223    1.5   27.6      0 |    +0.0039  +0.1064   -3.3 *
+itmstrikec                 +0.0440  0.0223    2.0   27.8      0 |    +0.0042  +0.1158   -3.2 *
+wildbillmtt                +0.0490  0.0223    2.2   20.9      0 |    +0.0048  +0.1010   -2.3 *
+fixedlimitheadsup          +0.1110  0.0222    5.0   13.2      0 |    +0.0568  +0.7485  -28.7 *
+lionmttv.10                +0.1620  0.0221    7.3   23.5      0 |    +0.0005  +0.0108   +6.9 *
+ticketmaster               +0.2700  0.0215   12.5   34.4      0 |    +0.0002  +0.0081  +12.2 *
+loosenluckymtt             +0.2780  0.0215   12.9   26.9      0 |    +0.0122  +0.3296   -2.4 *
+minestackermttv.7.3        +0.3080  0.0213   14.5   33.1      0 |    -0.0019  -0.0615  +17.4 *
+webbermtt                  +0.4020  0.0205   19.6   30.3      0 |    +0.0060  +0.1812  +10.8 *
+modernmikemtt              +0.4260  0.0202   21.1   32.1      0 |    +0.0079  +0.2542   +8.5 *
+gushansenmtt               +0.5330  0.0189   28.2   29.3      0 |    +0.0136  +0.3978   +7.1 *
+thefixersng                +0.6250  0.0175   35.8   35.4      0 |    +0.0046  +0.1639  +26.4 *
+millenniummttv.49          +0.6680  0.0166   40.1   31.5      0 |    +0.0058  +0.1825  +29.2 *
+sevenv.2                   +0.6900  0.0162   42.6   31.7      0 |    +0.0067  +0.2126  +29.5 *
+6pack                      +0.6990  0.0160   43.7   24.7      0 |    +0.0216  +0.5322  +10.4 *
+modernmikecash             +0.7290  0.0153   47.6   30.2      0 |    +0.0193  +0.5828   +9.6 *
+littlegreen2               +0.7620  0.0145   52.6   27.7      0 |    +0.0159  +0.4402  +22.2 *
+littlegreen                +0.8290  0.0125   66.3   29.4      0 |    +0.0127  +0.3726  +36.5 *
+mtt                        +0.8500  0.0118   72.2   34.4      0 |    +0.0074  +0.2562  +50.4 *
+lucky1_6max                +0.9990  0.0010  999.2   32.1      0 |    +0.0126  +0.4056 +593.6 *
+kamakazi                   +1.0000  0.0000    nan   32.2      0 |    +0.0131  +0.4212   +nan
+timidtom                   +1.0000  0.0000    nan   32.2      0 |    +0.0151  +0.4875   +nan
+beep                       +1.0000  0.0000    nan   32.2      0 |    +0.0152  +0.4901   +nan
+
+PANEL MEAN per-game: +0.5122 +/- 0.0734  (this is the deployment-economics figure)
+EXCEPTION GATE: total tainted games across all profiles = 0
+
+>2sigma divergers from single-hand extrapolation (trajectory/stage effects):
+  lucky1_6max              actual +0.9990 vs extrap +0.4056  (+593.6σ)
+  mtt                      actual +0.8500 vs extrap +0.2562  (+50.4σ)
+  littlegreen              actual +0.8290 vs extrap +0.3726  (+36.5σ)
+  sevenv.2                 actual +0.6900 vs extrap +0.2126  (+29.5σ)
+  millenniummttv.49        actual +0.6680 vs extrap +0.1825  (+29.2σ)
+  fixedlimitheadsup        actual +0.1110 vs extrap +0.7485  (-28.7σ)
+  thefixersng              actual +0.6250 vs extrap +0.1639  (+26.4σ)
+  littlegreen2             actual +0.7620 vs extrap +0.4402  (+22.2σ)
+  minestackermttv.7.3      actual +0.3080 vs extrap -0.0615  (+17.4σ)
+  ticketmaster             actual +0.2700 vs extrap +0.0081  (+12.2σ)
+  killphilmtt              actual -0.1740 vs extrap -0.4226  (+11.3σ)
+  webbermtt                actual +0.4020 vs extrap +0.1812  (+10.8σ)
+  6pack                    actual +0.6990 vs extrap +0.5322  (+10.4σ)
+  modernmikecash           actual +0.7290 vs extrap +0.5828  (+9.6σ)
+  modernmikemtt            actual +0.4260 vs extrap +0.2542  (+8.5σ)
+  gushansenmtt             actual +0.5330 vs extrap +0.3978  (+7.1σ)
+  lionmttv.10              actual +0.1620 vs extrap +0.0108  (+6.9σ)
+  itmstrikea               actual +0.0330 vs extrap +0.1064  (-3.3σ)
+  itmstrikec               actual +0.0440 vs extrap +0.1158  (-3.2σ)
+  loosenluckymtt           actual +0.2780 vs extrap +0.3296  (-2.4σ)
+  wildbillmtt              actual +0.0490 vs extrap +0.1010  (-2.3σ)
+
+killphilmtt C3 GATE: per-game -0.1740 +/- 0.0220 (sigma 7.9); single-hand extrap -0.4226
+
+=== STAGE DECOMPOSITION — hero ICM-equity-delta per decision, by hand-start n_alive ===
+ n_alive    decisions    sum_delta  delta/decision
+       6       936931     19024.61        0.020305
+       5       284809      3337.46        0.011718
+       4       177789       656.26        0.003691
+(where the edge lives / leaks across tournament stages)

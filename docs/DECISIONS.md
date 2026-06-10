@@ -2040,3 +2040,47 @@ the conserving call runs after the loop.
   seed 2026): all 24 rows shift slightly negative (hero edge shrinks),
   **zero rows move >2σ**; panel +0.0105 → +0.0101. killphilmtt
   −0.0153 → −0.0157 (−0.2σ) — the C3 gate metric is robust to the fix.
+
+
+## SNG baseline v1 — the official yardstick (single-hand bake-off retired to regression-check)
+
+**Date:** 2026-06-10. **Artifacts:** `evals/sng_baseline_20260610/`
+(summary_merged.json + REPORT.txt). **Harness:** `scripts/sng_baseline.py`
+on the C0-corrected scoring path. 24 profiles × 2,000 full double-up
+SNGs each (hero + 5 seats of one profile, real escalation hpl=5, carried
+busts, terminate at 3-alive), per-game hero ICM net (+1 cash / −1 bust),
+master seed 2026, ckpt sha b79e82dd…, 8-way parallel.
+
+**Exception gate (hard):** 0 tainted games across all 48,000. PASS.
+
+**Panel mean per-game: +0.5122 ± 0.0734** — the deployment-economics
+figure (≈76% cash rate vs these scripted fields; NOT +0.0101/hand, which
+is the retired single-hand metric). Caveat: a uniform-scripted field is
+not the live mixed-human population; treat as an edge-vs-these-bots
+measure. Games run 13–35 hands (field-dependent; more fold-heavy fields
+run longer) and terminate correctly at the 3-alive bubble.
+
+**killphilmtt — the one loss, now the C3 gate metric: −0.1740 ± 0.0220
+per game (7.9σ).** Against a homogeneous 5×killphil tight-shove field
+the bot is a net-losing tournament player. (Single-hand had −0.0157/hand;
+the per-game figure is the load-bearing C3 value.)
+
+**Single-hand bake-off does NOT predict tournament results — RETIRED to
+regression-check status.** Extrapolating each row's per-hand ICM-equity
+diff × mean hands/game misses the actual per-game net by >2σ on **21 of
+24 profiles** (most by 7–50σ): survival/ICM dynamics compound
+super-linearly and don't follow the per-hand edge. killphil is the
+inverse — the per-game loss (−0.174) is far milder than the linear
+extrapolation (−0.423) because killphil only exploits specific
+short-stack spots, not every hand.
+
+**Stage decomposition (CORRECTED hand-start n_alive axis — supersedes the
+audit's C2 tables, which inherited the broken money>0 axis):** hero
+ICM-equity-delta per decision is **0.0203 at 6-handed → 0.0117 at
+5-handed → 0.0037 at 4-handed (bubble)**. The edge concentrates early
+(full-ring) and ERODES toward the bubble — consistent with the
+depth-confusion / ICM-marginal-spot weaknesses documented elsewhere.
+
+Raw per-game logs (`w*/games_*.jsonl`, ~7MB) are regenerable
+(deterministic, seed 2026) and noted in ARTIFACT_MANIFEST rather than
+committed; the committed summaries carry every per-profile statistic.
