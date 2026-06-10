@@ -1927,3 +1927,40 @@ The reversal chain, reconstructed from the existing record:
 not fully recorded at the time; this entry reconstructs it from
 HANDOFF_RETRAIN.md, the resolver-retirement entries, and the
 validation chain, all of which are in-repo.
+
+
+## 2026-06-09 wired bake-off — dual result: CRN reproducibility gate + surgical partial re-baseline
+
+**Date:** 2026-06-09/10. **Artifacts:** `evals/bakeoff_20260609_wired/`
+(json + log). **Context:** `78c71f9` wired `opponentsattable` to the live
+alive-count (was hardcoded 5); this rerun replays the Jun-7 24-profile
+bake-off (same master seed 2026, 10,000 hands/profile, sample mode,
+real-ante, ckpt sha b79e82dd…) against the corrected opponents.
+
+**Result 1 — CRN reproducibility gate PASSED.** 18/24 rows bit-exact vs
+the Jun-7 table (diff AND stderr identical to full float precision):
+zero harness nondeterminism. Every zero-table-size-predicate profile is
+exactly unchanged.
+
+**Result 2 — surgical partial re-baseline.** The 6 profiles with live
+`OpponentsAtTable <= 3 / <= 4 / = 3` rules moved, all against hero:
+mtt −0.0037, millenniummttv.49 −0.0025, modernmikemtt −0.0025,
+itmstrikeC −0.0005, itmstrikeA −0.0003, thefixersng −0.0001. Panel mean
++0.0109 → **+0.0105**. The wired table replaces Jun-7 as the
+single-hand-methodology baseline.
+
+**killphilmtt: bit-exact at −0.0153 ± 0.0012** — the loss is NOT a
+dead-predicate artifact. Its 4-6-handed OpponentsAtTable blocks are
+mutual clones; its 3-handed/heads-up blocks are unreachable in the
+double-up format (hands never start below 4 alive). The figure
+graduates to a C3 gate metric, with this AMENDMENT: **the simulated
+killphilmtt remains unfaithful to the real profile — the
+`FoldOrGoAllInWhenOpponentsAtTableLessThan` header setting (its actual
+bubble shift) is unimplemented in our parser, so the −0.0153 gate
+metric is measured against a half-faithful clone.** The same applies to
+every profile's settings header (header lines are parsed for no one).
+
+**Known harness limitation (motivates the SNG baseline):** each hand is
+an i.i.d. `sample_starting_state` draw at a fixed 6-seat game string —
+shorthanded states ARE sampled (54% of queries at n_alive 4-5), but no
+busts occur within a match and no bubble trajectory exists.
