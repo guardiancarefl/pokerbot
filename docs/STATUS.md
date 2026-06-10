@@ -1,6 +1,6 @@
 # Project Status
 
-**Last updated:** 2026-06-09
+**Last updated:** 2026-06-10
 **Current phase:** Live deployment readiness. Validated k200 blueprint
   (`runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt`).
   Bridge fixed end-to-end; three deployment-time policy floors shipped;
@@ -11,6 +11,28 @@
 > readiness" entry below is the current load-bearing summary; the older
 > Leduc / sub-step 6 entries describe a research workstream that's
 > superseded by the deployment focus.
+
+## SNG field v2 + harness calibration — 2026-06-10 — DONE (track-policy)
+
+Additive to the v1 yardstick (`evals/sng_field_v2_20260610/REPORT.txt` is the
+record; SESSION_LOG 2026-06-10 has the narrative). Headlines:
+
+- **Self-play calibration PASS (marginal):** hero in all 6 seats, 2000 games →
+  net/game −0.042 ± 0.0223 (1.88σ from 0; bar is 2σ). Harness seat bias, if
+  any, is ≤ ~0.045/game — far from every v2 conclusion.
+- **7 v2 rows, 0 tainted:** tyranttom +0.582 … ticketmaster5 +0.916.
+  **ticketmaster3 +0.809 → pre-committed criterion says it does NOT join the
+  C3 gate; killphilmtt (−0.174) stays the sole gate metric.**
+- **Adapter fidelity caveat (new):** `stilltoact` is hardcoded 0
+  (`src/nlhe/scripted_bots/policy.py:308`) → all `stilltoact>=k` rules are dead
+  in every Shanky profile (tighttom ≡ trickytom byte-identical as a result).
+  Rows measure "profile-as-our-adapter-plays-it." Fix before fine-grained
+  ladder comparisons.
+- **C3 harvest warning (Rider 1):** 19.1% of v1 hands sit at blind level L6+;
+  the live corpus has none above L5. The gap is a tight-field artifact
+  (self-play: 16.2 hands/game, matching live) plus hero-bust censoring — not
+  an hpl/harness bug. Reweight or use self-play-paced games for the C3
+  training-distribution harvest.
 
 ## Suspect-frame stack recovery (Layer 1) — 2026-06-09 — CLOSED (`7d47e86`)
 

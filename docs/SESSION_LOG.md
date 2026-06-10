@@ -12,6 +12,50 @@ Format: most recent session at the top. Each session block notes date, what was 
 
 ---
 
+## Eval session — 2026-06-10 — SNG field v2 expansion + harness calibration (track-policy)
+
+**What was done.** Additive v2 rows on the v1 yardstick (`evals/sng_field_v2_20260610/`,
+full record in its `REPORT.txt`); v1 untouched.
+
+- **Self-play calibration row (harness bias proof):** hero ckpt in all 6 seats via
+  `play_sng_game`'s `seat_to_policy` seam, per-seat RNG streams from the per-game seed
+  (`scripts/sng_selfplay_calibration.py`), dealer rotation verified balanced pre-run
+  (chi2=2.30, p=0.806). Result: net/game **−0.042 ± 0.0223 (1.88σ from 0) → PASS** the
+  pre-committed |net| < 2σ bar — marginally; treat |rows| < ~0.045 with care. 0 tainted.
+- **7 v2 profiles registered and run** (2000 games each, master seed 2026, 0 tainted):
+  tyranttom +0.582, trappertom +0.640, trickytom +0.668, tighttom +0.668,
+  ticketmaster3 +0.809, sng +0.881, ticketmaster5 +0.916.
+- **ticketmaster3 gate decision (pre-committed):** +0.809 ≫ +0.10 → does NOT become a C3
+  gate metric; **killphilmtt (−0.174) remains the sole C3 gate**. Its bubble code is live
+  in our adapter (opponentsattable correctly tracked) and bleeds ICM: hero's 4-handed edge
+  vs tm3 is +0.0145/hand ≈ 4× the panel weak-zone average (+0.0037). Intake hypothesis
+  ("format-matched bubble specialist beats killphil as target") refuted by measurement.
+- **tighttom ≡ trickytom (byte-identical logs, 0/58,301 divergent decisions in a
+  shadow-play probe) — explained:** every behavioral diff between the two source files
+  sits in rules gated on `stilltoact`, which the adapter hardcodes to 0
+  (`src/nlhe/scripted_bots/policy.py:308`, documented limitation). All `stilltoact>=k`
+  rules are dead in ALL profiles, v1 included — profile-fidelity caveat, not a
+  harness-correctness bug.
+- **Rider 1 (hands/game reconciliation, the C3-relevant finding):** v1's 29.2 hands/game
+  vs live ~15-37 decomposes as (1) tight-field artifact, DOMINANT — self-play on the same
+  harness gives 16.2 hands/game, right on live; (2) hero-bust censoring, SECONDARY — v1
+  counts full-table hands after hero busts; replay probe (exact seeds, 0/2000 hero_net
+  mismatches) shows table 27.1 → hero-observed 20.1 vs killphil; (3) hpl=5 vs live ~5.7
+  hands/level — minor, wrong sign to explain the gap. **19.1% of v1 hands are at L6+;
+  the live corpus has zero hands above L5.** An unweighted C3 harvest from vs-field games
+  trains ~1 in 5 decisions on states live play never reaches — reweight or use
+  self-play-paced games.
+- **Rider 2:** v1 + v2 per-game jsonls recorded in `evals/ARTIFACT_MANIFEST.md`
+  (counts/sizes/sha256), jsonls stay untracked.
+
+**Decided.** C3 gate set unchanged (killphil only). Profile moves are host-only
+(`data/shanky_profiles/` is untracked); registry entries committed
+(`configs/league/registry.json`, 6 added + shanky-sng pre-existing, path now healed).
+
+**Learned.** The `stilltoact=0` adapter default silently flattens profile diversity —
+worth a dedicated fix before trusting fine-grained ladder comparisons. Grinder/doodle/
+shapeshifter remain out (cash/full-ring, Phase-3 pool only).
+
 ## Live-deploy session — 2026-06-09 (late evening) — observe() ceiling anchor guard (`af417d9`) + scraper validation fixture (`9e4c007`)
 
 ### What was done
