@@ -19,6 +19,7 @@ manifest records what exists on the Contabo working tree at cc8a9ae so their abs
 - `evals/resolver_shards/` — Resolver-era match-level eval shards (X0-X5 arms + bubble slice); resolver path closed, kept for the record
 - `l4_corpus/` — Layer-4 adaptive-training corpus shards (train + heldout pkl.gz + manifests)
 - `.claude/` — Local Claude Code session settings - machine-local tooling, not a project artifact
+- `logs/` — **CANONICAL LIVE-PLAY RECORD** (gitignored, host-only). The `live_*`/`live_dryrun_*` JSONL families are the sole and permanent record of live play — no official hand-history source exists for this site/format. Never delete; gzip sessions >30 days old. See `logs/README.md` (committed via `git add -f`). Other files here (`*_train.log`, `gate_*.log`, `diag_*.log`) are reproducible run artifacts, not live records.
 
 ## Loose uncommitted eval files (small; left untracked pending triage)
 
