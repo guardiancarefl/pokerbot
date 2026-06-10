@@ -40,7 +40,9 @@ from src.nlhe.stack_sampler import sample_starting_state
 from src.nlhe.cfr6 import NUM_SEATS_6MAX, _build_view_6max
 from src.nlhe.infoset6 import parse_state_6max, parse_state_repeated_6max
 from src.nlhe.actions import discretize_legal_actions
-from src.nlhe.icm_returns import icm_adjust_returns
+from src.nlhe.icm_returns import (
+    icm_adjust_returns, conserving_returns_for_terminal,
+)
 
 # Reuse from existing eval so we don't drift.
 from scripts.eval_6max_self_play import (
@@ -119,6 +121,12 @@ def play_one_hand_two_policies(
     seat_assignment = [rng.choice(["A", "B"]) for _ in range(NUM_SEATS_6MAX)]
     seat_to_policy = [policy_a if c == "A" else policy_b for c in seat_assignment]
 
+    # Fold record for the placeholder-leak fix. Tracking the applied action
+    # (fold == chip-action 0) is side-effect-free on the RNG/policy path, so
+    # hero observation and sampled decisions are byte-identical to pre-fix.
+    folded = [False] * NUM_SEATS_6MAX
+    fold_order: list[int] = []
+
     max_steps = 500
     for _ in range(max_steps):
         if state.is_terminal():
@@ -136,6 +144,9 @@ def play_one_hand_two_policies(
             parsed = parse_state_6max(state)
         cp = parsed["current_player"]
         a = seat_to_policy[cp].select_action(parsed, state, rng, mode=mode)
+        if int(a) == 0 and not folded[cp]:
+            folded[cp] = True
+            fold_order.append(cp)
         state.apply_action(a)
 
     if not state.is_terminal():
@@ -145,7 +156,10 @@ def play_one_hand_two_policies(
             "exceeded_cap": True,
         }
 
-    chip_returns = state.returns()
+    # Correct any placeholder (busted-seat) pot misassignment before ICM so
+    # chips conserve among real seats. No-op when no placeholder won.
+    chip_returns = conserving_returns_for_terminal(
+        state, state.returns(), starting_stacks, folded, fold_order)
     payouts = [2.0] * num_paid
     equity_delta = icm_adjust_returns(
         chip_returns=chip_returns,
