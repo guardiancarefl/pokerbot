@@ -12,6 +12,50 @@ Format: most recent session at the top. Each session block notes date, what was 
 
 ---
 
+## C3 prep session — 2026-06-10 (later) — retrain bundle build + pre-train gates (NO LAUNCH)
+
+**What was done.** The operator-approved C3 bundle, ending at
+`docs/C3_LAUNCH_READINESS.md` (authoritative; one-screen summary in STATUS).
+Highlights and the why:
+
+- **Harvest (Step 1):** 20k self-play SNGs, 8 tmux workers, the
+  replay-verified probe loop → `data/training_dist_v1.json.gz` + raw shards
+  in `evals/c3_harvest_20260610/`. H1 PASS (L6+ 2.43% ≤ 10%). This is the
+  direct fix for the Rider-1 finding (parametric sampler put 19.1% of hands
+  at L6+ where live has none).
+- **Encoder (Step 2):** `include_eff_bb` channel appended at layout end;
+  value asserted equal to `short_stack_floor_ab._hero_eff_bb`/100 across
+  levels and alive-counts. Dim dispatch via config_dict stamp; old-ckpt
+  bit-equal round-trip tested.
+- **Ghost-ante (Step 3):** found the spec's premise stale — the bridge has
+  been clean real-ante since `ae8307e` (2026-06-05) and the canonical
+  `for_state` emitter already has empty seats posting nothing. Built the
+  missing piece instead: `ante_convention` ckpt stamp +
+  `src/nlhe/conventions.py` (stamp → sha whitelist → refuse) enforced at
+  both live entries. Deliberately did NOT resurrect the Option B bug-match
+  branch for inflated ckpts (dead code on the live path; refusal > silent
+  wrong view). Replay gate: ALL 9 dry-run logs, deployed ckpt, pre=HEAD
+  worktree vs post=bundle → 0 behavioral changes.
+- **Action space (Step 4): DROPPED.** `len(DiscreteAction)` globally sizes
+  net heads, floor masks, archetype arrays, worker protocol; the deployed
+  9-dim ckpt would stop loading. All three spec drop-triggers confirmed
+  real. The pre-existing `test_subgame_leaf` 7-vs-9 failures are this exact
+  failure mode in the wild.
+- **Trainer (Step 5):** `scripts/train_c3.py` (gates G1-G4 abort-on-fail) +
+  `configs/c3_retrain_k200.yaml` (deployed recipe + 3 deltas only) +
+  `scripts/c3_premium_fold_alert.py` (AA/KK fold >10% past iter 700,
+  against `monitor_k200_convergence.py`'s CSV). Benchmarked one iteration
+  before declaring ready: 50.7 s/iter → ~28 h for 2000 iters.
+- **Suite hygiene finding:** the full suite at clean HEAD with all
+  artifacts present has 33F/27E (stale 7-action fixtures, stale
+  `baseline_fork_A` golden, `_StubAbstraction` missing `.streets`) that
+  routine runs mask via artifact-skips. No new failures from this bundle
+  (per-file failing-set diff identical). Worth a dedicated cleanup task.
+
+**Decided.** Launch awaits the operator (command in the readiness doc).
+Heads-up SB/BB bug stays queued, unreachable in format + training
+distribution. stilltoact fix remains a separate task (parallel note).
+
 ## Eval session — 2026-06-10 — SNG field v2 expansion + harness calibration (track-policy)
 
 **What was done.** Additive v2 rows on the v1 yardstick (`evals/sng_field_v2_20260610/`,

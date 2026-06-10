@@ -12,6 +12,32 @@
 > Leduc / sub-step 6 entries describe a research workstream that's
 > superseded by the deployment focus.
 
+## C3 retrain bundle — 2026-06-10 — BUILT + GATED, AWAITING OPERATOR LAUNCH
+
+Full record: `docs/C3_LAUNCH_READINESS.md`. Do not start the run without
+operator approval; the exact tmux launch command is in that doc.
+
+- **Harvest/H1:** 20k self-play SNGs → `data/training_dist_v1.json.gz`
+  (322,546 hand starts, 0 tainted; L6+ mass 2.43% vs 10% gate → PASS).
+- **Encoder 236→237** (`encoder_eff_bb`, floors' `_hero_eff_bb` quantity,
+  appended channel): old checkpoints load/serve untouched — replay gate
+  over ALL 9 dry-run logs with the deployed ckpt = 0 behavioral changes.
+- **Ante convention:** game strings + bridge were already clean real-ante
+  (the spec's bug-match premise was stale — removed at `ae8307e`). Added:
+  `ante_convention` checkpoint stamp + `src/nlhe/conventions.py`
+  resolve/refuse gate at both live entries (sha-whitelisted deployed
+  ckpt; unstamped/inflated refused; never a global flip).
+- **2.2xBB open action: DROPPED** per the spec's own trigger — global
+  9-action enum sizes net heads/floor masks/bridge translation; deployed
+  ckpt would become unloadable.
+- **`scripts/train_c3.py`** + `configs/c3_retrain_k200.yaml`: k200_real_ante
+  recipe + the three C3 deltas, 2000-iter cap, ckpt every 100, pre-train
+  gates G1-G4 (min-raise/antes/artifact-H1/encoder), premium-fold alert
+  tooling. **Benchmark: 50.7 sec/iter → ~28 h projected.**
+- Tests: `tests/test_c3_bundle.py` 22/22; full suite has NO new failures
+  vs a clean-HEAD baseline with identical artifacts (33F/27E reproduce
+  at `55cbda5`; stale-fixture causes listed in the readiness doc).
+
 ## SNG field v2 + harness calibration — 2026-06-10 — DONE (track-policy)
 
 Additive to the v1 yardstick (`evals/sng_field_v2_20260610/REPORT.txt` is the
