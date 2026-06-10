@@ -273,9 +273,14 @@ def test_empirical_requires_structure():
         _tiny_cfg(empirical_dist_path="/tmp/x.json")
 
 
-def test_empirical_parallel_guard():
-    with pytest.raises(ValueError, match="parallel worker protocol"):
-        _tiny_cfg(encoder_eff_bb=True, parallel_groups=2)
+def test_empirical_parallel_now_allowed():
+    """The C3 deltas are wired into WorkerInput (2026-06-10): a config with
+    encoder_eff_bb / empirical_dist_path AND parallel_groups > 0 must now
+    construct cleanly. Equivalence is gated in tests/test_parallel_c3.py."""
+    cfg = _tiny_cfg(encoder_eff_bb=True, parallel_groups=2,
+                    empirical_dist_path="/tmp/x.json",
+                    tournament_structure_path=STRUCTURE_PATH)
+    assert cfg.parallel_groups == 2 and cfg.encoder_eff_bb
 
 
 def test_empirical_sampling_one_iteration(abstraction, tmp_path):

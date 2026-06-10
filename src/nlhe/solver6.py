@@ -299,13 +299,11 @@ class TrainConfig6Max:
                 f"league_mix={self.league_mix}, "
                 f"sum={self.archetype_mix + self.league_mix}"
             )
-        if self.parallel_groups > 0 and (self.encoder_eff_bb
-                                         or self.empirical_dist_path):
-            raise ValueError(
-                "encoder_eff_bb / empirical_dist_path are not wired into the "
-                "parallel worker protocol (WorkerInput); run sequential "
-                "(parallel_groups=0) or extend src/nlhe/parallel first."
-            )
+        # encoder_eff_bb / empirical_dist_path are wired into the parallel
+        # worker protocol as of 2026-06-10 (WorkerInput.encoder_eff_bb /
+        # .empirical_dist_path; gate in tests/test_parallel_c3.py, results
+        # in docs/PARALLEL_TRAINING.md). The guard that refused
+        # parallel_groups > 0 with the C3 deltas was removed deliberately.
         if self.ante_convention not in ("real", "inflated_bb"):
             raise ValueError(
                 f"ante_convention must be 'real' or 'inflated_bb', "

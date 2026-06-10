@@ -126,6 +126,11 @@ def main():
                     help="override n_iterations (benchmark: --iterations 1)")
     ap.add_argument("--out", default=None)
     ap.add_argument("--checkpoint-every", type=int, default=None)
+    ap.add_argument("--parallel-groups", type=int, default=None,
+                    help="G-worker mp.fork parallel traversals (0/absent = "
+                         "the sequential path, byte-identical to before this "
+                         "flag existed). Bit-identity gate + scaling table: "
+                         "docs/PARALLEL_TRAINING.md")
     args = ap.parse_args()
 
     with open(args.config) as f:
@@ -138,6 +143,8 @@ def main():
     cfg_dict.pop("checkpoint_every", None)
     if args.iterations is not None:
         cfg_dict["n_iterations"] = args.iterations
+    if args.parallel_groups is not None:
+        cfg_dict["parallel_groups"] = args.parallel_groups
 
     cfg = TrainConfig6Max(**cfg_dict)
     if not cfg.encoder_eff_bb or cfg.ante_convention != "real" \
@@ -171,10 +178,11 @@ def main():
     gate_min_raise(structure)
     gate_ante_correctness(structure)
 
-    game = pyspiel.load_game(
-        PokerGameConfig(num_players=6, starting_stack=cfg.starting_stack,
-                        big_blind=cfg.big_blind, small_blind=cfg.small_blind
-                        ).to_universal_poker_string())
+    game_str = PokerGameConfig(
+        num_players=6, starting_stack=cfg.starting_stack,
+        big_blind=cfg.big_blind, small_blind=cfg.small_blind
+    ).to_universal_poker_string()
+    game = pyspiel.load_game(game_str)
     solver = DeepCFR6MaxSolver(game=game, abstraction=abstraction, config=cfg)
     solver.tournament_structure = structure
 
@@ -189,8 +197,22 @@ def main():
     log.info(f"Training {cfg.n_iterations} iterations, "
              f"checkpoint every {checkpoint_every}...")
     t0 = time.time()
-    metrics = solver.train(checkpoint_dir=out_dir,
-                           checkpoint_every=checkpoint_every)
+    if cfg.parallel_groups > 0:
+        from src.nlhe.parallel.orchestrator import parallel_train
+        log.info(f"parallel mode: G={cfg.parallel_groups} "
+                 f"use_processes={cfg.parallel_use_processes}")
+        metrics = parallel_train(
+            solver,
+            game_str=game_str,
+            abstraction_path=abstraction_path,
+            n_workers=cfg.parallel_groups,
+            use_processes=cfg.parallel_use_processes,
+            checkpoint_dir=out_dir,
+            checkpoint_every=checkpoint_every,
+        )
+    else:
+        metrics = solver.train(checkpoint_dir=out_dir,
+                               checkpoint_every=checkpoint_every)
     elapsed = time.time() - t0
     n_done = len(metrics.get("iter", [])) if metrics else 0
     log.info(f"Training done. wall_time={elapsed:.0f}s "

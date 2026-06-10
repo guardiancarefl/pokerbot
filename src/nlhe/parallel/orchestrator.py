@@ -33,7 +33,7 @@ from src.nlhe.parallel.protocol import (
     WorkerInput,
     WorkerOutput,
 )
-from src.nlhe.parallel.worker import run_traversals
+from src.nlhe.parallel.worker import preload_empirical_rows, run_traversals
 from src.nlhe.solver6 import DeepCFR6MaxSolver, OVERRIDE_SALT
 
 
@@ -93,6 +93,8 @@ def _build_worker_input(
     archetype_profile_names: Optional[list] = None,
     archetype_mix: float = 0.0,
     tournament_structure_path: Optional[str] = None,
+    encoder_eff_bb: bool = False,
+    empirical_dist_path: Optional[str] = None,
 ) -> WorkerInput:
     return WorkerInput(
         seed=seed,
@@ -122,6 +124,8 @@ def _build_worker_input(
         archetype_profile_names=archetype_profile_names,
         archetype_mix=archetype_mix,
         tournament_structure_path=tournament_structure_path,
+        encoder_eff_bb=encoder_eff_bb,
+        empirical_dist_path=empirical_dist_path,
     )
 
 
@@ -255,6 +259,13 @@ def parallel_train(
     T = cfg.traversals_per_iter
     G = n_workers
 
+    # C3 empirical mode: adopt the solver's already-parsed rows into the
+    # worker module's cache NOW (pre-fork) so every per-iter fork() shares
+    # the parent's copy via CoW — workers never re-parse the artifact.
+    if cfg.empirical_dist_path is not None:
+        preload_empirical_rows(str(cfg.empirical_dist_path),
+                               rows=solver.empirical_rows)
+
     start_iter = solver.iteration + 1
     metrics: dict = {
         "iter": [], "time": [], "traverser": [], "adv_loss": [],
@@ -308,6 +319,10 @@ def parallel_train(
                 archetype_profile_names=cfg.archetype_profiles,
                 archetype_mix=cfg.archetype_mix,
                 tournament_structure_path=cfg.tournament_structure_path,
+                encoder_eff_bb=cfg.encoder_eff_bb,
+                empirical_dist_path=(
+                    str(cfg.empirical_dist_path)
+                    if cfg.empirical_dist_path is not None else None),
             )
             for group in groups
         ]

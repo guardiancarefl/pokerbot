@@ -93,6 +93,19 @@ class WorkerInput:
     # → legacy fixed-game mode (the existing per-WorkerInput game_str path).
     tournament_structure_path: Optional[str] = None
 
+    # ---- C3 deltas (2026-06-10): 237-d encoder + empirical hand starts ----
+    # encoder_eff_bb: workers construct InfosetEncoder6Max with the eff-BB
+    # channel (feature_dim 237) — must agree with input_dim or the net
+    # rebuild fails loudly on shape mismatch.
+    # empirical_dist_path: when set (tournament mode only), workers draw the
+    # per-traversal starting state from the harvested hand-start rows via
+    # rng_stack_t.choice — same RNG slot the parametric sampler uses, so
+    # the parallel draw is bit-identical to solver6's sequential branch.
+    # Rows are served from a module-level cache preloaded by the
+    # orchestrator pre-fork (CoW-shared; workers never re-parse the gz).
+    encoder_eff_bb: bool = False
+    empirical_dist_path: Optional[str] = None
+
 
 @dataclass
 class WorkerOutput:

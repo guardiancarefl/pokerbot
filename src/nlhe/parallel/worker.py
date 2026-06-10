@@ -124,6 +124,36 @@ def _fork_rng_stack(seed: int, iteration: int, t: int) -> random.Random:
     return random.Random(s)
 
 
+# C3 empirical hand-start rows, keyed by artifact path. Populated in the
+# ORCHESTRATOR process before the first fork (see parallel_train), so every
+# fork()ed worker reads the parent's copy via CoW instead of re-parsing the
+# gz once per worker per iteration. In-process mode hits the same cache.
+_EMPIRICAL_ROWS_CACHE: dict[str, list] = {}
+
+
+def preload_empirical_rows(path: str, rows: list | None = None) -> list:
+    """Load (or adopt) the empirical hand-start rows for `path`.
+
+    When `rows` is given (the solver already parsed the artifact at
+    construction), adopt that exact list object — same order, zero extra
+    memory. Row ORDER is load-bearing: rng_stack_t.choice indexes into it,
+    so sequential and parallel must see the identical sequence.
+    """
+    cached = _EMPIRICAL_ROWS_CACHE.get(path)
+    if cached is not None:
+        return cached
+    if rows is None:
+        import gzip
+        import json
+        raw = (gzip.open(path, "rb").read() if path.endswith(".gz")
+               else open(path, "rb").read())
+        rows = json.loads(raw)["hand_starts"]
+    if not rows:
+        raise ValueError(f"empirical_dist_path {path} has no hand_starts rows")
+    _EMPIRICAL_ROWS_CACHE[path] = rows
+    return rows
+
+
 def _build_nets(
     state_dicts: list[dict], input_dim: int, hidden_dim: list[int]
 ) -> list:
@@ -216,6 +246,7 @@ def run_traversals(wi: WorkerInput) -> list[WorkerOutput]:
         starting_stack=wi.encoder_starting_stack,
         max_bucket_dim=wi.encoder_max_bucket_dim,
         bucket_runouts=wi.encoder_bucket_runouts,
+        include_eff_bb=wi.encoder_eff_bb,
     )
     nets = _build_nets(wi.adv_state_dicts, wi.input_dim, wi.hidden_dim)
     league_pool, archetype_pool = _build_pools(wi, abstraction)
@@ -224,6 +255,14 @@ def run_traversals(wi: WorkerInput) -> list[WorkerOutput]:
         tournament_structure = TournamentStructure.from_yaml(
             wi.tournament_structure_path
         )
+    empirical_rows = None
+    if wi.empirical_dist_path is not None:
+        if tournament_structure is None:
+            raise ValueError(
+                "empirical_dist_path requires tournament_structure_path "
+                "(mirrors TrainConfig6Max validation)"
+            )
+        empirical_rows = preload_empirical_rows(wi.empirical_dist_path)
 
     outputs: list[WorkerOutput] = []
     for t in wi.traversal_ids:
@@ -241,11 +280,22 @@ def run_traversals(wi: WorkerInput) -> list[WorkerOutput]:
             # Tournament mode: sample per-traversal starting state, rebuild
             # the game from the sampled (stacks, dealer_seat, blind_level).
             rng_stack_t = _fork_rng_stack(wi.seed, wi.iteration, t)
-            sampled = sample_starting_state(
-                tournament_structure,
-                rng_stack_t,
-                num_paid=wi.num_paid,
-            )
+            if empirical_rows is not None:
+                # C3 path: draw a harvested hand-start row. Same RNG slot
+                # as the parametric sampler — mirrors solver6.train()'s
+                # empirical branch statement-for-statement (bit-identity).
+                row = rng_stack_t.choice(empirical_rows)
+                sampled = {
+                    "blind_level": tournament_structure.level(row["level"]),
+                    "stacks": list(row["stacks"]),
+                    "dealer_seat": row["dealer"],
+                }
+            else:
+                sampled = sample_starting_state(
+                    tournament_structure,
+                    rng_stack_t,
+                    num_paid=wi.num_paid,
+                )
             gs = tournament_structure.to_inner_game_string_for_state(
                 blind_level=sampled["blind_level"],
                 stacks=sampled["stacks"],
