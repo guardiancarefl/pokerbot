@@ -170,10 +170,14 @@ def install_hooks():
     def capturing_inv(frame, state_pack):
         res = orig_inv(frame, state_pack)
         CAP.recon_views.append(res.reconstructed)
+
+        def _i(v):
+            return int(v) if v is not None else -1
+
         CAP.packs.append({
-            "sb_seat": int(state_pack.sb_seat),
-            "bb_seat": int(state_pack.bb_seat),
-            "street_idx": int(state_pack.street_idx),
+            "sb_seat": _i(state_pack.sb_seat),
+            "bb_seat": _i(state_pack.bb_seat),
+            "street_idx": _i(state_pack.street_idx),
             "pre_hand_stacks": tuple(int(x)
                                      for x in state_pack.pre_hand_stacks),
         })

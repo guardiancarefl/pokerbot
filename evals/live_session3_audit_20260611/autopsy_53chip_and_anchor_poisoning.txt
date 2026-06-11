@@ -1,0 +1,116 @@
+SESSION-3 AUTOPSIES — 2026-06-11 evening (3 games, logs 201230 + 204751)
+=========================================================================
+
+FINDING 1 — the 53-chip reconstruction gap (seqs 13-14, AdAs, game 1)
+---------------------------------------------------------------------
+Frame trace (log 201230, L1 15/25/5, dealer=seat5, hero=seat1=BB):
+  seq  7  seat6 posts SB 15 (stack 1480), hero BB 25 (1470)
+  seq  9  seat2 stack 1495->1442 (committed 53) — bets ROI not yet updated
+  seq 10  bets now show seat2=53; pot 123 = 30 antes + 15 + 25 + 53  OK
+  seq 11  seat5 stack 1495->1442 (CALLED the 53) — bets ROI NEVER shows
+          seat5's call; pot still 123 (UI lag)
+  seq 12  pot updates to 176 = 123 + 53 (seat5's call IS in the pot);
+          bets still missing seat5
+  seq 13  hero to-act (CHECK/FOLD mid-render), seq 14 (CALL/FOLD/RAISE):
+          invariant_fail x2 — deltas: pot scraper=176 recon=123,
+          stack[seat5] scraper=1442 recon=1495. SAFE-FOLD (correct).
+  seq 15  hero calls 28 manually (operator)
+  seq 16+ FLOP: street change clears the bets field; preflop commits are
+          uniform (53/53/53) so the simple model closes — hand RECOVERS:
+          decisions at 16 (check), 21/22 (turn bet 154), 28, 30 (river).
+
+The 53 was REAL (a raise to 53): four independent ROIs agree
+(seat2 stack 1442, seat5 stack 1442, pot 176 = 30+15+25+53+53, bet 53).
+The displacement is exactly seat5's call, visible in stack+pot but
+absent from the bets field for 4 consecutive frames.
+
+(b) CLASS: NEW — "bet-ROI partial read" (one seat's current-street
+commit missing from bets while stack and pot already reflect it).
+Distinct from seq-170 (reconstruction modeled a min-raise as a call
+from correct reads) and seq-192 (reconstruction emitted bet-as-0 from
+correct reads): here the RECONSTRUCTION WAS FAITHFUL to an incomplete
+bets field, and the strict invariant caught the inconsistency via
+chip conservation. The system behaved correctly; value was lost
+(hero could not 3-bet AA preflop), not chips.
+
+(c) RECOVERY: yes — safe-folded at 13-14, full decisions from seq 16 on.
+    (Also: the fallback watchdog fired FOLD at ~7.8s on this spot —
+    armed seq 13 — while the operator handled it manually.)
+
+(d) ALL-SESSION invariant_fail TABLE (4 logs, 295+ decision frames):
+    class                                   frames  spots  sessions
+    bet-ROI partial read (this class)         2       1    s3a (13,14)
+    hand-start blind-render lag               1       1    s1 (429):
+      bets empty, pot partially swept, recon expected SB/BB bets
+    seq-170 / seq-192 recon classes           0       0    none anywhere
+    TOTAL invariant_fails                     3       2
+
+FINDING 2 — seq 1363 ANCHOR POISONING (the one true wrong-state
+decision across all sessions; log 204751, game 3)
+----------------------------------------------------------------
+  seq 1355  seat6=823 (true; previous hand)
+  seq 1360  new hand (dealer=seat2), antes posted, seat6=808 (true:
+            823-15). NOT a hand-start by is_hand_start (blinds not
+            posted yet) -> no anchor from this correct frame.
+  seq 1361  seat6 OCR drops digits: 808->8. Scraper flags the JUMP
+            (808->8) -> suspect -> dropped. Correct.
+  seq 1362  seat6 still 8; frame-to-frame jump detector sees 8->8 ->
+            CLEAN. Blinds posted (50/100) + hero cards visible ->
+            is_hand_start TRUE -> tracker anchors THIS frame.
+            sum(pre)=8200 (true 9000). Chips-in-play guard is
+            CEILING-ONLY (refuses > 9000) -> 8200 PASSES. Internal
+            consistency check passes (both sides use the same wrong
+            stack). ANCHOR POISONED.
+  seq 1363  seat6 reads 808 (TRUE) -> flagged "jump 8->808" -> suspect
+            -> Layer-1 stack recovery: closure inside the poisoned
+            8200-chip universe derives stack.seat6=8; candidate
+            re-validates (the recovered seat's equality is by
+            construction; everything else is consistent within the
+            poisoned universe) -> decision_recovered with seat6=8.
+            TRUTH: 808. Decision: hero 2s9c HJ FOLD (0.878 mass) —
+            outcome harmless, class is not.
+  seq 1376+ seat6=793 (808-15 next ante) — confirms 808 was true.
+
+Root cause: a dropped-digit OCR error persisting >= 2 frames defeats
+the scraper's frame-to-frame jump detector (the steady corrupt read
+goes clean; the RECOVERY to truth gets flagged), lands exactly on the
+hand-start capture window, and the anchor guard has no FLOOR check.
+
+Other recovered decisions this session were CORRECT (verified against
+neighboring frames): seq 855/856 stack.seat2=880 (raw stuck-digit 80),
+seq 1680/1681 stack.seat3=33 (raw 883).
+
+FIX PROPOSALS (PROPOSE ONLY — operator approval gate; both follow the
+established discipline: byte-identity replay on all previously-decided
+frames, counterfactual proof across all 4 session logs)
+----------------------------------------------------------------------
+P1. ANCHOR SUM-FLOOR GUARD (fixes Finding 2, the Stage-2 blocker):
+    in SessionTracker.observe, refuse a hand-start anchor when
+    sum(pre) != chips-in-play AND every seat reads alive/non-empty.
+    The existing ceiling-only rationale (mis-alive seats legitimately
+    hide chips -> sum below ceiling) only applies when some seat reads
+    non-alive; with all 6 seats visible the sum must close EXACTLY.
+    At seq 1362: 8200 != 9000 with 6 alive -> anchor refused -> seq
+    1363 recovery declines ("no clean pre-hand anchor") -> frame stays
+    skip_data_quality -> fallback covers the spot. Strictly additive:
+    no previously-accepted CORRECT anchor in the 4 logs sums below
+    ceiling with all seats alive (to be proven in the counterfactual).
+
+P2. BET-CLOSURE RECOVERY (fixes Finding 1, value recovery):
+    new recovery layer (mirror of _attempt_suspect_stack_recovery) on
+    the invariant_fail path: when the failure signature is exactly
+    {pot delta = +X, stack[seatN] delta = -X, no bet delta for seatN,
+    X > 0, single seat}, derive bet[seatN] := (anchor_pre[N] - ante -
+    prior_street_commits[N]) - stack[N], patch the frame, re-run the
+    FULL replay + invariant gate on the patched frame; decline unless
+    it passes strictly. Note pot equality after the patch is an
+    INDEPENDENT check here (unlike the stack recovery, it is not
+    satisfied by construction) — stronger trust than Layer 1.
+    Output status decision_recovered + recovered_fields
+    ["bet.seat5=53 (invariant-displacement closure)"].
+    MUST land together with or after P1 (closure math trusts the
+    anchor; P1 removes the poisoned-anchor case).
+
+Scoreboard + readiness numbers live in the session-3 report
+(SESSION_LOG 2026-06-11 late entry) and the audit/triage files in
+this directory.

@@ -1,0 +1,204 @@
+========================================================================
+CUMULATIVE CHOSEN-ACTION-MASS ACCOUNTING (fresh decisions only)
+========================================================================
+  20260611_163815: 37 fresh decisions / 486 frames, fidelity GREEN
+  20260611_181249: 4 fresh decisions / 54 frames, fidelity GREEN
+  20260611_201230: 56 fresh decisions / 733 frames, fidelity GREEN
+  20260611_204751: 80 fresh decisions / 959 frames, fidelity GREEN
+
+  session           seq cards  street   chosen             mass
+  20260611_163815    14 KdTs   preflop  FOLD              0.566
+  20260611_163815    32 7cJh   preflop  RAISE_TO 50       0.219
+  20260611_163815    38 7cJh   flop     RAISE_TO 99       0.267
+  20260611_163815    52 5c8c   preflop  CALL              0.178
+  20260611_163815    56 5c8c   preflop  FOLD              0.836
+  20260611_163815    68 ThTc   preflop  CALL              0.174
+  20260611_163815    84 KsQd   preflop  CALL              0.149
+  20260611_163815    91 KsQd   flop     RAISE_TO 600      0.062  <== sub-10% TAIL
+  20260611_163815   108 QhJc   preflop  CALL              0.065  <== sub-10% TAIL
+  20260611_163815   117 QhJc   preflop  RAISE_TO 200      0.190
+  20260611_163815   128 QhJc   flop     RAISE_TO 1575     0.193
+  20260611_163815   129 QhJc   turn     RAISE_TO 1575     0.108
+  20260611_163815   131 QhJc   turn     RAISE_TO 330      0.082  <== sub-10% TAIL
+  20260611_163815   149 5sTh   preflop  FOLD              0.816
+  20260611_163815   169 AsAc   preflop  RAISE_TO 600      0.230
+  20260611_163815   174 AsAc   preflop  CALL              0.959
+  20260611_163815   198 5dTs   preflop  FOLD              0.760
+  20260611_163815   210 9cKs   preflop  CALL              0.154
+  20260611_163815   217 9cKs   preflop  CALL              0.431
+  20260611_163815   219 9cKs   flop     RAISE_TO 1957     0.384
+  20260611_163815   230 4sJh   preflop  FOLD              0.813
+  20260611_163815   255 2cAh   preflop  RAISE_TO 2962     0.263
+  20260611_163815   267 7s7h   preflop  FOLD              0.376
+  20260611_163815   276 6d4d   preflop  FOLD              0.938
+  20260611_163815   292 7h3h   preflop  RAISE_TO 450      0.028  <== sub-10% TAIL
+  20260611_163815   315 2d5c   preflop  RAISE_TO 3007     0.075  <== sub-10% TAIL
+  20260611_163815   325 7c5d   preflop  FOLD              0.815
+  20260611_163815   337 QsJh   preflop  RAISE_TO 1350     0.013  <== sub-10% TAIL
+  20260611_163815   377 2cTh   preflop  FOLD              0.878
+  20260611_163815   392 8cAc   preflop  FOLD              0.740
+  20260611_163815   411 8sAs   flop     RAISE_TO 900      0.119
+  20260611_163815   425 4c5d   preflop  CALL              0.328
+  20260611_163815   430 4c5d   flop     CHECK             0.354
+  20260611_163815   432 4c5d   turn     RAISE_TO 300      0.193
+  20260611_163815   443 9d3h   preflop  RAISE_TO 3827     0.093  <== sub-10% TAIL
+  20260611_163815   456 3hTs   preflop  FOLD              0.924
+  20260611_163815   474 JcAc   preflop  RAISE_TO 4377     0.372
+  20260611_181249    10 9cKh   preflop  FOLD              0.484
+  20260611_181249    22 5sJs   preflop  FOLD              0.587
+  20260611_181249    31 JcQs   preflop  CALL              0.351
+  20260611_181249    36 JcQs   preflop  RAISE_TO 1445     0.160
+  20260611_201230    16 AdAs   flop     CHECK             0.278
+  20260611_201230    21 AdAs   turn     RAISE_TO 154      0.184
+  20260611_201230    28 AdAs   river    RAISE_TO 301      0.263
+  20260611_201230    30 AdAs   river    RAISE_TO 912      0.061  <== sub-10% TAIL
+  20260611_201230    47 8c2s   preflop  FOLD              0.742
+  20260611_201230    59 2h6d   preflop  FOLD              0.894
+  20260611_201230    76 Th9c   preflop  FOLD              0.910
+  20260611_201230    95 Tc8d   preflop  FOLD              0.850
+  20260611_201230   120 JsQs   preflop  RAISE_TO 99       0.023  <== sub-10% TAIL
+  20260611_201230   126 JsQs   flop     RAISE_TO 198      0.140
+  20260611_201230   140 JsKd   preflop  RAISE_TO 1940     0.265
+  20260611_201230   153 KsAc   preflop  RAISE_TO 2090     0.150
+  20260611_201230   165 2h4h   preflop  FOLD              0.937
+  20260611_201230   179 AhAs   preflop  RAISE_TO 2280     0.393
+  20260611_201230   187 AhAs   flop     RAISE_TO 150      0.261
+  20260611_201230   199 2dJs   preflop  FOLD              0.923
+  20260611_201230   209 3hAc   preflop  FOLD              0.657
+  20260611_201230   224 9h3s   preflop  CALL              0.127
+  20260611_201230   237 3s2h   preflop  FOLD              0.560
+  20260611_201230   255 2c8d   preflop  RAISE_TO 400      0.023  <== sub-10% TAIL
+  20260611_201230   272 3d8d   preflop  FOLD              0.930
+  20260611_201230   306 8d5c   preflop  FOLD              0.935
+  20260611_201230   350 4d3d   preflop  FOLD              0.843
+  20260611_201230   362 9hQs   preflop  FOLD              0.491
+  20260611_201230   380 AsKs   preflop  RAISE_TO 925      0.118
+  20260611_201230   395 4c4d   preflop  RAISE_TO 450      0.078  <== sub-10% TAIL
+  20260611_201230   408 6s3h   preflop  RAISE_TO 1505     0.249
+  20260611_201230   411 6s3h   flop     RAISE_TO 450      0.099  <== sub-10% TAIL
+  20260611_201230   423 Kh6h   preflop  FOLD              0.557
+  20260611_201230   435 KcJh   preflop  FOLD              0.590
+  20260611_201230   447 8hTh   preflop  FOLD              0.938
+  20260611_201230   457 8d2c   preflop  FOLD              0.747
+  20260611_201230   471 QhTc   preflop  FOLD              0.554
+  20260611_201230   483 9hAd   preflop  RAISE_TO 1480     0.372
+  20260611_201230   493 7c8h   preflop  RAISE_TO 675      0.141
+  20260611_201230   507 AdTd   preflop  RAISE_TO 2355     0.190
+  20260611_201230   517 2cAc   preflop  FOLD              0.587
+  20260611_201230   535 TsKc   preflop  CHECK             0.052  <== sub-10% TAIL
+  20260611_201230   538 TsKc   flop     RAISE_TO 2450     0.393
+  20260611_201230   553 4c7s   preflop  FOLD              0.778
+  20260611_201230   565 9c2s   preflop  FOLD              0.680
+  20260611_201230   585 6h7h   preflop  FOLD              0.872
+  20260611_201230   595 TcAh   preflop  RAISE_TO 2173     0.656
+  20260611_201230   606 4dJd   preflop  FOLD              0.571
+  20260611_201230   614 8sAh   preflop  FOLD              0.250
+  20260611_201230   625 KsQd   preflop  FOLD              0.533
+  20260611_201230   630 KsQd   flop     RAISE_TO 2303     0.622
+  20260611_201230   641 Ah2c   preflop  RAISE_TO 2893     0.545
+  20260611_201230   652 2d9d   preflop  CALL              0.429
+  20260611_201230   657 2d9d   flop     RAISE_TO 600      0.136
+  20260611_201230   662 2d9d   flop     FOLD              0.333
+  20260611_201230   671 3d6c   preflop  FOLD              0.749
+  20260611_201230   683 5h5d   preflop  RAISE_TO 1788     0.526
+  20260611_201230   700 6sQh   preflop  FOLD              0.502
+  20260611_201230   709 Th5c   preflop  FOLD              0.580
+  20260611_201230   719 Js3d   preflop  FOLD              0.621
+  20260611_204751   749 Tc5h   preflop  FOLD              0.745
+  20260611_204751   764 9c3c   preflop  FOLD              0.833
+  20260611_204751   783 4c4s   preflop  FOLD              0.749
+  20260611_204751   790 4c4s   preflop  RAISE_TO 1485     0.129
+  20260611_204751   792 4c4s   flop     CHECK             0.365
+  20260611_204751   798 4c4s   flop     FOLD              0.403
+  20260611_204751   810 QhKc   preflop  CALL              0.168
+  20260611_204751   815 QhKc   preflop  CALL              0.334
+  20260611_204751   819 QhKc   flop     RAISE_TO 500      0.053  <== sub-10% TAIL
+  20260611_204751   836 QhQs   preflop  RAISE_TO 100      0.119
+  20260611_204751   844 QhQs   flop     RAISE_TO 700      0.076  <== sub-10% TAIL
+  20260611_204751   855 QhQs   turn     RAISE_TO 820      0.319
+  20260611_204751   869 Jh2c   preflop  FOLD              0.782
+  20260611_204751   888 Kh4s   preflop  FOLD              0.720
+  20260611_204751   915 3c8c   preflop  FOLD              0.892
+  20260611_204751   924 3s3h   preflop  FOLD              0.824
+  20260611_204751   943 8hJh   preflop  FOLD              0.464
+  20260611_204751   955 8cKh   preflop  RAISE_TO 2335     0.280
+  20260611_204751   966 5c9d   preflop  FOLD              0.749
+  20260611_204751   982 Ac2h   preflop  CALL              0.105
+  20260611_204751   987 Ac2h   preflop  RAISE_TO 600      0.042  <== sub-10% TAIL
+  20260611_204751   994 Ac2h   preflop  CALL              0.132
+  20260611_204751  1005 9cAd   preflop  CALL              0.168
+  20260611_204751  1038 8h4d   preflop  FOLD              0.254
+  20260611_204751  1054 3dJs   preflop  RAISE_TO 600      0.047  <== sub-10% TAIL
+  20260611_204751  1067 9cQd   preflop  RAISE_TO 750      0.135
+  20260611_204751  1077 8cAs   preflop  RAISE_TO 300      0.151
+  20260611_204751  1093 7s5h   preflop  RAISE_TO 600      0.031  <== sub-10% TAIL
+  20260611_204751  1104 JdQh   preflop  RAISE_TO 500      0.324
+  20260611_204751  1108 JdQh   preflop  FOLD              0.725
+  20260611_204751  1115 Th6s   preflop  FOLD              0.745
+  20260611_204751  1128 Td2h   preflop  RAISE_TO 4800     0.041  <== sub-10% TAIL
+  20260611_204751  1149 Jh2h   preflop  FOLD              0.711
+  20260611_204751  1174 Qs5h   preflop  FOLD              0.656
+  20260611_204751  1184 As8c   preflop  RAISE_TO 1445     0.213
+  20260611_204751  1194 4s9s   preflop  FOLD              0.953
+  20260611_204751  1216 2h6d   preflop  FOLD              0.836
+  20260611_204751  1233 Kd7d   preflop  FOLD              0.552
+  20260611_204751  1245 4h4s   preflop  CALL              0.167
+  20260611_204751  1248 4h4s   flop     RAISE_TO 250      0.246
+  20260611_204751  1253 4h4s   turn     RAISE_TO 495      0.279
+  20260611_204751  1267 Ah7h   preflop  FOLD              0.415
+  20260611_204751  1280 QdJh   preflop  CALL              0.116
+  20260611_204751  1283 QdJh   flop     RAISE_TO 600      0.097  <== sub-10% TAIL
+  20260611_204751  1295 Ac8h   preflop  FOLD              0.528
+  20260611_204751  1308 8dQd   preflop  FOLD              0.767
+  20260611_204751  1323 Qh2h   preflop  FOLD              0.857
+  20260611_204751  1333 4d7c   preflop  FOLD              0.808
+  20260611_204751  1343 8sQd   preflop  CALL              0.120
+  20260611_204751  1355 8h2s   preflop  FOLD              0.944
+  20260611_204751  1363 2s9c   preflop  FOLD              0.878
+  20260611_204751  1379 9s5c   preflop  FOLD              0.959
+  20260611_204751  1392 5sAh   preflop  RAISE_TO 600      0.013  <== sub-10% TAIL
+  20260611_204751  1403 5dAh   preflop  CALL              0.209
+  20260611_204751  1405 5dAh   flop     RAISE_TO 1771     0.356
+  20260611_204751  1417 5c4s   preflop  FOLD              0.882
+  20260611_204751  1427 9hJh   preflop  FOLD              0.711
+  20260611_204751  1437 Ks6h   preflop  FOLD              0.941
+  20260611_204751  1446 Jd7c   preflop  FOLD              0.897
+  20260611_204751  1456 Tc6d   preflop  FOLD              0.924
+  20260611_204751  1471 5dTd   preflop  RAISE_TO 2321     0.147
+  20260611_204751  1488 2dQs   preflop  FOLD              0.955
+  20260611_204751  1503 Js6h   preflop  FOLD              0.989
+  20260611_204751  1517 3d5c   preflop  FOLD              0.656
+  20260611_204751  1529 7c5d   preflop  FOLD              0.721
+  20260611_204751  1543 Kd8h   preflop  FOLD              0.394
+  20260611_204751  1554 9d5c   preflop  RAISE_TO 1327     0.043  <== sub-10% TAIL
+  20260611_204751  1564 Ad5s   preflop  CALL              0.131
+  20260611_204751  1568 Ad5s   preflop  FOLD              0.762
+  20260611_204751  1578 KhQd   preflop  FOLD              0.694
+  20260611_204751  1585 9c9h   preflop  RAISE_TO 1800     0.076  <== sub-10% TAIL
+  20260611_204751  1598 Qs7d   preflop  RAISE_TO 900      0.045  <== sub-10% TAIL
+  20260611_204751  1609 7s8d   preflop  FOLD              0.728
+  20260611_204751  1619 8c5h   preflop  FOLD              0.718
+  20260611_204751  1629 6hTc   preflop  RAISE_TO 600      0.023  <== sub-10% TAIL
+  20260611_204751  1634 6hTc   flop     RAISE_TO 2789     0.696
+  20260611_204751  1647 5sKs   preflop  RAISE_TO 1677     0.344
+  20260611_204751  1661 TsTd   preflop  RAISE_TO 3600     0.118
+  20260611_204751  1680 QsAh   preflop  CALL              0.319
+  20260611_204751  1684 QsAh   flop     RAISE_TO 3524     0.792
+
+  chosen-mass histogram:
+    [0.0,0.1): ######################### (25)
+    [0.1,0.2): ################################ (32)
+    [0.2,0.3): ################ (16)
+    [0.3,0.4): ################## (18)
+    [0.4,0.5): ####### (7)
+    [0.5,0.6): ############### (15)
+    [0.6,0.7): ######### (9)
+    [0.7,0.8): ##################### (21)
+    [0.8,0.9): ################## (18)
+    [0.9,1.0): ################ (16)
+
+  binomial sanity (event: drawn client action had mass < 0.10):
+    draws n=177   observed sub-10% draws k=25
+    expected E=sum q_i = 22.87   sd=4.34   z=(k-E)/sd = +0.49
+    mean chosen mass observed 0.451 vs expected E[sum p^2] 0.453
+========================================================================

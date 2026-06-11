@@ -1,0 +1,187 @@
+========================================================================
+DRY-RUN TRIAGE — live_dryrun_20260611_204751.jsonl
+========================================================================
+
+[a] SESSION HEADER
+    mode=sample  seed=2026
+    ckpt=/home/quant/pokerbot/runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt
+    ckpt_sha256=b79e82dd0ce9e78e4eb666b7379df953dadbf2a6e026c6bd4b6eec695e9b1b11
+    abstraction_sha256=0fc20800dc7ce89ea950c975decbd530ac6c6f3c164105e8ab99d24359de4c8e
+    floors={'aa_kk': True, 'check_when_free': True, 'short_stack_bb': 6.0}
+    git_head=9edf635438f6a6c11358160a2857448c011bd7bc dirty=False started=2026-06-11T20:47:54.412813+00:00
+
+[b] FRAME ACCOUNTING
+    total frames        950
+    decisions           141  (fresh 77 / cached 59 / recovered 3 / recovered_cached 2)
+    safe_fold           1
+    skip_data_quality   144
+    skip_not_hero_to_act 664
+    skip_data_quality sub-causes (144):
+           81  scraper suspect frame
+           40  dealer points to non-alive/empty seat
+           11  n_alive below playable range
+           10  dealer field missing/empty
+            2  hero alive but no cards visible
+
+[c] HAND ACCOUNTING  (raw_record card/dealer/board segmentation)
+    hands seen                       76
+    hands with >=1 hero decision     63
+    hero-to-act frames skipped       67  (action buttons visible in raw_record, frame skipped)
+    hands LOST to skips (OCR-loss)   1  (hero-to-act evidence present, zero decisions)
+        seq 893-910  hero=6cAs  killed by: dealer points to non-alive/empty seat x1
+
+[d] DECISION DIGEST  (floors joined from live_dryrun_20260611_204751.stdout (3 firing(s)))
+      seq mode    street   cards  board            facing  action                 floor
+      749 sample  preflop  Tc5h   -                bet     FOLD                   -
+      750 cached  preflop  Tc5h   -                bet     FOLD                   -
+      764 sample  preflop  9c3c   -                bet     FOLD                   -
+      765 cached  preflop  9c3c   -                bet     FOLD                   -
+      783 sample  preflop  4c4s   -                bet     FOLD                   -
+      784 cached  preflop  4c4s   -                bet     FOLD                   -
+      790 sample  preflop  4c4s   -                bet     RAISE_TO 1485 (59.4xBB) -
+      792 sample  flop     4c4s   8c Qc 6d         no-bet  CHECK                  -
+      793 cached  flop     4c4s   8c Qc 6d         no-bet  CHECK                  -
+      798 sample  flop     4c4s   8c Qc 6d         bet     FOLD                   -
+      810 sample  preflop  QhKc   -                bet     CALL                   -
+      815 sample  preflop  QhKc   -                bet     CALL                   -
+      819 sample  flop     QhKc   6c 5c Th         no-bet  RAISE_TO 500 (20.0xBB) -
+      820 cached  flop     QhKc   6c 5c Th         no-bet  RAISE_TO 500 (20.0xBB) -
+      821 cached  flop     QhKc   6c 5c Th         no-bet  RAISE_TO 500 (20.0xBB) -
+      822 cached  flop     QhKc   6c 5c Th         no-bet  RAISE_TO 500 (20.0xBB) -
+      823 cached  flop     QhKc   6c 5c Th         no-bet  RAISE_TO 500 (20.0xBB) -
+      824 cached  flop     QhKc   6c 5c Th         no-bet  RAISE_TO 500 (20.0xBB) -
+      825 cached  flop     QhKc   6c 5c Th         no-bet  RAISE_TO 500 (20.0xBB) -
+      836 sample  preflop  QhQs   -                bet     RAISE_TO 100 (4.0xBB)  -
+      837 cached  preflop  QhQs   -                bet     RAISE_TO 100 (4.0xBB)  -
+      844 sample  flop     QhQs   5s Jh 4h         bet     RAISE_TO 700 (28.0xBB) -
+      845 cached  flop     QhQs   5s Jh 4h         bet     RAISE_TO 700 (28.0xBB) -
+      846 cached  flop     QhQs   5s Jh 4h         bet     RAISE_TO 700 (28.0xBB) -
+      847 cached  flop     QhQs   5s Jh 4h         bet     RAISE_TO 700 (28.0xBB) -
+      848 cached  flop     QhQs   5s Jh 4h         bet     RAISE_TO 700 (28.0xBB) -
+      849 cached  flop     QhQs   5s Jh 4h         bet     RAISE_TO 700 (28.0xBB) -
+      850 cached  flop     QhQs   5s Jh 4h         bet     RAISE_TO 700 (28.0xBB) -
+      851 cached  flop     QhQs   5s Jh 4h         bet     RAISE_TO 700 (28.0xBB) -
+      855 REC     turn     QhQs   5s Jh 4h As      no-bet  RAISE_TO 820 (32.8xBB) -
+      856 REC-c   turn     QhQs   5s Jh 4h As      no-bet  RAISE_TO 820 (32.8xBB) -
+      869 sample  preflop  Jh2c   -                bet     FOLD                   -
+      888 sample  preflop  Kh4s   -                bet     FOLD                   -
+      915 sample  preflop  3c8c   -                bet     FOLD                   -
+      924 sample  preflop  3s3h   -                bet     FOLD                   -
+      943 sample  preflop  8hJh   -                bet     FOLD                   -
+      955 sample  preflop  8cKh   -                bet     RAISE_TO 2335 (46.7xBB) -
+      956 cached  preflop  8cKh   -                bet     RAISE_TO 2335 (46.7xBB) -
+      966 sample  preflop  5c9d   -                bet     FOLD                   -
+      967 cached  preflop  5c9d   -                bet     FOLD                   -
+      982 sample  preflop  Ac2h   -                bet     CALL                   -
+      987 sample  preflop  Ac2h   -                bet     RAISE_TO 600 (12.0xBB) -
+      988 cached  preflop  Ac2h   -                bet     RAISE_TO 600 (12.0xBB) -
+      989 cached  preflop  Ac2h   -                bet     RAISE_TO 600 (12.0xBB) -
+      990 cached  preflop  Ac2h   -                bet     RAISE_TO 600 (12.0xBB) -
+      994 sample  preflop  Ac2h   -                bet     CALL                   -
+     1005 sample  preflop  9cAd   -                bet     CALL                   -
+     1038 sample  preflop  8h4d   -                bet     FOLD                   -
+     1054 sample  preflop  3dJs   -                bet     RAISE_TO 600 (6.0xBB)  -
+     1055 cached  preflop  3dJs   -                bet     RAISE_TO 600 (6.0xBB)  -
+     1056 cached  preflop  3dJs   -                bet     RAISE_TO 600 (6.0xBB)  -
+     1057 cached  preflop  3dJs   -                bet     RAISE_TO 600 (6.0xBB)  -
+     1058 cached  preflop  3dJs   -                bet     RAISE_TO 600 (6.0xBB)  -
+     1067 sample  preflop  9cQd   -                bet     RAISE_TO 750 (7.5xBB)  -
+     1068 cached  preflop  9cQd   -                bet     RAISE_TO 750 (7.5xBB)  -
+     1069 cached  preflop  9cQd   -                bet     RAISE_TO 750 (7.5xBB)  -
+     1077 sample  preflop  8cAs   -                bet     RAISE_TO 300 (3.0xBB)  -
+     1078 cached  preflop  8cAs   -                bet     RAISE_TO 300 (3.0xBB)  -
+     1093 sample  preflop  7s5h   -                bet     RAISE_TO 600 (6.0xBB)  -
+     1094 cached  preflop  7s5h   -                bet     RAISE_TO 600 (6.0xBB)  -
+     1104 sample  preflop  JdQh   -                bet     RAISE_TO 500 (5.0xBB)  -
+     1108 sample  preflop  JdQh   -                bet     FOLD                   -
+     1115 sample  preflop  Th6s   -                bet     FOLD                   -
+     1128 sample  preflop  Td2h   -                bet     RAISE_TO 4800 (48.0xBB) -
+     1149 sample  preflop  Jh2h   -                bet     FOLD                   -
+     1150 cached  preflop  Jh2h   -                bet     FOLD                   -
+     1174 sample  preflop  Qs5h   -                bet     FOLD                   -
+     1184 sample  preflop  As8c   -                bet     RAISE_TO 1445 (57.8xBB) -
+     1194 sample  preflop  4s9s   -                bet     FOLD                   -
+     1216 sample  preflop  2h6d   -                bet     FOLD                   -
+     1233 sample  preflop  Kd7d   -                bet     FOLD                   -
+     1245 sample  preflop  4h4s   -                bet     CALL                   -
+     1246 cached  preflop  4h4s   -                bet     CALL                   -
+     1248 sample  flop     4h4s   7h Qd Qh         no-bet  RAISE_TO 250 (5.0xBB)  -
+     1249 cached  flop     4h4s   7h Qd Qh         no-bet  RAISE_TO 250 (5.0xBB)  -
+     1253 sample  turn     4h4s   7h Qd Qh Jh      no-bet  RAISE_TO 495 (9.9xBB)  -
+     1254 cached  turn     4h4s   7h Qd Qh Jh      no-bet  RAISE_TO 495 (9.9xBB)  -
+     1255 cached  turn     4h4s   7h Qd Qh Jh      no-bet  RAISE_TO 495 (9.9xBB)  -
+     1256 cached  turn     4h4s   7h Qd Qh Jh      no-bet  RAISE_TO 495 (9.9xBB)  -
+     1267 sample  preflop  Ah7h   -                bet     FOLD                   -
+     1268 cached  preflop  Ah7h   -                bet     FOLD                   -
+     1280 sample  preflop  QdJh   -                bet     CALL                   -
+     1283 sample  flop     QdJh   Js Ks 7c         no-bet  RAISE_TO 600 (12.0xBB) -
+     1284 cached  flop     QdJh   Js Ks 7c         no-bet  RAISE_TO 600 (12.0xBB) -
+     1295 sample  preflop  Ac8h   -                bet     FOLD                   -
+     1296 cached  preflop  Ac8h   -                bet     FOLD                   -
+     1308 sample  preflop  8dQd   -                bet     FOLD                   -
+     1309 cached  preflop  8dQd   -                bet     FOLD                   -
+     1323 sample  preflop  Qh2h   -                bet     FOLD                   -
+     1333 sample  preflop  4d7c   -                bet     FOLD                   -
+     1343 sample  preflop  8sQd   -                bet     CALL                   -
+     1355 sample  preflop  8h2s   -                bet     FOLD                   -
+     1363 REC     preflop  2s9c   -                bet     FOLD                   -
+     1379 sample  preflop  9s5c   -                bet     FOLD                   -
+     1392 sample  preflop  5sAh   -                bet     RAISE_TO 600 (6.0xBB)  -
+     1393 cached  preflop  5sAh   -                bet     RAISE_TO 600 (6.0xBB)  -
+     1403 sample  preflop  5dAh   -                bet     CALL                   -
+     1405 sample  flop     5dAh   7s 9h 3h         no-bet  RAISE_TO 1771 (17.7xBB) -
+     1406 cached  flop     5dAh   7s 9h 3h         no-bet  RAISE_TO 1771 (17.7xBB) -
+     1417 sample  preflop  5c4s   -                bet     FOLD                   -
+     1427 sample  preflop  9hJh   -                bet     FOLD                   -
+     1437 sample  preflop  Ks6h   -                bet     FOLD                   -
+     1446 sample  preflop  Jd7c   -                bet     FOLD                   -
+     1456 sample  preflop  Tc6d   -                bet     FOLD                   -
+     1471 sample  preflop  5dTd   -                bet     RAISE_TO 2321 (15.5xBB) -
+     1472 cached  preflop  5dTd   -                bet     RAISE_TO 2321 (15.5xBB) -
+     1473 cached  preflop  5dTd   -                bet     RAISE_TO 2321 (15.5xBB) -
+     1488 sample  preflop  2dQs   -                bet     FOLD                   -
+     1503 sample  preflop  Js6h   -                bet     FOLD                   -
+     1517 sample  preflop  3d5c   -                bet     FOLD                   -
+     1529 sample  preflop  7c5d   -                bet     FOLD                   -
+     1543 sample  preflop  Kd8h   -                bet     FOLD                   -
+     1554 sample  preflop  9d5c   -                bet     RAISE_TO 1327 (6.6xBB) -
+     1564 sample  preflop  Ad5s   -                bet     CALL                   -
+     1565 cached  preflop  Ad5s   -                bet     CALL                   -
+     1568 sample  preflop  Ad5s   -                bet     FOLD                   -
+     1578 sample  preflop  KhQd   -                bet     FOLD                   -
+     1585 sample  preflop  9c9h   -                bet     RAISE_TO 1800 (9.0xBB) -
+     1586 cached  preflop  9c9h   -                bet     RAISE_TO 1800 (9.0xBB) -
+     1598 sample  preflop  Qs7d   -                bet     RAISE_TO 900 (4.5xBB)  -
+     1599 cached  preflop  Qs7d   -                bet     RAISE_TO 900 (4.5xBB)  -
+     1600 cached  preflop  Qs7d   -                bet     RAISE_TO 900 (4.5xBB)  -
+     1609 sample  preflop  7s8d   -                bet     FOLD                   -
+     1619 sample  preflop  8c5h   -                bet     FOLD                   -
+     1620 cached  preflop  8c5h   -                bet     FOLD                   -
+     1629 sample  preflop  6hTc   -                bet     RAISE_TO 600 (2.0xBB)  -
+     1630 cached  preflop  6hTc   -                bet     RAISE_TO 600 (2.0xBB)  -
+     1634 sample  flop     6hTc   3h Kd 9d         no-bet  RAISE_TO 2789 (9.3xBB) -
+     1647 sample  preflop  5sKs   -                bet     RAISE_TO 1677 (5.6xBB) short-stack (eff_bb=5.59  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD)
+     1648 cached  preflop  5sKs   -                bet     RAISE_TO 1677 (5.6xBB) -
+     1649 cached  preflop  5sKs   -                bet     RAISE_TO 1677 (5.6xBB) -
+     1661 sample  preflop  TsTd   -                bet     RAISE_TO 3600 (12.0xBB) -
+     1662 cached  preflop  TsTd   -                bet     RAISE_TO 3600 (12.0xBB) -
+     1663 cached  preflop  TsTd   -                bet     RAISE_TO 3600 (12.0xBB) -
+     1664 cached  preflop  TsTd   -                bet     RAISE_TO 3600 (12.0xBB) -
+     1665 cached  preflop  TsTd   -                bet     RAISE_TO 3600 (12.0xBB) -
+     1666 cached  preflop  TsTd   -                bet     RAISE_TO 3600 (12.0xBB) -
+     1667 cached  preflop  TsTd   -                bet     RAISE_TO 3600 (12.0xBB) -
+     1680 REC     preflop  QsAh   -                bet     CALL                   short-stack (eff_bb=5.70  cp=0  street=0  pre_argmax=ALLIN  post_argmax=ALLIN)
+     1681 REC-c   preflop  QsAh   -                bet     CALL                   -
+     1684 sample  flop     QsAh   7s 5c 5s         no-bet  RAISE_TO 3524 (11.7xBB) short-stack (eff_bb=5.70  cp=0  street=1  pre_argmax=ALLIN  post_argmax=ALLIN)
+
+[e] RED FLAGS
+    SAFE-FOLD  seq=1014 captured=20260611_165839_264
+      level=L3 blinds=[50, 100, 15] street=? n_alive=4
+      hero_cards=9cAd board=5s 3d 5d pot=460 hero_stack=5140 facing_bet=True
+      reason: replay_error (with + without override): action_seq[0]=(seat=0, chip_int=130) not in legal_actions=[0, 1, 200, 201, 202, 203, 204, 205, 206, 207] ...; derive_action_sequence emitted an illegal action
+      raw stacks={'seat1': 5140, 'seat2': None, 'seat3': None, 'seat4': 1060, 'seat5': 1080, 'seat6': 1260}
+      raw bets={'seat5': 10} dealer=seat4
+
+========================================================================
+TRIAGE live_dryrun_20260611_204751.jsonl: frames=950 decisions=141 (fresh 77/cached 59/recovered 5) safe_folds=1 skips=808 (85.1%) hands=76 hands_lost=1 to_act_skipped=67 red_flags=1
+========================================================================
