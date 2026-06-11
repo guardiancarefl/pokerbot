@@ -497,6 +497,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     ap.add_argument("--stall-warn-seconds", type=float, default=2.0,
                      help="(socket mode) Warn if no message arrives within "
                           "this many seconds. Default 2.0s.")
+    ap.add_argument("--anchor-sum-floor", action="store_true",
+                     help="P1 anchor sum-floor guard (approved 2026-06-11): "
+                          "refuse hand-start anchors whose pre-hand sum != "
+                          "chips-in-play while all seats read alive (the "
+                          "seq-1363 poisoned-anchor class). OFF by default.")
     ap.add_argument("--fallback-seconds", type=float, default=None,
                      help="Guaranteed-action fallback (operator-approved "
                           "2026-06-11): if hero is to-act and no decision "
@@ -541,7 +546,11 @@ def main() -> int:
     print(_color(f"[run_live_dryrun] ante convention: {conv} (servable)",
                   CYAN), flush=True)
 
-    tracker = SessionTracker()
+    tracker = SessionTracker(anchor_sum_floor=args.anchor_sum_floor)
+    if args.anchor_sum_floor:
+        header["anchor_sum_floor"] = True
+        print(_color("[run_live_dryrun] P1 anchor sum-floor guard ARMED",
+                      YELLOW), flush=True)
     decision_cache = DecisionCache()
     rng = random.Random(args.seed)
 

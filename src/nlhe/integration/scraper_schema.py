@@ -442,12 +442,24 @@ class SessionTracker:
     # meaningful (early under-read transients would false-alarm it).
     _OOD_MIN_ANCHORS: int = 5
 
-    def __init__(self) -> None:
+    def __init__(self, anchor_sum_floor: bool = False) -> None:
         self._current_pre_hand: tuple[int, ...] | None = None
         self._current_hand_key: tuple | None = None
         # Accepted-anchor chip sums for the [ANCHOR-OOD] cross-check.
         self._anchor_sums: dict[int, int] = {}
         self._ood_warned: bool = False
+        # P1 anchor sum-floor guard (approved 2026-06-11, seq-1363
+        # postmortem): when ON, a hand-start anchor whose pre-hand sum
+        # differs from chips-in-play while EVERY seat reads alive is
+        # refused. With all six stacks visible there is no mis-alive
+        # seat to hide chips behind — the sum must close exactly; a
+        # short sum is an OCR corruption (dropped digit) that poisons
+        # the anchor and inverts the Layer-1 stack recovery (seq 1363:
+        # anchored sum 8200 passed the ceiling-only guard, recovery
+        # then "derived" seat6=8 against a true 808). The ceiling-only
+        # rationale (mis-alive seats legitimately sum BELOW) still
+        # applies whenever any seat reads non-alive. OFF by default.
+        self._anchor_sum_floor = bool(anchor_sum_floor)
 
     def _hand_key(self, frame: ScraperFrame) -> tuple:
         """Identifying tuple for a hand. A change in any component
@@ -531,6 +543,19 @@ class SessionTracker:
             )
             print(f"[ANCHOR-REFUSED] hand-start anchor fails "
                   f"chips-in-play ceiling ({ceiling}): {detail}  "
+                  f"captured_at={frame.captured_at}", flush=True)
+            return False
+
+        # P1 sum-floor guard (flag-gated; see __init__). Placed before
+        # the internal-consistency check on purpose: that check passes
+        # for a dropped-digit corruption because both sides use the
+        # same wrong stack — exactly the seq-1363 poisoning.
+        if (self._anchor_sum_floor and sum(pre) != ceiling
+                and all(frame.alive)):
+            print(f"[ANCHOR-REFUSED] hand-start anchor fails sum-floor "
+                  f"guard: sum(pre_hand)={sum(pre)} != chips-in-play "
+                  f"{ceiling} with all {NUM_SEATS} seats alive (no "
+                  f"mis-alive seat to hide chips) "
                   f"captured_at={frame.captured_at}", flush=True)
             return False
 
