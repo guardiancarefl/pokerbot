@@ -27,9 +27,15 @@
   correctness assessment: operator + advisor.
 - **Open risk: silence, not wrong decisions** — 8 to-act spots never
   decided (scraper-suspect bursts; 4 hands lost incl. 8dAd, AdKs).
-  Stage-2 guaranteed-action fallback DESIGNED (CHECK-free/FOLD, N≈7s,
-  abort at 3 fallbacks/10 hands) — awaiting operator approval, NOT
-  built.
+- **Guaranteed-action fallback BUILT** (commit 31d7220, operator-
+  approved): `FallbackWatchdog` behind `--fallback-seconds`, **OFF by
+  default in Stage 1**. CHECK-if-free/FOLD watchdog, fires once per
+  to-act episode, abort recommendation at 3 fallback hands/10 or 2
+  consecutive. Replay gates GREEN (make_decision 486/486 identical
+  pre/post; listener flag-off rows identical; armed smoke fires on
+  the audit's seq-133/134 spot without perturbing decisions):
+  `evals/live_session1_audit_20260611/fallback_replay_gates.txt`.
+  Proposed live value N=7.0s — arming is an operator call.
 
 ## Dry-run readiness — 2026-06-11 — smoke GREEN, triage tooling landed
 

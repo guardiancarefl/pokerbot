@@ -688,3 +688,15 @@ Fourteen commits on main. Findings: four foundational bugs in the abstraction la
 - The decision pipeline, when it fired, saw the true table state every time (61/61 invariant PASS, 0 divergence vs raw observables). The "crazy decisions" are sample-mode draws from honest distributions, not reconstruction lies.
 - The real risk surface is silence, not wrong decisions: scraper-suspect bursts (seqs 346–370 killed 3 hands in a row) and replay/derivation failures leave hero hanging to the site timer. Layer-1 recovery never fired this session (0 recovered) — the suspect frames were whole-frame suspects, not single-seat stack jumps.
 - Hero dipped to 1.8BB at L3 (OOD-WARN, below the 2BB training support floor) and recovered to win — the L3 1.8BB frames are in-log for any future OOD study.
+
+## Session — 2026-06-11 (late) — guaranteed-action fallback BUILT (flag-gated, OFF)
+
+### What was done
+- **Operator approved the fallback design** from the session-1 audit; built it (commit 31d7220) behind `--fallback-seconds` (default None = OFF in Stage 1).
+- `src/nlhe/integration/fallback.py`: pure `FallbackWatchdog` state machine (injected time, no RNG, no clicking). Arm on real to-act UI (CHECK/CALL/RAISE/BET/ALLIN buttons; FOLD-only muck UI excluded — predicate validated by the audit) with no decision; deadline anchored to the FIRST to-act frame; 1-frame flicker tolerated, 2 consecutive vanish frames disarm; decision*/new-hand disarm; fires once per episode (CHECK-if-free / FOLD-otherwise); frameless firing via heartbeat poll + socket recv-timeout tick (tick exists ONLY when armed). Abort recommendation: ≥3 fallback hands/10 or 2 consecutive.
+- Fallback jsonl rows carry no `seq`/`raw_record` keys → existing triage/audit/replay tooling ignores them by construction (tested).
+- **Replay gates GREEN** (`evals/live_session1_audit_20260611/fallback_replay_gates.txt`): make_decision pre/post 486/486 identical; listener flag-off pre/post 486/486 rows identical; armed smoke fired exactly on the audit's seq-133/134 never-decided QhJc spot with decision rows still byte-identical to baseline.
+- Tests: `tests/test_fallback.py` 15 green; live-path subset 95 green. Pre-existing (NOT from this change): 33 failed/27 errors in subgame-leaf research tests — state_dict loading mismatches, none import the changed modules. Untriaged, tracked here.
+
+### What was decided
+- Proposed live value `--fallback-seconds 7.0` (calibrated on session 1: would have fired on all 8 never-decided spots, zero false fires on within-street recoveries). Stage 1 keeps it OFF; arming it in a live session is an operator call at launch time.
