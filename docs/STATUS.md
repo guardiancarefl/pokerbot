@@ -12,6 +12,25 @@
 > Leduc / sub-step 6 entries describe a research workstream that's
 > superseded by the deployment focus.
 
+## First live session — 2026-06-11 — WON (operator-executed), audited
+
+- Session `logs/live_dryrun_20260611_163815.jsonl`: 37 hands, 61
+  decision frames, double-up WON with manual operator execution.
+- **`scripts/decision_audit.py`** (commit 25ee6d1): per-decision cards
+  with full pre/post-floor policy distributions, believed action
+  history, believed-vs-raw divergence. Fidelity gate 486/486
+  byte-identical replay. Evidence:
+  `evals/live_session1_audit_20260611/`.
+- Findings: 61/61 decisions saw the TRUE state (0 divergence). The
+  flagged 2d5c shove (seq 315) was a sample-mode draw of a 7.5% ALLIN
+  tail; the 8cAc UTG fold (seq 392) was the 74% argmax. Push-fold
+  correctness assessment: operator + advisor.
+- **Open risk: silence, not wrong decisions** — 8 to-act spots never
+  decided (scraper-suspect bursts; 4 hands lost incl. 8dAd, AdKs).
+  Stage-2 guaranteed-action fallback DESIGNED (CHECK-free/FOLD, N≈7s,
+  abort at 3 fallbacks/10 hands) — awaiting operator approval, NOT
+  built.
+
 ## Dry-run readiness — 2026-06-11 — smoke GREEN, triage tooling landed
 
 - **Byte-identity smoke (the live path is unchanged by the week's

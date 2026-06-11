@@ -671,3 +671,20 @@ Fourteen commits on main. Findings: four foundational bugs in the abstraction la
 2. Plumbing-test the latest checkpoint against Slumbot at matched 200bb stack depth — this is the actual Phase 2d headline test.
 3. Decide on RunPod rental for `[256,256]` scale-up — data-conditional on overnight result.
 4. Doc/code-hygiene carryovers: `train_leduc.py` config.json/metrics.json location, `_build_game_state_view` underscore prefix, three-way `--run-name` CLI inconsistency, possibly diagnose the `[128,128]` hang.
+
+## Session — 2026-06-11 (evening) — first live session audit (operator-played double-up, WON)
+
+### What was done
+- **First live session played** (operator manually executing; Stage 1 dry-run advisory): `logs/live_dryrun_20260611_163815.jsonl` — 486 frames, 37 hands, 61 decision frames (37 fresh / 24 cached), 4 safe-folds, WON the double-up. Operator intervened manually where the pipeline went silent.
+- **Triage** (`scripts/dryrun_triage.py`): 46 data-quality skips (33 scraper-suspect), 4 hands LOST to skips (8dAd, AdKs, 3s7s, 2sJh — all killed by scraper-suspect frames), 34 hero-to-act frames skipped, 4 red flags. Report: `evals/live_session1_audit_20260611/triage_20260611_163815.txt`.
+- **Built `scripts/decision_audit.py`** (commit 25ee6d1): replays the session through `make_decision` with pure capture hooks (policy-filter wrap, `derive_action_sequence` capture, invariant-reconstruction capture) and renders per-decision cards — full pre/post-floor policy distribution, believed action history, believed-vs-raw divergence, shove/Ax-fold flags, missed-action accounting. **Fidelity gate: 486/486 byte-identical to the live session; 3 floor firings match stdout.**
+- **Operator's two flagged hands located and characterized** (both saw the TRUE state — invariant PASS, history correct, zero believed-vs-raw divergence):
+  - seq 315 `2d5c` SB, eff 11.7BB, folded to hero: policy FOLD .654 / CALL .202 / ALLIN .075 — **sample mode drew the 7.5% ALLIN tail** (raise-to 3007 ≈ 20BB).
+  - seq 392 `8cAc` UTG first-in, eff 18.7BB: policy FOLD .740 (argmax) / ALLIN .106 / CALL .087 — sampled FOLD.
+- **Missed-action accounting:** 15 real to-act frames produced no decision; **8 to-act spots never decided before the next hand** (hung 13.8–35.1s; operator/site timer resolved them). Dominant cause: scraper-suspect frames. FOLD-only muck-UI frames (23) excluded as not-real-to-act.
+- **Designed (not built) the Stage-2 guaranteed-action fallback** — CHECK-if-free / FOLD-otherwise watchdog in the listener loop, N≈7s from first to-act detection, disarm-on-controls-vanish, fallbacks logged loudly as FALLBACK (never model decisions, never into DecisionCache/tracker), session-abort at ≥3 fallbacks per 10 hands or 2 consecutive fallback hands. Awaiting operator approval; no live-path changes made.
+
+### What was learned
+- The decision pipeline, when it fired, saw the true table state every time (61/61 invariant PASS, 0 divergence vs raw observables). The "crazy decisions" are sample-mode draws from honest distributions, not reconstruction lies.
+- The real risk surface is silence, not wrong decisions: scraper-suspect bursts (seqs 346–370 killed 3 hands in a row) and replay/derivation failures leave hero hanging to the site timer. Layer-1 recovery never fired this session (0 recovered) — the suspect frames were whole-frame suspects, not single-seat stack jumps.
+- Hero dipped to 1.8BB at L3 (OOD-WARN, below the 2BB training support floor) and recovered to win — the L3 1.8BB frames are in-log for any future OOD study.
