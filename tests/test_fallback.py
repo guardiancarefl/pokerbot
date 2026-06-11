@@ -191,3 +191,79 @@ def test_log_record_invisible_to_existing_tooling():
 
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__, "-v"]))
+
+
+# ── watchdog v2 (hand_deadline + click_confirmation_mode) ──────────────
+
+def test_v2_spot_deadline_survives_vanish_disarm_rearm():
+    # The 9cAd gap (204751 seqs 1013-1020): intermittent visibility.
+    w = FallbackWatchdog(7.0, vanish_frames=2, hand_deadline=True)
+    w.observe(raw(cards=("9c", "Ad")), "skip_data_quality", seq=1, now=0.0)
+    # buttons vanish for 2 frames -> episode disarmed
+    w.observe(raw(cards=("9c", "Ad"), buttons=()), "skip_not_hero_to_act",
+              seq=2, now=1.0)
+    w.observe(raw(cards=("9c", "Ad"), buttons=()), "skip_not_hero_to_act",
+              seq=3, now=2.0)
+    # same spot re-appears at t=6.5: v1 would restart the deadline;
+    # v2 resumes t0=0 and fires at 7.0
+    assert w.observe(raw(cards=("9c", "Ad")), "safe_fold",
+                     seq=4, now=6.5) is None
+    plan = w.observe(raw(cards=("9c", "Ad")), "safe_fold", seq=5, now=7.0)
+    assert plan is not None
+    assert plan.waited_seconds == pytest.approx(7.0)
+
+
+def test_v2_decision_clears_spot_anchor():
+    w = FallbackWatchdog(7.0, hand_deadline=True)
+    w.observe(raw(cards=("9c", "Ad")), "skip_data_quality", seq=1, now=0.0)
+    w.observe(raw(cards=("9c", "Ad")), "decision", seq=2, now=1.0)
+    # New to-act episode on the SAME spot gets a fresh deadline.
+    assert w.observe(raw(cards=("9c", "Ad")), "skip_data_quality",
+                     seq=3, now=8.0) is None
+    assert w.poll(now=14.9) is None
+    assert w.poll(now=15.0) is not None
+
+
+def test_v2_fired_spot_reappearing_gets_fresh_deadline():
+    w = FallbackWatchdog(7.0, vanish_frames=2, hand_deadline=True)
+    w.observe(raw(cards=("9c", "Ad")), "skip_data_quality", seq=1, now=0.0)
+    assert w.observe(raw(cards=("9c", "Ad")), "skip_data_quality",
+                     seq=2, now=7.5) is not None
+    # vanish x2 -> disarm; spot re-appears: fresh deadline, no instant
+    # re-fire even though 20s have passed
+    w.observe(raw(cards=("9c", "Ad"), buttons=()), "skip_not_hero_to_act",
+              seq=3, now=8.0)
+    w.observe(raw(cards=("9c", "Ad"), buttons=()), "skip_not_hero_to_act",
+              seq=4, now=9.0)
+    assert w.observe(raw(cards=("9c", "Ad")), "skip_data_quality",
+                     seq=5, now=20.0) is None
+    assert w.poll(now=26.9) is None
+    assert w.poll(now=27.0) is not None
+
+
+def test_v2_board_change_is_new_spot():
+    w = FallbackWatchdog(7.0, hand_deadline=True)
+    r1 = raw(cards=("9c", "Ad"))
+    w.observe(r1, "skip_data_quality", seq=1, now=0.0)
+    r2 = raw(cards=("9c", "Ad"))
+    r2["board"] = ["Kh", "7c", "2d"]
+    # flop arrives -> different spot -> fresh deadline
+    assert w.observe(r2, "skip_data_quality", seq=2, now=8.0) is None
+
+
+def test_click_confirmation_mode_decision_does_not_disarm():
+    w = FallbackWatchdog(7.0, hand_deadline=True,
+                         click_confirmation_mode=True)
+    w.observe(raw(), "decision", seq=1, now=0.0)       # arms despite decision
+    plan = w.observe(raw(), "decision_cached", seq=2, now=7.0)
+    assert plan is not None                            # click never landed
+    assert plan.action_kind == "fold"
+
+
+def test_click_confirmation_mode_vanish_still_disarms():
+    w = FallbackWatchdog(7.0, vanish_frames=2,
+                         click_confirmation_mode=True)
+    w.observe(raw(), "decision", seq=1, now=0.0)
+    w.observe(raw(buttons=()), "skip_not_hero_to_act", seq=2, now=1.0)
+    w.observe(raw(buttons=()), "skip_not_hero_to_act", seq=3, now=2.0)
+    assert w.poll(now=60.0) is None                    # click confirmed

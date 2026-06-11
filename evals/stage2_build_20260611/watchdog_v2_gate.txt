@@ -1,0 +1,19 @@
+== 20260611_163815: v1 fires 7, v2 fires 7
+   v1 hand=ThTc   armed_seq=73    action=fold  waited=  7.0s via=poll
+   v1 hand=QhJc   armed_seq=127   action=check waited=  7.0s via=poll
+   v1 hand=AsAc   armed_seq=171   action=fold  waited=  7.0s via=poll
+   v1 hand=8dAd   armed_seq=188   action=fold  waited=  7.0s via=poll
+   v1 hand=AdKs   armed_seq=305   action=fold  waited=  7.0s via=poll
+   v1 hand=2sJh   armed_seq=366   action=fold  waited=  7.0s via=poll
+   v1 hand=8sAs   armed_seq=408   action=fold  waited=  7.0s via=poll
+== 20260611_181249: v1 fires 0, v2 fires 0
+== 20260611_201230: v1 fires 4, v2 fires 4
+   v1 hand=AdAs   armed_seq=13    action=fold  waited=  7.4s via=poll
+   v1 hand=JdAs   armed_seq=295   action=fold  waited=  7.0s via=poll
+   v1 hand=Td6c   armed_seq=338   action=fold  waited=  7.0s via=poll
+   v1 hand=7d2d   armed_seq=576   action=fold  waited=  7.0s via=poll
+== 20260611_204751: v1 fires 2, v2 fires 3
+   v1 hand=QhQs   armed_seq=840   action=check waited=  8.2s via=poll   *** LOST IN V2 ***
+   v1 hand=6cAs   armed_seq=901   action=fold  waited=  7.0s via=poll
+   v2 ADDS hand=QhQs   armed_seq=841   action=check waited=  7.4s via=poll
+   v2 ADDS hand=9cAd   armed_seq=1019  action=fold  waited= 13.8s via=frame

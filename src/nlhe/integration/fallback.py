@@ -112,7 +112,30 @@ class FallbackWatchdog:
         abort_window_hands: int = 10,
         abort_fallbacks: int = 3,
         abort_consecutive: int = 2,
+        hand_deadline: bool = False,
+        click_confirmation_mode: bool = False,
     ) -> None:
+        """v2 options (approved 2026-06-11, both OFF by default = v1):
+
+        hand_deadline: the deadline anchors to the FIRST to-act
+          evidence for the SPOT — keyed (hero_cards, board) — and
+          survives controls flicker / vanish-disarm / re-arm cycles.
+          Closes the 9cAd gap (session 204751 seqs 1013-1020:
+          intermittent button visibility reset the per-episode
+          deadline; the spot hung ~30s without firing). The spot
+          anchor clears when a decision* is emitted (spot resolved),
+          when the hand changes, or after a fire (a re-appearing
+          already-fired spot gets a FRESH deadline, never an instant
+          re-fire).
+
+        click_confirmation_mode: Stage-2 executor mode — a decision*
+          status NO LONGER disarms; only controls vanishing (the click
+          actually landed / action taken) or a hand change does. A
+          silently-failed click leaves the buttons up past the
+          deadline and the watchdog fires the safe action. The fired
+          action stays CHECK-if-free/FOLD regardless of what the
+          decision was — the fallback never escalates.
+        """
         if fallback_seconds <= 0:
             raise ValueError("fallback_seconds must be > 0; gate the "
                              "watchdog's construction on the flag instead")
@@ -121,11 +144,16 @@ class FallbackWatchdog:
         self.abort_window_hands = int(abort_window_hands)
         self.abort_fallbacks = int(abort_fallbacks)
         self.abort_consecutive = int(abort_consecutive)
+        self.hand_deadline = bool(hand_deadline)
+        self.click_confirmation_mode = bool(click_confirmation_mode)
 
         # episode state
         self._armed: dict | None = None
         self._fired_this_episode = False
         self._vanish_count = 0
+        # v2 spot-level deadline anchor (hand_deadline mode)
+        self._spot_key: tuple | None = None
+        self._spot_t0: float | None = None
         # hand tracking
         self._current_hand: tuple[str, ...] | None = None
         self._current_hand_fallback = False
@@ -148,11 +176,16 @@ class FallbackWatchdog:
         self._current_hand = cards
         self.hands_seen += 1
         self._disarm()
+        self._clear_spot()
 
     def _disarm(self) -> None:
         self._armed = None
         self._fired_this_episode = False
         self._vanish_count = 0
+
+    def _clear_spot(self) -> None:
+        self._spot_key = None
+        self._spot_t0 = None
 
     def _check_abort(self) -> None:
         flags = self._hand_flags + [self._current_hand_fallback]
@@ -183,9 +216,12 @@ class FallbackWatchdog:
 
         to_act = is_real_to_act(raw_record)
 
-        if status.startswith("decision"):
+        if status.startswith("decision") and not self.click_confirmation_mode:
             # Pipeline produced/locked an action — the guarantee holds.
+            # (click_confirmation_mode: a decision is not enough; only
+            # the click landing — controls vanishing — disarms.)
             self._disarm()
+            self._clear_spot()
             return None
 
         if not to_act:
@@ -193,10 +229,13 @@ class FallbackWatchdog:
                 self._vanish_count += 1
                 if self._vanish_count >= self.vanish_frames:
                     # Action was taken externally / street ended.
+                    # hand_deadline mode: the SPOT anchor survives a
+                    # vanish-disarm — if the same (cards, board) spot
+                    # re-appears, it resumes the original deadline.
                     self._disarm()
             return None
 
-        # Real to-act frame with no decision.
+        # Real to-act frame with no (confirmed) action.
         self._vanish_count = 0
         if self._fired_this_episode:
             return None
@@ -204,15 +243,34 @@ class FallbackWatchdog:
         check_available = "CHECK" in btns
         controls = raw_record.get("controls") or {}
         if self._armed is None:
+            t0 = float(now)
+            if self.hand_deadline:
+                spot_key = (tuple(cards), tuple(raw_record.get("board") or ()))
+                if spot_key == self._spot_key and self._spot_t0 is not None:
+                    t0 = self._spot_t0      # resume the spot's deadline
+                else:
+                    self._spot_key = spot_key
+                    self._spot_t0 = t0
             self._armed = {
-                "t0": float(now),
+                "t0": t0,
                 "seq": seq,
                 "captured_at": raw_record.get("captured_at", ""),
                 "check_available": check_available,
                 "controls": controls,
             }
         else:
-            # Refresh UI snapshot; never the deadline.
+            if self.hand_deadline:
+                spot_key = (tuple(cards), tuple(raw_record.get("board") or ()))
+                if spot_key != self._spot_key:
+                    # Street advanced while armed (no vanish in between):
+                    # a NEW spot — fresh deadline, new anchor.
+                    self._spot_key = spot_key
+                    self._spot_t0 = float(now)
+                    self._armed["t0"] = float(now)
+                    self._armed["seq"] = seq
+                    self._armed["captured_at"] = raw_record.get(
+                        "captured_at", "")
+            # Refresh UI snapshot; never the deadline (within a spot).
             self._armed["check_available"] = check_available
             self._armed["controls"] = controls
         if now - self._armed["t0"] >= self.fallback_seconds:
@@ -233,6 +291,9 @@ class FallbackWatchdog:
     def _fire(self, fired_after_seq: int | None, now: float) -> FallbackPlan:
         armed = self._armed or {}
         self._fired_this_episode = True
+        # A fired spot loses its anchor: if the same spot re-appears
+        # after a disarm, it gets a FRESH deadline (no instant re-fire).
+        self._clear_spot()
         self.n_fallbacks += 1
         self._current_hand_fallback = True
         self._check_abort()

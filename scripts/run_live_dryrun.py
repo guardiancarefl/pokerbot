@@ -514,6 +514,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                           "FOLD-otherwise, logged loudly as FALLBACK (never "
                           "a model decision). OFF by default in Stage 1. "
                           "Proposed live value: 7.0.")
+    ap.add_argument("--watchdog-v2", action="store_true",
+                     help="Watchdog v2 (approved 2026-06-11): the fallback "
+                          "deadline anchors per SPOT (hand+board) and "
+                          "survives button flicker / vanish-rearm cycles — "
+                          "closes the 9cAd intermittent-visibility gap. "
+                          "Requires --fallback-seconds. OFF by default.")
     args = ap.parse_args(argv)
 
     if args.mode == "argmax" and not args.unsafe_argmax:
@@ -568,12 +574,19 @@ def main() -> int:
     # Strictly listener-side: never touches make_decision, DecisionCache,
     # or SessionTracker (see src/nlhe/integration/fallback.py).
     watchdog = None
+    if args.watchdog_v2 and args.fallback_seconds is None:
+        print(_color("[run_live_dryrun] --watchdog-v2 requires "
+                      "--fallback-seconds; ignoring.", RED), flush=True)
     if args.fallback_seconds is not None:
         from src.nlhe.integration.fallback import FallbackWatchdog
-        watchdog = FallbackWatchdog(args.fallback_seconds)
+        watchdog = FallbackWatchdog(args.fallback_seconds,
+                                    hand_deadline=bool(args.watchdog_v2))
         header["fallback_seconds"] = float(args.fallback_seconds)
+        if args.watchdog_v2:
+            header["watchdog_v2"] = True
         print(_color(
-            f"[run_live_dryrun] guaranteed-action fallback ARMED: "
+            f"[run_live_dryrun] guaranteed-action fallback ARMED"
+            f"{' (v2 per-spot deadline)' if args.watchdog_v2 else ''}: "
             f"N={args.fallback_seconds:.1f}s, CHECK-if-free/FOLD, abort at "
             f"{watchdog.abort_fallbacks} fallbacks/{watchdog.abort_window_hands} "
             f"hands or {watchdog.abort_consecutive} consecutive hands",
