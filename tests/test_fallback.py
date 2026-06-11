@@ -267,3 +267,20 @@ def test_click_confirmation_mode_vanish_still_disarms():
     w.observe(raw(buttons=()), "skip_not_hero_to_act", seq=2, now=1.0)
     w.observe(raw(buttons=()), "skip_not_hero_to_act", seq=3, now=2.0)
     assert w.poll(now=60.0) is None                    # click confirmed
+
+
+# ── AbortGate (enforced session abort) ─────────────────────────────────
+
+def test_abort_gate_trip_and_manual_reset(tmp_path):
+    from src.nlhe.integration.fallback import AbortGate
+    reset = tmp_path / "RESUME"
+    g = AbortGate(str(reset))
+    assert not g.active
+    assert g.trip("3 fallback hands in the last 10") is True
+    assert g.active and "fallback hands" in g.reason
+    assert g.trip("again") is False          # already active; not re-tripped
+    assert g.check_reset() is False          # no reset file yet
+    reset.write_text("")
+    assert g.check_reset() is True           # operator reset
+    assert not g.active and not reset.exists()
+    assert g.trip("second trip") is True     # can trip again after reset

@@ -310,3 +310,49 @@ class FallbackWatchdog:
             abort_recommended=self.abort_recommended,
             abort_reason=self.abort_reason,
         )
+
+
+class AbortGate:
+    """Enforced session-abort state (Stage-2 wiring, approved 2026-06-11).
+
+    The FallbackWatchdog only RECOMMENDS abort. When the listener runs
+    with --abort-enforce, this gate turns the recommendation into an
+    enforced state: while active, the listener suppresses click plans
+    (decisions are still computed, displayed and logged — the EXECUTION
+    surface is what's gated) and banners SIT OUT NOW on every decision.
+
+    Reset is manual and out-of-band: the operator creates the reset
+    file (`touch <reset_path>`); the gate clears on the next frame and
+    deletes the file. No auto-sit-out click in this stage (Stage-2b).
+    """
+
+    def __init__(self, reset_path: str) -> None:
+        self.reset_path = str(reset_path)
+        self.active = False
+        self.reason: str | None = None
+        self.tripped_count = 0
+
+    def trip(self, reason: str | None) -> bool:
+        """Activate. Returns True iff this call newly activated the gate."""
+        if self.active:
+            return False
+        self.active = True
+        self.reason = reason or "abort criterion tripped"
+        self.tripped_count += 1
+        return True
+
+    def check_reset(self) -> bool:
+        """Clear the gate if the operator's reset file exists. Returns
+        True iff the gate was cleared by this call."""
+        if not self.active:
+            return False
+        import os
+        if os.path.exists(self.reset_path):
+            try:
+                os.unlink(self.reset_path)
+            except OSError:
+                pass
+            self.active = False
+            self.reason = None
+            return True
+        return False

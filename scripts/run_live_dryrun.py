@@ -514,6 +514,15 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                           "FOLD-otherwise, logged loudly as FALLBACK (never "
                           "a model decision). OFF by default in Stage 1. "
                           "Proposed live value: 7.0.")
+    ap.add_argument("--abort-enforce", action="store_true",
+                     help="Enforce the watchdog's session-abort criterion "
+                          "(approved 2026-06-11): on trip, click plans are "
+                          "SUPPRESSED and every decision banners SIT OUT "
+                          "NOW until the operator creates the reset file. "
+                          "Requires --fallback-seconds. OFF by default.")
+    ap.add_argument("--abort-reset-file", default="logs/ABORT_RESET",
+                     help="Path the operator touches to clear an enforced "
+                          "abort. Deleted on reset. Default logs/ABORT_RESET.")
     ap.add_argument("--watchdog-v2", action="store_true",
                      help="Watchdog v2 (approved 2026-06-11): the fallback "
                           "deadline anchors per SPOT (hand+board) and "
@@ -567,6 +576,20 @@ def main() -> int:
         print(_color("[run_live_dryrun] extended click plans ARMED "
                       "(verify step + ALLIN mapping + call-only realization)",
                       YELLOW), flush=True)
+
+    abort_gate = None
+    if args.abort_enforce:
+        if args.fallback_seconds is None:
+            print(_color("[run_live_dryrun] --abort-enforce requires "
+                          "--fallback-seconds; ignoring.", RED), flush=True)
+        else:
+            from src.nlhe.integration.fallback import AbortGate
+            abort_gate = AbortGate(args.abort_reset_file)
+            header["abort_enforce"] = True
+            print(_color(
+                f"[run_live_dryrun] session-abort ENFORCED: on trip, click "
+                f"plans suppressed until `touch {args.abort_reset_file}`",
+                YELLOW), flush=True)
     decision_cache = DecisionCache()
     rng = random.Random(args.seed)
 
@@ -639,6 +662,14 @@ def main() -> int:
         if cp is not None:
             row["click_plan"] = plan_as_dict(cp)
         log_fh.write(json.dumps(row, default=str) + "\n")
+        if (abort_gate is not None and plan.abort_recommended
+                and abort_gate.trip(plan.abort_reason)):
+            print(_color(
+                "█" * 70 + "\n"
+                f"  ⛔ SESSION ABORT ENFORCED — {plan.abort_reason}\n"
+                f"  Click plans are now SUPPRESSED. SIT OUT NOW.\n"
+                f"  Resume: touch {args.abort_reset_file}\n"
+                + "█" * 70, RED + BOLD), flush=True)
 
     try:
         for seq, rec in source:
@@ -675,6 +706,25 @@ def main() -> int:
                                mode=args.mode, seq=seq,
                                decision_cache=decision_cache,
                                extended_click_plans=args.extended_click_plans)
+
+            # Enforced session abort: decisions still computed + logged,
+            # but the EXECUTION surface (click plan) is suppressed until
+            # the operator's manual reset.
+            if abort_gate is not None:
+                if abort_gate.check_reset():
+                    print(_color(
+                        "[run_live_dryrun] session-abort RESET by operator "
+                        "— click plans resume", GREEN), flush=True)
+                if abort_gate.active and d.status.startswith("decision"):
+                    from src.nlhe.integration.click_target import (
+                        click_plan_for_safe_fold)
+                    d.click_plan = click_plan_for_safe_fold(
+                        f"SUPPRESSED: session abort active "
+                        f"({abort_gate.reason}) — SIT OUT NOW; "
+                        f"touch {args.abort_reset_file} to resume")
+                    print(_color(
+                        f"  ⛔ SIT OUT NOW — abort active "
+                        f"({abort_gate.reason})", RED + BOLD), flush=True)
             if d.status in ("decision", "decision_recovered"):
                 n_decision += 1
             elif d.status in ("decision_cached", "decision_recovered_cached"):
