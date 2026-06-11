@@ -1,0 +1,128 @@
+========================================================================
+DRY-RUN TRIAGE — demo_dryrun_154557_replay.jsonl
+========================================================================
+
+[a] SESSION HEADER
+    mode=sample  seed=2026
+    ckpt=/home/quant/pokerbot/runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt
+    ckpt_sha256=b79e82dd0ce9e78e4eb666b7379df953dadbf2a6e026c6bd4b6eec695e9b1b11
+    abstraction_sha256=0fc20800dc7ce89ea950c975decbd530ac6c6f3c164105e8ab99d24359de4c8e
+    floors={'aa_kk': True, 'check_when_free': True, 'short_stack_bb': 6.0}
+    git_head=0bd61c87396a757afcd43c61530de0938d5ffe42 dirty=False started=2026-06-11T16:28:39.729910+00:00
+
+[b] FRAME ACCOUNTING
+    total frames        571
+    decisions           67  (fresh 32 / cached 29 / recovered 5 / recovered_cached 1)
+    safe_fold           0
+    skip_data_quality   241
+    skip_not_hero_to_act 263
+    skip_data_quality sub-causes (241):
+          123  dealer field missing/empty
+          103  scraper suspect frame
+           14  dealer points to non-alive/empty seat
+            1  n_alive below playable range
+
+[c] HAND ACCOUNTING  (raw_record card/dealer/board segmentation)
+    hands seen                       48
+    hands with >=1 hero decision     26
+    hero-to-act frames skipped       47  (action buttons visible in raw_record, frame skipped)
+    hands LOST to skips (OCR-loss)   11  (hero-to-act evidence present, zero decisions)
+        seq 37-61  hero=4sJc  killed by: dealer field missing/empty x1
+        seq 95-117  hero=AdKd  killed by: scraper suspect frame x6
+        seq 131-150  hero=6sJd  killed by: dealer field missing/empty x1, scraper suspect frame x1
+        seq 235-248  hero=4h4s  killed by: dealer field missing/empty x3, scraper suspect frame x1
+        seq 325-329  hero=QcTh  killed by: dealer field missing/empty x1
+        seq 387-398  hero=4d6h  killed by: dealer field missing/empty x1
+        seq 451-456  hero=4s7h  killed by: dealer field missing/empty x1
+        seq 457-465  hero=4s5s  killed by: scraper suspect frame x1
+        seq 489-502  hero=9hTs  killed by: dealer points to non-alive/empty seat x2
+        seq 503-515  hero=AdQh  killed by: dealer field missing/empty x2
+        seq 555-571  hero=3s4h  killed by: dealer field missing/empty x1
+
+[d] DECISION DIGEST  (floors joined from demo_dryrun_154557_replay.stdout (4 firing(s)))
+      seq mode    street   cards  board            facing  action                 floor
+        9 sample  preflop  Qh9s   -                bet     FOLD                   -
+       13 sample  flop     Qh9s   Th 2d 2s         no-bet  RAISE_TO 119 (4.8xBB)  -
+       16 sample  flop     Qh9s   Th 2d 2s         bet     CALL                   -
+       26 sample  preflop  Qd9h   -                bet     RAISE_TO 1400 (56.0xBB) -
+       68 sample  preflop  Kh5d   -                bet     FOLD                   -
+       73 sample  flop     Kh5d   8h Jc 8s         bet     CALL                   -
+       74 cached  flop     Kh5d   8h Jc 8s         bet     CALL                   -
+       75 cached  flop     Kh5d   8h Jc 8s         bet     CALL                   -
+       76 cached  flop     Kh5d   8h Jc 8s         bet     CALL                   -
+       77 cached  flop     Kh5d   8h Jc 8s         bet     CALL                   -
+       78 cached  flop     Kh5d   8h Jc 8s         bet     CALL                   -
+       87 sample  preflop  As6d   -                bet     FOLD                   -
+       88 cached  preflop  As6d   -                bet     FOLD                   -
+       89 cached  preflop  As6d   -                bet     FOLD                   -
+      122 sample  preflop  6d2d   -                bet     FOLD                   -
+      158 sample  preflop  9d7c   -                bet     CALL                   -
+      176 sample  preflop  JdAd   -                bet     RAISE_TO 1705 (34.1xBB) -
+      182 REC     flop     JdAd   Qc 5h Qd         bet     CALL                   -
+      183 REC-c   flop     JdAd   Qc 5h Qd         bet     CALL                   -
+      194 sample  preflop  TsAh   -                bet     RAISE_TO 1645 (32.9xBB) -
+      195 cached  preflop  TsAh   -                bet     RAISE_TO 1645 (32.9xBB) -
+      197 sample  flop     TsAh   Th 4d 7d         no-bet  RAISE_TO 1545 (30.9xBB) -
+      198 cached  flop     TsAh   Th 4d 7d         no-bet  RAISE_TO 1545 (30.9xBB) -
+      202 sample  flop     TsAh   Th 4d 7d         bet     RAISE_TO 1300 (26.0xBB) -
+      203 cached  flop     TsAh   Th 4d 7d         bet     RAISE_TO 1300 (26.0xBB) -
+      205 sample  turn     TsAh   Th 4d 7d 3c      no-bet  RAISE_TO 858 (17.2xBB) -
+      206 cached  turn     TsAh   Th 4d 7d 3c      no-bet  RAISE_TO 858 (17.2xBB) -
+      207 cached  turn     TsAh   Th 4d 7d 3c      no-bet  RAISE_TO 858 (17.2xBB) -
+      208 cached  turn     TsAh   Th 4d 7d 3c      no-bet  RAISE_TO 858 (17.2xBB) -
+      209 cached  turn     TsAh   Th 4d 7d 3c      no-bet  RAISE_TO 858 (17.2xBB) -
+      211 cached  turn     TsAh   Th 4d 7d 3c      no-bet  RAISE_TO 858 (17.2xBB) -
+      224 sample  preflop  Qh2d   -                bet     RAISE_TO 300 (6.0xBB)  -
+      225 cached  preflop  Qh2d   -                bet     RAISE_TO 300 (6.0xBB)  -
+      253 sample  preflop  Qs9h   -                bet     FOLD                   short-stack (eff_bb=4.48  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD)
+      254 cached  preflop  Qs9h   -                bet     FOLD                   -
+      268 sample  preflop  Qd2d   -                bet     RAISE_TO 433 (4.3xBB)  short-stack (eff_bb=4.33  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD)
+      291 sample  preflop  6c8c   -                bet     CALL                   short-stack (eff_bb=3.18  cp=0  street=0  pre_argmax=CALL  post_argmax=CALL)
+      305 REC     preflop  Kd8d   -                bet     RAISE_TO 946 (9.5xBB)  -
+      309 REC     flop     Kd8d   Jh 4h 5c         no-bet  RAISE_TO 200 (2.0xBB)  -
+      312 REC     turn     Kd8d   Jh 4h 5c 2h      no-bet  RAISE_TO 200 (2.0xBB)  -
+      315 REC     turn     Kd8d   Jh 4h 5c 2h      bet     FOLD                   -
+      333 sample  preflop  Th8s   -                bet     FOLD                   -
+      334 cached  preflop  Th8s   -                bet     FOLD                   -
+      335 cached  preflop  Th8s   -                bet     FOLD                   -
+      346 sample  preflop  6h6d   -                bet     RAISE_TO 900 (9.0xBB)  -
+      352 sample  flop     6h6d   8d 5h 8c         no-bet  RAISE_TO 450 (4.5xBB)  -
+      353 cached  flop     6h6d   8d 5h 8c         no-bet  RAISE_TO 450 (4.5xBB)  -
+      367 sample  preflop  QhTs   -                bet     FOLD                   -
+      378 sample  preflop  3d7d   -                bet     RAISE_TO 300 (3.0xBB)  -
+      379 cached  preflop  3d7d   -                bet     RAISE_TO 300 (3.0xBB)  -
+      402 sample  preflop  Qs7h   -                bet     FOLD                   -
+      416 sample  preflop  4c6s   -                bet     FOLD                   -
+      437 sample  preflop  4cAd   -                bet     FOLD                   -
+      438 cached  preflop  4cAd   -                bet     FOLD                   -
+      439 cached  preflop  4cAd   -                bet     FOLD                   -
+      440 cached  preflop  4cAd   -                bet     FOLD                   -
+      441 cached  preflop  4cAd   -                bet     FOLD                   -
+      442 cached  preflop  4cAd   -                bet     FOLD                   -
+      469 sample  preflop  3c5h   -                bet     FOLD                   -
+      485 sample  preflop  7cKd   -                bet     FOLD                   -
+      519 sample  preflop  Qd8c   -                bet     FOLD                   -
+      530 sample  preflop  4cTs   -                bet     RAISE_TO 800 (4.0xBB)  -
+      540 sample  preflop  9hTc   -                bet     CALL                   -
+      541 cached  preflop  9hTc   -                bet     CALL                   -
+      542 cached  preflop  9hTc   -                bet     CALL                   -
+      544 cached  preflop  9hTc   -                bet     CALL                   -
+      549 sample  preflop  9hQc   -                bet     CALL                   short-stack (eff_bb=1.55  cp=0  street=0  pre_argmax=CALL  post_argmax=CALL)
+
+[e] RED FLAGS
+    ANCHOR-REFUSED  seq=97 captured=20260609_115039_013 — hand-start anchor rejected by ceiling guard; layer-1 recovery disabled for this hand
+      level=L1 blinds=[15, 25, 5] street=? n_alive=5
+      hero_cards=AdKd board=(none) pot=65 hero_stack=1620 facing_bet=False
+      reason: controls.present=False (not a hero-to-act decision: hand-start, muck-only UI, or between actions)
+      raw stacks={'seat1': 1620, 'seat2': 2955, 'seat3': 1780, 'seat4': None, 'seat5': 1590, 'seat6': 9907}
+      raw bets={'seat1': 25, 'seat6': 15} dealer=seat5
+    ANCHOR-REFUSED  seq=460 captured=20260609_120518_206 — hand-start anchor rejected by ceiling guard; layer-1 recovery disabled for this hand
+      level=L4 blinds=[75, 150, 25] street=? n_alive=5
+      hero_cards=5s4s board=(none) pot=350 hero_stack=1771 facing_bet=True
+      reason: controls.present=False (not a hero-to-act decision: hand-start, muck-only UI, or between actions)
+      raw stacks={'seat1': 1771, 'seat2': 2325, 'seat3': 1803, 'seat4': None, 'seat5': 1761, 'seat6': 9907}
+      raw bets={'seat3': 75, 'seat5': 150} dealer=seat2
+
+========================================================================
+TRIAGE demo_dryrun_154557_replay.jsonl: frames=571 decisions=67 (fresh 32/cached 29/recovered 6) safe_folds=0 skips=504 (88.3%) hands=48 hands_lost=11 to_act_skipped=47 red_flags=2
+========================================================================

@@ -1,0 +1,89 @@
+========================================================================
+DRY-RUN TRIAGE — live_dryrun_20260608_152756.jsonl
+========================================================================
+
+[a] SESSION HEADER
+    !! WARNING: no session_header record — pre-aa2f505 log; mode/seed/ckpt provenance NOT verifiable from the log
+
+[b] FRAME ACCOUNTING
+    total frames        200
+    decisions           31  (fresh 17 / cached 14 / recovered 0 / recovered_cached 0)
+    safe_fold           2
+    skip_data_quality   41
+    skip_not_hero_to_act 126
+    skip_data_quality sub-causes (41):
+           17  scraper suspect frame
+           17  dealer field missing/empty
+            4  dealer points to non-alive/empty seat
+            3  blinds-string OCR failure (ScraperParseError SB/BB/ante)
+
+[c] HAND ACCOUNTING  (raw_record card/dealer/board segmentation)
+    hands seen                       11
+    hands with >=1 hero decision     9
+    hero-to-act frames skipped       5  (action buttons visible in raw_record, frame skipped)
+    hands LOST to skips (OCR-loss)   1  (hero-to-act evidence present, zero decisions)
+        seq 87-99  hero=8dKc  killed by: dealer field missing/empty x1, scraper suspect frame x1
+
+[d] DECISION DIGEST  (no .stdout companion found — floor column unavailable)
+      seq mode    street   cards  board            facing  action                 floor
+       10 sample  preflop  Qs9c   -                bet     FOLD                   -
+       31 sample  preflop  3hKc   -                bet     FOLD                   -
+       48 sample  preflop  9h2d   -                no-bet  FOLD                   -
+       52 sample  flop     9h2d   7c Ac 9d         no-bet  CHECK                  -
+       53 cached  flop     9h2d   7c Ac 9d         no-bet  CHECK                  -
+       56 sample  turn     9h2d   7c Ac 9d 6d      no-bet  RAISE_TO 50 (2.0xBB)   -
+       57 cached  turn     9h2d   7c Ac 9d 6d      no-bet  RAISE_TO 50 (2.0xBB)   -
+       62 sample  river    9h2d   7c Ac 9d 6d 6c   no-bet  CHECK                  -
+       63 cached  river    9h2d   7c Ac 9d 6d 6c   no-bet  CHECK                  -
+       64 cached  river    9h2d   7c Ac 9d 6d 6c   no-bet  CHECK                  -
+       73 sample  preflop  6c7s   -                bet     CALL                   -
+       76 sample  flop     6c7s   3h Kh Kd         no-bet  CHECK                  -
+       79 sample  flop     6c7s   3h Kh Kd         bet     CALL                   -
+       81 sample  turn     6c7s   3h Kh Kd Qs      no-bet  CHECK                  -
+       83 sample  turn     6c7s   3h Kh Kd Qs      bet     FOLD                   -
+      108 sample  preflop  2hTd   -                bet     FOLD                   -
+      118 sample  preflop  6s7s   -                bet     FOLD                   -
+      130 sample  preflop  5h3s   -                bet     FOLD                   -
+      158 sample  preflop  Jd2h   -                bet     FOLD                   -
+      173 sample  flop     AhAs   Qd Qs Jc         no-bet  RAISE_TO 400 (8.0xBB)  -
+      174 cached  flop     AhAs   Qd Qs Jc         no-bet  RAISE_TO 400 (8.0xBB)  -
+      175 cached  flop     AhAs   Qd Qs Jc         no-bet  RAISE_TO 400 (8.0xBB)  -
+      176 cached  flop     AhAs   Qd Qs Jc         no-bet  RAISE_TO 400 (8.0xBB)  -
+      177 cached  flop     AhAs   Qd Qs Jc         no-bet  RAISE_TO 400 (8.0xBB)  -
+      181 sample  turn     AhAs   Qd Qs Jc 8c      no-bet  RAISE_TO 660 (13.2xBB) -
+      182 cached  turn     AhAs   Qd Qs Jc 8c      no-bet  RAISE_TO 660 (13.2xBB) -
+      183 cached  turn     AhAs   Qd Qs Jc 8c      no-bet  RAISE_TO 660 (13.2xBB) -
+      184 cached  turn     AhAs   Qd Qs Jc 8c      no-bet  RAISE_TO 660 (13.2xBB) -
+      185 cached  turn     AhAs   Qd Qs Jc 8c      no-bet  RAISE_TO 660 (13.2xBB) -
+      186 cached  turn     AhAs   Qd Qs Jc 8c      no-bet  RAISE_TO 660 (13.2xBB) -
+      187 cached  turn     AhAs   Qd Qs Jc 8c      no-bet  RAISE_TO 660 (13.2xBB) -
+
+[e] RED FLAGS
+    SAFE-FOLD  seq=170 captured=20260608_113855_605
+      level=L2 blinds=[25, 50, 10] street=preflop n_alive=6
+      hero_cards=AhAs board=(none) pot=335 hero_stack=1375 facing_bet=True
+      reason: invariant_fail (3 deltas)
+      raw stacks={'seat1': 1375, 'seat2': 1465, 'seat3': 1255, 'seat4': 1650, 'seat5': 965, 'seat6': 1955}
+      raw bets={'seat1': 25, 'seat2': 50, 'seat3': 100, 'seat5': 100} dealer=seat6
+      delta pot: scraper=335 recon=285
+      delta stack[seat3]: scraper=1255 recon=1305
+      delta bet[seat3]: scraper=100 recon=50
+    SAFE-FOLD  seq=192 captured=20260608_113937_413
+      level=L2 blinds=[25, 50, 10] street=turn n_alive=6
+      hero_cards=AhAs board=Qd Qs Jc 8c pot=2925 hero_stack=250 facing_bet=True
+      reason: invariant_fail (1 deltas)
+      raw stacks={'seat1': 250, 'seat2': None, 'seat3': 1255, 'seat4': 1650, 'seat5': 965, 'seat6': 1955}
+      raw bets={'seat1': 650, 'seat2': 1015} dealer=seat6
+      delta bet[seat2]: scraper=1015 recon=0
+    !! FOLD WHILE FACING 0  seq=48 — should be IMPOSSIBLE after the check-when-free floor; investigate before any further dry run
+      level=L1 blinds=[15, 25, 5] street=preflop n_alive=6
+      hero_cards=9h2d board=(none) pot=80 hero_stack=1455 facing_bet=False
+      reason: None
+      raw stacks={'seat1': 1455, 'seat2': 1480, 'seat3': 1465, 'seat4': 2200, 'seat5': 1015, 'seat6': 1305}
+      raw bets={'seat1': 25, 'seat6': 25} dealer=seat5
+    RECON-SIGNATURE  seq=170 status=safe_fold: raise-under-reconstructed / min-raise-as-call (seq-170 class): bet[seat3] scraper=100 recon=50
+    RECON-SIGNATURE  seq=192 status=safe_fold: bet-as-0 (seq-192 class): bet[seat2] scraper=1015 recon=0
+
+========================================================================
+TRIAGE live_dryrun_20260608_152756.jsonl: frames=200 decisions=31 (fresh 17/cached 14/recovered 0) safe_folds=2 skips=167 (83.5%) hands=11 hands_lost=1 to_act_skipped=5 red_flags=6
+========================================================================

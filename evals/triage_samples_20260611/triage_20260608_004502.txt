@@ -1,0 +1,135 @@
+========================================================================
+DRY-RUN TRIAGE — live_dryrun_20260608_004502.jsonl.preserved
+========================================================================
+
+[a] SESSION HEADER
+    !! WARNING: no session_header record — pre-aa2f505 log; mode/seed/ckpt provenance NOT verifiable from the log
+
+[b] FRAME ACCOUNTING
+    total frames        374
+    decisions           33  (fresh 33 / cached 0 / recovered 0 / recovered_cached 0)
+    safe_fold           10
+    skip_data_quality   170
+    skip_not_hero_to_act 161
+    skip_data_quality sub-causes (170):
+           85  scraper suspect frame
+           54  dealer field missing/empty
+           18  dealer points to non-alive/empty seat
+            7  n_alive below playable range
+            5  blinds-string OCR failure (ScraperParseError SB/BB/ante)
+            1  hero alive but no cards visible
+
+[c] HAND ACCOUNTING  (raw_record card/dealer/board segmentation)
+    hands seen                       18
+    hands with >=1 hero decision     12
+    hero-to-act frames skipped       0  (action buttons visible in raw_record, frame skipped)
+    hands LOST to skips (OCR-loss)   0  (hero-to-act evidence present, zero decisions)
+
+[d] DECISION DIGEST  (no .stdout companion found — floor column unavailable)
+      seq mode    street   cards  board            facing  action                 floor
+       55 sample  preflop  6c5s   -                bet     FOLD                   -
+       70 sample  preflop  Qh6d   -                bet     FOLD                   -
+      108 sample  preflop  9d9h   -                bet     CALL                   -
+      115 sample  flop     9d9h   9s 6d 4s         no-bet  RAISE_TO 75 (3.0xBB)   -
+      116 sample  turn     9d9h   9s 6d 4s Jc      no-bet  CHECK                  -
+      117 sample  turn     9d9h   9s 6d 4s Jc      no-bet  CHECK                  -
+      121 sample  river    9d9h   9s 6d 4s Jc 3h   no-bet  RAISE_TO 165 (6.6xBB)  -
+      122 sample  river    9d9h   9s 6d 4s Jc 3h   no-bet  RAISE_TO 165 (6.6xBB)  -
+      123 sample  river    9d9h   9s 6d 4s Jc 3h   no-bet  RAISE_TO 250 (10.0xBB) -
+      124 sample  river    9d9h   9s 6d 4s Jc 3h   no-bet  RAISE_TO 165 (6.6xBB)  -
+      149 sample  preflop  Ks8h   -                bet     RAISE_TO 132 (2.6xBB)  -
+      203 sample  preflop  Kh3d   -                no-bet  CHECK                  -
+      204 sample  preflop  Kh3d   -                no-bet  FOLD                   -
+      205 sample  preflop  Kh3d   -                no-bet  FOLD                   -
+      207 sample  flop     Kh3d   6d 9h 2s         no-bet  CHECK                  -
+      209 sample  turn     Kh3d   6d 9h 2s Qd      no-bet  CHECK                  -
+      216 sample  preflop  AhJh   -                bet     FOLD                   -
+      217 sample  preflop  AhJh   -                bet     RAISE_TO 100 (2.0xBB)  -
+      218 sample  preflop  AhJh   -                bet     CALL                   -
+      222 sample  preflop  AhJh   -                bet     RAISE_TO 2182 (43.6xBB) -
+      223 sample  preflop  AhJh   -                bet     RAISE_TO 300 (6.0xBB)  -
+      224 sample  preflop  AhJh   -                bet     RAISE_TO 300 (6.0xBB)  -
+      258 sample  preflop  8c7c   -                bet     FOLD                   -
+      264 sample  flop     8c7c   9h 7s Ac         no-bet  CHECK                  -
+      265 sample  flop     8c7c   9h 7s Ac         no-bet  RAISE_TO 450 (4.5xBB)  -
+      286 sample  preflop  6d4d   -                bet     RAISE_TO 3696 (37.0xBB) -
+      313 sample  preflop  JhTh   -                bet     RAISE_TO 3133 (31.3xBB) -
+      324 sample  turn     JhTh   Qc 5h Td Jd      no-bet  RAISE_TO 900 (9.0xBB)  -
+      325 sample  turn     JhTh   Qc 5h Td Jd      no-bet  RAISE_TO 2833 (28.3xBB) -
+      326 sample  turn     JhTh   Qc 5h Td Jd      no-bet  CHECK                  -
+      327 sample  turn     JhTh   Qc 5h Td Jd      no-bet  RAISE_TO 600 (6.0xBB)  -
+      352 sample  preflop  9dKc   -                bet     RAISE_TO 3058 (30.6xBB) -
+      353 sample  preflop  9dKc   -                bet     CALL                   -
+
+[e] RED FLAGS
+    SAFE-FOLD  seq=77 captured=20260607_205618_152
+      level=L1 blinds=[15, 25, 5] street=preflop n_alive=6
+      hero_cards=Qh6d board=(none) pot=1685 hero_stack=1430 facing_bet=True
+      reason: invariant_fail (3 deltas)
+      delta pot: scraper=1685 recon=1585
+      delta stack[seat4]: scraper=1290 recon=1390
+      delta bet[seat4]: scraper=125 recon=25
+    SAFE-FOLD  seq=156 captured=20260607_205959_779
+      level=L2 blinds=[25, 50, 10] street=? n_alive=5
+      hero_cards=Ks8h board=(none) pot=304 hero_stack=1530 facing_bet=False
+      reason: replay_error: chance node past hole cards but target_board exhausted: board_count=0 target_board=()
+    SAFE-FOLD  seq=163 captured=20260607_210012_145
+      level=L2 blinds=[25, 50, 10] street=? n_alive=5
+      hero_cards=Ks8h board=Kd Kc 7d pot=486 hero_stack=1486 facing_bet=True
+      reason: replay_error: pre-hand derivation failed: simple-model preflop_commit remainder 2 (residual=386, n_anf=3) — alive seats committed unequal preflop amounts that the uniform-com
+    SAFE-FOLD  seq=175 captured=20260607_210050_306
+      level=L2 blinds=[25, 50, 10] street=? n_alive=5
+      hero_cards=Ks8h board=Kd Kc 7d 6h 9c pot=1086 hero_stack=1236 facing_bet=False
+      reason: replay_error: pre-hand derivation failed: simple-model preflop_commit remainder 1 (residual=1011, n_anf=2) — alive seats committed unequal preflop amounts that the uniform-co
+    SAFE-FOLD  seq=180 captured=20260607_210111_321
+      level=L2 blinds=[25, 50, 10] street=preflop n_alive=5
+      hero_cards=9cKs board=(none) pot=100 hero_stack=2312 facing_bet=True
+      reason: invariant_fail (5 deltas)
+      delta pot: scraper=100 recon=135
+      delta stack[seat5]: scraper=3041 recon=3056
+      delta bet[seat5]: scraper=50 recon=35
+      delta stack[seat6]: scraper=1530 recon=1480
+      delta bet[seat6]: scraper=0 recon=50
+    SAFE-FOLD  seq=181 captured=20260607_210112_546
+      level=L2 blinds=[25, 50, 10] street=preflop n_alive=5
+      hero_cards=9cKs board=(none) pot=100 hero_stack=2312 facing_bet=True
+      reason: invariant_fail (5 deltas)
+      delta pot: scraper=100 recon=135
+      delta stack[seat5]: scraper=3041 recon=3056
+      delta bet[seat5]: scraper=50 recon=35
+      delta stack[seat6]: scraper=1530 recon=1480
+      delta bet[seat6]: scraper=0 recon=50
+    SAFE-FOLD  seq=187 captured=20260607_210128_062
+      level=L2 blinds=[25, 50, 10] street=preflop n_alive=5
+      hero_cards=9cKs board=(none) pot=400 hero_stack=2262 facing_bet=True
+      reason: invariant_fail (3 deltas)
+      delta pot: scraper=400 recon=450
+      delta stack[seat6]: scraper=1530 recon=1480
+      delta bet[seat6]: scraper=0 recon=50
+    SAFE-FOLD  seq=201 captured=20260607_210206_593
+      level=L2 blinds=[25, 50, 10] street=? n_alive=5
+      hero_cards=Kh3d board=(none) pot=125 hero_stack=2192 facing_bet=False
+      reason: replay_error (with + without override): state went terminal before hero's decision; action_idx=5/5 n_actions_applied=5
+    SAFE-FOLD  seq=202 captured=20260607_210211_775
+      level=L2 blinds=[25, 50, 10] street=? n_alive=5
+      hero_cards=Kh3d board=(none) pot=125 hero_stack=2192 facing_bet=False
+      reason: replay_error: state went terminal before hero's decision; action_idx=5/5 n_actions_applied=5
+    SAFE-FOLD  seq=228 captured=20260607_210404_436
+      level=L2 blinds=[25, 50, 10] street=? n_alive=5
+      hero_cards=AhJh board=(none) pot=1769 hero_stack=1582 facing_bet=True
+      reason: replay_error (with + without override): action_seq[5]=(seat=1, chip_int=1119) not in legal_actions=[0, 1, 1129]; derive_action_sequence emitted an illegal action
+    !! FOLD WHILE FACING 0  seq=204 — should be IMPOSSIBLE after the check-when-free floor; investigate before any further dry run
+      level=L2 blinds=[25, 50, 10] street=preflop n_alive=5
+      hero_cards=Kh3d board=(none) pot=225 hero_stack=2192 facing_bet=False
+      reason: None
+    !! FOLD WHILE FACING 0  seq=205 — should be IMPOSSIBLE after the check-when-free floor; investigate before any further dry run
+      level=L2 blinds=[25, 50, 10] street=preflop n_alive=5
+      hero_cards=Kh3d board=(none) pot=225 hero_stack=2192 facing_bet=False
+      reason: None
+    RECON-SIGNATURE  seq=77 status=safe_fold: raise-under-reconstructed / min-raise-as-call (seq-170 class): bet[seat4] scraper=125 recon=25
+    RECON-SIGNATURE  seq=180 status=safe_fold: raise-under-reconstructed / min-raise-as-call (seq-170 class): bet[seat5] scraper=50 recon=35
+    RECON-SIGNATURE  seq=181 status=safe_fold: raise-under-reconstructed / min-raise-as-call (seq-170 class): bet[seat5] scraper=50 recon=35
+
+========================================================================
+TRIAGE live_dryrun_20260608_004502.jsonl.preserved: frames=374 decisions=33 (fresh 33/cached 0/recovered 0) safe_folds=10 skips=331 (88.5%) hands=18 hands_lost=0 to_act_skipped=0 red_flags=16
+========================================================================

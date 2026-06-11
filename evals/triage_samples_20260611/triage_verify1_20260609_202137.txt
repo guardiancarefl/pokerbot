@@ -1,0 +1,45 @@
+========================================================================
+DRY-RUN TRIAGE — live_dryrun_verify1_20260609_202137.jsonl
+========================================================================
+
+[a] SESSION HEADER
+    !! WARNING: no session_header record — pre-aa2f505 log; mode/seed/ckpt provenance NOT verifiable from the log
+
+[b] FRAME ACCOUNTING
+    total frames        90
+    decisions           14  (fresh 10 / cached 4 / recovered 0 / recovered_cached 0)
+    safe_fold           0
+    skip_data_quality   19
+    skip_not_hero_to_act 57
+    skip_data_quality sub-causes (19):
+           16  scraper suspect frame
+            3  dealer field missing/empty
+
+[c] HAND ACCOUNTING  (raw_record card/dealer/board segmentation)
+    hands seen                       6
+    hands with >=1 hero decision     6
+    hero-to-act frames skipped       10  (action buttons visible in raw_record, frame skipped)
+    hands LOST to skips (OCR-loss)   0  (hero-to-act evidence present, zero decisions)
+
+[d] DECISION DIGEST  (floors joined from live_dryrun_verify1_20260609_202137.stdout (0 firing(s)))
+      seq mode    street   cards  board            facing  action                 floor
+       10 sample  preflop  6d8d   -                bet     FOLD                   -
+       11 cached  preflop  6d8d   -                bet     FOLD                   -
+       19 sample  preflop  3s2h   -                bet     FOLD                   -
+       20 cached  preflop  3s2h   -                bet     FOLD                   -
+       28 sample  preflop  6d4h   -                bet     FOLD                   -
+       43 sample  preflop  6s7c   -                bet     CALL                   -
+       48 sample  flop     6s7c   7d Kd Tc         no-bet  CHECK                  -
+       51 sample  turn     6s7c   7d Kd Tc 5d      no-bet  CHECK                  -
+       54 sample  river    6s7c   7d Kd Tc 5d As   bet     CALL                   -
+       61 sample  preflop  Th2h   -                bet     FOLD                   -
+       72 sample  preflop  Qs4c   -                bet     RAISE_TO 50 (2.0xBB)   -
+       79 sample  flop     Qs4c   4d 7d 9s         no-bet  RAISE_TO 150 (6.0xBB)  -
+       80 cached  flop     Qs4c   4d 7d 9s         no-bet  RAISE_TO 150 (6.0xBB)  -
+       81 cached  flop     Qs4c   4d 7d 9s         no-bet  RAISE_TO 150 (6.0xBB)  -
+
+[e] RED FLAGS
+
+========================================================================
+TRIAGE live_dryrun_verify1_20260609_202137.jsonl: frames=90 decisions=14 (fresh 10/cached 4/recovered 0) safe_folds=0 skips=76 (84.4%) hands=6 hands_lost=0 to_act_skipped=10 red_flags=1
+========================================================================

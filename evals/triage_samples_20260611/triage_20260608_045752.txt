@@ -1,0 +1,36 @@
+========================================================================
+DRY-RUN TRIAGE — live_dryrun_20260608_045752.jsonl
+========================================================================
+
+[a] SESSION HEADER
+    !! WARNING: no session_header record — pre-aa2f505 log; mode/seed/ckpt provenance NOT verifiable from the log
+
+[b] FRAME ACCOUNTING
+    total frames        93
+    decisions           4  (fresh 3 / cached 1 / recovered 0 / recovered_cached 0)
+    safe_fold           0
+    skip_data_quality   65
+    skip_not_hero_to_act 24
+    skip_data_quality sub-causes (65):
+           42  scraper suspect frame
+           21  dealer field missing/empty
+            2  blinds-string OCR failure (ScraperParseError SB/BB/ante)
+
+[c] HAND ACCOUNTING  (raw_record card/dealer/board segmentation)
+    hands seen                       4
+    hands with >=1 hero decision     3
+    hero-to-act frames skipped       0  (action buttons visible in raw_record, frame skipped)
+    hands LOST to skips (OCR-loss)   0  (hero-to-act evidence present, zero decisions)
+
+[d] DECISION DIGEST  (no .stdout companion found — floor column unavailable)
+      seq mode    street   cards  board            facing  action                 floor
+        6 sample  flop     2h8c   Qc As 3h         no-bet  RAISE_TO 100 (4.0xBB)  -
+       10 sample  turn     2h8c   Qc As 3h 9s      bet     FOLD                   -
+       67 sample  preflop  Jc7c   -                bet     FOLD                   -
+       68 cached  preflop  Jc7c   -                bet     FOLD                   -
+
+[e] RED FLAGS
+
+========================================================================
+TRIAGE live_dryrun_20260608_045752.jsonl: frames=93 decisions=4 (fresh 3/cached 1/recovered 0) safe_folds=0 skips=89 (95.7%) hands=4 hands_lost=0 to_act_skipped=0 red_flags=1
+========================================================================

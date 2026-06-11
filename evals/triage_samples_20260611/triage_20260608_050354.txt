@@ -1,0 +1,45 @@
+========================================================================
+DRY-RUN TRIAGE — live_dryrun_20260608_050354.jsonl
+========================================================================
+
+[a] SESSION HEADER
+    !! WARNING: no session_header record — pre-aa2f505 log; mode/seed/ckpt provenance NOT verifiable from the log
+
+[b] FRAME ACCOUNTING
+    total frames        79
+    decisions           5  (fresh 5 / cached 0 / recovered 0 / recovered_cached 0)
+    safe_fold           1
+    skip_data_quality   24
+    skip_not_hero_to_act 49
+    skip_data_quality sub-causes (24):
+           13  dealer field missing/empty
+            9  scraper suspect frame
+            2  blinds-string OCR failure (ScraperParseError SB/BB/ante)
+
+[c] HAND ACCOUNTING  (raw_record card/dealer/board segmentation)
+    hands seen                       4
+    hands with >=1 hero decision     4
+    hero-to-act frames skipped       0  (action buttons visible in raw_record, frame skipped)
+    hands LOST to skips (OCR-loss)   0  (hero-to-act evidence present, zero decisions)
+
+[d] DECISION DIGEST  (no .stdout companion found — floor column unavailable)
+      seq mode    street   cards  board            facing  action                 floor
+      116 sample  preflop  As7c   -                bet     FOLD                   -
+      125 sample  preflop  TdKc   -                bet     FOLD                   -
+      137 sample  preflop  Jd2s   -                bet     FOLD                   -
+      161 sample  turn     QcQh   Tc 5c 7h 4c      bet     CALL                   -
+      167 sample  river    QcQh   Tc 5c 7h 4c Jh   bet     CALL                   -
+
+[e] RED FLAGS
+    SAFE-FOLD  seq=151 captured=20260608_010744_355
+      level=L1 blinds=[15, 25, 5] street=preflop n_alive=6
+      hero_cards=QcQh board=(none) pot=180 hero_stack=1450 facing_bet=True
+      reason: invariant_fail (3 deltas)
+      delta pot: scraper=180 recon=155
+      delta stack[seat2]: scraper=1350 recon=1375
+      delta bet[seat2]: scraper=50 recon=25
+    RECON-SIGNATURE  seq=151 status=safe_fold: raise-under-reconstructed / min-raise-as-call (seq-170 class): bet[seat2] scraper=50 recon=25
+
+========================================================================
+TRIAGE live_dryrun_20260608_050354.jsonl: frames=79 decisions=5 (fresh 5/cached 0/recovered 0) safe_folds=1 skips=73 (92.4%) hands=4 hands_lost=0 to_act_skipped=0 red_flags=3
+========================================================================
