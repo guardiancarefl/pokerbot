@@ -49,6 +49,16 @@ FALLBACK banner — logged as a fallback, never as a model decision
 (session-1 calibration: would have fired on all 8 never-decided spots,
 zero false fires).
 
+**Stage-2 must-land flags (all OFF by default; each replay-gated GREEN
+2026-06-11; arm per operator call):**
+
+| flag | what it does |
+|---|---|
+| `--anchor-sum-floor` | P1: refuse hand-start anchors whose sum ≠ 9000 with all 6 seats alive (the seq-1363 poisoned-anchor class) |
+| `--extended-click-plans` | typed-raise verify step; ALLIN-button mapping for all-in intents; raise_to at call-only UI realizes as CALL (29/301 previously-unexecutable plans now executable) |
+| `--watchdog-v2` | fallback deadline anchors per spot (hand+board), survives button flicker — closes the 9cAd gap; needs `--fallback-seconds` |
+| `--abort-enforce` | abort criterion becomes enforced: click plans SUPPRESSED + SIT OUT NOW banner until `touch logs/ABORT_RESET`; needs `--fallback-seconds` |
+
 PASS — all four of these appear before any frame:
 
 1. The `session_header` JSON line echoes `"mode": "sample"` and

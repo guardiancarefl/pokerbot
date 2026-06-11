@@ -733,3 +733,16 @@ Fourteen commits on main. Findings: four foundational bugs in the abstraction la
 
 ### What was decided
 - Stage-2 MUST-LAND set (operator review): P1 anchor floor guard; click executor with raise_to→CALL at call-only UI, ALLIN-button mapping, type-into-bet-input verification; watchdog v2 (per-hand deadline + disarm on click-confirmation); session-abort wiring. CAN-RIDE: P2 bet-closure recovery (value, not safety); tail floor (policy call); dealer-OCR hardening (fallback covers).
+
+## Session — 2026-06-11 (build) — P1 + Stage-2 must-land set BUILT, all flag-gated OFF, gates GREEN
+
+### What was done (4 approved items, in order; every flag OFF by default)
+1. **P1 anchor sum-floor guard** (`SessionTracker(anchor_sum_floor=)` / `--anchor-sum-floor`): refuses hand-start anchors with sum ≠ chips-in-play while all seats read alive. Gates: flag-OFF byte-identity 2232/2232 frames across all 4 logs; counterfactual flag-ON refuses exactly the 3 poisoned anchors (seq 1362 = the seq-1363 mechanism, + seqs 866/867 silently accepted live), all 140 correct anchors kept.
+2. **Click-executor completion** (`--extended-click-plans`): typed-raise verify step; ALLIN-button mapping gated on all-in INTENT (a smaller raise intent never clicks ALLIN — realizes as CALL); raise_to at call-only UI → CALL; call with no CALL button → CHECK or ALLIN (call-is-all-in UI, live seq 994). Gates: completeness vs live plans — 301 decisions = 130 unchanged + 142 verify-only + **29/29 previously-empty now executable, 0 still-empty, 0 other changes**; flag-OFF byte-identity 2232/2232. Evidence: `evals/stage2_build_20260611/clickplan_completeness.txt`.
+3. **Watchdog v2** (`--watchdog-v2`): per-spot (hand+board) deadline survives flicker/vanish-rearm — closes the 9cAd gap; spot anchor clears on decision/street-change/fire (no instant re-fires). `click_confirmation_mode` (constructor-only, Stage-2b executor): decision no longer disarms, only controls-vanish does. Gate: `scripts/replay_watchdog.py` sim — v1 reproduces all 6 live firings exactly; v2 preserves every v1 spot and adds exactly 9cAd (13.8s); one by-design re-anchor (QhQs 840→841, board changed). Evidence: `evals/stage2_build_20260611/watchdog_v2_gate.txt`.
+4. **Enforced session abort** (`--abort-enforce` + `AbortGate`): on trip, click plans SUPPRESSED (decisions still computed/logged) + SIT OUT NOW banners; manual reset via `touch logs/ABORT_RESET`. Smokes: forced 2-consecutive-hand trip → 7/7 post-trip decisions suppressed; pre-created reset file consumed next frame → resume, zero suppressed after.
+- Final listener-level flag-off replay: header + 486/486 frames byte-identical to the pre-build baseline. New/updated tests: 58 green across fallback/anchor/click-target/tracker/session-header suites.
+- **P2 (bet-closure recovery): approved can-ride, NOT built this session** — queued behind the must-land set per approval order.
+
+### What was decided
+- Stage-2 supervised-click arming line (operator's call when ready): `--anchor-sum-floor --extended-click-plans --fallback-seconds 7.0 --watchdog-v2 --abort-enforce`. Checklist table added.
