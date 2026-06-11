@@ -1,0 +1,56 @@
+GUARANTEED-ACTION FALLBACK — replay-gate evidence (2026-06-11)
+================================================================
+
+Change under test: src/nlhe/integration/fallback.py (new) +
+scripts/run_live_dryrun.py wiring behind --fallback-seconds
+(default None = OFF). make_decision / live_loop.py / DecisionCache /
+SessionTracker untouched.
+
+GATE 1 — make_decision-level byte-identity (pre vs post code)
+-------------------------------------------------------------
+scripts/replay_make_decision_diff.py on logs/live_dryrun_20260611_163815.jsonl
+(486 frames), checkpoint b79e82dd…, abstraction 0fc20800…, seed 2026:
+
+    Total frames:                486
+    Identical:                   486
+    Suspect-annotation-only:     0
+    BEHAVIORAL CHANGES:          0
+
+GATE 2 — listener-level, flag OFF (default)
+-------------------------------------------
+scripts/run_live_dryrun.py --replay-from-jsonl <session-1 raw records>
+--replay-pace 0 --seed 2026, run before and after the change, NO
+--fallback-seconds flag:
+
+    header identical (ex started_utc/git volatiles): True
+    frames: 486   differing: 0
+    stdout identical (ex runner info lines + header volatiles)
+    summary line byte-identical:
+      done. total=486 decision=37 decision_cached=24 safe_fold=4 skip=421
+    socket path: recv-timeout tick is gated on watchdog presence —
+    when the flag is off, recv blocks exactly as before the change.
+
+GATE 3 — functional smoke, flag ON (replay, N=0.1s, pace 0.15s)
+----------------------------------------------------------------
+    summary: … safe_fold=4 skip=421 fallback=1
+    fired: hand=QhJc armed_seq=133 fired_after_seq=134 action=FOLD
+           click plan: 1. click FOLD (box [0.366,0.775,0.505,0.857])
+           — exactly the seq-133/134 never-decided spot from the
+           session-1 decision audit (hung ~28s live).
+    decision rows with watchdog ARMED and FIRING == disarmed baseline:
+      486/486 byte-identical (fallback row excluded; it carries no
+      "seq"/"raw_record" keys so triage/decision_audit/replay tooling
+      ignore it by construction — verified: dryrun_triage on the armed
+      log reproduces the session-1 numbers exactly).
+
+TESTS
+-----
+    tests/test_fallback.py: 15 passed (arm/fire/disarm/flicker/
+      once-per-episode/new-hand/poll/muck-exclusion/abort rules/
+      log-record tooling-blindness)
+    live-path subset (fallback + session_header + click_target +
+      integration_*): 95 passed
+    NOTE: 33 failed / 27 errors elsewhere in tests/ are PRE-EXISTING
+      state_dict-loading failures in subgame-leaf research tests
+      (e.g. tests/test_subgame_leaf.py), unrelated to this change —
+      none of those files import the changed/new modules.

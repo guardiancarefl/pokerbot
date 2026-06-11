@@ -246,6 +246,40 @@ def _abridged_history_line(d: LiveDecision) -> str:
              f"{DIM}({(d.skip_reason or '')[:50]}){RESET}")
 
 
+def render_fallback(plan, click_plan=None) -> str:
+    """Loud banner for a fired guaranteed-action fallback. Visually
+    distinct from the DECIDE panel on purpose: a fallback is NOT a
+    model decision."""
+    lines = []
+    rule = "█" * 70
+    lines.append(_color(rule, RED))
+    lines.append(_color(
+        f"  ⚠ FALLBACK — NOT A MODEL DECISION ⚠   "
+        f"action={plan.action_kind.upper()}", RED + BOLD))
+    lines.append(
+        f"  hand={''.join(plan.hand_cards) or '?'}  "
+        f"armed at seq={plan.armed_seq} ({plan.armed_captured_at})  "
+        f"waited {plan.waited_seconds:.1f}s")
+    fired_via = (f"frame seq={plan.fired_after_seq}"
+                 if plan.fired_after_seq is not None
+                 else "frameless poll (no frame at deadline)")
+    lines.append(f"  fired via {fired_via}  "
+                 f"check_available={plan.check_available}  "
+                 f"session fallback #{plan.n_fallbacks_session}")
+    if click_plan is not None and not click_plan.is_no_op():
+        for i, s in enumerate(click_plan.steps, start=1):
+            if s.kind == "click":
+                lines.append(f"    {i}. click {s.target}")
+            elif s.kind == "type":
+                lines.append(f"    {i}. type \"{s.payload}\"")
+    if plan.abort_recommended:
+        lines.append(_color(
+            f"  ⛔ SESSION ABORT RECOMMENDED — {plan.abort_reason} — "
+            f"SIT OUT NOW", RED + BOLD))
+    lines.append(_color(rule, RED))
+    return "\n".join(lines) + "\n"
+
+
 # ─── Logging ───────────────────────────────────────────────────────────
 
 def _decision_as_dict(d: LiveDecision) -> dict:
@@ -279,7 +313,9 @@ def replay_records(jsonl_path: Path, pace_seconds: float) -> Iterator[tuple[int,
                 time.sleep(pace_seconds)
 
 
-def socket_records(bind_host: str, port: int) -> Iterator[tuple[int | None, dict]]:
+def socket_records(bind_host: str, port: int,
+                   tick_seconds: float | None = None,
+                   ) -> Iterator[tuple[int | None, dict]]:
     """Yield (seq, record) tuples from a TCP socket.
 
     Newline-delimited JSON; envelope is one of:
@@ -289,6 +325,13 @@ def socket_records(bind_host: str, port: int) -> Iterator[tuple[int | None, dict
     Heartbeats are consumed silently (stall detection happens in the
     main loop's elapsed-time check). On disconnect, accepts a fresh
     client and continues. Bad lines are logged and skipped.
+
+    tick_seconds (fallback watchdog only): when set, the client socket
+    gets a recv timeout and a {"__tick__": True} sentinel is yielded on
+    each timeout so the main loop can fire the guaranteed-action
+    fallback framelessly — a frozen scraper must not suppress the
+    deadline. When None (the default, and always when the watchdog is
+    off) the recv blocks exactly as before this parameter existed.
     """
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -313,9 +356,15 @@ def socket_records(bind_host: str, port: int) -> Iterator[tuple[int | None, dict
         ), flush=True)
 
         buf = b""
+        if tick_seconds is not None:
+            client.settimeout(tick_seconds)
         try:
             while True:
-                chunk = client.recv(65536)
+                try:
+                    chunk = client.recv(65536)
+                except socket.timeout:
+                    yield None, {"__tick__": True}
+                    continue
                 if not chunk:
                     print(_color(
                         "[run_live_dryrun] sender disconnected; "
@@ -448,6 +497,13 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     ap.add_argument("--stall-warn-seconds", type=float, default=2.0,
                      help="(socket mode) Warn if no message arrives within "
                           "this many seconds. Default 2.0s.")
+    ap.add_argument("--fallback-seconds", type=float, default=None,
+                     help="Guaranteed-action fallback (operator-approved "
+                          "2026-06-11): if hero is to-act and no decision "
+                          "exists within N seconds, emit CHECK-if-free / "
+                          "FOLD-otherwise, logged loudly as FALLBACK (never "
+                          "a model decision). OFF by default in Stage 1. "
+                          "Proposed live value: 7.0.")
     args = ap.parse_args(argv)
 
     if args.mode == "argmax" and not args.unsafe_argmax:
@@ -489,6 +545,22 @@ def main() -> int:
     decision_cache = DecisionCache()
     rng = random.Random(args.seed)
 
+    # Guaranteed-action fallback watchdog — OFF unless --fallback-seconds.
+    # Strictly listener-side: never touches make_decision, DecisionCache,
+    # or SessionTracker (see src/nlhe/integration/fallback.py).
+    watchdog = None
+    if args.fallback_seconds is not None:
+        from src.nlhe.integration.fallback import FallbackWatchdog
+        watchdog = FallbackWatchdog(args.fallback_seconds)
+        header["fallback_seconds"] = float(args.fallback_seconds)
+        print(_color(
+            f"[run_live_dryrun] guaranteed-action fallback ARMED: "
+            f"N={args.fallback_seconds:.1f}s, CHECK-if-free/FOLD, abort at "
+            f"{watchdog.abort_fallbacks} fallbacks/{watchdog.abort_window_hands} "
+            f"hands or {watchdog.abort_consecutive} consecutive hands",
+            YELLOW,
+        ), flush=True)
+
     out_path = Path(args.out)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     log_fh = open(out_path, "a", buffering=1)  # line-buffered
@@ -506,19 +578,53 @@ def main() -> int:
     ), flush=True)
     print(_color(f"[run_live_dryrun] log: {out_path}", DIM), flush=True)
 
-    # Pick source
+    # Pick source. The socket gets a recv-timeout tick ONLY when the
+    # fallback watchdog is armed (when off, recv blocks exactly as
+    # before — live path unchanged).
     if args.replay_from_jsonl:
         source = replay_records(args.replay_from_jsonl, args.replay_pace)
     else:
-        source = socket_records(args.bind_host, args.listen_port)
+        source = socket_records(
+            args.bind_host, args.listen_port,
+            tick_seconds=1.0 if watchdog is not None else None)
 
     last_msg_time = time.time()
+    n_fallback = 0
+
+    def emit_fallback(plan) -> None:
+        nonlocal n_fallback
+        n_fallback += 1
+        from src.nlhe.integration.click_target import compute_click_target
+        client_action = {"kind": plan.action_kind, "chip_amount": None,
+                         "raw_openspiel_chip_int": None}
+        try:
+            cp = compute_click_target(client_action, plan.last_controls)
+        except Exception:
+            cp = None
+        print(render_fallback(plan, cp), flush=True)
+        row = plan.as_log_record()
+        row["fired_at_utc"] = datetime.now(timezone.utc).isoformat()
+        if cp is not None:
+            row["click_plan"] = plan_as_dict(cp)
+        log_fh.write(json.dumps(row, default=str) + "\n")
 
     try:
         for seq, rec in source:
-            # Heartbeat sentinel — just refresh the stall timer.
+            # Tick sentinel (watchdog mode only) — frameless deadline check.
+            if rec.get("__tick__"):
+                if watchdog is not None:
+                    plan = watchdog.poll(time.time())
+                    if plan is not None:
+                        emit_fallback(plan)
+                continue
+            # Heartbeat sentinel — refresh the stall timer (+ frameless
+            # fallback deadline check while the table is quiet).
             if rec.get("__heartbeat__"):
                 last_msg_time = time.time()
+                if watchdog is not None:
+                    plan = watchdog.poll(last_msg_time)
+                    if plan is not None:
+                        emit_fallback(plan)
                 continue
 
             # Stall check (socket mode only; replay mode's pacing is
@@ -557,15 +663,25 @@ def main() -> int:
             log_entry = _decision_as_dict(d)
             log_entry["raw_record"] = rec
             log_fh.write(json.dumps(log_entry, default=str) + "\n")
+
+            if watchdog is not None:
+                plan = watchdog.observe(rec, d.status, seq, time.time())
+                if plan is not None:
+                    emit_fallback(plan)
     except KeyboardInterrupt:
         print("\n[run_live_dryrun] shutdown requested", flush=True)
     finally:
         log_fh.close()
 
+    fallback_summary = ""
+    if watchdog is not None:
+        fallback_summary = (f" fallback={n_fallback}"
+                            + (" ABORT-RECOMMENDED"
+                               if watchdog.abort_recommended else ""))
     print(_color(
         f"\n[run_live_dryrun] done. total={n_total} decision={n_decision} "
         f"decision_cached={n_decision_cached} "
-        f"safe_fold={n_safe_fold} skip={n_skip}",
+        f"safe_fold={n_safe_fold} skip={n_skip}{fallback_summary}",
         CYAN,
     ), flush=True)
     print(_color("[run_live_dryrun] STILL NO CLICKING. Log-only.", CYAN),
