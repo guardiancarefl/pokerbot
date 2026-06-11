@@ -1,0 +1,93 @@
+BACKSTOP CONFIRMATION — seq-188-class frames vs the Contabo gate
+=================================================================
+2026-06-11. Windows forensics root-caused the 4 lost hands of session
+20260611_163815: the scraper's pot-spike validator (POT_JUMP_RATIO=3.0,
+POT_JUMP_FLOOR=200) false-positived on real raises/shoves; the frames
+were clean and correctly OCR'd. The approved Windows fix passes pot
+jumps explained by visible per-seat bets.
+
+Question answered here: will the Contabo-side replay+invariant gate
+independently reject those same frames once the scraper passes them?
+
+Method: full-session sequential replay through make_decision (fresh
+SessionTracker/DecisionCache, sample mode, seed 2026 — the live
+config), with ONLY the 6 suspect frames of the four killed hands
+un-suspected (seqs 188, 305, 349, 354, 363, 366); forensics confirmed
+the OCR reads were correct, so flipping `suspect` reproduces what the
+fixed scraper would emit. No forensics jsonl was needed.
+
+VERDICT: BACKSTOP PASSES ALL FOUR HANDS. Every un-suspected to-act
+frame produced a full `decision` (replay + strict invariant green);
+the two un-suspected non-to-act frames (349, 363; hand-start posting
+frames) became normal skip_not_hero_to_act. The remaining
+skip_data_quality frames in the ranges (310, 359, 365) are different
+sub-causes (dealer field missing etc.), untouched by the validator fix.
+No gate change needed on the Contabo layer.
+
+NOTES (not gate failures):
+- Chosen actions below are COUNTERFACTUAL sample-mode draws — the live
+  session's RNG stream shifts once new decisions enter it. Statuses,
+  not actions, are the sign-off subject.
+- seq 305 (AdKs facing an all-in, CALL/FOLD-only UI) drew ALLIN →
+  client_action raise_to 3182. Same class as live seq 315 (buttons
+  were ['CALL'] mid-render): compute_click_target finds no RAISE/BET
+  button → click plan has no steps. Stage-2 relevance: a raise_to at a
+  call-only UI must execute as CALL (facing all-in, raise == call);
+  tracked for the Stage-2 click executor, display-only in Stage 1.
+
+Per-frame table (live status vs backstop status):
+
+--- hand 181-192 ---
+  seq 181                live=skip_not_hero_to_act backstop=skip_not_hero_to_act
+  seq 182                live=skip_not_hero_to_act backstop=skip_not_hero_to_act
+  seq 183                live=skip_not_hero_to_act backstop=skip_not_hero_to_act
+  seq 184                live=skip_not_hero_to_act backstop=skip_not_hero_to_act
+  seq 185                live=skip_not_hero_to_act backstop=skip_not_hero_to_act
+  seq 186                live=skip_not_hero_to_act backstop=skip_not_hero_to_act
+  seq 187                live=skip_not_hero_to_act backstop=skip_not_hero_to_act
+  seq 188 *UNSUSPECTED*  live=skip_data_quality    backstop=decision              -> FOLD
+  seq 189                live=skip_not_hero_to_act backstop=skip_not_hero_to_act
+  seq 190                live=skip_not_hero_to_act backstop=skip_not_hero_to_act
+  seq 191                live=skip_not_hero_to_act backstop=skip_not_hero_to_act
+  seq 192                live=skip_not_hero_to_act backstop=skip_not_hero_to_act
+--- hand 300-310 ---
+  seq 300                live=skip_not_hero_to_act backstop=skip_not_hero_to_act
+  seq 301                live=skip_not_hero_to_act backstop=skip_not_hero_to_act
+  seq 302                live=skip_not_hero_to_act backstop=skip_not_hero_to_act
+  seq 303                live=skip_not_hero_to_act backstop=skip_not_hero_to_act
+  seq 304                live=skip_not_hero_to_act backstop=skip_not_hero_to_act
+  seq 305 *UNSUSPECTED*  live=skip_data_quality    backstop=decision              -> RAISE_TO 3182
+  seq 306                live=skip_not_hero_to_act backstop=skip_not_hero_to_act
+  seq 307                live=skip_not_hero_to_act backstop=skip_not_hero_to_act
+  seq 308                live=skip_not_hero_to_act backstop=skip_not_hero_to_act
+  seq 309                live=skip_not_hero_to_act backstop=skip_not_hero_to_act
+  seq 310                live=skip_data_quality    backstop=skip_data_quality   
+--- hand 346-359 ---
+  seq 346                live=skip_not_hero_to_act backstop=skip_not_hero_to_act
+  seq 347                live=skip_not_hero_to_act backstop=skip_not_hero_to_act
+  seq 348                live=skip_not_hero_to_act backstop=skip_not_hero_to_act
+  seq 349 *UNSUSPECTED*  live=skip_data_quality    backstop=skip_not_hero_to_act
+        reason: controls.present=False (not a hero-to-act decision: hand-start, muck-only UI, or
+  seq 350                live=skip_not_hero_to_act backstop=skip_not_hero_to_act
+  seq 351                live=skip_not_hero_to_act backstop=skip_not_hero_to_act
+  seq 352                live=skip_not_hero_to_act backstop=skip_not_hero_to_act
+  seq 353                live=skip_not_hero_to_act backstop=skip_not_hero_to_act
+  seq 354 *UNSUSPECTED*  live=skip_data_quality    backstop=decision              -> FOLD
+  seq 355                live=skip_not_hero_to_act backstop=skip_not_hero_to_act
+  seq 356                live=skip_not_hero_to_act backstop=skip_not_hero_to_act
+  seq 357                live=skip_not_hero_to_act backstop=skip_not_hero_to_act
+  seq 358                live=skip_not_hero_to_act backstop=skip_not_hero_to_act
+  seq 359                live=skip_data_quality    backstop=skip_data_quality   
+--- hand 360-370 ---
+  seq 360                live=skip_not_hero_to_act backstop=skip_not_hero_to_act
+  seq 361                live=skip_not_hero_to_act backstop=skip_not_hero_to_act
+  seq 362                live=skip_not_hero_to_act backstop=skip_not_hero_to_act
+  seq 363 *UNSUSPECTED*  live=skip_data_quality    backstop=skip_not_hero_to_act
+        reason: controls.present=False (not a hero-to-act decision: hand-start, muck-only UI, or
+  seq 364                live=skip_not_hero_to_act backstop=skip_not_hero_to_act
+  seq 365                live=skip_data_quality    backstop=skip_data_quality   
+  seq 366 *UNSUSPECTED*  live=skip_data_quality    backstop=decision              -> FOLD
+  seq 367                live=skip_not_hero_to_act backstop=skip_not_hero_to_act
+  seq 368                live=skip_not_hero_to_act backstop=skip_not_hero_to_act
+  seq 369                live=skip_not_hero_to_act backstop=skip_not_hero_to_act
+  seq 370                live=skip_not_hero_to_act backstop=skip_not_hero_to_act

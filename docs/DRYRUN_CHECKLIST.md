@@ -37,9 +37,17 @@ TS=$(date +%Y%m%d_%H%M%S)
     --listen-port 9000 \
     --checkpoint runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt \
     --abstraction runs/abstraction_20260521_223018_retrofit/abstraction.pkl \
+    --fallback-seconds 7.0 \
     --out logs/live_dryrun_${TS}.jsonl \
     |& tee logs/live_dryrun_${TS}.stdout
 ```
+
+`--fallback-seconds 7.0` is **operator-optional** (drop the line to run
+without it): if hero is to-act and no decision exists within 7s, the
+listener emits a CHECK-if-free / FOLD-otherwise plan in a loud red
+FALLBACK banner — logged as a fallback, never as a model decision
+(session-1 calibration: would have fired on all 8 never-decided spots,
+zero false fires).
 
 PASS — all four of these appear before any frame:
 
@@ -80,8 +88,19 @@ reason — argmax was the one real deployment bug).
    python scraper_socket_sender.py --smoke 127.0.0.1 9000
    ```
    Contabo prints 5 `skip_data_quality` frames → channel is live.
-5. Start the scraper. Contabo prints
-   `sender connected from 127.0.0.1:…`.
+5. **Start the scraper WITH a local log** (session 1 ran without one —
+   the Contabo jsonl was the only copy of the session; never again):
+   ```bat
+   python read_table.py --live --loop --out scraper_local_%TS%.jsonl
+   ```
+   VERIFY the flag name first: `python read_table.py --help` on the
+   Windows box (`read_table.py` is not in this repo). If the local-log
+   flag is named differently, use that; if no such flag exists, the
+   local JSONL append belongs right next to `sender.send_frame(record)`
+   (see `tools/windows_scraper_sender/README.md` §2) — add it before
+   the session.
+   PASS: the local jsonl grows while the table renders.
+6. Contabo prints `sender connected from 127.0.0.1:…`.
 
 ## 3. During the session — what to watch on the Contabo dashboard
 
@@ -92,6 +111,10 @@ reason — argmax was the one real deployment bug).
 - `⚠ stall:` lines — tunnel or scraper hiccup; check the Windows side.
 - **SAFE-FOLD banners or `[ANCHOR-REFUSED]`** — note the seq; these are
   red-flag material, triage will pull full context.
+- **Red `FALLBACK — NOT A MODEL DECISION` banners** (only if
+  `--fallback-seconds` is armed) — the pipeline went silent on a to-act
+  spot and the watchdog emitted CHECK/FOLD. One is survivable; a
+  `SESSION ABORT RECOMMENDED` line means sit out now.
 
 ## 4. After the session (or mid-session — it's read-only)
 
@@ -107,6 +130,22 @@ Red-section items that demand attention before the next session:
 any safe-fold, any `anchor_refused`, any `FOLD WHILE FACING 0`
 (impossible post-floor — would mean the floors aren't active), any
 seq-170/seq-192-class reconstruction signature.
+
+### Session-2 scoreboard (vs session-1 baselines, log 20260611_163815)
+
+Compare the triage summary line against these. Baselines are session 1;
+targets assume the Windows pot-spike-validator fix is deployed (and,
+for never-decided, `--fallback-seconds 7.0` armed). Backstop sign-off:
+the Contabo invariant gate PASSES the seq-188-class frames the fixed
+scraper will now deliver (all 4 killed hands' to-act frames → full
+decisions on replay; `evals/live_session1_audit_20260611/backstop_seq188_class.txt`).
+
+| metric | session 1 | session 2 target | if missed |
+|---|---|---|---|
+| skip rate | 86.6% (421/486) | ≈83% (validator-FP class ≈18 frames returns to the decision path) | suspect sub-causes in triage [b] say which gate is still firing |
+| hands lost to skips | 4 (8dAd, AdKs, 7s3s, 2sJh) | **0** | any lost hand = scraper fix incomplete; pull its frames |
+| never-decided to-act spots | 8 | **0** (fallback guarantees an action) | each one should instead appear as a logged FALLBACK row |
+| red flags (triage [e]) | 4 | ≤4, no new classes (scraper fix does NOT address replay/derivation safe-folds) | any seq-170/192 signature: stop, audit before next session |
 
 ## 5. Shutdown
 
