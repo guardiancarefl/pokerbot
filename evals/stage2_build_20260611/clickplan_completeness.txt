@@ -1,0 +1,40 @@
+CLICK-PLAN COMPLETENESS GATE — extended_click_plans=True replay vs the LIVE session plans
+(per-frame assert: decision status+client_action byte-identical to live)
+==============================================================================
+decision frames: 301
+  plans unchanged:                  130
+  verify-step-only insertion:       142  (mandated by item 2)
+  previously EMPTY -> executable:   29
+  still empty (must be 0):          0
+  OTHER changes (must be 0):        0
+
+previously-empty plans, now executable (realization ladder):
+  163815 seq  128 raise_to 1575 -> realized_as=check steps=[('click', 'CHECK')]
+  163815 seq  129 raise_to 1575 -> realized_as=check steps=[('click', 'CHECK')]
+  163815 seq  131 raise_to 330 -> realized_as=check steps=[('click', 'CHECK')]
+  163815 seq  221 raise_to 1957 -> realized_as=allin_button steps=[('click', 'ALLIN')]
+  163815 seq  222 raise_to 1957 -> realized_as=allin_button steps=[('click', 'ALLIN')]
+  163815 seq  255 raise_to 2962 -> realized_as=call steps=[('click', 'CALL')]
+  163815 seq  315 raise_to 3007 -> realized_as=call steps=[('click', 'CALL')]
+  163815 seq  446 raise_to 3827 -> realized_as=allin_button steps=[('click', 'ALLIN')]
+  163815 seq  475 raise_to 4377 -> realized_as=allin_button steps=[('click', 'ALLIN')]
+  181249 seq   37 raise_to 1445 -> realized_as=allin_button steps=[('click', 'ALLIN')]
+  201230 seq  179 raise_to 2280 -> realized_as=call steps=[('click', 'CALL')]
+  201230 seq  507 raise_to 2355 -> realized_as=call steps=[('click', 'CALL')]
+  201230 seq  509 raise_to 2355 -> realized_as=allin_button steps=[('click', 'ALLIN')]
+  201230 seq  539 raise_to 2450 -> realized_as=allin_button steps=[('click', 'ALLIN')]
+  201230 seq  596 raise_to 2173 -> realized_as=allin_button steps=[('click', 'ALLIN')]
+  201230 seq  641 raise_to 2893 -> realized_as=check steps=[('click', 'CHECK')]
+  201230 seq  643 raise_to 2893 -> realized_as=allin_button steps=[('click', 'ALLIN')]
+  201230 seq  684 raise_to 1788 -> realized_as=allin_button steps=[('click', 'ALLIN')]
+  204751 seq  856 raise_to 820 -> realized_as=allin_button steps=[('click', 'ALLIN')]
+  204751 seq  994 call  -> realized_as=allin_button steps=[('click', 'ALLIN')]
+  204751 seq 1128 raise_to 4800 -> realized_as=call steps=[('click', 'CALL')]
+  204751 seq 1245 call  -> realized_as=check steps=[('click', 'CHECK')]
+  204751 seq 1406 raise_to 1771 -> realized_as=allin_button steps=[('click', 'ALLIN')]
+  204751 seq 1473 raise_to 2321 -> realized_as=allin_button steps=[('click', 'ALLIN')]
+  204751 seq 1649 raise_to 1677 -> realized_as=allin_button steps=[('click', 'ALLIN')]
+  204751 seq 1662 raise_to 3600 -> realized_as=call steps=[('click', 'CALL')]
+  204751 seq 1663 raise_to 3600 -> realized_as=call steps=[('click', 'CALL')]
+  204751 seq 1664 raise_to 3600 -> realized_as=call steps=[('click', 'CALL')]
+  204751 seq 1665 raise_to 3600 -> realized_as=call steps=[('click', 'CALL')]

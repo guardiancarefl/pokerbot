@@ -1,0 +1,113 @@
+"""Extended click-plan mapping (Stage-2 executor completion, approved
+2026-06-11). Default mode must stay byte-identical; extended mode adds
+the verify step, ALLIN-button mapping, and conservative realizations."""
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from src.nlhe.integration.click_target import (
+    compute_click_target, plan_as_dict,
+)
+
+BOX = [0.1, 0.2, 0.3, 0.4]
+
+
+def controls(buttons, bet_input=True):
+    return {
+        "action_buttons": [{"label": b, "box": BOX} for b in buttons],
+        "bet_input": {"box": [0.7, 0.87, 0.81, 0.92]} if bet_input else {},
+    }
+
+
+def raise_to(amount):
+    return {"kind": "raise_to", "chip_amount": amount,
+            "raw_openspiel_chip_int": amount}
+
+
+def test_default_mode_unchanged_no_verify_no_realization():
+    p = compute_click_target(raise_to(500),
+                             controls(["CALL", "FOLD", "RAISE"]))
+    assert [s.kind for s in p.steps] == ["click", "type", "click"]
+    assert "realized_as" not in plan_as_dict(p)
+    # call-only UI still produces a no-op in default mode
+    p2 = compute_click_target(raise_to(500), controls(["CALL", "FOLD"]))
+    assert p2.is_no_op() and "neither RAISE nor BET" in p2.reason
+
+
+def test_extended_typed_raise_gains_verify_step():
+    p = compute_click_target(raise_to(500),
+                             controls(["CALL", "FOLD", "RAISE"]),
+                             extended=True, hero_max_commit=2000)
+    assert [s.kind for s in p.steps] == ["click", "type", "verify", "click"]
+    assert p.steps[2].payload == "500"
+    assert p.realized_as is None
+
+
+def test_extended_call_only_ui_realizes_as_call():
+    p = compute_click_target(raise_to(3007), controls(["CALL", "FOLD"]),
+                             extended=True, hero_max_commit=3007)
+    assert [(s.kind, s.target) for s in p.steps] == [("click", "CALL")]
+    assert p.realized_as == "call"
+    assert p.action_kind == "raise_to"
+    assert plan_as_dict(p)["realized_as"] == "call"
+
+
+def test_extended_allin_intent_uses_allin_button():
+    p = compute_click_target(raise_to(3600),
+                             controls(["ALLIN", "CALL", "FOLD"]),
+                             extended=True, hero_max_commit=3600)
+    assert [(s.kind, s.target) for s in p.steps] == [("click", "ALLIN")]
+    assert p.realized_as == "allin_button"
+
+
+def test_extended_non_allin_intent_never_clicks_allin():
+    # A 6BB-raise intent at an ALLIN/CALL/FOLD UI must realize as CALL
+    # (under-commit), never as the larger ALLIN.
+    p = compute_click_target(raise_to(300),
+                             controls(["ALLIN", "CALL", "FOLD"]),
+                             extended=True, hero_max_commit=3600)
+    assert p.realized_as == "call"
+
+
+def test_extended_allin_skipped_without_hero_max_commit():
+    p = compute_click_target(raise_to(3600),
+                             controls(["ALLIN", "CALL", "FOLD"]),
+                             extended=True, hero_max_commit=None)
+    assert p.realized_as == "call"   # ladder falls through to CALL
+
+
+def test_extended_check_realization_for_raise_and_call():
+    p = compute_click_target(raise_to(300), controls(["BET", "CHECK"],
+                                                     bet_input=False),
+                             extended=True, hero_max_commit=2000)
+    # BET present but no bet_input box -> typed path unavailable ->
+    # ladder: no ALLIN, no CALL -> CHECK.
+    assert p.realized_as == "check"
+    pc = compute_click_target({"kind": "call", "chip_amount": None},
+                              controls(["CHECK", "FOLD"]),
+                              extended=True)
+    assert pc.realized_as == "check"
+    assert pc.action_kind == "call"
+
+
+def test_extended_no_ui_still_no_op():
+    p = compute_click_target(raise_to(500), controls(["FOLD"]),
+                             extended=True, hero_max_commit=2000)
+    assert p.is_no_op()
+
+
+def test_extended_call_is_allin_ui_realizes_via_allin_button():
+    # Site renders ALLIN instead of CALL when calling commits the whole
+    # stack (live seq 994): the ALLIN button IS the call.
+    p = compute_click_target({"kind": "call", "chip_amount": None},
+                             controls(["ALLIN", "FOLD"]), extended=True)
+    assert [(s.kind, s.target) for s in p.steps] == [("click", "ALLIN")]
+    assert p.realized_as == "allin_button"
+
+
+if __name__ == "__main__":
+    import pytest
+    sys.exit(pytest.main([__file__, "-v"]))

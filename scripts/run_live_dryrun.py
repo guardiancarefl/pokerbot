@@ -502,6 +502,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                           "refuse hand-start anchors whose pre-hand sum != "
                           "chips-in-play while all seats read alive (the "
                           "seq-1363 poisoned-anchor class). OFF by default.")
+    ap.add_argument("--extended-click-plans", action="store_true",
+                     help="Stage-2 click-executor completion (approved "
+                          "2026-06-11): typed-raise verify step, ALLIN-button "
+                          "mapping for all-in intents, raise_to-at-call-only-"
+                          "UI realizes as CALL. OFF by default.")
     ap.add_argument("--fallback-seconds", type=float, default=None,
                      help="Guaranteed-action fallback (operator-approved "
                           "2026-06-11): if hero is to-act and no decision "
@@ -550,6 +555,11 @@ def main() -> int:
     if args.anchor_sum_floor:
         header["anchor_sum_floor"] = True
         print(_color("[run_live_dryrun] P1 anchor sum-floor guard ARMED",
+                      YELLOW), flush=True)
+    if args.extended_click_plans:
+        header["extended_click_plans"] = True
+        print(_color("[run_live_dryrun] extended click plans ARMED "
+                      "(verify step + ALLIN mapping + call-only realization)",
                       YELLOW), flush=True)
     decision_cache = DecisionCache()
     rng = random.Random(args.seed)
@@ -650,7 +660,8 @@ def main() -> int:
             n_total += 1
             d = make_decision(rec, structure, solver, tracker, rng,
                                mode=args.mode, seq=seq,
-                               decision_cache=decision_cache)
+                               decision_cache=decision_cache,
+                               extended_click_plans=args.extended_click_plans)
             if d.status in ("decision", "decision_recovered"):
                 n_decision += 1
             elif d.status in ("decision_cached", "decision_recovered_cached"):

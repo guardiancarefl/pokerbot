@@ -34,14 +34,17 @@ Box = tuple[float, float, float, float]  # x1, y1, x2, y2 normalized 0..1
 @dataclass
 class ClickStep:
     """One click or keystroke step in a click plan."""
-    kind: Literal["click", "type"]
+    kind: Literal["click", "type", "verify"]
     # For "click": UI element label (e.g. "FOLD", "RAISE", "bet_input").
-    # For "type": same label string identifying the input target.
+    # For "type"/"verify": same label string identifying the input target.
     target: str
     # Normalized [x1,y1,x2,y2] box. Required for "click"; may be None for
     # "type" (target is implied by the prior click).
     box: Box | None = None
     # For "type" steps: the literal text to type (chip amount as string).
+    # For "verify" steps: the text the executor must READ BACK from the
+    # input box before proceeding — mismatch aborts the plan (extended
+    # mode only; Stage-2 typed-amount verification).
     payload: str | None = None
 
 
@@ -60,6 +63,14 @@ class ClickPlan:
     chip_amount: int | None
     steps: list[ClickStep] = field(default_factory=list)
     reason: str | None = None
+    # Extended mode only: set when the intended action could not be
+    # executed literally and was realized as the closest legal UI action
+    # (e.g. raise_to at a call-only facing-all-in UI -> "call";
+    # all-in raise via the ALLIN button -> "allin_button";
+    # call with no CALL button but CHECK present -> "check").
+    # None in default mode — plan_as_dict omits the key when None so
+    # default-mode serialization is byte-identical to pre-extended code.
+    realized_as: str | None = None
 
     def is_no_op(self) -> bool:
         return not self.steps
@@ -82,6 +93,8 @@ def _box_for_button(label: str, action_buttons) -> Box | None:
 def compute_click_target(
     client_action: dict,
     controls: dict | None,
+    extended: bool = False,
+    hero_max_commit: int | None = None,
 ) -> ClickPlan:
     """Compute the click plan for the bot's intended action.
 
@@ -92,6 +105,25 @@ def compute_click_target(
         controls: scraper record's `controls` dict. Must contain
             `action_buttons` (list of {label, box, amount?}) and, for
             raises, `bet_input` (dict with `box`).
+        extended: Stage-2 executor completion (approved 2026-06-11),
+            default OFF = byte-identical to the pre-extended mapping.
+            When ON:
+              - typed raises gain a "verify" step (read back the
+                bet_input box before clicking RAISE/BET);
+              - an all-in raise_to (chip_amount >= hero_max_commit)
+                with no typed path uses the ALLIN button when present;
+              - raise_to with no executable raise UI realizes as CALL
+                (facing-all-in call-only UI; conservative under-commit)
+                or CHECK, in that order;
+              - call with no CALL button realizes as CHECK when present
+                (to_call==0 rendering variance).
+            Realizations are stamped in ClickPlan.realized_as; a
+            realization NEVER commits more chips than the intent except
+            the ALLIN-button case, which is gated on the intent itself
+            being all-in.
+        hero_max_commit: hero stack + hero current bet (the raise-to
+            ceiling). Required to recognize all-in intent; extended
+            ALLIN mapping is skipped when None.
 
     Returns:
         ClickPlan. For supported actions: steps populated. For
@@ -124,6 +156,24 @@ def compute_click_target(
     if kind == "call":
         box = _box_for_button("CALL", action_buttons)
         if box is None:
+            if extended:
+                check_box = _box_for_button("CHECK", action_buttons)
+                if check_box is not None:
+                    return ClickPlan(
+                        "call", chip_amount,
+                        [ClickStep("click", "CHECK", box=check_box)],
+                        realized_as="check")
+                # Call-is-all-in UI: when the call amount >= hero's
+                # stack the site renders ALLIN instead of CALL — the
+                # ALLIN button IS the call (commits exactly the call).
+                allin_box = _box_for_button("ALLIN", action_buttons) \
+                    or _box_for_button("ALL-IN", action_buttons) \
+                    or _box_for_button("ALL IN", action_buttons)
+                if allin_box is not None:
+                    return ClickPlan(
+                        "call", chip_amount,
+                        [ClickStep("click", "ALLIN", box=allin_box)],
+                        realized_as="allin_button")
             return ClickPlan("call", chip_amount, [],
                               reason="CALL button not found in scraper controls")
         return ClickPlan("call", chip_amount,
@@ -143,6 +193,38 @@ def compute_click_target(
         if raise_box is None:
             raise_box = _box_for_button("BET", action_buttons)
             raise_label = "BET"
+        typed_path_ok = (bet_input_box_raw is not None
+                         and len(bet_input_box_raw) == 4
+                         and raise_box is not None)
+        if not typed_path_ok and extended:
+            # Realization ladder for raise intent with no typed-raise UI.
+            # 1. All-in intent + ALLIN button: the literal action.
+            is_allin_intent = (hero_max_commit is not None
+                               and int(chip_amount) >= int(hero_max_commit))
+            allin_box = _box_for_button("ALLIN", action_buttons) \
+                or _box_for_button("ALL-IN", action_buttons) \
+                or _box_for_button("ALL IN", action_buttons)
+            if is_allin_intent and allin_box is not None:
+                return ClickPlan(
+                    "raise_to", chip_amount,
+                    [ClickStep("click", "ALLIN", box=allin_box)],
+                    realized_as="allin_button")
+            # 2. CALL: the table offers no raise (facing all-in /
+            #    mid-render). Conservative under-commit of the intent.
+            call_box = _box_for_button("CALL", action_buttons)
+            if call_box is not None:
+                return ClickPlan(
+                    "raise_to", chip_amount,
+                    [ClickStep("click", "CALL", box=call_box)],
+                    realized_as="call")
+            # 3. CHECK: free continuation.
+            check_box = _box_for_button("CHECK", action_buttons)
+            if check_box is not None:
+                return ClickPlan(
+                    "raise_to", chip_amount,
+                    [ClickStep("click", "CHECK", box=check_box)],
+                    realized_as="check")
+            # fall through to the default-mode no-op reasons
         if bet_input_box_raw is None or len(bet_input_box_raw) != 4:
             return ClickPlan("raise_to", chip_amount, [],
                               reason="bet_input box missing from scraper controls")
@@ -153,11 +235,17 @@ def compute_click_target(
             float(bet_input_box_raw[0]), float(bet_input_box_raw[1]),
             float(bet_input_box_raw[2]), float(bet_input_box_raw[3]),
         )
-        return ClickPlan("raise_to", chip_amount, [
+        steps = [
             ClickStep("click", "bet_input", box=bet_input_box),
             ClickStep("type", "bet_input", payload=str(int(chip_amount))),
-            ClickStep("click", raise_label, box=raise_box),
-        ])
+        ]
+        if extended:
+            # Stage-2 typed-amount verification: executor must read the
+            # box back and abort on mismatch before committing the click.
+            steps.append(ClickStep("verify", "bet_input",
+                                   payload=str(int(chip_amount))))
+        steps.append(ClickStep("click", raise_label, box=raise_box))
+        return ClickPlan("raise_to", chip_amount, steps)
 
     return ClickPlan(kind or "unknown", chip_amount, [],
                       reason=f"unsupported action kind: {kind!r}")
@@ -171,8 +259,10 @@ def click_plan_for_safe_fold(reason: str) -> ClickPlan:
 
 
 def plan_as_dict(plan: ClickPlan) -> dict:
-    """Serializable form (for JSONL logging)."""
-    return {
+    """Serializable form (for JSONL logging). `realized_as` is included
+    only when set, so default-mode output is byte-identical to the
+    pre-extended serialization."""
+    d = {
         "action_kind": plan.action_kind,
         "chip_amount": plan.chip_amount,
         "reason": plan.reason,
@@ -186,3 +276,6 @@ def plan_as_dict(plan: ClickPlan) -> dict:
             for s in plan.steps
         ],
     }
+    if plan.realized_as is not None:
+        d["realized_as"] = plan.realized_as
+    return d

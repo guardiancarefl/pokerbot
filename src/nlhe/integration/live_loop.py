@@ -589,6 +589,7 @@ def make_decision(
     seq: int | None = None,
     decision_cache: "DecisionCache | None" = None,
     short_stack_floor_bb: float = _DEFAULT_SHORT_STACK_FLOOR_BB,
+    extended_click_plans: bool = False,
 ) -> LiveDecision:
     """Process one scraper record. Returns a LiveDecision.
 
@@ -808,8 +809,15 @@ def make_decision(
 
     # 9. Compute the click plan (always recomputed: the controls' on-screen
     # coordinates can shift between frames even within a single decision).
-    out.click_plan = compute_click_target(
-        client_action, record.get("controls") or {})
+    if extended_click_plans:
+        hero_max_commit = (int(frame.stack[frame.hero_seat])
+                           + int(frame.bet[frame.hero_seat]))
+        out.click_plan = compute_click_target(
+            client_action, record.get("controls") or {},
+            extended=True, hero_max_commit=hero_max_commit)
+    else:
+        out.click_plan = compute_click_target(
+            client_action, record.get("controls") or {})
 
     if out.recovered_fields is not None:
         out.status = ("decision_recovered_cached" if cached_from_cache
