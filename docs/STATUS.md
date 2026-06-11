@@ -12,6 +12,19 @@
 > Leduc / sub-step 6 entries describe a research workstream that's
 > superseded by the deployment focus.
 
+## Stage-2 must-land set — 2026-06-11 — BUILT, flag-gated OFF, gates GREEN
+
+- Commits cd2b2c0..56c4b79: **P1 anchor sum-floor guard**
+  (`--anchor-sum-floor`), **click-executor completion**
+  (`--extended-click-plans`, 29/29 previously-unexecutable plans now
+  executable), **watchdog v2** (`--watchdog-v2`, closes the 9cAd gap),
+  **enforced session abort** (`--abort-enforce`, reset via
+  `touch logs/ABORT_RESET`). Every flag OFF by default; flag-off
+  byte-identity 2232/2232 frames across all 4 session logs. Evidence:
+  `evals/stage2_build_20260611/`. Supervised-click arming line is in
+  `docs/DRYRUN_CHECKLIST.md`. **P2 bet-closure recovery: approved
+  can-ride, NOT YET BUILT.**
+
 ## First live session — 2026-06-11 — WON (operator-executed), audited
 
 - Session `logs/live_dryrun_20260611_163815.jsonl`: 37 hands, 61
