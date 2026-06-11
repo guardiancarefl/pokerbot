@@ -1,0 +1,45 @@
+========================================================================
+DRY-RUN TRIAGE — live_dryrun_20260611_181249.jsonl
+========================================================================
+
+[a] SESSION HEADER
+    mode=sample  seed=2026
+    ckpt=/home/quant/pokerbot/runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt
+    ckpt_sha256=b79e82dd0ce9e78e4eb666b7379df953dadbf2a6e026c6bd4b6eec695e9b1b11
+    abstraction_sha256=0fc20800dc7ce89ea950c975decbd530ac6c6f3c164105e8ab99d24359de4c8e
+    floors={'aa_kk': True, 'check_when_free': True, 'short_stack_bb': 6.0}
+    git_head=2726122f0eeb364b87686e76a227a4e9878b7f05 dirty=False started=2026-06-11T18:12:50.699550+00:00
+
+[b] FRAME ACCOUNTING
+    total frames        54
+    decisions           7  (fresh 4 / cached 3 / recovered 0 / recovered_cached 0)
+    safe_fold           0
+    skip_data_quality   15
+    skip_not_hero_to_act 32
+    skip_data_quality sub-causes (15):
+            9  scraper suspect frame
+            5  dealer points to non-alive/empty seat
+            1  dealer field missing/empty
+
+[c] HAND ACCOUNTING  (raw_record card/dealer/board segmentation)
+    hands seen                       6
+    hands with >=1 hero decision     3
+    hero-to-act frames skipped       0  (action buttons visible in raw_record, frame skipped)
+    hands LOST to skips (OCR-loss)   0  (hero-to-act evidence present, zero decisions)
+
+[d] DECISION DIGEST  (floors joined from live_dryrun_20260611_181249.stdout (0 firing(s)))
+      seq mode    street   cards  board            facing  action                 floor
+       10 sample  preflop  9cKh   -                bet     FOLD                   -
+       22 sample  preflop  5sJs   -                bet     FOLD                   -
+       23 cached  preflop  5sJs   -                bet     FOLD                   -
+       31 sample  preflop  JcQs   -                bet     CALL                   -
+       32 cached  preflop  JcQs   -                bet     CALL                   -
+       36 sample  preflop  JcQs   -                bet     RAISE_TO 1445 (57.8xBB) -
+       37 cached  preflop  JcQs   -                bet     RAISE_TO 1445 (57.8xBB) -
+
+[e] RED FLAGS
+    none
+
+========================================================================
+TRIAGE live_dryrun_20260611_181249.jsonl: frames=54 decisions=7 (fresh 4/cached 3/recovered 0) safe_folds=0 skips=47 (87.0%) hands=6 hands_lost=0 to_act_skipped=0 red_flags=0
+========================================================================

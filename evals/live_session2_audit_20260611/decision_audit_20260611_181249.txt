@@ -1,0 +1,196 @@
+========================================================================
+DECISION AUDIT — live_dryrun_20260611_181249.jsonl
+========================================================================
+
+[0] REPLAY FIDELITY GATE
+    frames replayed: 54
+    all replayed frames byte-identical to the logged session (status + client_action) — captured distributions are the ones the live model produced
+
+[1] DECISION CARDS (7 frames)
+
+------------------------------------------------------------------------
+seq 10  [decision]  captured=20260611_141424_351  L1 blinds=(15, 25, 5)
+  street=preflop  hero=9c Kh  board=-
+  position=BB  dealer=seat5  hero=seat1
+  stacks(behind): hero 1470 (58.8BB); seat2 1495 (59.8BB); seat3 1495 (59.8BB); seat4 1420 (56.8BB); seat5 1420 (56.8BB); seat6 1480 (59.2BB)
+  pot=220  facing=50 (2.0BB)  eff=1495 (59.8BB)  n_alive=6
+  believed action history (override=anchor):
+      blinds: seat6 posts SB 15, seat1 posts BB 25, ante 5 all
+      seat2 folds
+      seat3 folds
+      seat4 raises to 75 (3.0BB)
+      seat5 [BTN] calls
+      seat6 [SB] folds
+  policy distribution (fresh; mode=sample draws from post-floor):
+    FOLD     fold                       pre= 0.484  post= 0.484  <== CHOSEN
+    CALL     check/call                 pre= 0.168  post= 0.168
+    BET_66   raise-to 148 (5.9BB)       pre= 0.036  post= 0.036
+    BET_100  raise-to 225 (9.0BB)       pre= 0.040  post= 0.040
+    BET_200  raise-to 450 (18.0BB)      pre= 0.030  post= 0.030
+    ALLIN    raise-to 1500 (60.0BB)     pre= 0.205  post= 0.205
+    BET_150  raise-to 338 (13.5BB)      pre= 0.037  post= 0.037
+  chosen: {"kind": "fold", "chip_amount": null, "raw_openspiel_chip_int": 0}
+  invariant: PASS (decision frames only exist past the strict invariant)
+
+------------------------------------------------------------------------
+seq 22  [decision]  captured=20260611_141454_553  L1 blinds=(15, 25, 5)
+  street=preflop  hero=5s Js  board=-
+  position=SB  dealer=seat6  hero=seat1
+  stacks(behind): hero 1450 (58.0BB); seat2 1465 (58.6BB); seat3 1490 (59.6BB); seat4 1635 (65.4BB); seat5 1415 (56.6BB); seat6 1475 (59.0BB)
+  pot=70  facing=10 (0.4BB)  eff=1465 (58.6BB)  n_alive=6
+  believed action history (override=anchor):
+      blinds: seat1 posts SB 15, seat2 posts BB 25, ante 5 all
+      seat3 folds
+      seat4 folds
+      seat5 folds
+      seat6 [BTN] folds
+  policy distribution (fresh; mode=sample draws from post-floor):
+    FOLD     fold                       pre= 0.587  post= 0.587  <== CHOSEN
+    CALL     check/call                 pre= 0.255  post= 0.255
+    BET_100  raise-to 50 (2.0BB)        pre= 0.065  post= 0.065
+    BET_200  raise-to 100 (4.0BB)       pre= 0.021  post= 0.021
+    ALLIN    raise-to 1470 (58.8BB)     pre= 0.038  post= 0.038
+    BET_150  raise-to 75 (3.0BB)        pre= 0.035  post= 0.035
+  chosen: {"kind": "fold", "chip_amount": null, "raw_openspiel_chip_int": 0}
+  invariant: PASS (decision frames only exist past the strict invariant)
+
+------------------------------------------------------------------------
+seq 23  [decision_cached]  captured=20260611_141455_959  L1 blinds=(15, 25, 5)
+  street=preflop  hero=5s Js  board=-
+  position=SB  dealer=seat6  hero=seat1
+  stacks(behind): hero 1450 (58.0BB); seat2 1465 (58.6BB); seat3 1490 (59.6BB); seat4 1635 (65.4BB); seat5 1415 (56.6BB); seat6 1475 (59.0BB)
+  pot=70  facing=10 (0.4BB)  eff=1465 (58.6BB)  n_alive=6
+  believed action history (override=anchor):
+      blinds: seat1 posts SB 15, seat2 posts BB 25, ante 5 all
+      seat3 folds
+      seat4 folds
+      seat5 folds
+      seat6 [BTN] folds
+  policy distribution (from fresh sample of same decision; mode=sample draws from post-floor):
+    FOLD     fold                       pre= 0.587  post= 0.587  <== CHOSEN
+    CALL     check/call                 pre= 0.255  post= 0.255
+    BET_100  raise-to 50 (2.0BB)        pre= 0.065  post= 0.065
+    BET_200  raise-to 100 (4.0BB)       pre= 0.021  post= 0.021
+    ALLIN    raise-to 1470 (58.8BB)     pre= 0.038  post= 0.038
+    BET_150  raise-to 75 (3.0BB)        pre= 0.035  post= 0.035
+  chosen: {"kind": "fold", "chip_amount": null, "raw_openspiel_chip_int": 0}
+  invariant: PASS (decision frames only exist past the strict invariant)
+
+------------------------------------------------------------------------
+seq 31  [decision]  captured=20260611_141513_055  L1 blinds=(15, 25, 5)
+  street=preflop  hero=Jc Qs  board=-
+  position=BTN  dealer=seat1  hero=seat1
+  stacks(behind): hero 1445 (57.8BB); seat2 1515 (60.6BB); seat3 1460 (58.4BB); seat4 1630 (65.2BB); seat5 1410 (56.4BB); seat6 1470 (58.8BB)
+  pot=70  facing=25 (1.0BB)  eff=1445 (57.8BB)  n_alive=6
+  believed action history (override=anchor):
+      blinds: seat2 posts SB 15, seat3 posts BB 25, ante 5 all
+      seat4 folds
+      seat5 folds
+      seat6 folds
+  policy distribution (fresh; mode=sample draws from post-floor):
+    FOLD     fold                       pre= 0.389  post= 0.389
+    CALL     check/call                 pre= 0.351  post= 0.351  <== CHOSEN
+    BET_66   raise-to 50 (2.0BB)        pre= 0.047  post= 0.047
+    BET_100  raise-to 75 (3.0BB)        pre= 0.049  post= 0.049
+    BET_200  raise-to 150 (6.0BB)       pre= 0.027  post= 0.027
+    ALLIN    raise-to 1450 (58.0BB)     pre= 0.093  post= 0.093
+    BET_150  raise-to 112 (4.5BB)       pre= 0.043  post= 0.043
+  chosen: {"kind": "call", "chip_amount": null, "raw_openspiel_chip_int": 1}
+  invariant: PASS (decision frames only exist past the strict invariant)
+
+------------------------------------------------------------------------
+seq 32  [decision_cached]  captured=20260611_141514_373  L1 blinds=(15, 25, 5)
+  street=preflop  hero=Jc Qs  board=-
+  position=BTN  dealer=seat1  hero=seat1
+  stacks(behind): hero 1445 (57.8BB); seat2 1515 (60.6BB); seat3 1460 (58.4BB); seat4 1630 (65.2BB); seat5 1410 (56.4BB); seat6 1470 (58.8BB)
+  pot=70  facing=25 (1.0BB)  eff=1445 (57.8BB)  n_alive=6
+  believed action history (override=anchor):
+      blinds: seat2 posts SB 15, seat3 posts BB 25, ante 5 all
+      seat4 folds
+      seat5 folds
+      seat6 folds
+  policy distribution (from fresh sample of same decision; mode=sample draws from post-floor):
+    FOLD     fold                       pre= 0.389  post= 0.389
+    CALL     check/call                 pre= 0.351  post= 0.351  <== CHOSEN
+    BET_66   raise-to 50 (2.0BB)        pre= 0.047  post= 0.047
+    BET_100  raise-to 75 (3.0BB)        pre= 0.049  post= 0.049
+    BET_200  raise-to 150 (6.0BB)       pre= 0.027  post= 0.027
+    ALLIN    raise-to 1450 (58.0BB)     pre= 0.093  post= 0.093
+    BET_150  raise-to 112 (4.5BB)       pre= 0.043  post= 0.043
+  chosen: {"kind": "call", "chip_amount": null, "raw_openspiel_chip_int": 1}
+  invariant: PASS (decision frames only exist past the strict invariant)
+
+------------------------------------------------------------------------
+seq 36  [decision]  captured=20260611_141523_658  L1 blinds=(15, 25, 5)
+  street=preflop  hero=Jc Qs  board=-
+  position=BTN  dealer=seat1  hero=seat1
+  stacks(behind): hero 1420 (56.8BB); seat2 1505 (60.2BB); seat3 1360 (54.4BB); seat4 1630 (65.2BB); seat5 1410 (56.4BB); seat6 1470 (58.8BB)
+  pot=205  facing=100 (4.0BB)  eff=1445 (57.8BB)  n_alive=6
+  believed action history (override=anchor):
+      blinds: seat2 posts SB 15, seat3 posts BB 25, ante 5 all
+      seat4 folds
+      seat5 folds
+      seat6 folds
+      seat1 [HERO,BTN] calls
+      seat2 [SB] calls
+      seat3 [BB] raises to 125 (5.0BB)
+  policy distribution (fresh; mode=sample draws from post-floor):
+    FOLD     fold                       pre= 0.426  post= 0.426
+    CALL     check/call                 pre= 0.277  post= 0.277
+    BET_66   raise-to 248 (9.9BB)       pre= 0.039  post= 0.039
+    BET_100  raise-to 375 (15.0BB)      pre= 0.041  post= 0.041
+    BET_200  raise-to 750 (30.0BB)      pre= 0.024  post= 0.024
+    ALLIN    raise-to 1450 (58.0BB)     pre= 0.160  post= 0.160  <== CHOSEN
+    BET_150  raise-to 562 (22.5BB)      pre= 0.032  post= 0.032
+  chosen: {"kind": "raise_to", "chip_amount": 1445, "raw_openspiel_chip_int": 1450}
+  invariant: PASS (decision frames only exist past the strict invariant)
+
+------------------------------------------------------------------------
+seq 37  [decision_cached]  captured=20260611_141527_899  L1 blinds=(15, 25, 5)
+  street=preflop  hero=Jc Qs  board=-
+  position=BTN  dealer=seat1  hero=seat1
+  stacks(behind): hero 1420 (56.8BB); seat2 1505 (60.2BB); seat3 1360 (54.4BB); seat4 1630 (65.2BB); seat5 1410 (56.4BB); seat6 1470 (58.8BB)
+  pot=205  facing=100 (4.0BB)  eff=1445 (57.8BB)  n_alive=6
+  believed action history (override=anchor):
+      blinds: seat2 posts SB 15, seat3 posts BB 25, ante 5 all
+      seat4 folds
+      seat5 folds
+      seat6 folds
+      seat1 [HERO,BTN] calls
+      seat2 [SB] calls
+      seat3 [BB] raises to 125 (5.0BB)
+  policy distribution (from fresh sample of same decision; mode=sample draws from post-floor):
+    FOLD     fold                       pre= 0.426  post= 0.426
+    CALL     check/call                 pre= 0.277  post= 0.277
+    BET_66   raise-to 248 (9.9BB)       pre= 0.039  post= 0.039
+    BET_100  raise-to 375 (15.0BB)      pre= 0.041  post= 0.041
+    BET_200  raise-to 750 (30.0BB)      pre= 0.024  post= 0.024
+    ALLIN    raise-to 1450 (58.0BB)     pre= 0.160  post= 0.160  <== CHOSEN
+    BET_150  raise-to 562 (22.5BB)      pre= 0.032  post= 0.032
+  chosen: {"kind": "raise_to", "chip_amount": 1445, "raw_openspiel_chip_int": 1450}
+  invariant: PASS (decision frames only exist past the strict invariant)
+
+========================================================================
+[2a] RECONSTRUCTION DIVERGENCE FLAGS (believed != raw observable)
+    none — every decision's believed stacks/bets/pot matched the raw scraper record on all non-null fields
+
+[2b] ALL-IN / SHOVE DECISIONS
+    seq 36   Jc Qs  pos=BTN       eff= 57.8BB street=preflop facing=4.0BB -> raise_to 1445
+    seq 37   Jc Qs  pos=BTN       eff= 57.8BB street=preflop facing=4.0BB -> raise_to 1445
+
+[2c] FOLDS OF Ax HANDS
+    none
+
+========================================================================
+[3] MISSED-ACTION ACCOUNTING
+    every frame where hero had a REAL action UI (CHECK/CALL/RAISE/BET buttons, or 2+ buttons) but no decision was produced.
+    FOLD-only button frames are the muck / fold-ahead-of-action UI — counted separately, not real to-act spots.
+
+      seq status             cards  buttons            resolution                          +secs reason
+
+    real to-act frames with no decision: 0 (of which safe_fold — a FOLD/CHECK fallback plan WAS emitted: 0)
+    to-act spots NEVER decided before the next hand (operator/site timer had to resolve them): 0
+    FOLD-only (muck / fold-ahead UI) frames excluded: 0
+    timer-threat note: '+secs' is time from the missed frame to resolution; spots marked NEVER DECIDED were resolved only by the operator acting manually or the site timer.
+
+========================================================================

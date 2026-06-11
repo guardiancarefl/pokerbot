@@ -1,0 +1,66 @@
+========================================================================
+CUMULATIVE CHOSEN-ACTION-MASS ACCOUNTING (fresh decisions only)
+========================================================================
+  20260611_163815: 37 fresh decisions / 486 frames, fidelity GREEN
+  20260611_181249: 4 fresh decisions / 54 frames, fidelity GREEN
+
+  session           seq cards  street   chosen             mass
+  20260611_163815    14 KdTs   preflop  FOLD              0.566
+  20260611_163815    32 7cJh   preflop  RAISE_TO 50       0.219
+  20260611_163815    38 7cJh   flop     RAISE_TO 99       0.267
+  20260611_163815    52 5c8c   preflop  CALL              0.178
+  20260611_163815    56 5c8c   preflop  FOLD              0.836
+  20260611_163815    68 ThTc   preflop  CALL              0.174
+  20260611_163815    84 KsQd   preflop  CALL              0.149
+  20260611_163815    91 KsQd   flop     RAISE_TO 600      0.062  <== sub-10% TAIL
+  20260611_163815   108 QhJc   preflop  CALL              0.065  <== sub-10% TAIL
+  20260611_163815   117 QhJc   preflop  RAISE_TO 200      0.190
+  20260611_163815   128 QhJc   flop     RAISE_TO 1575     0.193
+  20260611_163815   129 QhJc   turn     RAISE_TO 1575     0.108
+  20260611_163815   131 QhJc   turn     RAISE_TO 330      0.082  <== sub-10% TAIL
+  20260611_163815   149 5sTh   preflop  FOLD              0.816
+  20260611_163815   169 AsAc   preflop  RAISE_TO 600      0.230
+  20260611_163815   174 AsAc   preflop  CALL              0.959
+  20260611_163815   198 5dTs   preflop  FOLD              0.760
+  20260611_163815   210 9cKs   preflop  CALL              0.154
+  20260611_163815   217 9cKs   preflop  CALL              0.431
+  20260611_163815   219 9cKs   flop     RAISE_TO 1957     0.384
+  20260611_163815   230 4sJh   preflop  FOLD              0.813
+  20260611_163815   255 2cAh   preflop  RAISE_TO 2962     0.263
+  20260611_163815   267 7s7h   preflop  FOLD              0.376
+  20260611_163815   276 6d4d   preflop  FOLD              0.938
+  20260611_163815   292 7h3h   preflop  RAISE_TO 450      0.028  <== sub-10% TAIL
+  20260611_163815   315 2d5c   preflop  RAISE_TO 3007     0.075  <== sub-10% TAIL
+  20260611_163815   325 7c5d   preflop  FOLD              0.815
+  20260611_163815   337 QsJh   preflop  RAISE_TO 1350     0.013  <== sub-10% TAIL
+  20260611_163815   377 2cTh   preflop  FOLD              0.878
+  20260611_163815   392 8cAc   preflop  FOLD              0.740
+  20260611_163815   411 8sAs   flop     RAISE_TO 900      0.119
+  20260611_163815   425 4c5d   preflop  CALL              0.328
+  20260611_163815   430 4c5d   flop     CHECK             0.354
+  20260611_163815   432 4c5d   turn     RAISE_TO 300      0.193
+  20260611_163815   443 9d3h   preflop  RAISE_TO 3827     0.093  <== sub-10% TAIL
+  20260611_163815   456 3hTs   preflop  FOLD              0.924
+  20260611_163815   474 JcAc   preflop  RAISE_TO 4377     0.372
+  20260611_181249    10 9cKh   preflop  FOLD              0.484
+  20260611_181249    22 5sJs   preflop  FOLD              0.587
+  20260611_181249    31 JcQs   preflop  CALL              0.351
+  20260611_181249    36 JcQs   preflop  RAISE_TO 1445     0.160
+
+  chosen-mass histogram:
+    [0.0,0.1): ####### (7)
+    [0.1,0.2): ########## (10)
+    [0.2,0.3): #### (4)
+    [0.3,0.4): ###### (6)
+    [0.4,0.5): ## (2)
+    [0.5,0.6): ## (2)
+    [0.6,0.7): (0)
+    [0.7,0.8): ## (2)
+    [0.8,0.9): ##### (5)
+    [0.9,1.0): ### (3)
+
+  binomial sanity (event: drawn client action had mass < 0.10):
+    draws n=41   observed sub-10% draws k=7
+    expected E=sum q_i = 5.77   sd=2.18   z=(k-E)/sd = +0.57
+    mean chosen mass observed 0.384 vs expected E[sum p^2] 0.432
+========================================================================
