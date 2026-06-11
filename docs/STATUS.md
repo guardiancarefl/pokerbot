@@ -1,6 +1,6 @@
 # Project Status
 
-**Last updated:** 2026-06-10
+**Last updated:** 2026-06-11
 **Current phase:** Live deployment readiness. Validated k200 blueprint
   (`runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt`).
   Bridge fixed end-to-end; three deployment-time policy floors shipped;
@@ -11,6 +11,33 @@
 > readiness" entry below is the current load-bearing summary; the older
 > Leduc / sub-step 6 entries describe a research workstream that's
 > superseded by the deployment focus.
+
+## Dry-run readiness — 2026-06-11 — smoke GREEN, triage tooling landed
+
+- **Byte-identity smoke (the live path is unchanged by the week's
+  commits):** replayed 154557 (all 571 frames) through `make_decision`
+  at the deployed live-path commit `af417d9` (worktree) vs HEAD —
+  **571/571 identical, 0 behavioral changes**; also identical to the
+  C3 gate's recorded post output (`/tmp/post_live_dryrun_*`, 2026-06-10).
+  The af417d9→HEAD live-path diff is exactly the gated C3 encoder work
+  (`infoset6.py`/`solver6.py`/`eval_6max_self_play.py`); bridge +
+  `replay_make_decision_diff.py` untouched. Nothing from `runpod-env`
+  (+2 training-infra commits) is needed for dry runs; NOT merged.
+- **`scripts/dryrun_triage.py`** — per-session plain-text triage:
+  header echo (asserts mode=sample + ckpt sha `b79e82dd…`), frame
+  accounting with skip_data_quality sub-cause histogram (blinds-string
+  OCR class on its own line), hand accounting (incl. OCR-lost hands and
+  skipped hero-to-act frames), decision digest with `[FLOOR]` firings
+  joined from the `.stdout` companion, red flags (safe_fold /
+  anchor_refused / invariant_deltas / FOLD-facing-0 / seq-170 + seq-192
+  reconstruction signatures), one paste-back summary line. Validated on
+  all 8 historical logs against the documented postmortems; evidence
+  committed at `evals/triage_samples_20260611/`. Worst session is
+  154557: 510 skips / 247 data-quality (a prior note remembered "372
+  skips" — no log matches that number).
+- **`docs/DRYRUN_CHECKLIST.md`** — midnight-followable pre-flight
+  (Contabo listener + sha assert + stdout tee → tunnel → Windows
+  sender), live config unchanged.
 
 ## C3 retrain bundle — 2026-06-10 — BUILT + GATED, AWAITING OPERATOR LAUNCH
 

@@ -12,6 +12,47 @@ Format: most recent session at the top. Each session block notes date, what was 
 
 ---
 
+## Dry-run readiness session — 2026-06-11 — smoke + triage tooling (track-policy)
+
+**What was done.**
+- Sync: track-policy already at origin. `runpod-env` is ahead by exactly 2
+  commits (`eb77691` parallel-C3 wiring, `6856f37` RunPod docs/dashboard) —
+  both training-infra only, nothing on the live path; deliberately NOT merged.
+- Byte-identity smoke: `replay_make_decision_diff` over 154557 (571 frames),
+  pre = worktree at `af417d9` (the deployed live-path state), post = HEAD
+  (`0bd61c8`), seed 42 → **571/571 identical, 0 behavioral changes**. Same
+  output is bit-identical to the C3 gate's recorded post file from 2026-06-10.
+  Conclusion: the week's commits (incl. the gated C3 encoder work) leave the
+  live decision path unchanged. Worktree removed after use.
+- `scripts/dryrun_triage.py` (stdlib-only, no model load): header echo with
+  mode=sample + `b79e82dd` sha asserts, frame/hand accounting, skip sub-cause
+  histogram, decision digest with `[FLOOR]` join from the `.stdout` companion,
+  red-flag section, paste-back summary line. Acceptance: ran on all 8
+  historical logs; reproduced the documented postmortems exactly (152756's
+  17/17/4/3 skip split + 8dKc lost hand + seq-170/192 signature classes +
+  pre-floor seq=48 FOLD-facing-0; 154557's 14 OCR-lost hands incl. AdKd;
+  verify1's blackout as 10 skipped hero-to-act frames). Modern-format demo:
+  154557 raw records re-run through `run_live_dryrun --replay-from-jsonl` at
+  HEAD → header asserts PASS, 6 recoveries, 2 ANCHOR-REFUSED (the 9907
+  poisoned anchors), 4 floor firings joined. Samples committed at
+  `evals/triage_samples_20260611/`.
+- `docs/DRYRUN_CHECKLIST.md`: pre-flight in execution order (Contabo listener
+  + sha assert + `tee` stdout capture → tunnel → Windows sender), watch list,
+  post-session triage step.
+
+**What was learned.**
+- Hand segmentation by raw hero-pair/dealer/board needs the "merge pair-less
+  dead-air fragments forward" pass — without it, between-hands frames double
+  the hand count (22 vs the true 11 on 152756).
+- The remembered "372-skip session" doesn't exist under that number; the worst
+  is 154557 (510 skips, 247 skip_data_quality).
+- Floor firings live only in stdout, not the JSONL — capturing
+  `logs/live_dryrun_<TS>.stdout` via `tee` is now a checklist requirement
+  (triage's floor column depends on it).
+
+**Queued.** The actual live dry run (operator-driven, follow the checklist);
+C3 retrain launch remains gated on operator approval (unchanged).
+
 ## C3 prep session — 2026-06-10 (later) — retrain bundle build + pre-train gates (NO LAUNCH)
 
 **What was done.** The operator-approved C3 bundle, ending at
