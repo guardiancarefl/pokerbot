@@ -700,3 +700,13 @@ Fourteen commits on main. Findings: four foundational bugs in the abstraction la
 
 ### What was decided
 - Proposed live value `--fallback-seconds 7.0` (calibrated on session 1: would have fired on all 8 never-decided spots, zero false fires on within-street recoveries). Stage 1 keeps it OFF; arming it in a live session is an operator call at launch time.
+
+## Session — 2026-06-11 (night) — Windows forensics sign-off + session-2 prep
+
+### What was done
+- **Backstop confirmation for the seq-188 class** (commit d144b5c): replayed the full session with the four killed hands' 6 suspect frames un-suspected (forensics: clean OCR, pot-spike validator FP). All four to-act frames (188 8dAd, 305 AdKs, 354 7s3s, 366 2sJh) cleared replay+invariant and produced full decisions; the two non-to-act ones became normal skips. **The Contabo gate needs no change** — the layered defense holds with the Windows fix alone. Evidence: `evals/live_session1_audit_20260611/backstop_seq188_class.txt`.
+- **DRYRUN_CHECKLIST.md updated:** Windows scraper launch now includes a local `--out scraper_local_<TS>.jsonl` (session 1 had no local copy — single-copy risk) with a verify step (`read_table.py --help` on the Windows box; script not in this repo); listener line shows operator-optional `--fallback-seconds 7.0` with a one-line explanation; FALLBACK banner added to the during-session watch list; **session-2 scoreboard** added (skip 86.6%→≈83%, hands lost 4→0, never-decided 8→0 with fallback armed, red flags ≤4 / no new classes).
+
+### What was learned
+- seq 305 counterfactual: AdKs facing an all-in (CALL/FOLD-only UI) drew ALLIN → `raise_to` with an empty click plan (no RAISE/BET button) — same class as live seq 315 (`['CALL']` mid-render). **Stage-2 item: a raise_to at a call-only UI must execute as CALL** (facing all-in, raise ≡ call). Display-only in Stage 1.
+- Related Stage-2 item: the fallback watchdog disarms on decision EMISSION; once clicking exists, disarm should move to click CONFIRMATION (controls vanish) so an unexecutable plan can't strand a to-act spot.
