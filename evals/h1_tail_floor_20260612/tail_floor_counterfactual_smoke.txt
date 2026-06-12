@@ -1,0 +1,45 @@
+========================================================================
+H1 TG2 — commitment-scaled tail floor counterfactual (SMOKE: session-1 only)
+========================================================================
+
+[0] REPLAY FIDELITY (per log)
+    20260611_163815              raw=  486 fresh_decisions=  37  fidelity=OK
+
+[1] COUNTERFACTUAL — 37 fresh decision frames, tau_max in [0.05, 0.1, 0.15]
+
+  tau_max = 0.05
+    frames fired (any tail pruned): 23 / 37 (62.16%)
+    altered decisions (historical sample excluded): 1 / 37 (2.70%)
+    pruned-action census:  {'ALLIN': 13, 'BET_200': 18, 'BET_100': 7, 'BET_150': 13, 'BET_66': 4, 'BET_50': 3}
+    argmax changes:        0
+    historical SAMPLED actions excluded: 1
+        20260611_163815 seq=337   BET_150  mass=0.0131 cards=QsJh chip=1350
+
+  tau_max = 0.10
+    frames fired (any tail pruned): 30 / 37 (81.08%)
+    altered decisions (historical sample excluded): 3 / 37 (8.11%)
+    pruned-action census:  {'BET_200': 25, 'ALLIN': 21, 'BET_150': 21, 'BET_100': 16, 'BET_66': 8, 'BET_50': 10, 'CALL': 1}
+    argmax changes:        0
+    historical SAMPLED actions excluded: 3
+        20260611_163815 seq=315   ALLIN    mass=0.0746 cards=2d5c chip=3032
+        20260611_163815 seq=337   BET_150  mass=0.0131 cards=QsJh chip=1350
+        20260611_163815 seq=443   ALLIN    mass=0.0931 cards=9d3h chip=3857
+
+  tau_max = 0.15
+    frames fired (any tail pruned): 33 / 37 (89.19%)
+    altered decisions (historical sample excluded): 5 / 37 (13.51%)
+    pruned-action census:  {'BET_200': 28, 'ALLIN': 26, 'BET_150': 25, 'BET_100': 19, 'BET_66': 13, 'BET_50': 10, 'CALL': 1}
+    argmax changes:        0
+    historical SAMPLED actions excluded: 5
+        20260611_163815 seq=91    BET_200  mass=0.0624 cards=KsQd chip=600
+        20260611_163815 seq=129   ALLIN    mass=0.1078 cards=QhJc chip=1785
+        20260611_163815 seq=315   ALLIN    mass=0.0746 cards=2d5c chip=3032
+        20260611_163815 seq=337   BET_150  mass=0.0131 cards=QsJh chip=1350
+        20260611_163815 seq=443   ALLIN    mass=0.0931 cards=9d3h chip=3857
+
+[2] TG2 BAR CHECKS
+    (a) seq-315 2d5c ALLIN excluded at tau_max=0.10: YES — caught
+    (a) seq-315 2d5c ALLIN excluded at tau_max=0.15: YES — caught
+    (b) argmax changes across all thresholds: 0 (PASS (0 expected))
+    (c) altered-decision rate at tau_max=0.10: 8.11% (*** > 5% — STOP, do not proceed to TG3 ***)
+========================================================================

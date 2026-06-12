@@ -48,3 +48,47 @@ the field-stats report runs. H4 unlock counter = opponent-observed hands
 (hands with ≥1 non-hero action observed), threshold ≥ 500.
 
 Status: build starting (background subagent). Verdict: pending.
+
+## 2026-06-12 — H1 TG1+TG2 COMPLETE (incl. adversarial review + instrument fix)
+
+Full report: `reports/EXP_H1_tail_floor.md`. Chain of verdicts:
+
+1. **Build** landed (floor + flag plumbing + 18 tests + TG2 instrument);
+   regression suites green (57 floor/bridge tests; header test extended for
+   the new `tail_floor_tau` header key).
+2. **TG1 #1 PASS:** 5,369 frames / 11 frame-bearing logs byte-identical
+   (HEAD-with-diff vs 28ce614 worktree, cmp).
+3. **TG2 #1:** bars (a),(b) PASS; **(c) FAIL — 5.10% (clean 5.30%) > 5%**
+   ⇒ STOP honored, TG3 not launched under first registration.
+4. **Adversarial review** (verdicts recorded in full in the report):
+   A1 metric operationalization-dependent (TV 4.36% / hist-draw 5.10% /
+   realized 9.45% at τ=0.10) — all reported; A2 instrument bug UPHELD
+   (commit formula understated pot; 28/1,579 bets misclassified dangerous-
+   direction); A4: τ→0.05 amendment REJECTED, "proceed at ~5%" REJECTED;
+   A5/A6 attacks on TG1 and instrument REJECTED. Prescription: fix commit
+   semantics, re-run gates, re-register on corrected numbers.
+5. **Fix adopted:** exact chip-map commitment via `discrete_to_chip`
+   pass-through (`accepts_d2c` marker; `eval_6max_self_play.py` dispatch).
+   23 tail-floor tests green.
+6. **TG1 #2 PASS** on the final diff (16/16 logs identical).
+7. **TG2 #2 (exact commit): ALL BARS PASS at τ=0.10** — altered 4.37%
+   (clean 4.64%), seq-315 caught, 0 argmax changes.
+8. **H1.2 re-registered BEFORE TG3** (report §4): τ=0.10, 24k paired games,
+   full floor chain both arms, seeds 1..24000 fixed, ship bars unchanged,
+   narrowed self-play claim + stale-attacker TG4 caveat recorded.
+
+**Verdict: H1 build phase COMPLETE; TG3/TG4 pending a dry-run-free window**
+(live session active all night). Next H1 action: adapt the A/B harness per
+H1.2 (build + V0-identity check can run anytime; the 24k eval cannot).
+Evidence root: `evals/h1_tail_floor_20260612/`.
+
+## 2026-06-12 — H3 PIPELINE BUILT + ALL LOGS INGESTED
+
+Acceptance met: session-1 reconciliation EXACT (37 hands / 61 decision
+frames); idempotent sha-keyed ingest; 8/8 tests. 15 sessions / 432 hands /
+1,466 actions / 506 opponent voluntary actions. **H4 unlock: 240/500 —
+LOCKED.** Structural findings (RESEARCH_MAP d3, OPERATOR_QUEUE OQ-1):
+opponent hole cards unobservable in the scraper schema; stale folded flags
+⇒ fold-vs-shove undercounted. Ingest command added to DRYRUN_CHECKLIST.
+Artifacts: `src/nlhe/opponent_db/`, `scripts/ingest_session.py`,
+`data/opponent_db/` (sqlite + FIELD_REPORT.txt).

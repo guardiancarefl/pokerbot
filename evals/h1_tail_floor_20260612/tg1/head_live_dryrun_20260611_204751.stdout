@@ -1,0 +1,13 @@
+DeepCFR6MaxSolver  device=cpu  feature_dim=236  payout_mode=double_up  payouts=[2.0, 2.0, 2.0]
+[FLOOR] fired=[short-stack]  eff_bb=5.59  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD
+[OOD-WARN] live out-of-training-support: level=6 hero_stack=189 (0.6 BB) captured_at=20260611_173057_372
+[FLOOR] fired=[short-stack]  eff_bb=5.70  cp=0  street=0  pre_argmax=ALLIN  post_argmax=ALLIN
+[FLOOR] fired=[short-stack]  eff_bb=5.70  cp=0  street=1  pre_argmax=ALLIN  post_argmax=ALLIN
+Replayed 973 frames -> /home/quant/pokerbot/evals/h1_tail_floor_20260612/tg1/head_live_dryrun_20260611_204751.jsonl
+  skip_not_hero_to_act           664
+  skip_data_quality              167
+  decision                        77
+  decision_cached                 59
+  decision_recovered               3
+  decision_recovered_cached        2
+  safe_fold                        1

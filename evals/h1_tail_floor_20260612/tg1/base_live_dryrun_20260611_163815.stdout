@@ -1,0 +1,15 @@
+DeepCFR6MaxSolver  device=cpu  feature_dim=236  payout_mode=double_up  payouts=[2.0, 2.0, 2.0]
+[FLOOR] fired=[check-free]  eff_bb=58.00  cp=0  street=0  pre_argmax=FOLD  post_argmax=CALL
+[FLOOR] fired=[AA/KK]  eff_bb=11.20  cp=0  street=0  pre_argmax=CALL  post_argmax=CALL
+[FLOOR] fired=[AA/KK]  eff_bb=6.35  cp=0  street=0  pre_argmax=CALL  post_argmax=CALL
+[OOD-WARN] live out-of-training-support: level=3 hero_stack=178 (1.8 BB) captured_at=20260611_125158_712
+[OOD-WARN] live out-of-training-support: level=3 hero_stack=178 (1.8 BB) captured_at=20260611_125159_645
+[OOD-WARN] live out-of-training-support: level=3 hero_stack=178 (1.8 BB) captured_at=20260611_125201_019
+[OOD-WARN] live out-of-training-support: level=3 hero_stack=178 (1.8 BB) captured_at=20260611_125202_354
+[OOD-WARN] live out-of-training-support: level=3 hero_stack=178 (1.8 BB) captured_at=20260611_125205_143
+Replayed 486 frames -> /home/quant/pokerbot/evals/h1_tail_floor_20260612/tg1/base_live_dryrun_20260611_163815.jsonl
+  skip_not_hero_to_act           375
+  skip_data_quality               46
+  decision                        37
+  decision_cached                 24
+  safe_fold                        4

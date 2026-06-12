@@ -1,0 +1,2535 @@
+{
+  "label": "ALL raw-record logs",
+  "taus": [
+    0.05,
+    0.1,
+    0.15
+  ],
+  "per_log": {
+    "20260608_152756": {
+      "n_raw_frames": 200,
+      "n_fresh_decisions": 19,
+      "n_fidelity_fails": 22,
+      "mode": "sample",
+      "seed": 2026,
+      "ckpt": "runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt",
+      "headerless": true
+    },
+    "20260609_154557": {
+      "n_raw_frames": 571,
+      "n_fresh_decisions": 37,
+      "n_fidelity_fails": 52,
+      "mode": "sample",
+      "seed": 2026,
+      "ckpt": "runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt",
+      "headerless": true
+    },
+    "20260609_192543": {
+      "n_raw_frames": 402,
+      "n_fresh_decisions": 41,
+      "n_fidelity_fails": 35,
+      "mode": "sample",
+      "seed": 2026,
+      "ckpt": "runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt",
+      "headerless": true
+    },
+    "20260611_163815": {
+      "n_raw_frames": 486,
+      "n_fresh_decisions": 37,
+      "n_fidelity_fails": 0,
+      "mode": "sample",
+      "seed": 2026,
+      "ckpt": "/home/quant/pokerbot/runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt",
+      "headerless": false
+    },
+    "20260611_181249": {
+      "n_raw_frames": 54,
+      "n_fresh_decisions": 4,
+      "n_fidelity_fails": 0,
+      "mode": "sample",
+      "seed": 2026,
+      "ckpt": "/home/quant/pokerbot/runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt",
+      "headerless": false
+    },
+    "20260611_201230": {
+      "n_raw_frames": 733,
+      "n_fresh_decisions": 56,
+      "n_fidelity_fails": 0,
+      "mode": "sample",
+      "seed": 2026,
+      "ckpt": "/home/quant/pokerbot/runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt",
+      "headerless": false
+    },
+    "20260611_204751": {
+      "n_raw_frames": 973,
+      "n_fresh_decisions": 80,
+      "n_fidelity_fails": 0,
+      "mode": "sample",
+      "seed": 2026,
+      "ckpt": "/home/quant/pokerbot/runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt",
+      "headerless": false
+    },
+    "20260611_222532": {
+      "n_raw_frames": 1326,
+      "n_fresh_decisions": 88,
+      "n_fidelity_fails": 0,
+      "mode": "sample",
+      "seed": 2026,
+      "ckpt": "/home/quant/pokerbot/runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt",
+      "headerless": false
+    },
+    "20260612_035454": {
+      "n_raw_frames": 218,
+      "n_fresh_decisions": 15,
+      "n_fidelity_fails": 0,
+      "mode": "sample",
+      "seed": 2026,
+      "ckpt": "/home/quant/pokerbot/runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt",
+      "headerless": false
+    },
+    "20260612_042058": {
+      "n_raw_frames": 316,
+      "n_fresh_decisions": 22,
+      "n_fidelity_fails": 0,
+      "mode": "sample",
+      "seed": 2026,
+      "ckpt": "/home/quant/pokerbot/runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt",
+      "headerless": false
+    },
+    "verify1_20260609_202137": {
+      "n_raw_frames": 90,
+      "n_fresh_decisions": 13,
+      "n_fidelity_fails": 3,
+      "mode": "sample",
+      "seed": 2026,
+      "ckpt": "runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt",
+      "headerless": true
+    }
+  },
+  "fidelity_fails": {
+    "20260608_152756": [
+      [
+        48,
+        "decision",
+        "decision",
+        {
+          "kind": "fold",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 0
+        },
+        {
+          "kind": "raise_to",
+          "chip_amount": 50,
+          "raw_openspiel_chip_int": 50
+        }
+      ],
+      [
+        52,
+        "decision",
+        "decision",
+        {
+          "kind": "check",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 1
+        },
+        {
+          "kind": "raise_to",
+          "chip_amount": 1455,
+          "raw_openspiel_chip_int": 1485
+        }
+      ],
+      [
+        53,
+        "decision_cached",
+        "decision_cached",
+        {
+          "kind": "check",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 1
+        },
+        {
+          "kind": "raise_to",
+          "chip_amount": 1455,
+          "raw_openspiel_chip_int": 1485
+        }
+      ],
+      [
+        56,
+        "decision",
+        "decision",
+        {
+          "kind": "raise_to",
+          "chip_amount": 50,
+          "raw_openspiel_chip_int": 50
+        },
+        {
+          "kind": "check",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 1
+        }
+      ],
+      [
+        57,
+        "decision_cached",
+        "decision_cached",
+        {
+          "kind": "raise_to",
+          "chip_amount": 50,
+          "raw_openspiel_chip_int": 50
+        },
+        {
+          "kind": "check",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 1
+        }
+      ],
+      [
+        73,
+        "decision",
+        "decision",
+        {
+          "kind": "call",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 1
+        },
+        {
+          "kind": "fold",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 0
+        }
+      ],
+      [
+        79,
+        "decision",
+        "decision",
+        {
+          "kind": "call",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 1
+        },
+        {
+          "kind": "raise_to",
+          "chip_amount": 99,
+          "raw_openspiel_chip_int": 99
+        }
+      ],
+      [
+        83,
+        "decision",
+        "decision",
+        {
+          "kind": "fold",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 0
+        },
+        {
+          "kind": "call",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 1
+        }
+      ],
+      [
+        170,
+        "safe_fold",
+        "decision",
+        null,
+        {
+          "kind": "raise_to",
+          "chip_amount": 1400,
+          "raw_openspiel_chip_int": 1410
+        }
+      ],
+      [
+        173,
+        "decision",
+        "decision",
+        {
+          "kind": "raise_to",
+          "chip_amount": 400,
+          "raw_openspiel_chip_int": 400
+        },
+        {
+          "kind": "check",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 1
+        }
+      ],
+      [
+        174,
+        "decision_cached",
+        "decision_cached",
+        {
+          "kind": "raise_to",
+          "chip_amount": 400,
+          "raw_openspiel_chip_int": 400
+        },
+        {
+          "kind": "check",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 1
+        }
+      ],
+      [
+        175,
+        "decision_cached",
+        "decision_cached",
+        {
+          "kind": "raise_to",
+          "chip_amount": 400,
+          "raw_openspiel_chip_int": 400
+        },
+        {
+          "kind": "check",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 1
+        }
+      ],
+      [
+        176,
+        "decision_cached",
+        "decision_cached",
+        {
+          "kind": "raise_to",
+          "chip_amount": 400,
+          "raw_openspiel_chip_int": 400
+        },
+        {
+          "kind": "check",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 1
+        }
+      ],
+      [
+        177,
+        "decision_cached",
+        "decision_cached",
+        {
+          "kind": "raise_to",
+          "chip_amount": 400,
+          "raw_openspiel_chip_int": 400
+        },
+        {
+          "kind": "check",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 1
+        }
+      ],
+      [
+        181,
+        "decision",
+        "decision",
+        {
+          "kind": "raise_to",
+          "chip_amount": 660,
+          "raw_openspiel_chip_int": 660
+        },
+        {
+          "kind": "raise_to",
+          "chip_amount": 900,
+          "raw_openspiel_chip_int": 1410
+        }
+      ],
+      [
+        182,
+        "decision_cached",
+        "decision_cached",
+        {
+          "kind": "raise_to",
+          "chip_amount": 660,
+          "raw_openspiel_chip_int": 660
+        },
+        {
+          "kind": "raise_to",
+          "chip_amount": 900,
+          "raw_openspiel_chip_int": 1410
+        }
+      ],
+      [
+        183,
+        "decision_cached",
+        "decision_cached",
+        {
+          "kind": "raise_to",
+          "chip_amount": 660,
+          "raw_openspiel_chip_int": 660
+        },
+        {
+          "kind": "raise_to",
+          "chip_amount": 900,
+          "raw_openspiel_chip_int": 1410
+        }
+      ],
+      [
+        184,
+        "decision_cached",
+        "decision_cached",
+        {
+          "kind": "raise_to",
+          "chip_amount": 660,
+          "raw_openspiel_chip_int": 660
+        },
+        {
+          "kind": "raise_to",
+          "chip_amount": 900,
+          "raw_openspiel_chip_int": 1410
+        }
+      ],
+      [
+        185,
+        "decision_cached",
+        "decision_cached",
+        {
+          "kind": "raise_to",
+          "chip_amount": 660,
+          "raw_openspiel_chip_int": 660
+        },
+        {
+          "kind": "raise_to",
+          "chip_amount": 900,
+          "raw_openspiel_chip_int": 1410
+        }
+      ],
+      [
+        186,
+        "decision_cached",
+        "decision_cached",
+        {
+          "kind": "raise_to",
+          "chip_amount": 660,
+          "raw_openspiel_chip_int": 660
+        },
+        {
+          "kind": "raise_to",
+          "chip_amount": 900,
+          "raw_openspiel_chip_int": 1410
+        }
+      ],
+      [
+        187,
+        "decision_cached",
+        "decision_cached",
+        {
+          "kind": "raise_to",
+          "chip_amount": 660,
+          "raw_openspiel_chip_int": 660
+        },
+        {
+          "kind": "raise_to",
+          "chip_amount": 900,
+          "raw_openspiel_chip_int": 1410
+        }
+      ],
+      [
+        192,
+        "safe_fold",
+        "decision",
+        null,
+        {
+          "kind": "call",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 1
+        }
+      ]
+    ],
+    "20260609_154557": [
+      [
+        16,
+        "decision",
+        "decision",
+        {
+          "kind": "call",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 1
+        },
+        {
+          "kind": "fold",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 0
+        }
+      ],
+      [
+        20,
+        "decision",
+        "decision",
+        {
+          "kind": "check",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 1
+        },
+        {
+          "kind": "raise_to",
+          "chip_amount": 119,
+          "raw_openspiel_chip_int": 119
+        }
+      ],
+      [
+        23,
+        "decision",
+        "decision",
+        {
+          "kind": "fold",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 0
+        },
+        {
+          "kind": "call",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 1
+        }
+      ],
+      [
+        33,
+        "decision",
+        "decision",
+        {
+          "kind": "fold",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 0
+        },
+        {
+          "kind": "raise_to",
+          "chip_amount": 1400,
+          "raw_openspiel_chip_int": 1405
+        }
+      ],
+      [
+        75,
+        "decision",
+        "decision",
+        {
+          "kind": "raise_to",
+          "chip_amount": 50,
+          "raw_openspiel_chip_int": 50
+        },
+        {
+          "kind": "fold",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 0
+        }
+      ],
+      [
+        80,
+        "decision",
+        "decision",
+        {
+          "kind": "raise_to",
+          "chip_amount": 600,
+          "raw_openspiel_chip_int": 600
+        },
+        {
+          "kind": "call",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 1
+        }
+      ],
+      [
+        81,
+        "decision_cached",
+        "decision_cached",
+        {
+          "kind": "raise_to",
+          "chip_amount": 600,
+          "raw_openspiel_chip_int": 600
+        },
+        {
+          "kind": "call",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 1
+        }
+      ],
+      [
+        82,
+        "decision_cached",
+        "decision_cached",
+        {
+          "kind": "raise_to",
+          "chip_amount": 600,
+          "raw_openspiel_chip_int": 600
+        },
+        {
+          "kind": "call",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 1
+        }
+      ],
+      [
+        83,
+        "decision_cached",
+        "decision_cached",
+        {
+          "kind": "raise_to",
+          "chip_amount": 600,
+          "raw_openspiel_chip_int": 600
+        },
+        {
+          "kind": "call",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 1
+        }
+      ],
+      [
+        84,
+        "decision_cached",
+        "decision_cached",
+        {
+          "kind": "raise_to",
+          "chip_amount": 600,
+          "raw_openspiel_chip_int": 600
+        },
+        {
+          "kind": "call",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 1
+        }
+      ],
+      [
+        85,
+        "decision_cached",
+        "decision_cached",
+        {
+          "kind": "raise_to",
+          "chip_amount": 600,
+          "raw_openspiel_chip_int": 600
+        },
+        {
+          "kind": "call",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 1
+        }
+      ],
+      [
+        94,
+        "decision",
+        "decision",
+        {
+          "kind": "raise_to",
+          "chip_amount": 1585,
+          "raw_openspiel_chip_int": 1590
+        },
+        {
+          "kind": "fold",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 0
+        }
+      ],
+      [
+        95,
+        "decision_cached",
+        "decision_cached",
+        {
+          "kind": "raise_to",
+          "chip_amount": 1585,
+          "raw_openspiel_chip_int": 1590
+        },
+        {
+          "kind": "fold",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 0
+        }
+      ],
+      [
+        96,
+        "decision_cached",
+        "decision_cached",
+        {
+          "kind": "raise_to",
+          "chip_amount": 1585,
+          "raw_openspiel_chip_int": 1590
+        },
+        {
+          "kind": "fold",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 0
+        }
+      ],
+      [
+        37,
+        "decision",
+        "decision",
+        {
+          "kind": "fold",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 0
+        },
+        {
+          "kind": "call",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 1
+        }
+      ],
+      [
+        55,
+        "decision",
+        "decision",
+        {
+          "kind": "fold",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 0
+        },
+        {
+          "kind": "raise_to",
+          "chip_amount": 1705,
+          "raw_openspiel_chip_int": 1715
+        }
+      ],
+      [
+        61,
+        "skip_data_quality",
+        "decision_recovered",
+        null,
+        {
+          "kind": "call",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 1
+        }
+      ],
+      [
+        62,
+        "skip_data_quality",
+        "decision_recovered_cached",
+        null,
+        {
+          "kind": "call",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 1
+        }
+      ],
+      [
+        73,
+        "decision",
+        "decision",
+        {
+          "kind": "call",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 1
+        },
+        {
+          "kind": "raise_to",
+          "chip_amount": 1645,
+          "raw_openspiel_chip_int": 1655
+        }
+      ],
+      [
+        74,
+        "decision_cached",
+        "decision_cached",
+        {
+          "kind": "call",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 1
+        },
+        {
+          "kind": "raise_to",
+          "chip_amount": 1645,
+          "raw_openspiel_chip_int": 1655
+        }
+      ],
+      [
+        76,
+        "decision",
+        "decision",
+        {
+          "kind": "raise_to",
+          "chip_amount": 200,
+          "raw_openspiel_chip_int": 200
+        },
+        {
+          "kind": "raise_to",
+          "chip_amount": 1545,
+          "raw_openspiel_chip_int": 1655
+        }
+      ],
+      [
+        77,
+        "decision_cached",
+        "decision_cached",
+        {
+          "kind": "raise_to",
+          "chip_amount": 200,
+          "raw_openspiel_chip_int": 200
+        },
+        {
+          "kind": "raise_to",
+          "chip_amount": 1545,
+          "raw_openspiel_chip_int": 1655
+        }
+      ],
+      [
+        81,
+        "decision",
+        "decision",
+        {
+          "kind": "fold",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 0
+        },
+        {
+          "kind": "raise_to",
+          "chip_amount": 1300,
+          "raw_openspiel_chip_int": 1300
+        }
+      ],
+      [
+        82,
+        "decision_cached",
+        "decision_cached",
+        {
+          "kind": "fold",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 0
+        },
+        {
+          "kind": "raise_to",
+          "chip_amount": 1300,
+          "raw_openspiel_chip_int": 1300
+        }
+      ],
+      [
+        103,
+        "decision",
+        "decision",
+        {
+          "kind": "raise_to",
+          "chip_amount": 373,
+          "raw_openspiel_chip_int": 383
+        },
+        {
+          "kind": "raise_to",
+          "chip_amount": 300,
+          "raw_openspiel_chip_int": 300
+        }
+      ],
+      [
+        104,
+        "decision_cached",
+        "decision_cached",
+        {
+          "kind": "raise_to",
+          "chip_amount": 373,
+          "raw_openspiel_chip_int": 383
+        },
+        {
+          "kind": "raise_to",
+          "chip_amount": 300,
+          "raw_openspiel_chip_int": 300
+        }
+      ],
+      [
+        147,
+        "decision",
+        "decision",
+        {
+          "kind": "fold",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 0
+        },
+        {
+          "kind": "raise_to",
+          "chip_amount": 433,
+          "raw_openspiel_chip_int": 448
+        }
+      ],
+      [
+        184,
+        "skip_data_quality",
+        "decision_recovered",
+        null,
+        {
+          "kind": "raise_to",
+          "chip_amount": 946,
+          "raw_openspiel_chip_int": 961
+        }
+      ],
+      [
+        188,
+        "skip_data_quality",
+        "decision_recovered",
+        null,
+        {
+          "kind": "raise_to",
+          "chip_amount": 200,
+          "raw_openspiel_chip_int": 200
+        }
+      ],
+      [
+        191,
+        "skip_data_quality",
+        "decision_recovered",
+        null,
+        {
+          "kind": "raise_to",
+          "chip_amount": 200,
+          "raw_openspiel_chip_int": 200
+        }
+      ],
+      [
+        194,
+        "skip_data_quality",
+        "decision_recovered",
+        null,
+        {
+          "kind": "fold",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 0
+        }
+      ],
+      [
+        212,
+        "decision",
+        "decision",
+        {
+          "kind": "raise_to",
+          "chip_amount": 816,
+          "raw_openspiel_chip_int": 831
+        },
+        {
+          "kind": "fold",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 0
+        }
+      ],
+      [
+        213,
+        "decision_cached",
+        "decision_cached",
+        {
+          "kind": "raise_to",
+          "chip_amount": 816,
+          "raw_openspiel_chip_int": 831
+        },
+        {
+          "kind": "fold",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 0
+        }
+      ],
+      [
+        214,
+        "decision_cached",
+        "decision_cached",
+        {
+          "kind": "raise_to",
+          "chip_amount": 816,
+          "raw_openspiel_chip_int": 831
+        },
+        {
+          "kind": "fold",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 0
+        }
+      ],
+      [
+        225,
+        "decision",
+        "decision",
+        {
+          "kind": "fold",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 0
+        },
+        {
+          "kind": "raise_to",
+          "chip_amount": 900,
+          "raw_openspiel_chip_int": 900
+        }
+      ],
+      [
+        231,
+        "decision",
+        "decision",
+        {
+          "kind": "raise_to",
+          "chip_amount": 926,
+          "raw_openspiel_chip_int": 1041
+        },
+        {
+          "kind": "raise_to",
+          "chip_amount": 450,
+          "raw_openspiel_chip_int": 450
+        }
+      ],
+      [
+        232,
+        "decision_cached",
+        "decision_cached",
+        {
+          "kind": "raise_to",
+          "chip_amount": 926,
+          "raw_openspiel_chip_int": 1041
+        },
+        {
+          "kind": "raise_to",
+          "chip_amount": 450,
+          "raw_openspiel_chip_int": 450
+        }
+      ],
+      [
+        246,
+        "safe_fold",
+        "decision",
+        null,
+        {
+          "kind": "fold",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 0
+        }
+      ],
+      [
+        257,
+        "decision",
+        "decision",
+        {
+          "kind": "fold",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 0
+        },
+        {
+          "kind": "raise_to",
+          "chip_amount": 300,
+          "raw_openspiel_chip_int": 300
+        }
+      ],
+      [
+        258,
+        "decision_cached",
+        "decision_cached",
+        {
+          "kind": "fold",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 0
+        },
+        {
+          "kind": "raise_to",
+          "chip_amount": 300,
+          "raw_openspiel_chip_int": 300
+        }
+      ],
+      [
+        316,
+        "decision",
+        "decision",
+        {
+          "kind": "raise_to",
+          "chip_amount": 600,
+          "raw_openspiel_chip_int": 450
+        },
+        {
+          "kind": "fold",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 0
+        }
+      ],
+      [
+        317,
+        "decision_cached",
+        "decision_cached",
+        {
+          "kind": "raise_to",
+          "chip_amount": 600,
+          "raw_openspiel_chip_int": 450
+        },
+        {
+          "kind": "fold",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 0
+        }
+      ],
+      [
+        318,
+        "decision_cached",
+        "decision_cached",
+        {
+          "kind": "raise_to",
+          "chip_amount": 600,
+          "raw_openspiel_chip_int": 450
+        },
+        {
+          "kind": "fold",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 0
+        }
+      ],
+      [
+        319,
+        "decision_cached",
+        "decision_cached",
+        {
+          "kind": "raise_to",
+          "chip_amount": 600,
+          "raw_openspiel_chip_int": 450
+        },
+        {
+          "kind": "fold",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 0
+        }
+      ],
+      [
+        320,
+        "decision_cached",
+        "decision_cached",
+        {
+          "kind": "raise_to",
+          "chip_amount": 600,
+          "raw_openspiel_chip_int": 450
+        },
+        {
+          "kind": "fold",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 0
+        }
+      ],
+      [
+        321,
+        "decision_cached",
+        "decision_cached",
+        {
+          "kind": "raise_to",
+          "chip_amount": 600,
+          "raw_openspiel_chip_int": 450
+        },
+        {
+          "kind": "fold",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 0
+        }
+      ],
+      [
+        364,
+        "safe_fold",
+        "decision",
+        null,
+        {
+          "kind": "fold",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 0
+        }
+      ],
+      [
+        409,
+        "decision",
+        "decision",
+        {
+          "kind": "fold",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 0
+        },
+        {
+          "kind": "raise_to",
+          "chip_amount": 800,
+          "raw_openspiel_chip_int": 800
+        }
+      ],
+      [
+        419,
+        "decision",
+        "decision",
+        {
+          "kind": "raise_to",
+          "chip_amount": 1200,
+          "raw_openspiel_chip_int": 1200
+        },
+        {
+          "kind": "call",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 1
+        }
+      ],
+      [
+        420,
+        "decision_cached",
+        "decision_cached",
+        {
+          "kind": "raise_to",
+          "chip_amount": 1200,
+          "raw_openspiel_chip_int": 1200
+        },
+        {
+          "kind": "call",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 1
+        }
+      ],
+      [
+        421,
+        "decision_cached",
+        "decision_cached",
+        {
+          "kind": "raise_to",
+          "chip_amount": 1200,
+          "raw_openspiel_chip_int": 1200
+        },
+        {
+          "kind": "call",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 1
+        }
+      ],
+      [
+        423,
+        "decision_cached",
+        "decision_cached",
+        {
+          "kind": "raise_to",
+          "chip_amount": 1200,
+          "raw_openspiel_chip_int": 1200
+        },
+        {
+          "kind": "call",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 1
+        }
+      ]
+    ],
+    "20260609_192543": [
+      [
+        101,
+        "safe_fold",
+        "decision",
+        null,
+        {
+          "kind": "raise_to",
+          "chip_amount": 369,
+          "raw_openspiel_chip_int": 369
+        }
+      ],
+      [
+        155,
+        "decision",
+        "decision",
+        {
+          "kind": "call",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 1
+        },
+        {
+          "kind": "fold",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 0
+        }
+      ],
+      [
+        159,
+        "decision",
+        "decision",
+        {
+          "kind": "check",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 1
+        },
+        {
+          "kind": "raise_to",
+          "chip_amount": 300,
+          "raw_openspiel_chip_int": 300
+        }
+      ],
+      [
+        162,
+        "decision",
+        "decision",
+        {
+          "kind": "raise_to",
+          "chip_amount": 300,
+          "raw_openspiel_chip_int": 300
+        },
+        {
+          "kind": "call",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 1
+        }
+      ],
+      [
+        167,
+        "decision",
+        "decision",
+        {
+          "kind": "raise_to",
+          "chip_amount": 462,
+          "raw_openspiel_chip_int": 462
+        },
+        {
+          "kind": "raise_to",
+          "chip_amount": 1368,
+          "raw_openspiel_chip_int": 1728
+        }
+      ],
+      [
+        169,
+        "decision_cached",
+        "decision_cached",
+        {
+          "kind": "raise_to",
+          "chip_amount": 462,
+          "raw_openspiel_chip_int": 462
+        },
+        {
+          "kind": "raise_to",
+          "chip_amount": 1368,
+          "raw_openspiel_chip_int": 1728
+        }
+      ],
+      [
+        171,
+        "decision_cached",
+        "decision_cached",
+        {
+          "kind": "raise_to",
+          "chip_amount": 462,
+          "raw_openspiel_chip_int": 462
+        },
+        {
+          "kind": "raise_to",
+          "chip_amount": 1368,
+          "raw_openspiel_chip_int": 1728
+        }
+      ],
+      [
+        173,
+        "decision_cached",
+        "decision_cached",
+        {
+          "kind": "raise_to",
+          "chip_amount": 462,
+          "raw_openspiel_chip_int": 462
+        },
+        {
+          "kind": "raise_to",
+          "chip_amount": 1368,
+          "raw_openspiel_chip_int": 1728
+        }
+      ],
+      [
+        176,
+        "decision",
+        "decision",
+        {
+          "kind": "raise_to",
+          "chip_amount": 2130,
+          "raw_openspiel_chip_int": 1728
+        },
+        {
+          "kind": "call",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 1
+        }
+      ],
+      [
+        186,
+        "decision",
+        "decision",
+        {
+          "kind": "fold",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 0
+        },
+        {
+          "kind": "raise_to",
+          "chip_amount": 3283,
+          "raw_openspiel_chip_int": 3293
+        }
+      ],
+      [
+        199,
+        "decision",
+        "decision",
+        {
+          "kind": "call",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 1
+        },
+        {
+          "kind": "fold",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 0
+        }
+      ],
+      [
+        200,
+        "decision_cached",
+        "decision_cached",
+        {
+          "kind": "call",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 1
+        },
+        {
+          "kind": "fold",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 0
+        }
+      ],
+      [
+        232,
+        "decision",
+        "decision",
+        {
+          "kind": "fold",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 0
+        },
+        {
+          "kind": "raise_to",
+          "chip_amount": 1200,
+          "raw_openspiel_chip_int": 1200
+        }
+      ],
+      [
+        238,
+        "decision",
+        "decision",
+        {
+          "kind": "raise_to",
+          "chip_amount": 750,
+          "raw_openspiel_chip_int": 750
+        },
+        {
+          "kind": "raise_to",
+          "chip_amount": 3063,
+          "raw_openspiel_chip_int": 3078
+        }
+      ],
+      [
+        239,
+        "decision_cached",
+        "decision_cached",
+        {
+          "kind": "raise_to",
+          "chip_amount": 750,
+          "raw_openspiel_chip_int": 750
+        },
+        {
+          "kind": "raise_to",
+          "chip_amount": 3063,
+          "raw_openspiel_chip_int": 3078
+        }
+      ],
+      [
+        240,
+        "decision_cached",
+        "decision_cached",
+        {
+          "kind": "raise_to",
+          "chip_amount": 750,
+          "raw_openspiel_chip_int": 750
+        },
+        {
+          "kind": "raise_to",
+          "chip_amount": 3063,
+          "raw_openspiel_chip_int": 3078
+        }
+      ],
+      [
+        241,
+        "decision_cached",
+        "decision_cached",
+        {
+          "kind": "raise_to",
+          "chip_amount": 750,
+          "raw_openspiel_chip_int": 750
+        },
+        {
+          "kind": "raise_to",
+          "chip_amount": 3063,
+          "raw_openspiel_chip_int": 3078
+        }
+      ],
+      [
+        252,
+        "decision",
+        "decision",
+        {
+          "kind": "raise_to",
+          "chip_amount": 1000,
+          "raw_openspiel_chip_int": 1000
+        },
+        {
+          "kind": "fold",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 0
+        }
+      ],
+      [
+        254,
+        "decision_cached",
+        "decision_cached",
+        {
+          "kind": "raise_to",
+          "chip_amount": 1000,
+          "raw_openspiel_chip_int": 1000
+        },
+        {
+          "kind": "fold",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 0
+        }
+      ],
+      [
+        262,
+        "decision",
+        "decision",
+        {
+          "kind": "fold",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 0
+        },
+        {
+          "kind": "raise_to",
+          "chip_amount": 900,
+          "raw_openspiel_chip_int": 900
+        }
+      ],
+      [
+        272,
+        "decision",
+        "decision",
+        {
+          "kind": "raise_to",
+          "chip_amount": 450,
+          "raw_openspiel_chip_int": 450
+        },
+        {
+          "kind": "raise_to",
+          "chip_amount": 300,
+          "raw_openspiel_chip_int": 300
+        }
+      ],
+      [
+        274,
+        "decision_cached",
+        "decision_cached",
+        {
+          "kind": "raise_to",
+          "chip_amount": 450,
+          "raw_openspiel_chip_int": 450
+        },
+        {
+          "kind": "raise_to",
+          "chip_amount": 300,
+          "raw_openspiel_chip_int": 300
+        }
+      ],
+      [
+        279,
+        "decision",
+        "decision",
+        {
+          "kind": "raise_to",
+          "chip_amount": 900,
+          "raw_openspiel_chip_int": 900
+        },
+        {
+          "kind": "check",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 1
+        }
+      ],
+      [
+        314,
+        "decision",
+        "decision",
+        {
+          "kind": "raise_to",
+          "chip_amount": 3998,
+          "raw_openspiel_chip_int": 4013
+        },
+        {
+          "kind": "raise_to",
+          "chip_amount": 330,
+          "raw_openspiel_chip_int": 330
+        }
+      ],
+      [
+        315,
+        "decision_cached",
+        "decision_cached",
+        {
+          "kind": "raise_to",
+          "chip_amount": 3998,
+          "raw_openspiel_chip_int": 4013
+        },
+        {
+          "kind": "raise_to",
+          "chip_amount": 330,
+          "raw_openspiel_chip_int": 330
+        }
+      ],
+      [
+        316,
+        "decision_cached",
+        "decision_cached",
+        {
+          "kind": "raise_to",
+          "chip_amount": 3998,
+          "raw_openspiel_chip_int": 4013
+        },
+        {
+          "kind": "raise_to",
+          "chip_amount": 330,
+          "raw_openspiel_chip_int": 330
+        }
+      ],
+      [
+        329,
+        "decision",
+        "decision",
+        {
+          "kind": "raise_to",
+          "chip_amount": 400,
+          "raw_openspiel_chip_int": 400
+        },
+        {
+          "kind": "raise_to",
+          "chip_amount": 300,
+          "raw_openspiel_chip_int": 300
+        }
+      ],
+      [
+        334,
+        "decision",
+        "decision",
+        {
+          "kind": "raise_to",
+          "chip_amount": 1500,
+          "raw_openspiel_chip_int": 1500
+        },
+        {
+          "kind": "raise_to",
+          "chip_amount": 1000,
+          "raw_openspiel_chip_int": 1000
+        }
+      ],
+      [
+        335,
+        "decision_cached",
+        "decision_cached",
+        {
+          "kind": "raise_to",
+          "chip_amount": 1500,
+          "raw_openspiel_chip_int": 1500
+        },
+        {
+          "kind": "raise_to",
+          "chip_amount": 1000,
+          "raw_openspiel_chip_int": 1000
+        }
+      ],
+      [
+        337,
+        "decision_cached",
+        "decision_cached",
+        {
+          "kind": "raise_to",
+          "chip_amount": 1500,
+          "raw_openspiel_chip_int": 1500
+        },
+        {
+          "kind": "raise_to",
+          "chip_amount": 1000,
+          "raw_openspiel_chip_int": 1000
+        }
+      ],
+      [
+        363,
+        "decision",
+        "decision",
+        {
+          "kind": "raise_to",
+          "chip_amount": 396,
+          "raw_openspiel_chip_int": 396
+        },
+        {
+          "kind": "fold",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 0
+        }
+      ],
+      [
+        375,
+        "decision",
+        "decision",
+        {
+          "kind": "fold",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 0
+        },
+        {
+          "kind": "raise_to",
+          "chip_amount": 4275,
+          "raw_openspiel_chip_int": 4300
+        }
+      ],
+      [
+        382,
+        "decision",
+        "decision",
+        {
+          "kind": "raise_to",
+          "chip_amount": 4250,
+          "raw_openspiel_chip_int": 4275
+        },
+        {
+          "kind": "raise_to",
+          "chip_amount": 594,
+          "raw_openspiel_chip_int": 594
+        }
+      ],
+      [
+        383,
+        "decision_cached",
+        "decision_cached",
+        {
+          "kind": "raise_to",
+          "chip_amount": 4250,
+          "raw_openspiel_chip_int": 4275
+        },
+        {
+          "kind": "raise_to",
+          "chip_amount": 594,
+          "raw_openspiel_chip_int": 594
+        }
+      ],
+      [
+        384,
+        "decision_cached",
+        "decision_cached",
+        {
+          "kind": "raise_to",
+          "chip_amount": 4250,
+          "raw_openspiel_chip_int": 4275
+        },
+        {
+          "kind": "raise_to",
+          "chip_amount": 594,
+          "raw_openspiel_chip_int": 594
+        }
+      ]
+    ],
+    "20260611_163815": [],
+    "20260611_181249": [],
+    "20260611_201230": [],
+    "20260611_204751": [],
+    "20260611_222532": [],
+    "20260612_035454": [],
+    "20260612_042058": [],
+    "verify1_20260609_202137": [
+      [
+        88,
+        "skip_data_quality",
+        "decision_recovered",
+        null,
+        {
+          "kind": "raise_to",
+          "chip_amount": 800,
+          "raw_openspiel_chip_int": 800
+        }
+      ],
+      [
+        92,
+        "skip_data_quality",
+        "decision_recovered",
+        null,
+        {
+          "kind": "call",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 1
+        }
+      ],
+      [
+        94,
+        "skip_data_quality",
+        "decision_recovered",
+        null,
+        {
+          "kind": "call",
+          "chip_amount": null,
+          "raw_openspiel_chip_int": 1
+        }
+      ]
+    ]
+  },
+  "results": {
+    "0.05": {
+      "n_frames": 412,
+      "n_fired": 208,
+      "firing_rate": 0.5048543689320388,
+      "n_altered_decisions": 8,
+      "altered_decision_rate": 0.019417475728155338,
+      "pruned_census": {
+        "BET_200": 130,
+        "ALLIN": 154,
+        "BET_150": 86,
+        "BET_100": 63,
+        "CALL": 8,
+        "BET_66": 33,
+        "BET_50": 21,
+        "BET_33": 1
+      },
+      "sampled_excluded": [
+        {
+          "session": "20260609_192543",
+          "seq": 238,
+          "action": "ALLIN",
+          "mass": 0.048919,
+          "hero_cards": [
+            "4h",
+            "Ks"
+          ],
+          "chosen_chip": 3078,
+          "alias_ambiguous": false
+        },
+        {
+          "session": "20260609_192543",
+          "seq": 262,
+          "action": "BET_150",
+          "mass": 0.008009,
+          "hero_cards": [
+            "4s",
+            "3c"
+          ],
+          "chosen_chip": 900,
+          "alias_ambiguous": false
+        },
+        {
+          "session": "20260611_163815",
+          "seq": 337,
+          "action": "BET_150",
+          "mass": 0.013062,
+          "hero_cards": [
+            "Qs",
+            "Jh"
+          ],
+          "chosen_chip": 1350,
+          "alias_ambiguous": false
+        },
+        {
+          "session": "20260611_204751",
+          "seq": 1128,
+          "action": "BET_200",
+          "mass": 0.041066,
+          "hero_cards": [
+            "Td",
+            "2h"
+          ],
+          "chosen_chip": 4800,
+          "alias_ambiguous": false
+        },
+        {
+          "session": "20260611_204751",
+          "seq": 1392,
+          "action": "BET_100",
+          "mass": 0.012517,
+          "hero_cards": [
+            "5s",
+            "Ah"
+          ],
+          "chosen_chip": 600,
+          "alias_ambiguous": false
+        },
+        {
+          "session": "20260611_204751",
+          "seq": 1503,
+          "action": "ALLIN",
+          "mass": 0.047204,
+          "hero_cards": [
+            "Js",
+            "6h"
+          ],
+          "chosen_chip": 0,
+          "alias_ambiguous": true
+        },
+        {
+          "session": "20260611_204751",
+          "seq": 1554,
+          "action": "ALLIN",
+          "mass": 0.0434,
+          "hero_cards": [
+            "9d",
+            "5c"
+          ],
+          "chosen_chip": 1357,
+          "alias_ambiguous": false
+        },
+        {
+          "session": "20260611_222532",
+          "seq": 2774,
+          "action": "ALLIN",
+          "mass": 0.016498,
+          "hero_cards": [
+            "5d",
+            "3h"
+          ],
+          "chosen_chip": 1555,
+          "alias_ambiguous": false
+        }
+      ],
+      "n_argmax_changes": 0,
+      "argmax_changes": []
+    },
+    "0.10": {
+      "n_frames": 412,
+      "n_fired": 293,
+      "firing_rate": 0.7111650485436893,
+      "n_altered_decisions": 18,
+      "altered_decision_rate": 0.043689320388349516,
+      "pruned_census": {
+        "BET_200": 197,
+        "ALLIN": 211,
+        "BET_150": 148,
+        "BET_100": 119,
+        "CALL": 18,
+        "BET_66": 69,
+        "BET_50": 44,
+        "BET_33": 2
+      },
+      "sampled_excluded": [
+        {
+          "session": "20260609_154557",
+          "seq": 103,
+          "action": "BET_200",
+          "mass": 0.062903,
+          "hero_cards": [
+            "Qh",
+            "2d"
+          ],
+          "chosen_chip": 300,
+          "alias_ambiguous": false
+        },
+        {
+          "session": "20260609_192543",
+          "seq": 21,
+          "action": "ALLIN",
+          "mass": 0.058743,
+          "hero_cards": [
+            "6c",
+            "Ac"
+          ],
+          "chosen_chip": 1500,
+          "alias_ambiguous": false
+        },
+        {
+          "session": "20260609_192543",
+          "seq": 238,
+          "action": "ALLIN",
+          "mass": 0.048919,
+          "hero_cards": [
+            "4h",
+            "Ks"
+          ],
+          "chosen_chip": 3078,
+          "alias_ambiguous": false
+        },
+        {
+          "session": "20260609_192543",
+          "seq": 262,
+          "action": "BET_150",
+          "mass": 0.008009,
+          "hero_cards": [
+            "4s",
+            "3c"
+          ],
+          "chosen_chip": 900,
+          "alias_ambiguous": false
+        },
+        {
+          "session": "20260611_163815",
+          "seq": 315,
+          "action": "ALLIN",
+          "mass": 0.074649,
+          "hero_cards": [
+            "2d",
+            "5c"
+          ],
+          "chosen_chip": 3032,
+          "alias_ambiguous": false
+        },
+        {
+          "session": "20260611_163815",
+          "seq": 337,
+          "action": "BET_150",
+          "mass": 0.013062,
+          "hero_cards": [
+            "Qs",
+            "Jh"
+          ],
+          "chosen_chip": 1350,
+          "alias_ambiguous": false
+        },
+        {
+          "session": "20260611_163815",
+          "seq": 443,
+          "action": "ALLIN",
+          "mass": 0.093111,
+          "hero_cards": [
+            "9d",
+            "3h"
+          ],
+          "chosen_chip": 3857,
+          "alias_ambiguous": false
+        },
+        {
+          "session": "20260611_204751",
+          "seq": 1128,
+          "action": "BET_200",
+          "mass": 0.041066,
+          "hero_cards": [
+            "Td",
+            "2h"
+          ],
+          "chosen_chip": 4800,
+          "alias_ambiguous": false
+        },
+        {
+          "session": "20260611_204751",
+          "seq": 1392,
+          "action": "BET_100",
+          "mass": 0.012517,
+          "hero_cards": [
+            "5s",
+            "Ah"
+          ],
+          "chosen_chip": 600,
+          "alias_ambiguous": false
+        },
+        {
+          "session": "20260611_204751",
+          "seq": 1503,
+          "action": "ALLIN",
+          "mass": 0.047204,
+          "hero_cards": [
+            "Js",
+            "6h"
+          ],
+          "chosen_chip": 0,
+          "alias_ambiguous": true
+        },
+        {
+          "session": "20260611_204751",
+          "seq": 1554,
+          "action": "ALLIN",
+          "mass": 0.0434,
+          "hero_cards": [
+            "9d",
+            "5c"
+          ],
+          "chosen_chip": 1357,
+          "alias_ambiguous": false
+        },
+        {
+          "session": "20260611_222532",
+          "seq": 1885,
+          "action": "BET_200",
+          "mass": 0.050262,
+          "hero_cards": [
+            "Qc",
+            "9d"
+          ],
+          "chosen_chip": 900,
+          "alias_ambiguous": false
+        },
+        {
+          "session": "20260611_222532",
+          "seq": 2038,
+          "action": "BET_150",
+          "mass": 0.008526,
+          "hero_cards": [
+            "8d",
+            "Js"
+          ],
+          "chosen_chip": 188,
+          "alias_ambiguous": false
+        },
+        {
+          "session": "20260611_222532",
+          "seq": 2555,
+          "action": "CALL",
+          "mass": 0.013208,
+          "hero_cards": [
+            "Qs",
+            "6d"
+          ],
+          "chosen_chip": 1,
+          "alias_ambiguous": false
+        },
+        {
+          "session": "20260611_222532",
+          "seq": 2774,
+          "action": "ALLIN",
+          "mass": 0.016498,
+          "hero_cards": [
+            "5d",
+            "3h"
+          ],
+          "chosen_chip": 1555,
+          "alias_ambiguous": false
+        },
+        {
+          "session": "20260612_035454",
+          "seq": 51,
+          "action": "ALLIN",
+          "mass": 0.098838,
+          "hero_cards": [
+            "Ks",
+            "7c"
+          ],
+          "chosen_chip": 1500,
+          "alias_ambiguous": false
+        },
+        {
+          "session": "20260612_035454",
+          "seq": 135,
+          "action": "BET_200",
+          "mass": 0.046872,
+          "hero_cards": [
+            "6h",
+            "As"
+          ],
+          "chosen_chip": 1600,
+          "alias_ambiguous": false
+        },
+        {
+          "session": "20260612_042058",
+          "seq": 299,
+          "action": "ALLIN",
+          "mass": 0.098086,
+          "hero_cards": [
+            "5d",
+            "Ad"
+          ],
+          "chosen_chip": 1500,
+          "alias_ambiguous": false
+        }
+      ],
+      "n_argmax_changes": 0,
+      "argmax_changes": []
+    },
+    "0.15": {
+      "n_frames": 412,
+      "n_fired": 338,
+      "firing_rate": 0.8203883495145631,
+      "n_altered_decisions": 34,
+      "altered_decision_rate": 0.0825242718446602,
+      "pruned_census": {
+        "BET_100": 156,
+        "BET_200": 232,
+        "ALLIN": 268,
+        "BET_150": 195,
+        "BET_66": 101,
+        "CALL": 24,
+        "BET_50": 59,
+        "BET_33": 3
+      },
+      "sampled_excluded": [
+        {
+          "session": "20260608_152756",
+          "seq": 170,
+          "action": "ALLIN",
+          "mass": 0.145323,
+          "hero_cards": [
+            "Ah",
+            "As"
+          ],
+          "chosen_chip": 1410,
+          "alias_ambiguous": false
+        },
+        {
+          "session": "20260609_154557",
+          "seq": 33,
+          "action": "ALLIN",
+          "mass": 0.107883,
+          "hero_cards": [
+            "Qd",
+            "9h"
+          ],
+          "chosen_chip": 1405,
+          "alias_ambiguous": false
+        },
+        {
+          "session": "20260609_154557",
+          "seq": 103,
+          "action": "BET_200",
+          "mass": 0.062903,
+          "hero_cards": [
+            "Qh",
+            "2d"
+          ],
+          "chosen_chip": 300,
+          "alias_ambiguous": false
+        },
+        {
+          "session": "20260609_154557",
+          "seq": 225,
+          "action": "BET_150",
+          "mass": 0.122206,
+          "hero_cards": [
+            "6h",
+            "6d"
+          ],
+          "chosen_chip": 900,
+          "alias_ambiguous": false
+        },
+        {
+          "session": "20260609_154557",
+          "seq": 257,
+          "action": "BET_150",
+          "mass": 0.028014,
+          "hero_cards": [
+            "3d",
+            "7d"
+          ],
+          "chosen_chip": 300,
+          "alias_ambiguous": false
+        },
+        {
+          "session": "20260609_192543",
+          "seq": 21,
+          "action": "ALLIN",
+          "mass": 0.058743,
+          "hero_cards": [
+            "6c",
+            "Ac"
+          ],
+          "chosen_chip": 1500,
+          "alias_ambiguous": false
+        },
+        {
+          "session": "20260609_192543",
+          "seq": 167,
+          "action": "ALLIN",
+          "mass": 0.147932,
+          "hero_cards": [
+            "7c",
+            "Qh"
+          ],
+          "chosen_chip": 1728,
+          "alias_ambiguous": false
+        },
+        {
+          "session": "20260609_192543",
+          "seq": 238,
+          "action": "ALLIN",
+          "mass": 0.048919,
+          "hero_cards": [
+            "4h",
+            "Ks"
+          ],
+          "chosen_chip": 3078,
+          "alias_ambiguous": false
+        },
+        {
+          "session": "20260609_192543",
+          "seq": 262,
+          "action": "BET_150",
+          "mass": 0.008009,
+          "hero_cards": [
+            "4s",
+            "3c"
+          ],
+          "chosen_chip": 900,
+          "alias_ambiguous": false
+        },
+        {
+          "session": "20260609_192543",
+          "seq": 382,
+          "action": "BET_66",
+          "mass": 0.017162,
+          "hero_cards": [
+            "Ac",
+            "3c"
+          ],
+          "chosen_chip": 594,
+          "alias_ambiguous": false
+        },
+        {
+          "session": "20260611_163815",
+          "seq": 129,
+          "action": "ALLIN",
+          "mass": 0.107846,
+          "hero_cards": [
+            "Qh",
+            "Jc"
+          ],
+          "chosen_chip": 1785,
+          "alias_ambiguous": false
+        },
+        {
+          "session": "20260611_163815",
+          "seq": 315,
+          "action": "ALLIN",
+          "mass": 0.074649,
+          "hero_cards": [
+            "2d",
+            "5c"
+          ],
+          "chosen_chip": 3032,
+          "alias_ambiguous": false
+        },
+        {
+          "session": "20260611_163815",
+          "seq": 337,
+          "action": "BET_150",
+          "mass": 0.013062,
+          "hero_cards": [
+            "Qs",
+            "Jh"
+          ],
+          "chosen_chip": 1350,
+          "alias_ambiguous": false
+        },
+        {
+          "session": "20260611_163815",
+          "seq": 443,
+          "action": "ALLIN",
+          "mass": 0.093111,
+          "hero_cards": [
+            "9d",
+            "3h"
+          ],
+          "chosen_chip": 3857,
+          "alias_ambiguous": false
+        },
+        {
+          "session": "20260611_201230",
+          "seq": 30,
+          "action": "BET_200",
+          "mass": 0.061229,
+          "hero_cards": [
+            "Ad",
+            "As"
+          ],
+          "chosen_chip": 912,
+          "alias_ambiguous": false
+        },
+        {
+          "session": "20260611_201230",
+          "seq": 255,
+          "action": "BET_200",
+          "mass": 0.022547,
+          "hero_cards": [
+            "2c",
+            "8d"
+          ],
+          "chosen_chip": 400,
+          "alias_ambiguous": false
+        },
+        {
+          "session": "20260611_204751",
+          "seq": 790,
+          "action": "ALLIN",
+          "mass": 0.128525,
+          "hero_cards": [
+            "4c",
+            "4s"
+          ],
+          "chosen_chip": 1490,
+          "alias_ambiguous": false
+        },
+        {
+          "session": "20260611_204751",
+          "seq": 994,
+          "action": "CALL",
+          "mass": 0.132244,
+          "hero_cards": [
+            "Ac",
+            "2h"
+          ],
+          "chosen_chip": 1,
+          "alias_ambiguous": false
+        },
+        {
+          "session": "20260611_204751",
+          "seq": 1128,
+          "action": "BET_200",
+          "mass": 0.041066,
+          "hero_cards": [
+            "Td",
+            "2h"
+          ],
+          "chosen_chip": 4800,
+          "alias_ambiguous": false
+        },
+        {
+          "session": "20260611_204751",
+          "seq": 1392,
+          "action": "BET_100",
+          "mass": 0.012517,
+          "hero_cards": [
+            "5s",
+            "Ah"
+          ],
+          "chosen_chip": 600,
+          "alias_ambiguous": false
+        },
+        {
+          "session": "20260611_204751",
+          "seq": 1471,
+          "action": "ALLIN",
+          "mass": 0.146854,
+          "hero_cards": [
+            "5d",
+            "Td"
+          ],
+          "chosen_chip": 2346,
+          "alias_ambiguous": false
+        },
+        {
+          "session": "20260611_204751",
+          "seq": 1503,
+          "action": "ALLIN",
+          "mass": 0.047204,
+          "hero_cards": [
+            "Js",
+            "6h"
+          ],
+          "chosen_chip": 0,
+          "alias_ambiguous": true
+        },
+        {
+          "session": "20260611_204751",
+          "seq": 1554,
+          "action": "ALLIN",
+          "mass": 0.0434,
+          "hero_cards": [
+            "9d",
+            "5c"
+          ],
+          "chosen_chip": 1357,
+          "alias_ambiguous": false
+        },
+        {
+          "session": "20260611_204751",
+          "seq": 1585,
+          "action": "BET_150",
+          "mass": 0.076399,
+          "hero_cards": [
+            "9c",
+            "9h"
+          ],
+          "chosen_chip": 1800,
+          "alias_ambiguous": false
+        },
+        {
+          "session": "20260611_204751",
+          "seq": 1661,
+          "action": "BET_200",
+          "mass": 0.118344,
+          "hero_cards": [
+            "Ts",
+            "Td"
+          ],
+          "chosen_chip": 3600,
+          "alias_ambiguous": false
+        },
+        {
+          "session": "20260611_222532",
+          "seq": 1885,
+          "action": "BET_200",
+          "mass": 0.050262,
+          "hero_cards": [
+            "Qc",
+            "9d"
+          ],
+          "chosen_chip": 900,
+          "alias_ambiguous": false
+        },
+        {
+          "session": "20260611_222532",
+          "seq": 2038,
+          "action": "BET_150",
+          "mass": 0.008526,
+          "hero_cards": [
+            "8d",
+            "Js"
+          ],
+          "chosen_chip": 188,
+          "alias_ambiguous": false
+        },
+        {
+          "session": "20260611_222532",
+          "seq": 2136,
+          "action": "ALLIN",
+          "mass": 0.121592,
+          "hero_cards": [
+            "9d",
+            "As"
+          ],
+          "chosen_chip": 1720,
+          "alias_ambiguous": false
+        },
+        {
+          "session": "20260611_222532",
+          "seq": 2555,
+          "action": "CALL",
+          "mass": 0.013208,
+          "hero_cards": [
+            "Qs",
+            "6d"
+          ],
+          "chosen_chip": 1,
+          "alias_ambiguous": false
+        },
+        {
+          "session": "20260611_222532",
+          "seq": 2774,
+          "action": "ALLIN",
+          "mass": 0.016498,
+          "hero_cards": [
+            "5d",
+            "3h"
+          ],
+          "chosen_chip": 1555,
+          "alias_ambiguous": false
+        },
+        {
+          "session": "20260612_035454",
+          "seq": 51,
+          "action": "ALLIN",
+          "mass": 0.098838,
+          "hero_cards": [
+            "Ks",
+            "7c"
+          ],
+          "chosen_chip": 1500,
+          "alias_ambiguous": false
+        },
+        {
+          "session": "20260612_035454",
+          "seq": 135,
+          "action": "BET_200",
+          "mass": 0.046872,
+          "hero_cards": [
+            "6h",
+            "As"
+          ],
+          "chosen_chip": 1600,
+          "alias_ambiguous": false
+        },
+        {
+          "session": "20260612_042058",
+          "seq": 299,
+          "action": "ALLIN",
+          "mass": 0.098086,
+          "hero_cards": [
+            "5d",
+            "Ad"
+          ],
+          "chosen_chip": 1500,
+          "alias_ambiguous": false
+        },
+        {
+          "session": "20260612_042058",
+          "seq": 454,
+          "action": "BET_100",
+          "mass": 0.076221,
+          "hero_cards": [
+            "Jd",
+            "7h"
+          ],
+          "chosen_chip": 1000,
+          "alias_ambiguous": false
+        }
+      ],
+      "n_argmax_changes": 0,
+      "argmax_changes": []
+    }
+  }
+}

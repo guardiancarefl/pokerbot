@@ -1,0 +1,108 @@
+========================================================================
+H1 TG2 — commitment-scaled tail floor counterfactual (ALL raw-record logs)
+========================================================================
+
+[0] REPLAY FIDELITY (per log)
+    20260608_152756              raw=  200 fresh_decisions=  19 (headerless: assumed sample/2026) fidelity=*** 22 MISMATCHES — distributions for this log are NOT what ran live ***
+    20260609_154557              raw=  571 fresh_decisions=  37 (headerless: assumed sample/2026) fidelity=*** 52 MISMATCHES — distributions for this log are NOT what ran live ***
+    20260609_192543              raw=  402 fresh_decisions=  41 (headerless: assumed sample/2026) fidelity=*** 35 MISMATCHES — distributions for this log are NOT what ran live ***
+    20260611_163815              raw=  486 fresh_decisions=  37  fidelity=OK
+    20260611_181249              raw=   54 fresh_decisions=   4  fidelity=OK
+    20260611_201230              raw=  733 fresh_decisions=  56  fidelity=OK
+    20260611_204751              raw=  973 fresh_decisions=  80  fidelity=OK
+    20260611_222532              raw= 1326 fresh_decisions=  88  fidelity=OK
+    20260612_035454              raw=  218 fresh_decisions=  15  fidelity=OK
+    20260612_042058              raw=  316 fresh_decisions=  22  fidelity=OK
+    verify1_20260609_202137      raw=   90 fresh_decisions=  13 (headerless: assumed sample/2026) fidelity=*** 3 MISMATCHES — distributions for this log are NOT what ran live ***
+
+[1] COUNTERFACTUAL — 412 fresh decision frames, tau_max in [0.05, 0.1, 0.15]
+
+  tau_max = 0.05
+    frames fired (any tail pruned): 208 / 412 (50.49%)
+    altered decisions (historical sample excluded): 8 / 412 (1.94%)
+    pruned-action census:  {'BET_200': 130, 'ALLIN': 154, 'BET_150': 86, 'BET_100': 63, 'CALL': 8, 'BET_66': 33, 'BET_50': 21, 'BET_33': 1}
+    argmax changes:        0
+    historical SAMPLED actions excluded: 8
+        20260609_192543 seq=238   ALLIN    mass=0.0489 cards=4hKs chip=3078
+        20260609_192543 seq=262   BET_150  mass=0.0080 cards=4s3c chip=900
+        20260611_163815 seq=337   BET_150  mass=0.0131 cards=QsJh chip=1350
+        20260611_204751 seq=1128  BET_200  mass=0.0411 cards=Td2h chip=4800
+        20260611_204751 seq=1392  BET_100  mass=0.0125 cards=5sAh chip=600
+        20260611_204751 seq=1503  ALLIN    mass=0.0472 cards=Js6h chip=0 [alias-ambiguous]
+        20260611_204751 seq=1554  ALLIN    mass=0.0434 cards=9d5c chip=1357
+        20260611_222532 seq=2774  ALLIN    mass=0.0165 cards=5d3h chip=1555
+
+  tau_max = 0.10
+    frames fired (any tail pruned): 293 / 412 (71.12%)
+    altered decisions (historical sample excluded): 18 / 412 (4.37%)
+    pruned-action census:  {'BET_200': 197, 'ALLIN': 211, 'BET_150': 148, 'BET_100': 119, 'CALL': 18, 'BET_66': 69, 'BET_50': 44, 'BET_33': 2}
+    argmax changes:        0
+    historical SAMPLED actions excluded: 18
+        20260609_154557 seq=103   BET_200  mass=0.0629 cards=Qh2d chip=300
+        20260609_192543 seq=21    ALLIN    mass=0.0587 cards=6cAc chip=1500
+        20260609_192543 seq=238   ALLIN    mass=0.0489 cards=4hKs chip=3078
+        20260609_192543 seq=262   BET_150  mass=0.0080 cards=4s3c chip=900
+        20260611_163815 seq=315   ALLIN    mass=0.0746 cards=2d5c chip=3032
+        20260611_163815 seq=337   BET_150  mass=0.0131 cards=QsJh chip=1350
+        20260611_163815 seq=443   ALLIN    mass=0.0931 cards=9d3h chip=3857
+        20260611_204751 seq=1128  BET_200  mass=0.0411 cards=Td2h chip=4800
+        20260611_204751 seq=1392  BET_100  mass=0.0125 cards=5sAh chip=600
+        20260611_204751 seq=1503  ALLIN    mass=0.0472 cards=Js6h chip=0 [alias-ambiguous]
+        20260611_204751 seq=1554  ALLIN    mass=0.0434 cards=9d5c chip=1357
+        20260611_222532 seq=1885  BET_200  mass=0.0503 cards=Qc9d chip=900
+        20260611_222532 seq=2038  BET_150  mass=0.0085 cards=8dJs chip=188
+        20260611_222532 seq=2555  CALL     mass=0.0132 cards=Qs6d chip=1
+        20260611_222532 seq=2774  ALLIN    mass=0.0165 cards=5d3h chip=1555
+        20260612_035454 seq=51    ALLIN    mass=0.0988 cards=Ks7c chip=1500
+        20260612_035454 seq=135   BET_200  mass=0.0469 cards=6hAs chip=1600
+        20260612_042058 seq=299   ALLIN    mass=0.0981 cards=5dAd chip=1500
+
+  tau_max = 0.15
+    frames fired (any tail pruned): 338 / 412 (82.04%)
+    altered decisions (historical sample excluded): 34 / 412 (8.25%)
+    pruned-action census:  {'BET_100': 156, 'BET_200': 232, 'ALLIN': 268, 'BET_150': 195, 'BET_66': 101, 'CALL': 24, 'BET_50': 59, 'BET_33': 3}
+    argmax changes:        0
+    historical SAMPLED actions excluded: 34
+        20260608_152756 seq=170   ALLIN    mass=0.1453 cards=AhAs chip=1410
+        20260609_154557 seq=33    ALLIN    mass=0.1079 cards=Qd9h chip=1405
+        20260609_154557 seq=103   BET_200  mass=0.0629 cards=Qh2d chip=300
+        20260609_154557 seq=225   BET_150  mass=0.1222 cards=6h6d chip=900
+        20260609_154557 seq=257   BET_150  mass=0.0280 cards=3d7d chip=300
+        20260609_192543 seq=21    ALLIN    mass=0.0587 cards=6cAc chip=1500
+        20260609_192543 seq=167   ALLIN    mass=0.1479 cards=7cQh chip=1728
+        20260609_192543 seq=238   ALLIN    mass=0.0489 cards=4hKs chip=3078
+        20260609_192543 seq=262   BET_150  mass=0.0080 cards=4s3c chip=900
+        20260609_192543 seq=382   BET_66   mass=0.0172 cards=Ac3c chip=594
+        20260611_163815 seq=129   ALLIN    mass=0.1078 cards=QhJc chip=1785
+        20260611_163815 seq=315   ALLIN    mass=0.0746 cards=2d5c chip=3032
+        20260611_163815 seq=337   BET_150  mass=0.0131 cards=QsJh chip=1350
+        20260611_163815 seq=443   ALLIN    mass=0.0931 cards=9d3h chip=3857
+        20260611_201230 seq=30    BET_200  mass=0.0612 cards=AdAs chip=912
+        20260611_201230 seq=255   BET_200  mass=0.0225 cards=2c8d chip=400
+        20260611_204751 seq=790   ALLIN    mass=0.1285 cards=4c4s chip=1490
+        20260611_204751 seq=994   CALL     mass=0.1322 cards=Ac2h chip=1
+        20260611_204751 seq=1128  BET_200  mass=0.0411 cards=Td2h chip=4800
+        20260611_204751 seq=1392  BET_100  mass=0.0125 cards=5sAh chip=600
+        20260611_204751 seq=1471  ALLIN    mass=0.1469 cards=5dTd chip=2346
+        20260611_204751 seq=1503  ALLIN    mass=0.0472 cards=Js6h chip=0 [alias-ambiguous]
+        20260611_204751 seq=1554  ALLIN    mass=0.0434 cards=9d5c chip=1357
+        20260611_204751 seq=1585  BET_150  mass=0.0764 cards=9c9h chip=1800
+        20260611_204751 seq=1661  BET_200  mass=0.1183 cards=TsTd chip=3600
+        20260611_222532 seq=1885  BET_200  mass=0.0503 cards=Qc9d chip=900
+        20260611_222532 seq=2038  BET_150  mass=0.0085 cards=8dJs chip=188
+        20260611_222532 seq=2136  ALLIN    mass=0.1216 cards=9dAs chip=1720
+        20260611_222532 seq=2555  CALL     mass=0.0132 cards=Qs6d chip=1
+        20260611_222532 seq=2774  ALLIN    mass=0.0165 cards=5d3h chip=1555
+        20260612_035454 seq=51    ALLIN    mass=0.0988 cards=Ks7c chip=1500
+        20260612_035454 seq=135   BET_200  mass=0.0469 cards=6hAs chip=1600
+        20260612_042058 seq=299   ALLIN    mass=0.0981 cards=5dAd chip=1500
+        20260612_042058 seq=454   BET_100  mass=0.0762 cards=Jd7h chip=1000
+
+[2] TG2 BAR CHECKS
+    (a) seq-315 2d5c ALLIN excluded at tau_max=0.10: YES — caught
+    (a) seq-315 2d5c ALLIN excluded at tau_max=0.15: YES — caught
+    (b) argmax changes across all thresholds: 0 (PASS (0 expected))
+    (c) altered-decision rate at tau_max=0.10: 4.37% (PASS (<= 5%))
+
+    NOTE: 112 replay-fidelity mismatches across 4 log(s) — those logs' distributions are reconstructions under CURRENT code, not byte-faithful to what ran live.
+========================================================================

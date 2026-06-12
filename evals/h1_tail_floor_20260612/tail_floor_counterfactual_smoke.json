@@ -1,0 +1,191 @@
+{
+  "label": "SMOKE: session-1 only",
+  "taus": [
+    0.05,
+    0.1,
+    0.15
+  ],
+  "per_log": {
+    "20260611_163815": {
+      "n_raw_frames": 486,
+      "n_fresh_decisions": 37,
+      "n_fidelity_fails": 0,
+      "mode": "sample",
+      "seed": 2026,
+      "ckpt": "/home/quant/pokerbot/runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt",
+      "headerless": false
+    }
+  },
+  "fidelity_fails": {
+    "20260611_163815": []
+  },
+  "results": {
+    "0.05": {
+      "n_frames": 37,
+      "n_fired": 23,
+      "firing_rate": 0.6216216216216216,
+      "n_altered_decisions": 1,
+      "altered_decision_rate": 0.02702702702702703,
+      "pruned_census": {
+        "ALLIN": 13,
+        "BET_200": 18,
+        "BET_100": 7,
+        "BET_150": 13,
+        "BET_66": 4,
+        "BET_50": 3
+      },
+      "sampled_excluded": [
+        {
+          "session": "20260611_163815",
+          "seq": 337,
+          "action": "BET_150",
+          "mass": 0.013062,
+          "hero_cards": [
+            "Qs",
+            "Jh"
+          ],
+          "chosen_chip": 1350,
+          "alias_ambiguous": false
+        }
+      ],
+      "n_argmax_changes": 0,
+      "argmax_changes": []
+    },
+    "0.10": {
+      "n_frames": 37,
+      "n_fired": 30,
+      "firing_rate": 0.8108108108108109,
+      "n_altered_decisions": 3,
+      "altered_decision_rate": 0.08108108108108109,
+      "pruned_census": {
+        "BET_200": 25,
+        "ALLIN": 21,
+        "BET_150": 21,
+        "BET_100": 16,
+        "BET_66": 8,
+        "BET_50": 10,
+        "CALL": 1
+      },
+      "sampled_excluded": [
+        {
+          "session": "20260611_163815",
+          "seq": 315,
+          "action": "ALLIN",
+          "mass": 0.074649,
+          "hero_cards": [
+            "2d",
+            "5c"
+          ],
+          "chosen_chip": 3032,
+          "alias_ambiguous": false
+        },
+        {
+          "session": "20260611_163815",
+          "seq": 337,
+          "action": "BET_150",
+          "mass": 0.013062,
+          "hero_cards": [
+            "Qs",
+            "Jh"
+          ],
+          "chosen_chip": 1350,
+          "alias_ambiguous": false
+        },
+        {
+          "session": "20260611_163815",
+          "seq": 443,
+          "action": "ALLIN",
+          "mass": 0.093111,
+          "hero_cards": [
+            "9d",
+            "3h"
+          ],
+          "chosen_chip": 3857,
+          "alias_ambiguous": false
+        }
+      ],
+      "n_argmax_changes": 0,
+      "argmax_changes": []
+    },
+    "0.15": {
+      "n_frames": 37,
+      "n_fired": 33,
+      "firing_rate": 0.8918918918918919,
+      "n_altered_decisions": 5,
+      "altered_decision_rate": 0.13513513513513514,
+      "pruned_census": {
+        "BET_200": 28,
+        "ALLIN": 26,
+        "BET_150": 25,
+        "BET_100": 19,
+        "BET_66": 13,
+        "BET_50": 10,
+        "CALL": 1
+      },
+      "sampled_excluded": [
+        {
+          "session": "20260611_163815",
+          "seq": 91,
+          "action": "BET_200",
+          "mass": 0.062412,
+          "hero_cards": [
+            "Ks",
+            "Qd"
+          ],
+          "chosen_chip": 600,
+          "alias_ambiguous": false
+        },
+        {
+          "session": "20260611_163815",
+          "seq": 129,
+          "action": "ALLIN",
+          "mass": 0.107846,
+          "hero_cards": [
+            "Qh",
+            "Jc"
+          ],
+          "chosen_chip": 1785,
+          "alias_ambiguous": false
+        },
+        {
+          "session": "20260611_163815",
+          "seq": 315,
+          "action": "ALLIN",
+          "mass": 0.074649,
+          "hero_cards": [
+            "2d",
+            "5c"
+          ],
+          "chosen_chip": 3032,
+          "alias_ambiguous": false
+        },
+        {
+          "session": "20260611_163815",
+          "seq": 337,
+          "action": "BET_150",
+          "mass": 0.013062,
+          "hero_cards": [
+            "Qs",
+            "Jh"
+          ],
+          "chosen_chip": 1350,
+          "alias_ambiguous": false
+        },
+        {
+          "session": "20260611_163815",
+          "seq": 443,
+          "action": "ALLIN",
+          "mass": 0.093111,
+          "hero_cards": [
+            "9d",
+            "3h"
+          ],
+          "chosen_chip": 3857,
+          "alias_ambiguous": false
+        }
+      ],
+      "n_argmax_changes": 0,
+      "argmax_changes": []
+    }
+  }
+}

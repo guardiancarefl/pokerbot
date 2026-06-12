@@ -109,3 +109,67 @@ approval.
 End every working block: update EXPERIMENT_LOG (what ran, verdict, next) and
 NEXT_RESUME.md (exact next action). Adversarial-review subagent attacks every
 conclusion before it enters the log.
+
+## ADDENDUM 1 (2026-06-12) — Scientific rigor & reporting standard (permanent)
+
+1. **Full experiment reports, not summaries.** Every experiment produces
+   `reports/EXP_<id>_<name>.md` with: Background & motivation (prior
+   evidence), Pre-registered design (hypothesis, method, falsification
+   criteria, cost — written BEFORE running), Methods (exact configs, seeds,
+   commands — reproducible by a stranger), Results (full tables, CIs on
+   everything, raw-data paths), Discussion (what it means, what it does NOT
+   mean, threats to validity, adversarial-reviewer objections + disposition),
+   Future Work (specific follow-ups with cost + expected information value).
+2. **Negative results are first-class.** A falsified hypothesis gets the same
+   full report. The program's value is the map, not just the treasure.
+3. **`RESEARCH_MAP.md`** — living document, every open question by pillar:
+   (a) representation, (b) training dynamics, (c) the tournament game itself,
+   (d) opponent modeling & exploitation, (e) measurement methodology,
+   (f) frontier/proprietary. Per question: evidence state, decisive
+   experiment, cost, expected value of information. Update after every
+   experiment.
+4. **Periodic synthesis:** after every 3 completed experiments or weekly
+   (whichever first), append to `PROGRAM_REVIEW.md` — what the evidence now
+   says, how priorities changed, what a well-resourced team would do next.
+5. **Moderate-depth exploratory studies licensed:** cheap read-only analyses
+   of existing artifacts (tail-concentration map, field-tendency pre-analysis,
+   bucket decision-entropy "blur map", etc.). Mini-report each; feeds the
+   RESEARCH_MAP. Fills idle time between gated experiments, never displaces
+   them.
+
+## ADDENDUM 2 (2026-06-12) — Non-blocking operation (overnight rule, permanent)
+
+Operator gates halt one TRACK, never the program. At any
+decision/approval/pod boundary: write the request to `OPERATOR_QUEUE.md`
+(decision needed, evidence, recommendation, what it unblocks), mark the track
+BLOCKED-ON-OPERATOR in the log, and IMMEDIATELY continue with next-highest-
+value unblocked work. Priority cascade when blocked: next queue hypothesis →
+H3 pipeline work → exploratory studies from the RESEARCH_MAP (blur map, tail
+concentration, field-tendency pre-analysis, decision-entropy map are
+pre-approved) → RESEARCH_MAP / synthesis writing. There is ALWAYS legal work;
+an idle program is a bug. Nothing deploys, arms, or trains-on-pod without the
+operator — but nothing waits on the operator either. Check OPERATOR_QUEUE.md
+for stale entries at every resume.
+
+## ADDENDUM 3 (2026-06-12) — Frontier research license (permanent)
+
+The program may pursue NOVEL proprietary architectures, training processes,
+and hybrid systems (style-specialist ensembles + selector/mixer, hybrid
+blueprint+override-region policies, distillation chains, tournament-value
+architectures, "frankenstein" compositions of validated artifacts — champion,
+v2's depth-cured bbnorm encoder, the trained attackers, the 31 scripted
+styles, league machinery, the live archive; failed candidates' components are
+organ banks). Spine:
+1. **Evidence-first:** a frontier idea enters the queue only with a written
+   rationale citing OUR measurements; adversarial reviewer attacks the
+   rationale before any build.
+2. **Probe-before-program:** cheapest-possible falsification probe (hours,
+   not days) before real investment. Most frontier ideas should die at probe
+   stage — that is the system working.
+3. **Same gates forever:** full battery (PG1–PG4 + attacker), no novelty
+   discounts; hybrids/ensembles additionally must meet live-path constraints
+   (sub-second single-decision latency, deterministic replay, floor
+   compatibility) or they are research results, not candidates.
+4. Logged in RESEARCH_MAP pillar (f) with the full-report standard.
+Frontier work fills idle/exploratory cycles on expected-information-value;
+it never displaces a gated experiment mid-run.

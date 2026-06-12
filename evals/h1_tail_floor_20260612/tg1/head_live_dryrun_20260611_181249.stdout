@@ -1,0 +1,6 @@
+DeepCFR6MaxSolver  device=cpu  feature_dim=236  payout_mode=double_up  payouts=[2.0, 2.0, 2.0]
+Replayed 54 frames -> /home/quant/pokerbot/evals/h1_tail_floor_20260612/tg1/head_live_dryrun_20260611_181249.jsonl
+  skip_not_hero_to_act            32
+  skip_data_quality               15
+  decision                         4
+  decision_cached                  3

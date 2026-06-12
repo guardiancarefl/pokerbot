@@ -1,0 +1,19 @@
+DeepCFR6MaxSolver  device=cpu  feature_dim=236  payout_mode=double_up  payouts=[2.0, 2.0, 2.0]
+[ANCHOR-REFUSED] hand-start anchor fails chips-in-play ceiling (9000): seat6 pre_hand=9927  captured_at=20260609_115039_013
+[FLOOR] fired=[short-stack]  eff_bb=4.48  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD
+[FLOOR] fired=[short-stack]  eff_bb=4.33  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD
+[FLOOR] fired=[short-stack]  eff_bb=3.18  cp=0  street=0  pre_argmax=CALL  post_argmax=CALL
+[OOD-WARN] live out-of-training-support: level=3 hero_stack=96 (1.0 BB) captured_at=20260609_115900_891
+[ANCHOR-REFUSED] hand-start anchor fails chips-in-play ceiling (9000): seat6 pre_hand=9932  captured_at=20260609_120518_206
+[OOD-WARN] live out-of-training-support: level=5 hero_stack=281 (1.4 BB) captured_at=20260609_120828_250
+[OOD-WARN] live out-of-training-support: level=5 hero_stack=281 (1.4 BB) captured_at=20260609_120829_005
+[OOD-WARN] live out-of-training-support: level=5 hero_stack=281 (1.4 BB) captured_at=20260609_120836_220
+[OOD-WARN] live out-of-training-support: level=5 hero_stack=281 (1.4 BB) captured_at=20260609_120836_877
+[FLOOR] fired=[short-stack]  eff_bb=1.55  cp=0  street=0  pre_argmax=CALL  post_argmax=CALL
+Replayed 571 frames -> /home/quant/pokerbot/evals/h1_tail_floor_20260612/tg1/head_live_dryrun_20260609_154557.jsonl
+  skip_not_hero_to_act           263
+  skip_data_quality              241
+  decision                        32
+  decision_cached                 29
+  decision_recovered               5
+  decision_recovered_cached        1

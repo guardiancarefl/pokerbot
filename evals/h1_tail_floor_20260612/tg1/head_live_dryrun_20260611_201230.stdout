@@ -1,0 +1,16 @@
+DeepCFR6MaxSolver  device=cpu  feature_dim=236  payout_mode=double_up  payouts=[2.0, 2.0, 2.0]
+[FLOOR] fired=[AA/KK]  eff_bb=45.60  cp=0  street=0  pre_argmax=ALLIN  post_argmax=ALLIN
+[ANCHOR-REFUSED] hand-start anchor fails chips-in-play ceiling (9000): sum(pre_hand)=9022  captured_at=20260611_162701_886
+[ANCHOR-REFUSED] hand-start anchor fails chips-in-play ceiling (9000): sum(pre_hand)=9022  captured_at=20260611_162710_848
+[ANCHOR-REFUSED] hand-start anchor fails chips-in-play ceiling (9000): sum(pre_hand)=9022  captured_at=20260611_162711_914
+[ANCHOR-REFUSED] hand-start anchor fails chips-in-play ceiling (9000): sum(pre_hand)=9022  captured_at=20260611_162713_729
+[ANCHOR-REFUSED] hand-start anchor fails chips-in-play ceiling (9000): sum(pre_hand)=9022  captured_at=20260611_162714_564
+[FLOOR] fired=[check-free]  eff_bb=9.03  cp=0  street=0  pre_argmax=FOLD  post_argmax=CALL
+[FLOOR] fired=[check-free]  eff_bb=12.25  cp=0  street=0  pre_argmax=ALLIN  post_argmax=ALLIN
+[FLOOR] fired=[short-stack]  eff_bb=5.96  cp=0  street=0  pre_argmax=ALLIN  post_argmax=ALLIN
+Replayed 733 frames -> /home/quant/pokerbot/evals/h1_tail_floor_20260612/tg1/head_live_dryrun_20260611_201230.jsonl
+  skip_not_hero_to_act           544
+  skip_data_quality               92
+  decision                        56
+  decision_cached                 36
+  safe_fold                        5
