@@ -65,3 +65,14 @@ re-price audit (next; design follows c1's MATERIAL actions) → 3) f1
 verdict → cycle-2 refill (H4 freeze on unlock, H2b sequenced after 2a,
 dead-SB replay fix build). POD re-trigger conditions live (review §5):
 surface a POD_CASE the moment any track needs training-scale compute.
+
+## Queued post-tonight (operator directive 2026-06-13 ~00:50)
+
+- **STAGE-2 READINESS LEDGER** (light, file-only): per-session
+  never-decided spots / fallback fires / manual-intervention events /
+  safe-folds-by-class, historical table + trend from all logs;
+  pre-registered Stage-2 gate = N consecutive sessions at zero
+  never-decided AND zero required interventions before supervised
+  clicking is proposed (N=5 proposed, operator to confirm). Becomes a
+  standing step of the Addendum 4.6 post-session pipeline. "A number
+  we watch, not a feeling."
