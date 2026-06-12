@@ -155,3 +155,17 @@ flags first; showdown capture as specced). Delivered:
 
 Not an EV experiment — falsification n/a; acceptance = the Windows-side
 gates in the brief, pre-committed before any scraper change.
+
+## 2026-06-12 ~12:40 — TG4 instrument RECOVERED + GATED (commit 6351dae)
+
+Resume-blocking find: the TG4 instrument (attacker eval script, both
+attacker ckpts, bubble artifact) was absent from the working tree — built
+on the unmerged runpod-env branch. Recovered: ckpts in
+`mirrors/tier0_20260611/runs/` (shas match the archived shard logs),
+script + sng_baseline bubble seam extracted from the bundle, bubble4
+artifact regenerated (96,749 rows). `--tail-tau` added (the TG4 delta).
+Gates ALL PASS: B4 + B5 shard00 repro at HEAD byte-identical to the
+2026-06-11 archives (200/200 each, tail code present at tau=None);
+tg4_verdict.py self-test paired delta exactly 0 both modes. Full record:
+`evals/h1_tail_floor_20260612/tg4/tg4_instrument_gates.txt`. F-TG4 kill
+bar unchanged. TG4 launches after the TG3 verdict.
