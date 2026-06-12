@@ -528,3 +528,25 @@ All bars in the agent result; headline: no cheap organ improves the
 bubble (best candidate WORSENS it, z=-2.54, plus control harm). f1
 closed; RESEARCH_MAP updated. Cores 0-3 roll to the ICM correction fit
 (spec FROZEN as drafted — gates G1-G3 + validation bars pre-committed).
+
+## 2026-06-12 ~23:05 — REGISTRATION SUPPLEMENT (operator/CEO) — logged on receipt
+
+Received BEFORE M-C was read (slate-2a agent's last report: M-C still
+running, no number observed by manager or agent-final-message at
+receipt time — the supplement is clean pre-registration):
+
+1. **M-C "degrades" DEFINED:** point estimate worse than the −0.08
+   killphil baseline by more than 1 SE ⇒ degrades; within 1 SE ⇒
+   holds. Tightening a registered bar after an undesired result is
+   prohibited the same as loosening one.
+2. **SHOVIEST-ROWS PANEL (conditional on M-C holds), registered now:**
+   the 3 highest shove-frequency profiles from the bake-off pool +
+   killphilmtt's nearest stylistic neighbor; 2000 CRN-paired games per
+   row; **tail+shove config vs tail-only config**; bars: no row
+   significantly negative (z ≤ −2), pooled delta ≥ 0 within noise.
+   Profile names to be logged BEFORE launch (selection method: measured
+   open-shove range size at canonical short-stack spots through the
+   fixed adapter; neighbor by range-overlap vs killphil — selection
+   computed next, logged below before any panel launch).
+3. **Interaction-check gray zone z ∈ (−2, 0) reaffirmed as registered
+   PASS.**
