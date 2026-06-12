@@ -85,3 +85,13 @@ no live-path arming without operator approval line; gates never weakened;
 falsification criteria pre-committed BEFORE experiments; update
 EXPERIMENT_LOG + this file after every step; operator boundaries →
 OPERATOR_QUEUE and continue (Addendum 2).
+
+## Operational lesson (2026-06-12 ~15:10)
+
+Background watchers CANNOT reliably see other processes (ps/pgrep view
+is inconsistent in detached tasks — two blur watchers false-fired, two
+listener Monitors died). **Watchers must key on FILE signals only**:
+.DONE flags, log completion lines, output file existence. The probe and
+b2 watchers are file-based (safe). Listener detection: the tmux-based
+Monitor (tmux ls works) + checklist convention that listeners run in
+tmux `dryrun`.
