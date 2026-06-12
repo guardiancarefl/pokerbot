@@ -136,6 +136,9 @@ Writes `logs/triage_${TS}.txt` and prints it. The `.stdout` companion
 is picked up automatically for the floor column. Paste back the final
 `TRIAGE …` summary line.
 
+Then feed the session into the opponent DB (H3; idempotent, waits-10-min
+guard means run it after shutdown): `.venv/bin/python -m scripts.ingest_session logs/live_dryrun_${TS}.jsonl --stats`
+
 Red-section items that demand attention before the next session:
 any safe-fold, any `anchor_refused`, any `FOLD WHILE FACING 0`
 (impossible post-floor — would mean the floors aren't active), any
