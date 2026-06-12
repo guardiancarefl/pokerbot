@@ -1,0 +1,32 @@
+TRIAGE of the 5 strict-check FAILs (parser per-hand-baseline semantics,
+captured_at-disambiguated frames; seq restarts mid-file on listener restart)
+
+live_dryrun_20260612_183701.jsonl h126 DB seat=4 seq=1403 captured_at=20260612_155336_813
+  raw folded[seat5]=True  (shifted-hyp seat4: False)  -> 0-idx mapping CONFIRMED
+  flag already True on all earlier in-hand raw frames: True (parser baseline resets at hand start -> event emitted on first frame; this is the stale-flag carryover the extractor exists to study)
+  full raw folded at event frame: {'seat1': False, 'seat2': False, 'seat3': False, 'seat4': False, 'seat5': True, 'seat6': False}
+
+live_dryrun_20260611_204751.jsonl h64 DB seat=4 seq=1562 captured_at=20260611_172620_090
+  raw folded[seat5]=True  (shifted-hyp seat4: False)  -> 0-idx mapping CONFIRMED
+  flag already True on all earlier in-hand raw frames: False (parser baseline resets at hand start -> event emitted on first frame; this is the stale-flag carryover the extractor exists to study)
+  full raw folded at event frame: {'seat1': False, 'seat2': False, 'seat3': False, 'seat4': False, 'seat5': True, 'seat6': False}
+
+live_dryrun_20260612_161347.jsonl h0 DB seat=2 seq=10 captured_at=20260612_121401_761
+  raw folded[seat3]=True  (shifted-hyp seat2: False)  -> 0-idx mapping CONFIRMED
+  flag already True on all earlier in-hand raw frames: False (parser baseline resets at hand start -> event emitted on first frame; this is the stale-flag carryover the extractor exists to study)
+  full raw folded at event frame: {'seat1': True, 'seat2': False, 'seat3': True, 'seat4': False, 'seat5': False, 'seat6': False}
+
+live_dryrun_20260612_161347.jsonl h0 DB seat=0 seq=10 captured_at=20260612_121401_761
+  raw folded[seat1]=True  (shifted-hyp seat0: None)  -> 0-idx mapping CONFIRMED
+  flag already True on all earlier in-hand raw frames: False (parser baseline resets at hand start -> event emitted on first frame; this is the stale-flag carryover the extractor exists to study)
+  full raw folded at event frame: {'seat1': True, 'seat2': False, 'seat3': True, 'seat4': False, 'seat5': False, 'seat6': False}
+
+live_dryrun_20260611_201230.jsonl h42 DB seat=4 seq=529 captured_at=20260611_164022_292
+  raw folded[seat5]=True  (shifted-hyp seat4: False)  -> 0-idx mapping CONFIRMED
+  flag already True on all earlier in-hand raw frames: True (parser baseline resets at hand start -> event emitted on first frame; this is the stale-flag carryover the extractor exists to study)
+  full raw folded at event frame: {'seat1': False, 'seat2': False, 'seat3': False, 'seat4': False, 'seat5': True, 'seat6': False}
+
+TRIAGE RESULT: 5/5 confirm raw key seat(s+1) is the flagged seat;
+0 support a shifted mapping. Strict-check FAILs were artifacts of (i)
+comparing consecutive frames instead of the parser's per-hand baseline and
+(ii) seq-keyed lookup hitting the wrong duplicate after a mid-file seq restart.

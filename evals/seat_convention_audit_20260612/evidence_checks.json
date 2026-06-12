@@ -1,0 +1,980 @@
+[
+ {
+  "file": "live_dryrun_20260612_183701.jsonl",
+  "hand_idx": 39,
+  "checks": [
+   {
+    "test": "dealer",
+    "raw_dealer": "seat1",
+    "db_dealer_seat": 0,
+    "mapping_0idx_ok": true
+   },
+   {
+    "test": "hero_decision",
+    "seq": 403,
+    "hero_stack": 1495,
+    "raw_stacks": {
+     "seat1": 1495,
+     "seat2": 1480,
+     "seat3": 1470,
+     "seat4": 1495,
+     "seat5": 1495,
+     "seat6": 1395
+    },
+    "db_hero_seat": 0,
+    "toplevel_hero_seat": 0
+   },
+   {
+    "test": "folded_flag",
+    "seq": 386,
+    "db_seat": 2,
+    "raw_folded_prev": {
+     "seat1": false,
+     "seat2": false,
+     "seat3": false,
+     "seat4": false,
+     "seat5": false,
+     "seat6": false
+    },
+    "raw_folded_now": {
+     "seat1": false,
+     "seat2": false,
+     "seat3": true,
+     "seat4": true,
+     "seat5": true,
+     "seat6": false
+    },
+    "mapping_0idx_ok": true
+   },
+   {
+    "test": "folded_flag",
+    "seq": 386,
+    "db_seat": 3,
+    "raw_folded_prev": {
+     "seat1": false,
+     "seat2": false,
+     "seat3": false,
+     "seat4": false,
+     "seat5": false,
+     "seat6": false
+    },
+    "raw_folded_now": {
+     "seat1": false,
+     "seat2": false,
+     "seat3": true,
+     "seat4": true,
+     "seat5": true,
+     "seat6": false
+    },
+    "mapping_0idx_ok": true
+   },
+   {
+    "test": "folded_flag",
+    "seq": 386,
+    "db_seat": 4,
+    "raw_folded_prev": {
+     "seat1": false,
+     "seat2": false,
+     "seat3": false,
+     "seat4": false,
+     "seat5": false,
+     "seat6": false
+    },
+    "raw_folded_now": {
+     "seat1": false,
+     "seat2": false,
+     "seat3": true,
+     "seat4": true,
+     "seat5": true,
+     "seat6": false
+    },
+    "mapping_0idx_ok": true
+   },
+   {
+    "test": "frame_diff",
+    "seq": 403,
+    "db_seat": 5,
+    "kind": "raise",
+    "amount_to": 100,
+    "amount_delta": 100,
+    "raw_bets_prev": {
+     "seat1": null,
+     "seat2": 15,
+     "seat3": 25,
+     "seat4": null,
+     "seat5": null,
+     "seat6": null
+    },
+    "raw_bets_now": {
+     "seat1": null,
+     "seat2": 15,
+     "seat3": 25,
+     "seat4": null,
+     "seat5": null,
+     "seat6": 100
+    },
+    "mapping_0idx_ok": true
+   },
+   {
+    "test": "frame_diff",
+    "seq": 408,
+    "db_seat": 5,
+    "kind": "bet",
+    "amount_to": 184,
+    "amount_delta": 184,
+    "raw_bets_prev": {
+     "seat1": null,
+     "seat2": null,
+     "seat3": null,
+     "seat4": null,
+     "seat5": null,
+     "seat6": null
+    },
+    "raw_bets_now": {
+     "seat1": null,
+     "seat2": null,
+     "seat3": null,
+     "seat4": null,
+     "seat5": null,
+     "seat6": 184
+    },
+    "mapping_0idx_ok": true
+   }
+  ]
+ },
+ {
+  "file": "live_dryrun_20260612_183701.jsonl",
+  "hand_idx": 126,
+  "checks": [
+   {
+    "test": "dealer",
+    "raw_dealer": "seat2",
+    "db_dealer_seat": 1,
+    "mapping_0idx_ok": true
+   },
+   {
+    "test": "hero_decision",
+    "seq": 1407,
+    "hero_stack": 2802,
+    "raw_stacks": {
+     "seat1": 2802,
+     "seat2": 2898,
+     "seat3": 1316,
+     "seat4": 1564,
+     "seat5": null,
+     "seat6": null
+    },
+    "db_hero_seat": 0,
+    "toplevel_hero_seat": 0
+   },
+   {
+    "test": "folded_flag",
+    "seq": 1403,
+    "db_seat": 4,
+    "raw_folded_prev": {
+     "seat1": false,
+     "seat2": false,
+     "seat3": false,
+     "seat4": false,
+     "seat5": true,
+     "seat6": false
+    },
+    "raw_folded_now": {
+     "seat1": false,
+     "seat2": false,
+     "seat3": false,
+     "seat4": false,
+     "seat5": true,
+     "seat6": false
+    },
+    "mapping_0idx_ok": false
+   },
+   {
+    "test": "frame_diff",
+    "seq": 1410,
+    "db_seat": 2,
+    "kind": "raise",
+    "amount_to": 400,
+    "amount_delta": 300,
+    "raw_bets_prev": {
+     "seat1": null,
+     "seat2": null,
+     "seat3": 4100,
+     "seat4": 200,
+     "seat5": null,
+     "seat6": null
+    },
+    "raw_bets_now": {
+     "seat1": null,
+     "seat2": null,
+     "seat3": 400,
+     "seat4": 200,
+     "seat5": null,
+     "seat6": null
+    },
+    "mapping_0idx_ok": true
+   },
+   {
+    "test": "frame_diff",
+    "seq": 1414,
+    "db_seat": 2,
+    "kind": "bet",
+    "amount_to": 200,
+    "amount_delta": 200,
+    "raw_bets_prev": {
+     "seat1": null,
+     "seat2": null,
+     "seat3": null,
+     "seat4": null,
+     "seat5": null,
+     "seat6": null
+    },
+    "raw_bets_now": {
+     "seat1": null,
+     "seat2": null,
+     "seat3": 200,
+     "seat4": null,
+     "seat5": null,
+     "seat6": null
+    },
+    "mapping_0idx_ok": true
+   },
+   {
+    "test": "frame_diff",
+    "seq": 1418,
+    "db_seat": 2,
+    "kind": "bet",
+    "amount_to": 816,
+    "amount_delta": 816,
+    "raw_bets_prev": {
+     "seat1": null,
+     "seat2": null,
+     "seat3": null,
+     "seat4": null,
+     "seat5": null,
+     "seat6": null
+    },
+    "raw_bets_now": {
+     "seat1": null,
+     "seat2": null,
+     "seat3": 816,
+     "seat4": null,
+     "seat5": null,
+     "seat6": null
+    },
+    "mapping_0idx_ok": true
+   }
+  ]
+ },
+ {
+  "file": "live_dryrun_20260612_183701.jsonl",
+  "hand_idx": 116,
+  "checks": [
+   {
+    "test": "dealer",
+    "raw_dealer": "seat1",
+    "db_dealer_seat": 0,
+    "mapping_0idx_ok": true
+   },
+   {
+    "test": "hero_decision",
+    "seq": 1338,
+    "hero_stack": 636,
+    "raw_stacks": {
+     "seat1": 636,
+     "seat2": 3708,
+     "seat3": 1086,
+     "seat4": 2750,
+     "seat5": null,
+     "seat6": null
+    },
+    "db_hero_seat": 0,
+    "toplevel_hero_seat": 0
+   },
+   {
+    "test": "hero_decision",
+    "seq": 1339,
+    "hero_stack": 636,
+    "raw_stacks": {
+     "seat1": 636,
+     "seat2": 3708,
+     "seat3": 1086,
+     "seat4": 2750,
+     "seat5": null,
+     "seat6": null
+    },
+    "db_hero_seat": 0,
+    "toplevel_hero_seat": 0
+   },
+   {
+    "test": "folded_flag",
+    "seq": 1331,
+    "db_seat": 4,
+    "raw_folded_prev": {
+     "seat1": false,
+     "seat2": false,
+     "seat3": false,
+     "seat4": false,
+     "seat5": false,
+     "seat6": false
+    },
+    "raw_folded_now": {
+     "seat1": false,
+     "seat2": false,
+     "seat3": false,
+     "seat4": false,
+     "seat5": true,
+     "seat6": false
+    },
+    "mapping_0idx_ok": true
+   },
+   {
+    "test": "frame_diff",
+    "seq": 1338,
+    "db_seat": 3,
+    "kind": "raise",
+    "amount_to": 400,
+    "amount_delta": 400,
+    "raw_bets_prev": {
+     "seat1": null,
+     "seat2": 100,
+     "seat3": 200,
+     "seat4": null,
+     "seat5": null,
+     "seat6": null
+    },
+    "raw_bets_now": {
+     "seat1": null,
+     "seat2": 100,
+     "seat3": 200,
+     "seat4": 400,
+     "seat5": null,
+     "seat6": null
+    },
+    "mapping_0idx_ok": true
+   },
+   {
+    "test": "frame_diff",
+    "seq": 1340,
+    "db_seat": 0,
+    "kind": "raise",
+    "amount_to": 636,
+    "amount_delta": 636,
+    "raw_bets_prev": {
+     "seat1": null,
+     "seat2": 100,
+     "seat3": 200,
+     "seat4": 400,
+     "seat5": null,
+     "seat6": null
+    },
+    "raw_bets_now": {
+     "seat1": 636,
+     "seat2": 100,
+     "seat3": 200,
+     "seat4": 400,
+     "seat5": null,
+     "seat6": null
+    },
+    "mapping_0idx_ok": true
+   }
+  ]
+ },
+ {
+  "file": "live_dryrun_20260611_204751.jsonl",
+  "hand_idx": 64,
+  "checks": [
+   {
+    "test": "dealer",
+    "raw_dealer": "seat2",
+    "db_dealer_seat": 1,
+    "mapping_0idx_ok": true
+   },
+   {
+    "test": "hero_decision",
+    "seq": 1564,
+    "hero_stack": 3044,
+    "raw_stacks": {
+     "seat1": 3044,
+     "seat2": 1742,
+     "seat3": 1943,
+     "seat4": 1851,
+     "seat5": null,
+     "seat6": null
+    },
+    "db_hero_seat": 0,
+    "toplevel_hero_seat": 0
+   },
+   {
+    "test": "hero_decision",
+    "seq": 1565,
+    "hero_stack": 3044,
+    "raw_stacks": {
+     "seat1": 3044,
+     "seat2": 1742,
+     "seat3": 1943,
+     "seat4": 1851,
+     "seat5": null,
+     "seat6": null
+    },
+    "db_hero_seat": 0,
+    "toplevel_hero_seat": 0
+   },
+   {
+    "test": "folded_flag",
+    "seq": 1562,
+    "db_seat": 4,
+    "raw_folded_prev": {
+     "seat1": false,
+     "seat2": false,
+     "seat3": false,
+     "seat4": false,
+     "seat5": true,
+     "seat6": false
+    },
+    "raw_folded_now": {
+     "seat1": false,
+     "seat2": false,
+     "seat3": false,
+     "seat4": false,
+     "seat5": true,
+     "seat6": false
+    },
+    "mapping_0idx_ok": false
+   },
+   {
+    "test": "frame_diff",
+    "seq": 1566,
+    "db_seat": 0,
+    "kind": "call",
+    "amount_to": 200,
+    "amount_delta": 200,
+    "raw_bets_prev": {
+     "seat1": null,
+     "seat2": null,
+     "seat3": 100,
+     "seat4": 200,
+     "seat5": null,
+     "seat6": null
+    },
+    "raw_bets_now": {
+     "seat1": 200,
+     "seat2": null,
+     "seat3": 100,
+     "seat4": 200,
+     "seat5": null,
+     "seat6": null
+    },
+    "mapping_0idx_ok": true
+   },
+   {
+    "test": "frame_diff",
+    "seq": 1568,
+    "db_seat": 3,
+    "kind": "raise",
+    "amount_to": 2051,
+    "amount_delta": 1851,
+    "raw_bets_prev": {
+     "seat1": 200,
+     "seat2": null,
+     "seat3": 100,
+     "seat4": 200,
+     "seat5": null,
+     "seat6": null
+    },
+    "raw_bets_now": {
+     "seat1": 200,
+     "seat2": null,
+     "seat3": 100,
+     "seat4": 2051,
+     "seat5": null,
+     "seat6": null
+    },
+    "mapping_0idx_ok": true
+   }
+  ]
+ },
+ {
+  "file": "live_dryrun_20260611_204751.jsonl",
+  "hand_idx": 71,
+  "checks": [
+   {
+    "test": "dealer",
+    "raw_dealer": "seat1",
+    "db_dealer_seat": 0,
+    "mapping_0idx_ok": true
+   },
+   {
+    "test": "hero_decision",
+    "seq": 1647,
+    "hero_stack": 1677,
+    "raw_stacks": {
+     "seat1": 1677,
+     "seat2": 3319,
+     "seat3": 1123,
+     "seat4": 2251,
+     "seat5": null,
+     "seat6": null
+    },
+    "db_hero_seat": 0,
+    "toplevel_hero_seat": 0
+   },
+   {
+    "test": "hero_decision",
+    "seq": 1648,
+    "hero_stack": 1677,
+    "raw_stacks": {
+     "seat1": 1677,
+     "seat2": 3319,
+     "seat3": 1123,
+     "seat4": 2251,
+     "seat5": null,
+     "seat6": null
+    },
+    "db_hero_seat": 0,
+    "toplevel_hero_seat": 0
+   },
+   {
+    "test": "folded_flag",
+    "seq": 1642,
+    "db_seat": 4,
+    "raw_folded_prev": {
+     "seat1": false,
+     "seat2": false,
+     "seat3": false,
+     "seat4": false,
+     "seat5": false,
+     "seat6": false
+    },
+    "raw_folded_now": {
+     "seat1": false,
+     "seat2": false,
+     "seat3": false,
+     "seat4": false,
+     "seat5": true,
+     "seat6": false
+    },
+    "mapping_0idx_ok": true
+   },
+   {
+    "test": "frame_diff",
+    "seq": 1651,
+    "db_seat": 0,
+    "kind": "raise",
+    "amount_to": 1677,
+    "amount_delta": 1677,
+    "raw_bets_prev": {
+     "seat1": null,
+     "seat2": 150,
+     "seat3": 300,
+     "seat4": null,
+     "seat5": null,
+     "seat6": null
+    },
+    "raw_bets_now": {
+     "seat1": 1677,
+     "seat2": 150,
+     "seat3": 300,
+     "seat4": null,
+     "seat5": null,
+     "seat6": null
+    },
+    "mapping_0idx_ok": true
+   },
+   {
+    "test": "frame_diff",
+    "seq": 1653,
+    "db_seat": 1,
+    "kind": "call",
+    "amount_to": 1677,
+    "amount_delta": 1527,
+    "raw_bets_prev": {
+     "seat1": 1677,
+     "seat2": 150,
+     "seat3": 300,
+     "seat4": null,
+     "seat5": null,
+     "seat6": null
+    },
+    "raw_bets_now": {
+     "seat1": 1677,
+     "seat2": 1677,
+     "seat3": 300,
+     "seat4": null,
+     "seat5": null,
+     "seat6": null
+    },
+    "mapping_0idx_ok": true
+   }
+  ]
+ },
+ {
+  "file": "live_dryrun_20260612_161347.jsonl",
+  "hand_idx": 0,
+  "checks": [
+   {
+    "test": "dealer",
+    "raw_dealer": "seat2",
+    "db_dealer_seat": 1,
+    "mapping_0idx_ok": true
+   },
+   {
+    "test": "hero_decision",
+    "seq": 13,
+    "hero_stack": 1490,
+    "raw_stacks": {
+     "seat1": 1490,
+     "seat2": 1475,
+     "seat3": 1425,
+     "seat4": 1415,
+     "seat5": 1610,
+     "seat6": 1490
+    },
+    "db_hero_seat": 0,
+    "toplevel_hero_seat": 0
+   },
+   {
+    "test": "hero_decision",
+    "seq": 13,
+    "hero_stack": 1490,
+    "raw_stacks": {
+     "seat1": 1490,
+     "seat2": 1475,
+     "seat3": 1425,
+     "seat4": 1415,
+     "seat5": 1610,
+     "seat6": 1490
+    },
+    "db_hero_seat": 0,
+    "toplevel_hero_seat": 0
+   },
+   {
+    "test": "folded_flag",
+    "seq": 10,
+    "db_seat": 2,
+    "raw_folded_prev": {
+     "seat1": false,
+     "seat2": false,
+     "seat3": false,
+     "seat4": false,
+     "seat5": false,
+     "seat6": false
+    },
+    "raw_folded_now": {
+     "seat1": false,
+     "seat2": false,
+     "seat3": false,
+     "seat4": false,
+     "seat5": false,
+     "seat6": false
+    },
+    "mapping_0idx_ok": false
+   },
+   {
+    "test": "folded_flag",
+    "seq": 10,
+    "db_seat": 0,
+    "raw_folded_prev": {
+     "seat1": false,
+     "seat2": false,
+     "seat3": false,
+     "seat4": false,
+     "seat5": false,
+     "seat6": false
+    },
+    "raw_folded_now": {
+     "seat1": false,
+     "seat2": false,
+     "seat3": false,
+     "seat4": false,
+     "seat5": false,
+     "seat6": false
+    },
+    "mapping_0idx_ok": false
+   },
+   {
+    "test": "frame_diff",
+    "seq": 5,
+    "db_seat": 4,
+    "kind": "bet",
+    "amount_to": 98,
+    "amount_delta": 98,
+    "raw_bets_prev": {
+     "seat1": null,
+     "seat2": null,
+     "seat3": null,
+     "seat4": null,
+     "seat5": null,
+     "seat6": null
+    },
+    "raw_bets_now": {
+     "seat1": null,
+     "seat2": null,
+     "seat3": null,
+     "seat4": null,
+     "seat5": 98,
+     "seat6": null
+    },
+    "mapping_0idx_ok": true
+   }
+  ]
+ },
+ {
+  "file": "live_dryrun_20260611_222532.jsonl",
+  "hand_idx": 43,
+  "checks": [
+   {
+    "test": "dealer",
+    "raw_dealer": "seat5",
+    "db_dealer_seat": 4,
+    "mapping_0idx_ok": true
+   },
+   {
+    "test": "hero_decision",
+    "seq": 2424,
+    "hero_stack": 1470,
+    "raw_stacks": {
+     "seat1": 1470,
+     "seat2": 1495,
+     "seat3": 1445,
+     "seat4": 1495,
+     "seat5": 1445,
+     "seat6": 1480
+    },
+    "db_hero_seat": 0,
+    "toplevel_hero_seat": 0
+   },
+   {
+    "test": "hero_decision",
+    "seq": 2425,
+    "hero_stack": 1470,
+    "raw_stacks": {
+     "seat1": 1470,
+     "seat2": 1495,
+     "seat3": 1445,
+     "seat4": 1495,
+     "seat5": 1445,
+     "seat6": 1480
+    },
+    "db_hero_seat": 0,
+    "toplevel_hero_seat": 0
+   },
+   {
+    "test": "folded_flag",
+    "seq": 2385,
+    "db_seat": 4,
+    "raw_folded_prev": {
+     "seat1": false,
+     "seat2": false,
+     "seat3": false,
+     "seat4": false,
+     "seat5": false,
+     "seat6": false
+    },
+    "raw_folded_now": {
+     "seat1": false,
+     "seat2": false,
+     "seat3": false,
+     "seat4": false,
+     "seat5": true,
+     "seat6": false
+    },
+    "mapping_0idx_ok": true
+   },
+   {
+    "test": "frame_diff",
+    "seq": 2430,
+    "db_seat": 2,
+    "kind": "bet",
+    "amount_to": 56,
+    "amount_delta": 56,
+    "raw_bets_prev": {
+     "seat1": null,
+     "seat2": null,
+     "seat3": null,
+     "seat4": null,
+     "seat5": null,
+     "seat6": null
+    },
+    "raw_bets_now": {
+     "seat1": null,
+     "seat2": null,
+     "seat3": 56,
+     "seat4": null,
+     "seat5": null,
+     "seat6": null
+    },
+    "mapping_0idx_ok": true
+   }
+  ]
+ },
+ {
+  "file": "live_dryrun_20260611_201230.jsonl",
+  "hand_idx": 42,
+  "checks": [
+   {
+    "test": "dealer",
+    "raw_dealer": "seat4",
+    "db_dealer_seat": 3,
+    "mapping_0idx_ok": true
+   },
+   {
+    "test": "hero_decision",
+    "seq": 535,
+    "hero_stack": 2450,
+    "raw_stacks": {
+     "seat1": 2450,
+     "seat2": 27,
+     "seat3": 2227,
+     "seat4": 2644,
+     "seat5": null,
+     "seat6": 1002
+    },
+    "db_hero_seat": 0,
+    "toplevel_hero_seat": 0
+   },
+   {
+    "test": "hero_decision",
+    "seq": 536,
+    "hero_stack": 2450,
+    "raw_stacks": {
+     "seat1": 2450,
+     "seat2": 27,
+     "seat3": 2227,
+     "seat4": 2644,
+     "seat5": null,
+     "seat6": 1002
+    },
+    "db_hero_seat": 0,
+    "toplevel_hero_seat": 0
+   },
+   {
+    "test": "folded_flag",
+    "seq": 529,
+    "db_seat": 4,
+    "raw_folded_prev": {
+     "seat1": false,
+     "seat2": false,
+     "seat3": false,
+     "seat4": false,
+     "seat5": true,
+     "seat6": false
+    },
+    "raw_folded_now": {
+     "seat1": false,
+     "seat2": false,
+     "seat3": false,
+     "seat4": false,
+     "seat5": true,
+     "seat6": false
+    },
+    "mapping_0idx_ok": false
+   },
+   {
+    "test": "frame_diff",
+    "seq": 534,
+    "db_seat": 1,
+    "kind": "call",
+    "amount_to": 200,
+    "amount_delta": 200,
+    "raw_bets_prev": {
+     "seat1": 200,
+     "seat2": null,
+     "seat3": null,
+     "seat4": null,
+     "seat5": null,
+     "seat6": 100
+    },
+    "raw_bets_now": {
+     "seat1": 200,
+     "seat2": 200,
+     "seat3": null,
+     "seat4": null,
+     "seat5": null,
+     "seat6": 100
+    },
+    "mapping_0idx_ok": true
+   }
+  ]
+ },
+ {
+  "file": "live_dryrun_20260608_152756.jsonl",
+  "hand_idx": 2,
+  "checks": [
+   {
+    "test": "candidate_chip_proof",
+    "db_seat": 1,
+    "raw_key_0idx": "seat2",
+    "start_stack": 1490,
+    "next_start": 1485,
+    "drop": 5,
+    "ante": 5,
+    "ok": true
+   }
+  ]
+ },
+ {
+  "file": "live_dryrun_20260608_152756.jsonl",
+  "hand_idx": 2,
+  "checks": [
+   {
+    "test": "candidate_chip_proof",
+    "db_seat": 2,
+    "raw_key_0idx": "seat3",
+    "start_stack": 1475,
+    "next_start": 1470,
+    "drop": 5,
+    "ante": 5,
+    "ok": true
+   }
+  ]
+ },
+ {
+  "file": "live_dryrun_20260608_152756.jsonl",
+  "hand_idx": 3,
+  "checks": [
+   {
+    "test": "candidate_chip_proof",
+    "db_seat": 1,
+    "raw_key_0idx": "seat2",
+    "start_stack": 1485,
+    "next_start": 1480,
+    "drop": 5,
+    "ante": 5,
+    "ok": true
+   }
+  ]
+ },
+ {
+  "file": "live_dryrun_20260608_152756.jsonl",
+  "hand_idx": 3,
+  "checks": [
+   {
+    "test": "candidate_chip_proof",
+    "db_seat": 2,
+    "raw_key_0idx": "seat3",
+    "start_stack": 1470,
+    "next_start": 1465,
+    "drop": 5,
+    "ante": 5,
+    "ok": true
+   }
+  ]
+ },
+ {
+  "file": "live_dryrun_20260608_152756.jsonl",
+  "hand_idx": 3,
+  "checks": [
+   {
+    "test": "candidate_chip_proof",
+    "db_seat": 3,
+    "raw_key_0idx": "seat4",
+    "start_stack": 2205,
+    "next_start": 2200,
+    "drop": 5,
+    "ante": 5,
+    "ok": true
+   }
+  ]
+ }
+]

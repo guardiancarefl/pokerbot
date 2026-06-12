@@ -1,0 +1,72 @@
+
+=== HAND live_dryrun_20260612_183701.jsonl hand_idx=39 seq[385..413] dealer_seat=0 hero_seat=0 ===
+  [PASS] dealer: raw dealer (majority)='seat1' counts={'seat5': 4, 'seat1': 18, 'seat4': 5}; DB dealer_seat=0 -> expects raw 'seat1'
+  [PASS] hero@seq403: rec.hero_stack=1495 raw.stacks.seat1=1495 (all seats matching that value: ['seat1', 'seat4', 'seat5']); top-level hero_seat=0; DB hands.hero_seat=0
+  [PASS] folded_flag seat=2@seq386: raw folded seat3: False->True | shifted-hyp seat2: False->False | full folded prev={'seat1': False, 'seat2': False, 'seat3': False, 'seat4': False, 'seat5': False, 'seat6': False} now={'seat1': False, 'seat2': False, 'seat3': True, 'seat4': True, 'seat5': True, 'seat6': False}
+  [PASS] folded_flag seat=3@seq386: raw folded seat4: False->True | shifted-hyp seat3: False->True | full folded prev={'seat1': False, 'seat2': False, 'seat3': False, 'seat4': False, 'seat5': False, 'seat6': False} now={'seat1': False, 'seat2': False, 'seat3': True, 'seat4': True, 'seat5': True, 'seat6': False}
+  [PASS] folded_flag seat=4@seq386: raw folded seat5: False->True | shifted-hyp seat4: False->True | full folded prev={'seat1': False, 'seat2': False, 'seat3': False, 'seat4': False, 'seat5': False, 'seat6': False} now={'seat1': False, 'seat2': False, 'seat3': True, 'seat4': True, 'seat5': True, 'seat6': False}
+  [PASS] frame_diff seat=5 raise@seq403: amount_to=100 amount_delta=100; raw seat6: 0->100 | shifted-hyp raw seat5: 0->0 | full bets prev={'seat1': None, 'seat2': 15, 'seat3': 25, 'seat4': None, 'seat5': None, 'seat6': None} now={'seat1': None, 'seat2': 15, 'seat3': 25, 'seat4': None, 'seat5': None, 'seat6': 100}
+  [PASS] frame_diff seat=5 bet@seq408: amount_to=184 amount_delta=184; raw seat6: 0->184 | shifted-hyp raw seat5: 0->0 | full bets prev={'seat1': None, 'seat2': None, 'seat3': None, 'seat4': None, 'seat5': None, 'seat6': None} now={'seat1': None, 'seat2': None, 'seat3': None, 'seat4': None, 'seat5': None, 'seat6': 184}
+
+=== HAND live_dryrun_20260612_183701.jsonl hand_idx=126 seq[1402..1419] dealer_seat=1 hero_seat=0 ===
+  [PASS] dealer: raw dealer (majority)='seat2' counts={'seat1': 2, 'seat2': 16}; DB dealer_seat=1 -> expects raw 'seat2'
+  [PASS] hero@seq1407: rec.hero_stack=2802 raw.stacks.seat1=2802 (all seats matching that value: ['seat1']); top-level hero_seat=0; DB hands.hero_seat=0
+  [FAIL] folded_flag seat=4@seq1403: raw folded seat5: True->True | shifted-hyp seat4: False->False | full folded prev={'seat1': False, 'seat2': False, 'seat3': False, 'seat4': False, 'seat5': True, 'seat6': False} now={'seat1': False, 'seat2': False, 'seat3': False, 'seat4': False, 'seat5': True, 'seat6': False}
+  [PASS] frame_diff seat=2 raise@seq1410: amount_to=400 amount_delta=300; raw seat3: 4100->400 | shifted-hyp raw seat2: 0->0 | full bets prev={'seat1': None, 'seat2': None, 'seat3': 4100, 'seat4': 200, 'seat5': None, 'seat6': None} now={'seat1': None, 'seat2': None, 'seat3': 400, 'seat4': 200, 'seat5': None, 'seat6': None}
+  [PASS] frame_diff seat=2 bet@seq1414: amount_to=200 amount_delta=200; raw seat3: 0->200 | shifted-hyp raw seat2: 0->0 | full bets prev={'seat1': None, 'seat2': None, 'seat3': None, 'seat4': None, 'seat5': None, 'seat6': None} now={'seat1': None, 'seat2': None, 'seat3': 200, 'seat4': None, 'seat5': None, 'seat6': None}
+  [PASS] frame_diff seat=2 bet@seq1418: amount_to=816 amount_delta=816; raw seat3: 0->816 | shifted-hyp raw seat2: 0->0 | full bets prev={'seat1': None, 'seat2': None, 'seat3': None, 'seat4': None, 'seat5': None, 'seat6': None} now={'seat1': None, 'seat2': None, 'seat3': 816, 'seat4': None, 'seat5': None, 'seat6': None}
+
+=== HAND live_dryrun_20260612_183701.jsonl hand_idx=116 seq[1331..1344] dealer_seat=0 hero_seat=0 ===
+  [PASS] dealer: raw dealer (majority)='seat1' counts={'seat5': 2, 'seat1': 12}; DB dealer_seat=0 -> expects raw 'seat1'
+  [PASS] hero@seq1338: rec.hero_stack=636 raw.stacks.seat1=636 (all seats matching that value: ['seat1']); top-level hero_seat=0; DB hands.hero_seat=0
+  [PASS] hero@seq1339: rec.hero_stack=636 raw.stacks.seat1=636 (all seats matching that value: ['seat1']); top-level hero_seat=0; DB hands.hero_seat=0
+  [PASS] folded_flag seat=4@seq1331: raw folded seat5: False->True | shifted-hyp seat4: False->False | full folded prev={'seat1': False, 'seat2': False, 'seat3': False, 'seat4': False, 'seat5': False, 'seat6': False} now={'seat1': False, 'seat2': False, 'seat3': False, 'seat4': False, 'seat5': True, 'seat6': False}
+  [PASS] frame_diff seat=3 raise@seq1338: amount_to=400 amount_delta=400; raw seat4: 0->400 | shifted-hyp raw seat3: 200->200 | full bets prev={'seat1': None, 'seat2': 100, 'seat3': 200, 'seat4': None, 'seat5': None, 'seat6': None} now={'seat1': None, 'seat2': 100, 'seat3': 200, 'seat4': 400, 'seat5': None, 'seat6': None}
+  [PASS] frame_diff seat=0 raise@seq1340: amount_to=636 amount_delta=636; raw seat1: 0->636 | shifted-hyp raw seat0: 0->0 | full bets prev={'seat1': None, 'seat2': 100, 'seat3': 200, 'seat4': 400, 'seat5': None, 'seat6': None} now={'seat1': 636, 'seat2': 100, 'seat3': 200, 'seat4': 400, 'seat5': None, 'seat6': None}
+
+=== HAND live_dryrun_20260611_204751.jsonl hand_idx=64 seq[1562..1570] dealer_seat=1 hero_seat=0 ===
+  [PASS] dealer: raw dealer (majority)='seat2' counts={'seat2': 9}; DB dealer_seat=1 -> expects raw 'seat2'
+  [PASS] hero@seq1564: rec.hero_stack=3044 raw.stacks.seat1=3044 (all seats matching that value: ['seat1']); top-level hero_seat=0; DB hands.hero_seat=0
+  [PASS] hero@seq1565: rec.hero_stack=3044 raw.stacks.seat1=3044 (all seats matching that value: ['seat1']); top-level hero_seat=0; DB hands.hero_seat=0
+  [FAIL] folded_flag seat=4@seq1562: raw folded seat5: True->True | shifted-hyp seat4: False->False | full folded prev={'seat1': False, 'seat2': False, 'seat3': False, 'seat4': False, 'seat5': True, 'seat6': False} now={'seat1': False, 'seat2': False, 'seat3': False, 'seat4': False, 'seat5': True, 'seat6': False}
+  [PASS] frame_diff seat=0 call@seq1566: amount_to=200 amount_delta=200; raw seat1: 0->200 | shifted-hyp raw seat0: 0->0 | full bets prev={'seat1': None, 'seat2': None, 'seat3': 100, 'seat4': 200, 'seat5': None, 'seat6': None} now={'seat1': 200, 'seat2': None, 'seat3': 100, 'seat4': 200, 'seat5': None, 'seat6': None}
+  [PASS] frame_diff seat=3 raise@seq1568: amount_to=2051 amount_delta=1851; raw seat4: 200->2051 | shifted-hyp raw seat3: 100->100 | full bets prev={'seat1': 200, 'seat2': None, 'seat3': 100, 'seat4': 200, 'seat5': None, 'seat6': None} now={'seat1': 200, 'seat2': None, 'seat3': 100, 'seat4': 2051, 'seat5': None, 'seat6': None}
+
+=== HAND live_dryrun_20260611_204751.jsonl hand_idx=71 seq[1642..1657] dealer_seat=0 hero_seat=0 ===
+  [PASS] dealer: raw dealer (majority)='seat1' counts={'seat4': 1, 'seat1': 15}; DB dealer_seat=0 -> expects raw 'seat1'
+  [PASS] hero@seq1647: rec.hero_stack=1677 raw.stacks.seat1=1677 (all seats matching that value: ['seat1']); top-level hero_seat=0; DB hands.hero_seat=0
+  [PASS] hero@seq1648: rec.hero_stack=1677 raw.stacks.seat1=1677 (all seats matching that value: ['seat1']); top-level hero_seat=0; DB hands.hero_seat=0
+  [PASS] folded_flag seat=4@seq1642: raw folded seat5: False->True | shifted-hyp seat4: False->False | full folded prev={'seat1': False, 'seat2': False, 'seat3': False, 'seat4': False, 'seat5': False, 'seat6': False} now={'seat1': False, 'seat2': False, 'seat3': False, 'seat4': False, 'seat5': True, 'seat6': False}
+  [PASS] frame_diff seat=0 raise@seq1651: amount_to=1677 amount_delta=1677; raw seat1: 0->1677 | shifted-hyp raw seat0: 0->0 | full bets prev={'seat1': None, 'seat2': 150, 'seat3': 300, 'seat4': None, 'seat5': None, 'seat6': None} now={'seat1': 1677, 'seat2': 150, 'seat3': 300, 'seat4': None, 'seat5': None, 'seat6': None}
+  [PASS] frame_diff seat=1 call@seq1653: amount_to=1677 amount_delta=1527; raw seat2: 150->1677 | shifted-hyp raw seat1: 1677->1677 | full bets prev={'seat1': 1677, 'seat2': 150, 'seat3': 300, 'seat4': None, 'seat5': None, 'seat6': None} now={'seat1': 1677, 'seat2': 1677, 'seat3': 300, 'seat4': None, 'seat5': None, 'seat6': None}
+
+=== HAND live_dryrun_20260612_161347.jsonl hand_idx=0 seq[8..23] dealer_seat=1 hero_seat=0 ===
+  [PASS] dealer: raw dealer (majority)='seat2' counts={'seat2': 24}; DB dealer_seat=1 -> expects raw 'seat2'
+  [PASS] hero@seq13: rec.hero_stack=1490 raw.stacks.seat1=1490 (all seats matching that value: ['seat1', 'seat6']); top-level hero_seat=0; DB hands.hero_seat=0
+  [PASS] hero@seq13: rec.hero_stack=1490 raw.stacks.seat1=1490 (all seats matching that value: ['seat1', 'seat6']); top-level hero_seat=0; DB hands.hero_seat=0
+  [FAIL] folded_flag seat=2@seq10: raw folded seat3: False->False | shifted-hyp seat2: False->False | full folded prev={'seat1': False, 'seat2': False, 'seat3': False, 'seat4': False, 'seat5': False, 'seat6': False} now={'seat1': False, 'seat2': False, 'seat3': False, 'seat4': False, 'seat5': False, 'seat6': False}
+  [FAIL] folded_flag seat=0@seq10: raw folded seat1: False->False | shifted-hyp seat0: None->None | full folded prev={'seat1': False, 'seat2': False, 'seat3': False, 'seat4': False, 'seat5': False, 'seat6': False} now={'seat1': False, 'seat2': False, 'seat3': False, 'seat4': False, 'seat5': False, 'seat6': False}
+  [PASS] frame_diff seat=4 bet@seq5: amount_to=98 amount_delta=98; raw seat5: 0->98 | shifted-hyp raw seat4: 0->0 | full bets prev={'seat1': None, 'seat2': None, 'seat3': None, 'seat4': None, 'seat5': None, 'seat6': None} now={'seat1': None, 'seat2': None, 'seat3': None, 'seat4': None, 'seat5': 98, 'seat6': None}
+
+=== HAND live_dryrun_20260611_222532.jsonl hand_idx=43 seq[2385..2433] dealer_seat=4 hero_seat=0 ===
+  [PASS] dealer: raw dealer (majority)='seat5' counts={'seat3': 3, 'seat4': 12, 'seat1': 1, 'seat6': 2, 'seat5': 18}; DB dealer_seat=4 -> expects raw 'seat5'
+  [PASS] hero@seq2424: rec.hero_stack=1470 raw.stacks.seat1=1470 (all seats matching that value: ['seat1']); top-level hero_seat=0; DB hands.hero_seat=0
+  [PASS] hero@seq2425: rec.hero_stack=1470 raw.stacks.seat1=1470 (all seats matching that value: ['seat1']); top-level hero_seat=0; DB hands.hero_seat=0
+  [PASS] folded_flag seat=4@seq2385: raw folded seat5: False->True | shifted-hyp seat4: False->False | full folded prev={'seat1': False, 'seat2': False, 'seat3': False, 'seat4': False, 'seat5': False, 'seat6': False} now={'seat1': False, 'seat2': False, 'seat3': False, 'seat4': False, 'seat5': True, 'seat6': False}
+  [PASS] frame_diff seat=2 bet@seq2430: amount_to=56 amount_delta=56; raw seat3: 0->56 | shifted-hyp raw seat2: 0->0 | full bets prev={'seat1': None, 'seat2': None, 'seat3': None, 'seat4': None, 'seat5': None, 'seat6': None} now={'seat1': None, 'seat2': None, 'seat3': 56, 'seat4': None, 'seat5': None, 'seat6': None}
+
+=== HAND live_dryrun_20260611_201230.jsonl hand_idx=42 seq[528..539] dealer_seat=3 hero_seat=0 ===
+  [PASS] dealer: raw dealer (majority)='seat4' counts={'seat3': 2, 'seat4': 10}; DB dealer_seat=3 -> expects raw 'seat4'
+  [PASS] hero@seq535: rec.hero_stack=2450 raw.stacks.seat1=2450 (all seats matching that value: ['seat1']); top-level hero_seat=0; DB hands.hero_seat=0
+  [PASS] hero@seq536: rec.hero_stack=2450 raw.stacks.seat1=2450 (all seats matching that value: ['seat1']); top-level hero_seat=0; DB hands.hero_seat=0
+  [FAIL] folded_flag seat=4@seq529: raw folded seat5: True->True | shifted-hyp seat4: False->False | full folded prev={'seat1': False, 'seat2': False, 'seat3': False, 'seat4': False, 'seat5': True, 'seat6': False} now={'seat1': False, 'seat2': False, 'seat3': False, 'seat4': False, 'seat5': True, 'seat6': False}
+  [PASS] frame_diff seat=1 call@seq534: amount_to=200 amount_delta=200; raw seat2: 0->200 | shifted-hyp raw seat1: 200->200 | full bets prev={'seat1': 200, 'seat2': None, 'seat3': None, 'seat4': None, 'seat5': None, 'seat6': 100} now={'seat1': 200, 'seat2': 200, 'seat3': None, 'seat4': None, 'seat5': None, 'seat6': 100}
+
+=== V1 CANDIDATE ROWS vs RAW (chip-proof: anchor-stack drop == ante) ===
+  [PASS] candidate live_dryrun_20260608_152756.jsonl h2 seat=1: start_stacks[1] 1490 -> next-hand 1485, drop=5, ante=5 (raw key under 0-idx mapping: seat2; first raw stacks this hand={'seat1': 1490, 'seat2': 1490, 'seat3': 1475, 'seat4': 1085, 'seat5': 1040, 'seat6': 1040})
+  [PASS] candidate live_dryrun_20260608_152756.jsonl h2 seat=2: start_stacks[2] 1475 -> next-hand 1470, drop=5, ante=5 (raw key under 0-idx mapping: seat3; first raw stacks this hand={'seat1': 1490, 'seat2': 1490, 'seat3': 1475, 'seat4': 1085, 'seat5': 1040, 'seat6': 1040})
+  [PASS] candidate live_dryrun_20260608_152756.jsonl h3 seat=1: start_stacks[1] 1485 -> next-hand 1480, drop=5, ante=5 (raw key under 0-idx mapping: seat2; first raw stacks this hand={'seat1': 1485, 'seat2': 1485, 'seat3': 1470, 'seat4': 2205, 'seat5': 1020, 'seat6': 1335})
+  [PASS] candidate live_dryrun_20260608_152756.jsonl h3 seat=2: start_stacks[2] 1470 -> next-hand 1465, drop=5, ante=5 (raw key under 0-idx mapping: seat3; first raw stacks this hand={'seat1': 1485, 'seat2': 1485, 'seat3': 1470, 'seat4': 2205, 'seat5': 1020, 'seat6': 1335})
+  [PASS] candidate live_dryrun_20260608_152756.jsonl h3 seat=3: start_stacks[3] 2205 -> next-hand 2200, drop=5, ante=5 (raw key under 0-idx mapping: seat4; first raw stacks this hand={'seat1': 1485, 'seat2': 1485, 'seat3': 1470, 'seat4': 2205, 'seat5': 1020, 'seat6': 1335})
+
+TOTAL: 47 PASS / 5 FAIL

@@ -1,0 +1,108 @@
+================================================================================
+SEAT-CONVENTION AUDIT — opponent-db ingester vs scraper raw records
+2026-06-12 · branch track-policy · data/opponent_db/opponent_db.sqlite
+Trigger: Windows CC observed candidates-file seat i == scraper seat i+1 in
+scripts/extract_stale_folded_candidates.py output, and hypothesized the
+extractor "drops hero and 1-indexes the 5 opponents".
+================================================================================
+
+VERDICT: CASE A — COSMETIC EXPORT-LABELING MISMATCH. NO DB MISATTRIBUTION.
+
+The opponent DB uses ONE uniform mapping everywhere:
+    scraper raw key 'seatN'  ->  internal int N-1   (seat1->0 ... seat6->5)
+applied at exactly two raw->internal conversion points, both identical:
+  * src/nlhe/integration/scraper_schema.py: _seat_to_idx() / _SEAT_RE
+    ("seat([1-6])" -> int-1) and _seat_dict_to_array(); module doc states
+    "seat1 -> idx 0, seat6 -> idx 5"; hero default alias 'seat1' -> 0.
+  * src/nlhe/opponent_db/parser.py: _seat_arr() (idx = int(k[4:]) - 1) for
+    FrameView stacks/bets/folded/empty; _raw_dealer() round-trips the
+    top-level 0-indexed dealer_seat int back to f"seat{ds+1}" for old logs.
+Every DB seat field is internal 0-indexed: hands.hero_seat / dealer_seat /
+sb_seat / bb_seat, hands.dealt_seats_json, hands.start_stacks_json keys,
+hands.net_chips_json keys, actions.seat, showdowns.seat. No table or field
+uses a different convention (cross-field consumers — extract script's
+net_chips_json[str(seat)] lookups against dealt_seats — agree, see evidence).
+
+The v1 candidates export (tools/scraper_folded_showdown_task/
+stale_folded_candidates.jsonl) simply emitted the INTERNAL 0-indexed seat
+without converting back to the scraper's 'seatN' labels and without
+documenting the convention. Hence candidate seat i == scraper seat i+1.
+The "drops hero and 1-indexes 5 opponents" reading is incorrect: the script
+excludes hero/sb/bb seats from CANDIDACY (line `if seat in (hero_seat,
+sb_seat, bb_seat): continue`) but never re-numbers anything; hero is internal
+0 (raw seat1, fixed: all 20 sessions have hands.hero_seat == 0), so surviving
+opponent ids happen to lie in 1..5, which mimics 1-indexing by coincidence.
+
+--------------------------------------------------------------------------------
+GROUND-TRUTH VERIFICATION (raw jsonl in logs/, never code-reading alone)
+--------------------------------------------------------------------------------
+9 hands across 6 sessions (live_dryrun_20260611_{201230,204751,222532},
+live_dryrun_20260612_{161347,183701}, live_dryrun_20260608_152756),
+52 checks total = 47 strict PASS + 5 strict FAILs all resolved PASS on triage.
+Files: evidence_strict_checks.txt (full), evidence_checks.json (machine-
+readable per-hand), evidence_fail_triage.txt, scripts audit_script.py /
+triage_script.py / regen_v2_script.py.
+
+(a) HERO IDENTITY — 13 decision-frame checks. scraper_schema.py declares
+    hero = 'seat1' -> internal 0; verified rec.hero_stack == raw_record
+    .stacks['seat1'] on every decision frame sampled (e.g. 183701 h126
+    seq1407: hero_stack=2802, only seat1==2802), top-level hero_seat==0,
+    DB hands.hero_seat==0. PASS 13/13.
+
+(b) DEALER — 9 hands: majority raw `dealer` string over the hand's frames ==
+    f"seat{{db.dealer_seat+1}}" in all 9 (e.g. raw 'seat5' <-> dealer_seat=4).
+    PASS 9/9.
+
+(c) frame_diff ACTIONS — 14 events: for DB actions.seat=s, raw
+    bets['seat{s+1}'] rose to exactly amount_to between consecutive frames
+    while the shifted-hypothesis key 'seat{s}' did not move (e.g. 204751 h64
+    seq1568: DB seat=3 raise to 2051; raw seat4: 200->2051, raw seat3:
+    100->100 unchanged). PASS 14/14; shifted mapping contradicted in all.
+
+(d) folded_flag ACTIONS — 11 events: raw folded['seat{s+1}'] is the True
+    flag at the event frame in 11/11; shifted key False/absent in all.
+    5 were strict-check FAILs purely because (i) the parser emits folds
+    against a per-hand all-False baseline, not a consecutive-frame
+    transition (stale carryover flags — the very phenomenon the extractor
+    hunts), and (ii) `seq` RESTARTS mid-file on listener restart
+    (live_dryrun_20260612_161347.jsonl has two seq runs), so seq-keyed
+    lookup must be disambiguated by captured_at. Triage: 5/5 confirm the
+    0-indexed mapping, 0 support a shift. See evidence_fail_triage.txt.
+
+(e) V1 CANDIDATE ROWS — 5 rows re-proven from raw anchors: under raw key
+    'seat{s+1}', hand-start stack drop across the hand == ante exactly
+    (e.g. 152756 h3 seat=3 -> raw seat4: 2205 -> 2200, ante 5). PASS 5/5.
+
+NOTE (not a seat bug, recorded for completeness): actions.seq is only unique
+per listener run, not per file; joins on (session_id, seq) alone are unsafe
+for the one session with a mid-file restart — use captured_at as tiebreaker.
+
+--------------------------------------------------------------------------------
+DOWNSTREAM IMPACT
+--------------------------------------------------------------------------------
+* FIELD_REPORT / field_report() + _session_vpip() (db.py): CORRECT. VPIP joins
+  dealt_seats_json against actions.seat with hero excluded via hands.hero_seat
+  — all three are the same internal convention. fold-vs-shove, opp_observed,
+  H4 unlock counter: all convention-consistent. Nothing contaminated.
+* H4 spec inputs: unaffected.
+* Only artifact needing correction: the candidates EXPORT labeling, fixed by
+  stale_folded_candidates_v2.jsonl here (scraper convention + explicit header).
+  Recommended (not done — no-edits audit): have scripts/
+  extract_stale_folded_candidates.py emit 'seatN' strings or a
+  seat_convention field; notify the Windows consumer that v1 seat i ==
+  raw 'seat{i+1}'.
+* No re-ingest needed. (If ever needed: idempotent sha-keyed re-ingest of all
+  20 session jsonls is ~seconds-to-minutes on light cores — parser is pure
+  python over ~5k frames total.)
+
+--------------------------------------------------------------------------------
+V2 CANDIDATES FILE (this directory): stale_folded_candidates_v2.jsonl
+--------------------------------------------------------------------------------
+Line 1 = header: {"seat_convention": "scraper_raw_1indexed", ...mapping note}.
+Rows: seat = scraper 'seatN' string; seat_internal_0idx = the v1/DB id.
+Selection logic byte-identical to the v1 script. 324 rows vs v1's 241:
+the 241 v1 keys are a verified STRICT SUBSET; the +83 rows come only from
+sessions ingested after v1 was cut (20260612_183701: 61, 20260612_161347: 10,
+20260612_130846: 10, 20260612_125441: 2). Current staleness denominator:
+324 stale / 326 chip-proven preflop folds (2 with folded_flag transition).
+================================================================================

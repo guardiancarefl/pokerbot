@@ -61,11 +61,16 @@ def main():
                 flagged += 1
             else:
                 stale.append({
+                    # seat_convention: scraper_raw_1indexed — raw-record
+                    # seatN keys. Internal DB seats are 0-indexed (seatN
+                    # -> N-1, audit: evals/seat_convention_audit_20260612);
+                    # +1 converts back for Windows-side consumers.
+                    "seat_convention": "scraper_raw_1indexed",
                     "file": r["file_name"], "hand_idx": r["hand_idx"],
                     "first_seq": r["first_seq"], "last_seq": r["last_seq"],
                     "captured_first": r["captured_first"],
                     "captured_last": r["captured_last"],
-                    "seat": seat, "max_street": r["max_street"],
+                    "seat": f"seat{seat + 1}", "max_street": r["max_street"],
                     "ante": r["ante"], "bb": r["bb"],
                 })
 
