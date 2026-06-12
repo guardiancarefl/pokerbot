@@ -1,0 +1,136 @@
+# EXP_H2 — KILLPHIL-LEAGUE PROBE — registration (2026-06-12)
+
+Status: SPEC DRAFT — baselines pending `evals/e2_rebaseline_20260612/`
+(post-adapter-fix rows). **The spec FREEZES when §3's baseline table is
+filled; nothing launches before that.** Per Addendum 1: falsification
+thresholds in this file are pre-committed and may not be weakened after
+freeze; adversarial review of the rationale is §7.
+
+## 1. Hypothesis and rationale (evidence-cited)
+
+**H2: the champion's shove-defense gap is a self-play monoculture
+artifact, and a small league-mix exposure to killphil-class shove bots
+during continued training moves 5–15 BB fold-vs-shove decisions toward
+the optimal response without degrading self-play or panel EV.**
+
+Evidence base:
+- killphilmtt is the champion's worst panel row — v1 yardstick
+  **−0.1740 ± 0.0220** (2000 games, seed schedule 2026+7919g); the sole
+  C3 gate metric (`evals/sng_baseline_20260610/REPORT.txt`).
+- The champion was trained pure self-play (k200_real_ante recipe);
+  nothing in training ever shoved wide at it. The depth-confusion work
+  (STATUS 2026-06-08) independently shows weak short-stack play.
+- ADAPTER CAVEAT (now closed): pre-2026-06-12 the killphil row was
+  measured against a corrupted adapter (stilltoact dead + preflop
+  raises/limps miscounted — RESEARCH_MAP e2). The fix (commit a8933ea)
+  changes killphil's as-played behavior; **all H2 numbers use the
+  POST-FIX baselines** from `evals/e2_rebaseline_20260612/`.
+
+## 2. Instruments
+
+- **Adapter:** post-a8933ea `ShankyProfilePolicy` (PPL preflop
+  semantics, stilltoact derived). 172 tests green.
+- **Trainer:** `scripts/continue_k200_real_ante.py`-style continuation
+  from the deployed champion `ckpt_iter_1500.pt` (sha `b79e82dd…`),
+  with the solver's existing override band
+  (`solver6._sample_override_opponent`): `archetype_mix=0.0`,
+  **`league_mix=0.30`**, league pool = **{killphilmtt (shanky),
+  champion ckpt_iter_1000, champion ckpt_iter_0500}** sampled uniformly
+  (one pool draw per traversal, all non-traverser seats — the existing
+  semantics; scripted decisions never enter the strategy buffer).
+- **Fold-vs-shove harness (BUILD, ~2 h):**
+  `scripts/fold_vs_shove_battery.py` — a FIXED battery of preflop
+  facing-all-in decision states: hero eff-stack 5–15 BB, exactly one
+  all-in raiser, hero in {SB, BB, BTN}, blind levels L3–L7, all 169
+  canonical hand classes × a seeded sample of (depth, position, level)
+  cells, ≥ 2,000 spots total. For each spot the ORACLE response is
+  computed directly: killphil's shove range at that (depth, position)
+  is enumerated by querying the fixed profile runtime over all 169
+  classes (`evaluate_profile` on synthetic contexts); oracle =
+  argmax_{call,fold} ICM-EV given that range (equity via
+  `equity_vs_range`, ICM via `icm_equity`). Battery + oracle labels are
+  WRITTEN TO DISK ONCE and frozen before the probe (the probe is graded
+  against a file, not regenerated labels).
+- **Primary metric M1:** mean ICM-EV loss per battery spot of the
+  policy's sampled-distribution response vs the oracle response
+  (expected loss under the policy's call/fold mass, 0 when matching
+  oracle). Lower = better shove defense.
+- **Hold metrics M2:** (a) killphilmtt row, 2000 games CRN seed 2026;
+  (b) panel holds: ticketmaster, sng, tighttom rows, 2000 games CRN;
+  (c) self-anchor: 2000-game self-play row vs the unmodified champion
+  (hero=probe ckpt, opponents=champion).
+
+## 3. Baselines (FROZEN before probe launch)
+
+Filled from `evals/e2_rebaseline_20260612/` (post-fix adapter, 2000
+games, master seed 2026) + champion battery M1 run:
+
+| quantity | value |
+|---|---|
+| killphilmtt row (post-fix) | TBF |
+| ticketmaster / sng / tighttom rows (post-fix) | TBF |
+| champion M1 EV-loss on the frozen battery | TBF |
+| tighttom-vs-trickytom divergence check (must now differ) | TBF |
+
+## 4. Probe (pre-registered; ONLY after §3 freeze)
+
+500 iterations continued training on Contabo, parallel groups per the
+measured-benchmark rule (benchmark 1 iter first; pick G for ≤ 60 s/iter
+wall), league mix per §2, all other hyperparameters identical to the
+k200_real_ante recipe. Checkpoint every 100. tmux + watcher per
+Addendum 4.2. Est. 6–10 h CPU.
+
+## 5. Falsification (pre-committed; any failure ⇒ H2 dies at probe)
+
+- **F-M1 (the hypothesis):** probe ckpt_0500's M1 EV-loss must drop by
+  **≥ 25% relative** vs the champion's frozen-battery baseline. A drop
+  < 25% (or any increase) ⇒ FAIL — the league mix did not teach
+  shove-defense at probe scale.
+- **F-M2a (it transfers):** killphilmtt row must improve by **≥ +0.05
+  net/game** over the §3 baseline with the improvement ≥ 2σ_diff
+  (σ_diff = sqrt(se₁² + se₂²), CRN-paired games).
+- **F-M2b (no collapse):** each hold row (ticketmaster, sng, tighttom)
+  degrades by no more than 2σ_diff; the self-anchor row stays within
+  |net| < 2σ of 0.
+- **F-iter (sanity):** strat/adv losses stay finite and the
+  premium-fold alert tooling (C3 battery) fires nothing.
+- No seed re-rolls; no threshold shopping; one probe run. If the probe
+  is killed mid-run for an infrastructure reason (not results), it may
+  be relaunched once from iter 0 with the same seeds, recorded.
+
+## 6. Outcomes
+
+- **PASS (all of §5):** write `POD_REQUEST.md` (full-scale retrain
+  proposal with measured probe evidence); **track STOPS for operator**
+  (Addendum 2 boundary — pod spend).
+- **FAIL any:** full report per Addendum 1, RESEARCH_MAP update, H2
+  closed at probe stage; the battery + oracle harness remains as a
+  permanent panel instrument.
+
+## 7. Adversarial review (pre-launch, self-conducted per Addendum 1)
+
+- **A1 "Oracle is killphil-specific":** the M1 oracle assumes the
+  all-in raiser plays killphil's range. Against other shovers the
+  optimal response differs. DISPOSITION: accepted limitation, scoped —
+  M1 is named "killphil-optimal", not "optimal"; M2b holds guard
+  against overfitting the defense to one range.
+- **A2 "League mix could just clone killphil":** the traverser only
+  learns RESPONSES (scripted seats never write to the strategy buffer);
+  cloning is structurally impossible through this path. REJECTED.
+- **A3 "Probe scale too small to move anything":** possible — that is
+  what F-M1's 25% bar tests; a null result at 500 iters with
+  league_mix=0.30 is informative (the C3 retrain moved premium-fold
+  behavior within 500 iters at comparable scale). ACCEPTED RISK,
+  pre-committed.
+- **A4 "Adapter fix changed the target mid-program":** that is why §3
+  freezes POST-fix baselines before launch and why the re-baseline runs
+  first. RESOLVED by ordering.
+- **A5 "CRN row comparisons are not truly paired after training
+  changes hero":** correct — hero plays different actions, games
+  diverge; CRN still removes draw-order variance. σ_diff bars stated
+  for the unpaired-after-divergence case (conservative). NOTED.
+
+## 8. Cost ledger (est.)
+
+harness build 2 h · battery freeze + champion M1 ~1 h · probe 6–10 h
+CPU (tmux, non-blocking) · post-probe measurement ~2 h · report 1 h.

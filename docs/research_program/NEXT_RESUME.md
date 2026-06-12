@@ -1,4 +1,4 @@
-# NEXT_RESUME — updated 2026-06-12 ~13:30 (H1 COMPLETE; OQ-2 ship rec filed)
+# NEXT_RESUME — updated 2026-06-12 ~14:30 (H1 DEPLOYED-config; H2 spec drafted; e2 fix in)
 
 **Read first:** PROGRAM.md (incl. Addenda 1–3), EXPERIMENT_LOG.md (last
 three entries), OPERATOR_QUEUE.md (both items Resolved), then this. Cross-check `git log --oneline -10`.
@@ -27,13 +27,25 @@ three entries), OPERATOR_QUEUE.md (both items Resolved), then this. Cross-check 
   467 hands ingested incl. both 2026-06-12 night sessions).
 - **H2:** not started — NOW NEXT IN QUEUE.
 
+## In flight RIGHT NOW (2026-06-12 ~14:30)
+
+- **e2 ADAPTER FIX LANDED (a8933ea):** stilltoact derived (PPL preflop
+  semantics) + preflop BB-is-live-bet counter fix (limps were checks,
+  opens were bets). 172 tests green. **7-profile re-baseline RUNNING**
+  in tmux `e2_rebaseline` → `evals/e2_rebaseline_20260612/` (killphil
+  gate row + heavy stilltoact users + tighttom/trickytom divergence
+  check); watcher armed. Old gate row −0.1740 ± 0.0220.
+- **H2 spec DRAFTED** (`H2_KILLPHIL_LEAGUE_SPEC.md`): thresholds
+  pre-committed (F-M1 ≥25% EV-loss drop, F-M2a killphil +0.05 @2σ,
+  F-M2b panel holds); §3 baselines TBF from the re-baseline → THEN
+  freeze. Next build: `scripts/fold_vs_shove_battery.py` (harness +
+  frozen oracle battery) per spec §2.
+
 ## Exact next actions (priority order)
 
-1. **H2 spec** (`H2_KILLPHIL_LEAGUE_SPEC.md`): numeric probe
-   falsification thresholds BEFORE any probe (fold-vs-shove at 5–15BB
-   toward killphil-optimal + panel EV holds). FIRST: audit
-   killphil-class profiles for the dead `stilltoact` predicate
-   (`src/nlhe/scripted_bots/policy.py:308`) — e2 in RESEARCH_MAP.
+1. **Fill H2 spec §3 from the re-baseline, freeze, build the
+   fold-vs-shove harness, run champion M1 baseline, then launch the
+   probe** (tmux + watcher; benchmark 1 iter first).
 2. **After any live session:** ingest the log
    (`python -m scripts.ingest_session logs/live_dryrun_<TS>.jsonl`),
    update H4 counter in RESEARCH_MAP d1. The tail floor is ARMED (OQ-2 approved): audit `[FLOOR] fired=[tail]` lines in triage and log
