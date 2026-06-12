@@ -2084,3 +2084,19 @@ depth-confusion / ICM-marginal-spot weaknesses documented elsewhere.
 Raw per-game logs (`w*/games_*.jsonl`, ~7MB) are regenerable
 (deterministic, seed 2026) and noted in ARTIFACT_MANIFEST rather than
 committed; the committed summaries carry every per-profile statistic.
+
+## ICM correction v1 adopted as a STANDALONE instrument (2026-06-12)
+
+Malmuth-Harville ICM measured materially biased in this format
+(EXP_c1: underprices short-stack survival in high-dispersion bubble
+states, +0.065 at <5bb). Correction v1 (`src/nlhe/icm_correction.py`,
+piecewise-constant M2, validated 79% t3 bias cut on fresh states) is
+ADOPTED as an instrument but **wired into NOTHING by default**:
+`icm.py` and every existing consumer are untouched; any consumer
+adopts only through its own pre-registered gate (training returns =
+retrain-scale = pod item; battery oracle gated on Tier-2 n_alive=6
+measurement). Alternatives considered: correcting icm.py in place
+(rejected — silently re-prices every historical verdict); M1 smooth
+additive model (rejected — failed holdout gate G3 on micro stacks).
+DEVIATION_LOG in evals/c1_correction_20260612/ records the fit-process
+deviations; the fresh-state validation is the load-bearing evidence.
