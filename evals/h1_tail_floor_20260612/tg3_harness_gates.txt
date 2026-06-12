@@ -1,0 +1,99 @@
+TG3 HARNESS GATES — scripts/tail_floor_ab.py (EXP_H1 / H1.2 re-registration)
+Date: 2026-06-12   Host: Contabo, nice -n 19 taskset -c 0-7, .venv python 3.10
+Checkpoint b79e82dd0ce9... (deployed champion), abstraction 0fc20800dc7c...
+(sha256 echoed by ssfab.load_solver at the top of every run log)
+
+HARNESS DESIGN (reuse vs new)
+  Reused by import from scripts/short_stack_floor_ab.py (ssfab), UNMODIFIED:
+    load_solver (sha echo + feature_dim==236 assert), play_match/play_one_hand
+    (game loop, hpl blind escalation, dealer rotation, bust handling, ICM
+    terminal accounting), seeding scheme (per-game seed = base_seed + game_idx,
+    SAME seed both arms = CRN pairing), paired-delta structure.
+  New in tail_floor_ab.py:
+    - decision function: ssfab._decide is temporarily swapped (save/restore
+      contextmanager) for one that samples through
+      scripts.eval_6max_self_play._sample_action_from_policy with
+      policy_filter = make_live_policy_filter(short_stack_threshold_bb=6.0,
+      tail_floor_tau=None|0.10) — the literal deployed code path
+      (live_loop.py:907-918), hero-only; opponents raw, identical both arms.
+    - exact-commit dispatch VERIFIED exercised: filter advertises accepts_d2c;
+      instrumented run confirmed every hero filter call received a non-empty
+      discrete_to_chip map (46/46 calls, 0 without) — the tail floor prices
+      commitment from exact chip ints, not the biased pot approximation.
+    - tail-firing stats: per hero decision the chain is evaluated tail-OFF and
+      tail-ON (pure deterministic functions); outputs differ iff tail fired.
+      Sampling always uses the tail-ON output in V1.
+    - divergence: first hero sampled chip-int difference between arms
+      (identical chip streams => identical games, so chip-level first-diff is
+      exact); per-game ICM delta, all-games and diverged-only mean±SE+z.
+    - --shards/--shard: game i runs in shard i % shards; seeds unchanged.
+  Arms (H1.2): V0 = full deployed floor chain (AA/KK + check-free +
+  short-stack 6.0bb), tail OFF.  V1 = same chain + tail_floor_tau.
+  NOTE vs ssfab: ssfab's V0 is the RAW policy and its V1 is a script-local
+  short-stack-only floor with a deterministic per-decision encoder rng;
+  tail_floor_ab uses the deployed shared-rng sampling path in both arms.
+
+GATE A — V0-IDENTITY (tau disabled, tail OFF in BOTH arms): PASS
+  cmd: python -m scripts.tail_floor_ab --games 100 --base-seed 1 --hpl 5
+       --tau 0 --out evals/h1_tail_floor_20260612/tg3_gate_v0identity.json
+  100/100 games completed; per-game check over games.jsonl:
+    nonzero deltas        = 0   (every delta exactly 0.0)
+    diverged games        = 0
+    v0_icm != v1_icm      = 0
+    hands/decision-count mismatches = 0
+    tail fired 0/1747 hero decisions (chain-off arm never differs)
+  => all-games delta exactly 0, 0 diverged. GATE PASS.
+
+GATE B — comparison vs UNMODIFIED ssfab V1 arm: identity sub-check SKIPPED
+  (not comparable), labeled statistical sanity run instead.
+  Why not identity-comparable (honest skip):
+    1. Floor chains differ BY DESIGN: our V0 = full deployed chain (AA/KK +
+       check-free + short-stack from live_loop.py); ssfab V1 = script-local
+       short-stack floor only. Distributions differ at AA/KK-preflop and
+       check-free spots.
+    2. Encoder rng convention differs: ssfab._decide encodes with a
+       deterministic random.Random(cp*100003+7); the deployed path (which
+       H1.2 requires us to exercise) encodes with the shared game rng. This
+       changes postflop bucket MC draws AND the per-game rng stream, so
+       trajectories cannot match even where the floors agree.
+    3. Sampling site differs (ssfab inline rng.choices over legal keys vs
+       _sample_action_from_policy over the 9-dim policy) — draw-equivalent
+       in distribution but not a byte-identity claim we can gate on.
+  NON-GATE sanity (same seeds 1..100, hpl=5, stack 1500, max_hands 200):
+    ssfab V1 arm (unmodified)            mean hero ICM = -0.1000 ± 0.1000
+    tail_floor_ab V0 arm (full chain)    mean hero ICM = +0.0200 ± 0.1005
+    unpaired difference = +0.1200 ± 0.1418  (z=+0.85) — consistent; no
+    gross wiring defect. NOT a gate, NOT evidence about the tail floor.
+
+SHARD CHECK — PASS
+  --games 10 --shards 2 --shard {0,1}: union covers games 0..9 exactly once;
+  every per-game record byte-equal (dict-equal) to the unsharded smoke run's
+  corresponding game. CRN seeds independent of shard layout confirmed.
+
+SMOKE — 200 paired games @ tau=0.10 (seeds 1..200, hpl=5): COMPLETE
+  cmd: python -m scripts.tail_floor_ab --games 200 --base-seed 1 --hpl 5
+       --tau 0.10 --out evals/h1_tail_floor_20260612/tg3_smoke200.json
+  games completed        = 200/200
+  runtime                = 1.7 m wall, 0.52 s/paired-game (rate sagged
+                           2.22 -> 1.91 g/s over the run; oversubscribed box)
+  tail firing rate       = 2829/3830 hero decisions = 73.9% (TG2 replay
+                           figure at tau=0.10 was 71.1% — consistent)
+  games with >=1 fire    = 199/200
+  diverged games         = 161/200 (80.5%)
+  all-games delta        = +0.2000 ± 0.0764  (z=+2.62)
+  diverged-only delta    = +0.2484 ± 0.0945  (z=+2.63)
+  Direction: positive (V1 tail-ON ahead). NO CONCLUSIONS — 200 games is
+  underpowered for the F-TG3 bars; direction recorded only.
+
+PROJECTED 24k COST (seeds 1..24000 per H1.2)
+  0.52 s/paired-game x 24000 = ~12,500 s = ~3.5 h single process.
+  Inside the registration's 4-8 h CPU estimate. 8-way sharded
+  (--shards 8 --shard 0..7) nominal wall ~26 min, realistically ~40-60 min
+  on the oversubscribed EPYC; per-shard JSON+games.jsonl aggregate by
+  concatenating games.jsonl (CRN seeds are shard-invariant, verified above).
+
+FILES
+  scripts/tail_floor_ab.py                                   (new harness)
+  evals/h1_tail_floor_20260612/tg3_gate_v0identity.json[.games.jsonl]
+  evals/h1_tail_floor_20260612/tg3_smoke200.json[.games.jsonl]
+  evals/h1_tail_floor_20260612/tg3_harness_gates.txt         (this file)
