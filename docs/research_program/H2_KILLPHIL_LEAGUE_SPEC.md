@@ -34,6 +34,12 @@ Evidence base:
   vs oracle 7.7% on the frozen battery) independently shows a real
   shove-defense gap — dominantly OVER-calling. **All H2 numbers use the
   POST-FIX baselines** from `evals/e2_rebaseline_20260612/`.
+- INDEPENDENT SUPPORT (a3 decomposition, 2026-06-12): the killphil
+  deficit is **depth-flat** across terminal-depth buckets (every
+  |z| ≤ 0.61 in the v2-vs-champion artifacts) — consistent with a
+  shove-defense POLICY defect rather than depth representation, which
+  is exactly what league exposure (not encoder work) should fix.
+  `evals/a3_v2_decomposition_20260612/`.
 
 ## 2. Instruments
 
