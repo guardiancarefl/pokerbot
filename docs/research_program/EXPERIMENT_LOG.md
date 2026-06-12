@@ -617,3 +617,10 @@ LAUNCHING with the pre-logged selection (lionmttv.10, modernmikemtt,
 itmstrikea, minestackermttv.7.3; tail+shove vs tail-only; 2000 CRN
 paired games/row; bars: no row z ≤ −2, pooled ≥ 0 within noise; gray
 zone z ∈ (−2,0) = registered PASS per supplement §3).
+
+## 2026-06-13 ~00:25 — session-4 pipeline complete; H4 410/500
+
+Session 220101: 36 hands / 53 decisions / 0 lost / tail floor 25
+firings 0 argmax changes (4th consecutive in-band armed session).
+Ingested +27 opp-observed → H4 410/500. RT-1 exhibit from this session
+registered separately (RED_TEAM_LOG). Panel relaunched post-window.
