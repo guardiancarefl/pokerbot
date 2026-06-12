@@ -281,3 +281,18 @@ OFF since c9a2b14; this is configuration only.
   Finding: deployed ckpt is SLIM (no buffers) → probe rebuilds
   reservoirs; recorded in spec §4. Probe launches on §3 freeze
   (awaiting gushansen + millennium re-baseline rows).
+
+## 2026-06-12 ~12:55 (system clock) — LIVE SESSION STARTED, FULLY ARMED — compute stood down
+
+- Session `logs/live_dryrun_20260612_125441.jsonl` started; banner shows
+  **H1 tail floor ARMED tau_max=0.100 (FIRST armed live session)** plus
+  the full Stage-2 set armed/enforced (P1 anchor sum-floor, extended
+  click plans, session-abort ENFORCED, watchdog-v2 fallback N=7.0s).
+- Standing rule enforced: the two remaining e2 re-baseline rows
+  (gushansenmtt, millenniummttv.49) were KILLED mid-run for CPU
+  clearance (SIGSTOP did not stick; killed via tmux). CRN seeds make
+  the relaunch reproduce identical rows post-session. H2 probe launch
+  HELD for the same reason — spec §3 freeze now waits on both.
+- Addendum 4.6 watcher armed: on session end → triage + ingest + H4
+  counter + tail-floor anomaly check (expected band: distribution
+  adjusted ~70-75% of decisions; sampled-action changes ~4.4%).
