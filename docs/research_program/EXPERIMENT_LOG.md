@@ -234,3 +234,13 @@ for H2: the spec MUST resolve this before defining "killphil-optimal"
 — either fix stilltoact (derive yet-to-act count from the live view)
 and re-baseline, or pre-commit the probe to adapter-as-played
 semantics. Details + field-wide usage ranking in RESEARCH_MAP e2.
+
+## 2026-06-12 ~13:55 — OQ-2 RESOLVED: tail floor ARMED as standard config
+
+Operator approval line received ("Arm --tail-floor-tau 0.10 in the
+dry-run checklist's listener line as standard config"). DRYRUN_CHECKLIST
+listener line updated (+ ARMED-banner check + expected firing magnitudes
++ post-session triage step). OQ-2 → Resolved. **H1 is now DEPLOYED
+pending the next live session; first armed-session observations to be
+logged here under H1.** No code change — the flag was built, gated, and
+OFF since c9a2b14; this is configuration only.

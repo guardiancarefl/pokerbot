@@ -9,8 +9,8 @@ EXPERIMENT_LOG.md, NEXT_RESUME.md — authoritative for this track).
 Headlines: **EXP_H1 (commitment-scaled tail floor) complete, all four
 gates green** — TG3 24k paired +0.1227 ± 0.0073 ICM/game (z=16.8); TG4
 attacker re-measure improved standard-game robustness 0.10/game (paired
-z=−4.8). **Ship recommendation OQ-2 OPEN: arming `--tail-floor-tau 0.10`
-is operator-only; flag remains OFF.** OQ-1 (scraper folded-flag +
+z=−4.8). **OQ-2 APPROVED 2026-06-12: `--tail-floor-tau 0.10` is standard
+config in the DRYRUN_CHECKLIST listener line.** OQ-1 (scraper folded-flag +
 showdown capture) resolved → Windows brief at
 `docs/WINDOWS_TASK_SCRAPER_FOLDED_SHOWDOWN.md` (folded flag measured
 ~100% stale per fold event, 0/241). H3 archive at 16 sessions; H4

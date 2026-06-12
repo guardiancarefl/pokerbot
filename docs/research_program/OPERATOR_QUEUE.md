@@ -6,26 +6,22 @@ resume; move resolved entries to the Resolved section with the decision.
 
 ## Open
 
-### OQ-2 (2026-06-12) — SHIP RECOMMENDATION: arm the H1 tail floor (`--tail-floor-tau 0.10`)
-- **Decision needed:** arm the commitment-scaled tail floor in the live
-  dry-run config (add `--tail-floor-tau 0.10` to the listener launch
-  line). Build is already deployed and OFF by default; arming is a
-  flag, not a code change.
-- **Evidence (full pre-registered chain, EXPERIMENT_LOG 2026-06-12):**
-  TG1 byte-identity 16/16 logs; TG2 exact-commit all bars at tau=0.10
-  (seq-315 caught, 0 argmax changes, altered 4.37%); **TG3 24k paired:
-  all-games ICM delta +0.1227 +/- 0.0073 (z=16.8)**, diverged-only
-  +0.1597 +/- 0.0095; **TG4 attacker re-measure: kill bar not
-  triggered** — standard extraction IMPROVED 0.10/game vs B4 (paired
-  z=-4.8), bubble -0.0295 +/- 0.0151 vs B5on (robustness direction).
-- **Caveats already registered:** self-play-vs-field generalization
-  (H1.2 narrowed claim), stale-attacker TG4 instrument (trained vs the
-  no-tail champion; a tail-aware attacker is future work).
-- **Recommendation:** ARM for the next live dry-run session; audit
-  `[FLOOR] fired=[tail]` lines in the session triage (dryrun_triage
-  already joins floor firings).
+(none)
 
 ## Resolved
+
+### OQ-2 (filed 2026-06-12, RESOLVED 2026-06-12) — H1 tail floor ARMED as standard config
+- **Decision (operator, verbatim):** "APPROVED. Arm --tail-floor-tau 0.10
+  in the dry-run checklist's listener line as standard config."
+- **Action taken:** `docs/DRYRUN_CHECKLIST.md` listener launch line now
+  includes `--tail-floor-tau 0.10` with the ARMED-banner check
+  (`ARMED: tau_max=0.100`), expected firing magnitudes (distribution
+  adjusted ~70–75% of decisions, sampled action changes ~4.4% per TG2),
+  and the post-session triage eyeball step.
+- **Evidence basis:** EXP_H1 TG1–TG4 all PASS
+  (`reports/EXP_H1_tail_floor.md` §7). Registered caveats stand
+  (self-play evidence, stale-attacker TG4): first armed live session
+  observations go under H1 in EXPERIMENT_LOG.
 
 ### OQ-1 (filed 2026-06-12, RESOLVED 2026-06-12) — Windows scraper: folded-flag fix + showdown capture
 - **Decision (operator):** APPROVED, scope EXPANDED, priority RAISED.

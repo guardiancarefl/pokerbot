@@ -38,9 +38,23 @@ TS=$(date +%Y%m%d_%H%M%S)
     --checkpoint runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt \
     --abstraction runs/abstraction_20260521_223018_retrofit/abstraction.pkl \
     --fallback-seconds 7.0 \
+    --tail-floor-tau 0.10 \
     --out logs/live_dryrun_${TS}.jsonl \
     |& tee logs/live_dryrun_${TS}.stdout
 ```
+
+`--tail-floor-tau 0.10` is **STANDARD CONFIG as of 2026-06-12** (operator
+approval: OQ-2). It arms the H1 commitment-scaled tail floor, last in
+the floor chain — EXP_H1 verdict chain TG1–TG4 all PASS
+(`docs/research_program/reports/EXP_H1_tail_floor.md` §7). The startup
+banner must echo `ARMED: tau_max=0.100`; firings appear as
+`[FLOOR] fired=[tail]` in the `.stdout` and are joined by triage.
+Post-session: eyeball the tail firings in the triage decision digest.
+Expected order of magnitude (self-play instrument numbers — live may
+differ): distribution adjusted on ~70–75% of hero decisions, but the
+SAMPLED action changes on only ~4.4% of decision frames (TG2
+exact-commit). A session where tail firings change most argmaxes is
+anomalous — the floor only prunes sub-τ tails.
 
 `--fallback-seconds 7.0` is **operator-optional** (drop the line to run
 without it): if hero is to-act and no decision exists within 7s, the

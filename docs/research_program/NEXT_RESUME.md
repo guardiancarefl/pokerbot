@@ -1,16 +1,16 @@
 # NEXT_RESUME — updated 2026-06-12 ~13:30 (H1 COMPLETE; OQ-2 ship rec filed)
 
 **Read first:** PROGRAM.md (incl. Addenda 1–3), EXPERIMENT_LOG.md (last
-three entries), OPERATOR_QUEUE.md (OQ-2 OPEN — ship recommendation),
-then this. Cross-check `git log --oneline -10`.
+three entries), OPERATOR_QUEUE.md (both items Resolved), then this. Cross-check `git log --oneline -10`.
 
 ## State
 
 - **H1: EXPERIMENT COMPLETE — TG1 ✓ TG2 ✓ TG3 ✓ TG4 ✓.** TG3 24k:
   all-games +0.1227 ± 0.0073 (z=16.8). TG4: kill bar not triggered;
   standard-game robustness IMPROVED 0.10/game vs B4 (paired z=−4.8).
-  Full record: `reports/EXP_H1_tail_floor.md` §7. **Ship rec = OQ-2;
-  arming (`--tail-floor-tau 0.10`) is operator-only; flag stays OFF.**
+  Full record: `reports/EXP_H1_tail_floor.md` §7. **OQ-2 APPROVED
+  2026-06-12: `--tail-floor-tau 0.10` is STANDARD CONFIG in the
+  DRYRUN_CHECKLIST listener line.**
   Registered caveats stand: self-play (not live-field) evidence;
   stale-attacker TG4 (fresh attacker retrain = pod-class, only if it
   matters post-arming).
@@ -36,8 +36,7 @@ then this. Cross-check `git log --oneline -10`.
    (`src/nlhe/scripted_bots/policy.py:308`) — e2 in RESEARCH_MAP.
 2. **After any live session:** ingest the log
    (`python -m scripts.ingest_session logs/live_dryrun_<TS>.jsonl`),
-   update H4 counter in RESEARCH_MAP d1. If the operator armed the tail
-   floor (OQ-2), audit `[FLOOR] fired=[tail]` lines in triage and log
+   update H4 counter in RESEARCH_MAP d1. The tail floor is ARMED (OQ-2 approved): audit `[FLOOR] fired=[tail]` lines in triage and log
    first-live-session observations under H1 in EXPERIMENT_LOG.
 3. **When Windows CC delivers the OQ-1 scraper patch:** run the
    pre-committed Contabo gates (WINDOWS_TASK doc §5: G1 replay +
