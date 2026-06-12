@@ -296,3 +296,24 @@ OFF since c9a2b14; this is configuration only.
 - Addendum 4.6 watcher armed: on session end → triage + ingest + H4
   counter + tail-floor anomaly check (expected band: distribution
   adjusted ~70-75% of decisions; sampled-action changes ~4.4%).
+
+## 2026-06-12 ~13:45 — POST-SESSION PIPELINE (Addendum 4.6) — first armed-session H1 read: IN-BAND
+
+Live window had 3 listener starts; sessions 125441 + 130846 ended (a
+third listener is up idle, waiting for the sender — heavy evals remain
+HELD). Pipeline results:
+
+- **H1 first armed live observations (the headline): IN-BAND.** Main
+  session 130846: 10/12 fresh decisions tail-fired (~83% vs ~70-75%
+  self-play band at n=12), **0 argmax changes** (TG2 predicted 0), one
+  check-when-free FOLD→CALL save. Triage: 233 frames / 22 decisions /
+  0 red flags / 0 hands lost.
+- **Session 125441 (the operator's restart explains itself):** 84
+  frames, 88.1% skips, 7 red-flag safe-folds, 3 hands lost. NEW failure
+  class observed: `derive_action_sequence emitted an illegal action`
+  (chip_int=30 at 15/25 blinds — between BB and min-raise; smells like
+  a bet-field OCR misread, e.g. 130→30). Bridge behaved correctly
+  (safe-fold, no wrong decision). FLAGGED for the Windows scraper
+  task's orbit (bet-field OCR); not yet a spec change — n=1 session.
+- **Ingest:** both sessions; **H4 counter 259 → 272/500.** RESEARCH_MAP
+  d1 updated.

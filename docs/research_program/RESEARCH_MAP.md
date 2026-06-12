@@ -76,8 +76,9 @@ ICM-adjusted return in training; LOW if ICM holds (still worth a report).
 session 042058 added 35 hands / 19 opp-observed; 035454 re-ingest was an
 idempotent replace); reconciliation vs the audited session-1 ground truth
 exact (37 hands / 61 decision frames).
-**H4 unlock counter: 259/500 opponent-observed hands — LOCKED** (~4–6 more
-sessions at current rates).
+**H4 unlock counter: 272/500 opponent-observed hands — LOCKED** (d2
+projection: ~11-13 more sessions; per-opponent reads capped by session
+length — see evals/d2_ci_vs_n_20260612/).
 **d2. Pre-threshold field pre-analysis** (exploratory, pre-approved): first
 cut exists in `data/opponent_db/FIELD_REPORT.txt` (opponent VPIP lower bound
 20.2%, 506 voluntary actions). Remaining: CI-vs-n analysis for
