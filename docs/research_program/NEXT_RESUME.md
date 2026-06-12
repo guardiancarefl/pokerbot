@@ -1,57 +1,61 @@
-# NEXT_RESUME — updated 2026-06-12 ~06:10 (H1 phase-1 + H3 complete)
+# NEXT_RESUME — updated 2026-06-12 ~13:30 (H1 COMPLETE; OQ-2 ship rec filed)
 
-**Read first:** PROGRAM.md (incl. Addenda 1–3), EXPERIMENT_LOG.md (last two
-entries), OPERATOR_QUEUE.md (check stale), then this. Cross-check
-`git log --oneline -10`.
+**Read first:** PROGRAM.md (incl. Addenda 1–3), EXPERIMENT_LOG.md (last
+three entries), OPERATOR_QUEUE.md (OQ-2 OPEN — ship recommendation),
+then this. Cross-check `git log --oneline -10`.
 
 ## State
 
-- **H1:** build + TG1 (byte-identity, 2 runs, final 16/16 logs) + TG2
-  (exact-commit, ALL BARS PASS at τ=0.10) complete; adversarial review
-  incorporated; **H1.2 re-registered** (report §4: τ=0.10, 24k paired games,
-  full floor chain both arms). Full record: `reports/EXP_H1_tail_floor.md`.
-  **TG3/TG4 DEFERRED until no live dry-run is active**
-  (`pgrep -f run_live_dryrun` — was active since 04:20 today).
-- **H3:** pipeline built, 15 sessions ingested, H4 counter **240/500
-  LOCKED**. Post-session ingest line is in DRYRUN_CHECKLIST. OQ-1 filed
-  (scraper showdown capture, non-blocking).
-- **H2:** not started (next in queue).
-- Everything committed on `track-policy` (see git log for the H1/H3 commits).
+- **H1: EXPERIMENT COMPLETE — TG1 ✓ TG2 ✓ TG3 ✓ TG4 ✓.** TG3 24k:
+  all-games +0.1227 ± 0.0073 (z=16.8). TG4: kill bar not triggered;
+  standard-game robustness IMPROVED 0.10/game vs B4 (paired z=−4.8).
+  Full record: `reports/EXP_H1_tail_floor.md` §7. **Ship rec = OQ-2;
+  arming (`--tail-floor-tau 0.10`) is operator-only; flag stays OFF.**
+  Registered caveats stand: self-play (not live-field) evidence;
+  stale-attacker TG4 (fresh attacker retrain = pod-class, only if it
+  matters post-arming).
+- **TG4 instrument recovered** (was runpod-env-branch-only): ckpts at
+  `mirrors/tier0_20260611/runs/` (sha-verified), script + sng_baseline
+  bubble seam extracted from the bundle, bubble4 artifact regenerated +
+  byte-identity-proven. `evals/h1_tail_floor_20260612/tg4/`.
+- **OQ-1 RESOLVED** (operator, 2026-06-12): Windows brief written —
+  `docs/WINDOWS_TASK_SCRAPER_FOLDED_SHOWDOWN.md` (folded-flag fix
+  prioritized; showdown capture; bridge-untouched gates pre-committed).
+  Awaiting operator routing to a Windows CC session. New forensic
+  headline: folded flag ~100% stale per fold event (0/241).
+- **H3:** pipeline live; **H4 counter 259/500 LOCKED** (16 sessions /
+  467 hands ingested incl. both 2026-06-12 night sessions).
+- **H2:** not started — NOW NEXT IN QUEUE.
 
 ## Exact next actions (priority order)
 
-1. DONE 06:55 — TG3 harness built+gated (scripts/tail_floor_ab.py, V0-identity PASS). Original item: adapt
-   `scripts/short_stack_floor_ab.py` per H1.2 registration — both arms run
-   the full deployed floor chain via `make_live_policy_filter`, arm-1 adds
-   `tail_floor_tau=0.10`, exact-commit d2c path; V0-identity check (adapted
-   harness with tail OFF must reproduce the un-adapted harness byte-for-byte
-   on ~100 games) BEFORE any 24k launch.
-2. **H1 TG3 RUN (ONLY when `pgrep -f run_live_dryrun` is empty AND
-   `tmux ls | grep dryrun` shows no live session):**
-   `nice -n 19 taskset -c 0-7 .venv/bin/python -m scripts.tail_floor_ab --games 24000 --base-seed 1 --hpl 5 --tau 0.10 --out evals/h1_tail_floor_20260612/tg3_24k.json` (or 8-way sharded, ~1 h).
-   Ship bars in H1.2 (log entry 2026-06-12 item 8). Then TG4: re-measure
-   B4/B5-style batteries floors-ON+tail using
-   `runs/attacker_v1/ckpt_iter_1000.pt` + `runs/attacker_bubble_v1/ckpt_iter_0600.pt`
-   via `scripts/attacker_extraction_eval.py`. Log verdicts; if both pass →
-   OPERATOR_QUEUE ship recommendation (arming is operator-only).
-3. **H2 spec** (`H2_KILLPHIL_LEAGUE_SPEC.md`): numeric probe falsification
-   thresholds BEFORE any probe (fold-vs-shove at 5–15BB toward
-   killphil-optimal + panel EV holds). FIRST: audit killphil-class profiles
-   for the dead `stilltoact` predicate
+1. **H2 spec** (`H2_KILLPHIL_LEAGUE_SPEC.md`): numeric probe
+   falsification thresholds BEFORE any probe (fold-vs-shove at 5–15BB
+   toward killphil-optimal + panel EV holds). FIRST: audit
+   killphil-class profiles for the dead `stilltoact` predicate
    (`src/nlhe/scripted_bots/policy.py:308`) — e2 in RESEARCH_MAP.
-4. **After tonight's session ends:** ingest the new log
-   (`python -m scripts.ingest_session logs/live_dryrun_20260612_042058.jsonl`
-   + any later ones), update H4 counter in RESEARCH_MAP d1.
-5. Idle-time exploratory (pre-approved, RESEARCH_MAP backlog):
-   tail-concentration map (~2 h, substrate = TG2 JSON) → blur map → v2 EV
-   decomposition (a3) → field CI-vs-n (d2).
-6. After 3rd completed experiment (H1 counts as 1 when TG3/TG4 verdict
-   lands): write PROGRAM_REVIEW.md entry per Addendum 1.4.
+2. **After any live session:** ingest the log
+   (`python -m scripts.ingest_session logs/live_dryrun_<TS>.jsonl`),
+   update H4 counter in RESEARCH_MAP d1. If the operator armed the tail
+   floor (OQ-2), audit `[FLOOR] fired=[tail]` lines in triage and log
+   first-live-session observations under H1 in EXPERIMENT_LOG.
+3. **When Windows CC delivers the OQ-1 scraper patch:** run the
+   pre-committed Contabo gates (WINDOWS_TASK doc §5: G1 replay +
+   injection, G2 ingester/schema_version, G3 first-live-session stale
+   rate ≤5%).
+4. Idle-time exploratory (pre-approved, RESEARCH_MAP backlog):
+   tail-concentration map (~2 h, substrate = TG2 JSON) → blur map → v2
+   EV decomposition (a3) → field CI-vs-n (d2).
+5. **After the 3rd completed experiment** (H1 is #1; H3 was
+   infrastructure, not an EV experiment — judgement call recorded:
+   review triggers after H2's verdict): write PROGRAM_REVIEW.md per
+   Addendum 1.4.
 
 ## Standing rules (do not drop)
 
 nice -n 19 + taskset -c 0-7 everything; >30min evals only with no dry-run
-active; no live-path arming without operator approval line; gates never
-weakened; falsification criteria pre-committed BEFORE experiments; update
-EXPERIMENT_LOG + this file after every step; operator boundaries → 
+active (`pgrep -f run_live_dryrun` + `tmux ls | grep dryrun` BOTH clear);
+no live-path arming without operator approval line; gates never weakened;
+falsification criteria pre-committed BEFORE experiments; update
+EXPERIMENT_LOG + this file after every step; operator boundaries →
 OPERATOR_QUEUE and continue (Addendum 2).

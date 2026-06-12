@@ -189,3 +189,36 @@ wall). Aggregation coverage gate: 24000/24000 games exactly once.
 tau=0.10).** Evidence: `evals/h1_tail_floor_20260612/tg3_24k.json`
 (+ .games.jsonl, 8 shard files, logs). Remaining before ship
 recommendation: TG4 (kill bar F-TG4).
+
+## 2026-06-12 ~13:15 — H1 TG4 VERDICT: PASS both batteries → H1 EXPERIMENT COMPLETE
+
+Batteries (4,000 games each, 0 tainted, seeds = the archived B4/B5
+schedule, champion floors ON + tail tau=0.10; attacker ckpts sha-matched
+to the archived instrument):
+
+- **TG4-standard vs B4 (-0.0400 +/- 0.0158):** extraction
+  **-0.1405 +/- 0.0157** — the attacker extracts LESS with the tail
+  armed; unpaired z = -4.52, CRN-paired delta -0.1005 +/- 0.0210
+  (z = -4.78, 2219/4000 games identical). The tail floor INCREASED
+  adversarial robustness in the standard game.
+- **TG4-bubble vs B5on (-0.0998 +/- 0.0133):** extraction
+  **-0.1293 +/- 0.0136**; unpaired z = -1.55, paired -0.0295 +/- 0.0151
+  (z = -1.96, 3089/4000 identical). Robustness direction, not
+  individually significant — and nowhere near the kill region.
+
+**F-TG4 kill bar: NOT triggered** ("extraction worse than the B4/B5
+floors-ON baselines by > 2 sigma" = worse FOR THE CHAMPION = attacker
+extraction HIGHER by > 2 sigma; both batteries moved the OTHER way).
+
+TOOLING DISCLOSURE (gates unchanged, tooling corrected): the first run
+of scripts/tg4_verdict.py had the kill-bar SIGN inverted (flagged
+attacker-does-WORSE as a kill). Caught on direction review against the
+registered F-TG4 wording + the B-report's "armor" framing before any
+verdict was logged; fixed in the script (kill = z > +2), both verdicts
+re-emitted. The registered criterion text was never edited. Numbers
+were identical in both runs; only the verdict label changed.
+
+**EXP_H1 chain: TG1 PASS, TG2 PASS (exact-commit), TG3 PASS (z=16.8),
+TG4 PASS ⇒ ship recommendation filed (OQ-2). Arming is operator-only;
+flag stays OFF until the operator arms `--tail-floor-tau 0.10`.**
+Evidence: `evals/h1_tail_floor_20260612/tg4/` (+ tg3_24k.json).

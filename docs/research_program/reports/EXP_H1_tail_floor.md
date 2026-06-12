@@ -180,3 +180,56 @@ dies — that is a fully acceptable outcome under F-TG3.
   (never armed without an approval line).
 - Fresh-attacker retrain vs the floored champion (closes the A3/TG4 blind
   spot) — pod-class cost; only if H1 ships and matters.
+
+## 7. TG3 + TG4 verdicts (2026-06-12, run after the dry-run-free window opened)
+
+### TG3 — 24k paired EV gate: PASS
+
+Run exactly as re-registered (§4): 24,000 paired games, seeds 1..24000,
+tau=0.10, full deployed floor chain both arms, hpl=5, 8 CRN-invariant
+shards (28.7 m wall). Coverage 24000/24000 exactly once. No re-rolls, no
+tau shopping.
+
+| metric | value |
+|---|---|
+| all-games paired ICM delta V1−V0 | **+0.1227 ± 0.0073 (z = +16.76)** |
+| diverged-only delta (n=18,436; 76.8%) | **+0.1597 ± 0.0095 (z = +16.78)** |
+| tail firing rate (473,915 hero decisions) | 74.0% (TG2: 71.1%; smoke: 73.9%) |
+| ship bars (z > −2; diverged mean > 0 @ z ≥ 2) | both PASS |
+
+The §5 alternative ("pruned tails are load-bearing balance ⇒ delta ≤ 0")
+is refuted in self-play at this tau: removing the incidental-aggression
+tail is worth ~0.12 ICM-units per game against the blueprint itself.
+The §4 narrowed-claim caveat stands: this is blueprint-vs-blueprint
+evidence, not live-field evidence.
+
+### TG4 — attacker re-measure: kill bar NOT triggered (both batteries)
+
+Instrument recovery (the runpod-env-only script/ckpts/artifact were
+absent from the tree) + byte-identity repro gates:
+`evals/h1_tail_floor_20260612/tg4/tg4_instrument_gates.txt`. Champion
+floors ON + tail tau=0.10; attacker ckpts sha-identical to the B-report
+instrument; same seed schedule (CRN-paired columns pair per game).
+
+| battery | baseline (floors ON) | with tail | unpaired z | paired delta (z) |
+|---|---|---|---|---|
+| standard vs attacker_v1 | −0.0400 ± 0.0158 | **−0.1405 ± 0.0157** | −4.52 | −0.1005 ± 0.0210 (−4.78) |
+| bubble vs attacker_bubble_v1 | −0.0998 ± 0.0133 | **−0.1293 ± 0.0136** | −1.55 | −0.0295 ± 0.0151 (−1.96) |
+
+Negative = the attacker extracts LESS. F-TG4 kills only if the tail
+floor makes the champion MORE exploitable by > 2σ; both batteries moved
+in the robustness direction — the standard battery significantly so.
+The A3 caveat stands: these attackers were trained vs the no-tail
+champion and cannot expose tail-opened leaks; a fresh attacker retrain
+remains the only way to close that blind spot.
+
+Tooling disclosure: the first emission of `scripts/tg4_verdict.py` had
+the kill-bar sign inverted (attacker-does-worse flagged as KILL). Fixed
+against the registered wording before any verdict was logged; numbers
+unchanged between runs. Recorded in EXPERIMENT_LOG.
+
+### Verdict
+
+**EXP_H1 COMPLETE: TG1 ✓ TG2 ✓ TG3 ✓ TG4 ✓.** Ship recommendation filed
+as OPERATOR_QUEUE OQ-2 (`--tail-floor-tau 0.10` in the listener launch
+line). Arming is operator-only; the flag remains OFF until approved.

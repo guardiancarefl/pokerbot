@@ -1,0 +1,23 @@
+{
+  "registration": "EXP_H1 H1.2 / TG4",
+  "mode": "bubble",
+  "games": 4000,
+  "n_tainted": 0,
+  "extraction_mean": -0.12929259132523702,
+  "extraction_se": 0.013614738282858007,
+  "raw_net_mean": 0.361,
+  "baseline": {
+    "mean": -0.0998,
+    "se": 0.0133
+  },
+  "z_vs_baseline": -1.5495588592014486,
+  "kill_bar_attacker_gain_z_gt_2": false,
+  "verdict": "PASS",
+  "paired_vs_baseline_records": {
+    "n_pairs": 4000,
+    "mean": -0.0295,
+    "se": 0.015086064259232762,
+    "z": -1.9554470598218368,
+    "n_identical": 3089
+  }
+}

@@ -102,7 +102,10 @@ def main():
 
     z_vs_base = (m - args.baseline_mean) / math.sqrt(
         se ** 2 + args.baseline_se ** 2)
-    kill = z_vs_base < -2.0
+    # "Worse than baseline" in F-TG4 means worse FOR THE CHAMPION: the
+    # attacker extracts MORE with the tail floor armed (z > +2). Lower
+    # extraction = the floor increased robustness = the good direction.
+    kill = z_vs_base > 2.0
 
     paired = None
     if args.baseline_glob:
@@ -128,7 +131,7 @@ def main():
                             if not r["tainted"]) / len(vals),
         "baseline": {"mean": args.baseline_mean, "se": args.baseline_se},
         "z_vs_baseline": z_vs_base,
-        "kill_bar_z_lt_minus2": kill,
+        "kill_bar_attacker_gain_z_gt_2": kill,
         "verdict": "KILL" if kill else "PASS",
         "paired_vs_baseline_records": paired,
     }
