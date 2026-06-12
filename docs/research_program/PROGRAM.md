@@ -173,3 +173,29 @@ organ banks). Spine:
 4. Logged in RESEARCH_MAP pillar (f) with the full-report standard.
 Frontier work fills idle/exploratory cycles on expected-information-value;
 it never displaces a gated experiment mid-run.
+
+## ADDENDUM 4 (2026-06-12) — Perpetual operation (permanent)
+
+Operator directive, recorded verbatim in intent:
+
+1. **Never end a turn while unblocked work exists.** After completing any
+   item, immediately select the next per the priority cascade (gated
+   queue → specs → exploratory → synthesis → RESEARCH_MAP grooming) and
+   continue. "Report and stop" is a violation unless EVERY track is
+   BLOCKED-ON-OPERATOR.
+2. **Long computations launch in their own tmux sessions** with
+   completion-watchers that re-invoke the manager; while one cooks, work
+   the next track — never idle-wait on a run.
+3. **Context self-management:** when context grows long, proactively
+   write a complete handoff (NEXT_RESUME.md + a one-paragraph
+   SESSION_HANDOFF note) BEFORE quality degrades, then continue — the
+   handoff is insurance, not a stopping point.
+4. **The queue never empties:** whenever fewer than 3 actionable items
+   remain, run a PIPELINE REFILL pass — mine the RESEARCH_MAP, the
+   latest live-session data, and all experiment reports for the
+   next-highest expected-information-value experiments; pre-register
+   their falsification criteria; add them. Synthesizing
+   novel/proprietary directions per Addendum 3 is part of refill.
+5. **Every completed experiment triggers:** full report, RESEARCH_MAP
+   update, refill check, and a one-line OPERATOR_QUEUE status note so
+   the operator's morning read always reflects reality.
