@@ -4,25 +4,20 @@ Rule (Addendum 2): a track that hits an operator boundary parks its request
 HERE and the program continues elsewhere. Check for stale entries at every
 resume; move resolved entries to the Resolved section with the decision.
 
-## Status (morning read — updated 2026-06-12 ~16:00)
+## Status (morning read — updated 2026-06-12 ~21:30)
 
-H1 COMPLETE + ARMED (tail floor standard config per your OQ-2 approval;
-first armed session will be auto-triaged per Addendum 4.6 watcher).
-H2 probe IMMINENT: spec registered, battery frozen (champion
-over-calls shoves: 35.9% call mass vs 7.7% oracle), adapter fixed —
-**killphil gate row is now −0.080 ± 0.022, not −0.174: ~half the
-believed extraction was adapter artifact** (e2 fix, commit a8933ea).
-**H2 VERDICT: FAIL at probe — all load-bearing bars broken; H2 closed**
-(full report committed; mechanism note inside — slim-checkpoint
-fine-tuning fragility is the live suspect, H2b is a refill candidate).
-P2 build starts now per your sequencing. H1 live:
-2 armed sessions, both in-band, 0 tail-caused argmax changes. **P2
-bet-closure recovery: APPROVED TO BUILD (your line, 2026-06-12) —
-queued immediately after the H2 verdict chain, full gate treatment per
-the original session-3 spec; today's AcKc safe-fold becomes a test
-fixture.** OQ-1 Windows brief still awaits
-routing (today's 49 suspect-frames/session says it matters). Nothing
-else needs you.
+**Cycle 1 closed; PROGRAM_REVIEW.md #1 is the read.** Three experiments
+in ~18 h: H1 PASS (tail floor armed; 3 live sessions in-band, 0
+tail-caused argmax changes incl. 104 firings in your 140-hand session);
+H2 FAIL at probe (league fine-tune collapsed — mechanism confounded by
+the slim checkpoint; H2b possible later, sequenced after cheaper
+items); c1 MATERIAL (MH ICM underprices short-stack survival +0.065
+below 5bb in high-dispersion bubble states — correction fit + consumer
+re-price audit queued). P2 is BUILT+GATED-OFF and your AcKc turned out
+to be a dead-SB reconstruction failure, not a displacement — the real
+fix (carry blind structure into replay) is specced for the next build
+slot. H4 at 383/500 with the spec pre-drafted. **Decisions needed:
+P2 arming; OQ-1 Windows routing. No pod case stands.**
 
 ## POD_CASE (standing one-liner — Addendum 5.5, update on every state change)
 
