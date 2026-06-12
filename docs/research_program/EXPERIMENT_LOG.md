@@ -603,3 +603,17 @@ Tier-1 seat residuals; holdout gates BEFORE rollouts; pre-registered
    ~3.03; bubble-cell scope only) listed in REPORT.txt §4. Manager
    actions on ADOPT: commit + DECISIONS.md + RESEARCH_MAP c1; queue
    Tier-2 / Tier-2b / retrain-flag pod item.
+
+## 2026-06-12 ~23:40 — slate-2a M-C VERDICT: HOLDS (improves) — panel condition MET
+
+M-C (floor-on killphil row, 2000 CRN games): hero net **−0.0300 ±
+0.0224** vs post-fix baseline −0.0800 ± 0.0223 — within-1-SE bar not
+just met but beaten by ~2.2σ_diff toward improvement; extraction
+halved. F3 passes vs both baselines (pre-fix 0.174 noted, post-fix
+authoritative). Floor fired 3,134/3,410 qualifying nodes (6.8% of all
+decisions qualify). With M-A F1 PASS and M-B F2 PASS: **slate-2a probe
+PASSES wholesale.** Supplement §2 condition met → SHOVIEST-ROWS PANEL
+LAUNCHING with the pre-logged selection (lionmttv.10, modernmikemtt,
+itmstrikea, minestackermttv.7.3; tail+shove vs tail-only; 2000 CRN
+paired games/row; bars: no row z ≤ −2, pooled ≥ 0 within noise; gray
+zone z ∈ (−2,0) = registered PASS per supplement §3).
