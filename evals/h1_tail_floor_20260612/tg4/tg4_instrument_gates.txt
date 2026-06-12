@@ -1,0 +1,59 @@
+TG4 INSTRUMENT GATES — 2026-06-12 (pre-launch record)
+
+PROBLEM FOUND AT RESUME: the TG4 instrument referenced by PROGRAM.md /
+NEXT_RESUME did not exist in the working tree —
+scripts/attacker_extraction_eval.py, runs/attacker_v1/,
+runs/attacker_bubble_v1/, and data/training_dist_v1_bubble4.json.gz were
+all absent (built on the runpod-env branch 2026-06-11, never merged).
+
+RECOVERY
+  - checkpoints: mirrors/tier0_20260611/runs/attacker_v1/ckpt_iter_1000.pt
+      sha256 72c823d3dc08cd13c82a424bc4af531b43aabb7eece3bbde198b95c41dfb5948
+      == the sha recorded in the archived b3/b4 shard logs (exact instrument).
+    mirrors/tier0_20260611/runs/attacker_bubble_v1/ckpt_iter_0600.pt
+      sha256 aa38ea65a7eedfa1506e166ba24d295631326891dc8cea7a68945c0813d4d580
+  - script: extracted from the runpod-env git bundle
+      (mirrors/tier0_20260611/runpod-env_tier0_20260611.bundle,
+       refs/bundles/runpod-env) -> scripts/attacker_extraction_eval.py
+  - sng_baseline.py: took the bundle's additive starting_level /
+      starting_dealer seam (single hunk, default path bit-for-bit).
+  - bubble artifact: REGENERATED as the n_alive==4 filter of
+      data/training_dist_v1.json.gz -> 96,749 rows (matches the archived
+      count exactly); order-preservation proven by the gate below.
+
+ADAPTATION FOR TG4 (the only delta vs the original B4/B5 instrument):
+  --tail-tau FLOAT (requires --floors on) threads tail_floor_tau into
+  make_live_policy_filter for the CHAMPION seats. Default None = chain
+  byte-identical to the original instrument (tail floor never called).
+
+GATE 1 — B4 STANDARD REPRO: PASS, BYTE-IDENTICAL
+  games 0..199 at HEAD (floors on, no tail) vs archived
+  b4_std_on_shard00.jsonl: diff of sorted records empty (200/200).
+  [RESULT] net/game = -0.1300 +/- 0.0703 (matches archive slice).
+
+GATE 2 — B5 BUBBLE REPRO: PASS, BYTE-IDENTICAL
+  games 0..199 at HEAD (bubble mode, floors on, no tail, REGENERATED
+  bubble4 artifact) vs archived b5_bub_on_shard00.jsonl: diff empty
+  (200/200). Proves the regenerated artifact's row ORDER matches the
+  original (row_rng.choice is order-sensitive) and the seed schedule
+  re-derivation is exact.
+
+GATE 3 — VERDICT TOOLING SELF-TEST: PASS
+  scripts/tg4_verdict.py on the repro outputs vs the archives:
+  paired n=200, delta exactly 0.0, 200/200 identical, both modes;
+  bubble extraction re-derivation asserts hero_seat per game.
+
+Both gates ran WITH the --tail-tau code present (tau=None), so they are
+also the V0-identity check for the TG4 adaptation.
+
+LAUNCH PLAN (after TG3 verdict):
+  TG4-std: --mode standard --floors on --tail-tau 0.10
+           --attacker-ckpt mirrors/.../attacker_v1/ckpt_iter_1000.pt
+           4000 games, 8 shards (game-count 500)
+  TG4-bub: --mode bubble --floors on --tail-tau 0.10
+           --attacker-ckpt mirrors/.../attacker_bubble_v1/ckpt_iter_0600.pt
+           4000 games, 8 shards
+  Kill bar F-TG4 (pre-committed): extraction worse than B4 (-0.0400
+  +/- 0.0158) / B5on (-0.0998 +/- 0.0133) by > 2 sigma => KILL
+  regardless of TG3. CRN-paired per-game delta vs the archived records
+  reported as diagnostic only.

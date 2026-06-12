@@ -169,7 +169,8 @@ def play_one_hand_sng(seat_to_policy, structure, stacks, level_idx,
 def play_sng_game(hero_policy, opp_policy, structure, *, seed, hero_seat=0,
                    starting_stack=1500, hands_per_level=5, max_hands=200,
                    mode="sample", stage_acc=None, starting_stacks=None,
-                   seat_to_policy=None):
+                   seat_to_policy=None, starting_level=1,
+                   starting_dealer=None):
     """Play one full double-up SNG. Returns a per-game record dict.
 
     stage_acc: optional dict accumulating per-hand hero ICM-equity deltas
@@ -184,8 +185,23 @@ def play_sng_game(hero_policy, opp_policy, structure, *, seed, hero_seat=0,
     stacks = (list(starting_stacks) if starting_stacks is not None
               else [starting_stack] * N_SEATS)
     max_level = max(bl.level for bl in structure.blind_schedule)
-    level = 1
+    # starting_level: test/measurement seam (Tier-0 bubble battery starts
+    # games at harvested mid-tournament states). Default 1 = v1 yardstick
+    # behavior bit-for-bit.
+    level = min(starting_level, max_level)
+    # starting_dealer: measurement seam paired with starting_stacks — a
+    # harvested mid-tournament state carries its own button. The rng draw
+    # still happens unconditionally so the deal/runout stream is unchanged
+    # vs the default path (seed schedule discipline). If the given dealer
+    # is busted in starting_stacks, rotate forward to the next alive seat
+    # (the game loop's own rotation rule).
     dealer = rng.randrange(N_SEATS)
+    if starting_dealer is not None:
+        dealer = int(starting_dealer)
+        guard = 0
+        while stacks[dealer] == 0 and guard < N_SEATS:
+            dealer = (dealer + 1) % N_SEATS
+            guard += 1
     hands_played = 0
     hands_in_level = 0
     rec = {"seed": seed, "tainted": False, "exception": None, "capped": False}
