@@ -1,0 +1,28 @@
+P1 — S1 screen verdict (pre-registered bar: extraction/game >= +0.040 with z >= 2)
+
+Harness: scripts/attacker_extraction_eval.py --mode bubble --floors off,
+hero = sibling checkpoint, champion = ckpt_iter_1500 (b79e82dd), 2,000
+games each, master_seed 2026 (CRN-paired with B5's first 2,000 games).
+Extraction = gross final payout-equity minus hero's starting
+Malmuth-Harville ICM equity (B5 convention; neutral = 0), recomputed per
+game from the seed ^ 0xB0BB1E row schedule (scripts/f1_ensemble_probe.py
+p1ext). Note: this instrument involves NO scripted Shanky bots, so it is
+unaffected by the a8933ea adapter fix — B5's numbers remain same-instrument.
+
+| candidate            | extraction/game        | z     | S1 bar | verdict |
+|----------------------|------------------------|-------|--------|---------|
+| ckpt_1300            | -0.0583 +/- 0.0184     | -3.17 | >= +0.040, z>=2 | FAIL |
+| ckpt_1400            | -0.0193 +/- 0.0184     | -1.05 | >= +0.040, z>=2 | FAIL |
+| attacker_bubble_v1   | -0.0783 +/- 0.0132 (B5)| -5.93 | (B5 = its P1)   | FAIL (pre-recorded) |
+
+S1 (specialist exists, zero-training-cost): FALSIFIED for all candidates.
+Per registration: Arm A of P2 never runs; Arm B (attacker_bubble_v1,
+transfer hypothesis) runs regardless (K4 not fired — well under budget).
+
+b2 (checkpoint-selection variance) free answer, bubble stage:
+paired ckpt_1300 - ckpt_1400 bubble net/game = -0.039 +/- 0.020 (z = -1.93),
+1593/2000 games outcome-identical; ckpt_1400 - attacker_bubble_v1 paired
+= +0.055 +/- 0.023 (z = +2.37); ckpt_1300 - attacker_bubble_v1 paired
+= +0.016 +/- 0.023 (z = +0.70). Adjacent-checkpoint bubble swing is at
+the edge of detection at n=2000 and BOTH siblings sit at-or-below the
+ckpt_1500 champion's bubble par — no sibling carries a hidden bubble edge.

@@ -1,0 +1,10 @@
+{
+  "killphilmtt": "evals/e2_rebaseline_20260612/killphilmtt",
+  "itmstrikea": "evals/e2_rebaseline_20260612/itmstrikea",
+  "itmstrikec": "evals/e2_rebaseline_20260612/itmstrikec",
+  "fixedlimitheadsup": "evals/f1_ensemble_probe_20260612/champ_postfix/fixedlimitheadsup",
+  "loosenluckymtt": "evals/f1_ensemble_probe_20260612/champ_postfix/loosenluckymtt",
+  "modernmikecash": "evals/f1_ensemble_probe_20260612/champ_postfix/modernmikecash",
+  "thefixersng": "evals/f1_ensemble_probe_20260612/champ_postfix/thefixersng",
+  "littlegreen": "evals/f1_ensemble_probe_20260612/champ_postfix/littlegreen"
+}

@@ -1,0 +1,27 @@
+{
+  "record_type": "run_header",
+  "probe": "f1_ensemble_probe_20260612",
+  "design": "docs/research_program/ENSEMBLE_PROBE_DESIGN.md",
+  "member_ckpts": {
+    "champion": {
+      "path": "/home/quant/pokerbot/runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt",
+      "sha256": "b79e82dd0ce9e78e4eb666b7379df953dadbf2a6e026c6bd4b6eec695e9b1b11"
+    },
+    "specialist(=champion)": {
+      "path": "/home/quant/pokerbot/runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt",
+      "sha256": "b79e82dd0ce9e78e4eb666b7379df953dadbf2a6e026c6bd4b6eec695e9b1b11"
+    }
+  },
+  "abstraction_sha256": "0fc20800dc7ce89ea950c975decbd530ac6c6f3c164105e8ab99d24359de4c8e",
+  "config": {
+    "abstraction": "runs/abstraction_20260521_223018_retrofit/abstraction.pkl",
+    "champion_ckpt": "runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt",
+    "cmd": "p0",
+    "games": 50,
+    "master_seed": 2026,
+    "out_dir": "evals/f1_ensemble_probe_20260612/p0"
+  },
+  "git_head": "a7d12a4255963b24d0fc761ad6f4ce58a6d3be8c",
+  "git_dirty": true,
+  "started_utc": "2026-06-12T18:24:04.269532+00:00"
+}

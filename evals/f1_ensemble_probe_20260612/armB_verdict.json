@@ -1,0 +1,207 @@
+{
+  "arm": "armB",
+  "rows": {
+    "fixedlimitheadsup": {
+      "ensemble_net": 0.344,
+      "ensemble_se": 0.02099599961897504,
+      "champion_net": 0.345,
+      "champion_se": 0.020987794071793252,
+      "paired_delta": -0.001,
+      "paired_se": 0.010819335886019353,
+      "paired_z": -0.09242711480028926,
+      "n_paired": 2000,
+      "n_outcome_identical": 1883,
+      "tainted": 0,
+      "bubble_ens": {
+        "hands": 7649.0,
+        "mean": 0.00316124866032383
+      },
+      "bubble_champ": {
+        "hands": 7723.0,
+        "mean": 0.002438778507742478
+      }
+    },
+    "loosenluckymtt": {
+      "ensemble_net": 0.808,
+      "ensemble_se": 0.013174520864152895,
+      "champion_net": 0.81,
+      "champion_se": 0.01311297067792039,
+      "paired_delta": -0.002,
+      "paired_se": 0.004473030740113527,
+      "paired_z": -0.44712413488784547,
+      "n_paired": 2000,
+      "n_outcome_identical": 1980,
+      "tainted": 0,
+      "bubble_ens": {
+        "hands": 3953.0,
+        "mean": 0.01132680050553398
+      },
+      "bubble_champ": {
+        "hands": 3756.0,
+        "mean": 0.013061387548894281
+      }
+    },
+    "killphilmtt": {
+      "ensemble_net": -0.085,
+      "ensemble_se": 0.022279755384653575,
+      "champion_net": -0.08,
+      "champion_se": 0.022289010745208053,
+      "paired_delta": -0.005,
+      "paired_se": 0.01196072863644839,
+      "paired_z": -0.41803473283085,
+      "n_paired": 2000,
+      "n_outcome_identical": 1857,
+      "tainted": 0,
+      "bubble_ens": {
+        "hands": 13915.0,
+        "mean": -0.0003726036527971141
+      },
+      "bubble_champ": {
+        "hands": 13824.0,
+        "mean": -0.0007094034895881352
+      }
+    },
+    "modernmikecash": {
+      "ensemble_net": 0.866,
+      "ensemble_se": 0.011181323714122582,
+      "champion_net": 0.866,
+      "champion_se": 0.011181323714122582,
+      "paired_delta": 0.0,
+      "paired_se": 0.006165955684624434,
+      "paired_z": 0.0,
+      "n_paired": 2000,
+      "n_outcome_identical": 1962,
+      "tainted": 0,
+      "bubble_ens": {
+        "hands": 4267.0,
+        "mean": 0.012048389832318533
+      },
+      "bubble_champ": {
+        "hands": 4073.0,
+        "mean": 0.015880847521088787
+      }
+    },
+    "itmstrikea": {
+      "ensemble_net": 0.29,
+      "ensemble_se": 0.02139976635386471,
+      "champion_net": 0.318,
+      "champion_se": 0.021199952830136204,
+      "paired_delta": -0.028,
+      "paired_se": 0.008101902271084713,
+      "paired_z": -3.4559784928448978,
+      "n_paired": 2000,
+      "n_outcome_identical": 1934,
+      "tainted": 0,
+      "bubble_ens": {
+        "hands": 8434.0,
+        "mean": 0.00263165747839814
+      },
+      "bubble_champ": {
+        "hands": 8126.0,
+        "mean": 0.009043241815033673
+      }
+    },
+    "itmstrikec": {
+      "ensemble_net": 0.33,
+      "ensemble_se": 0.021108055334397816,
+      "champion_net": 0.356,
+      "champion_se": 0.020895741192884256,
+      "paired_delta": -0.026,
+      "paired_se": 0.008584803400469448,
+      "paired_z": -3.0286075041133995,
+      "n_paired": 2000,
+      "n_outcome_identical": 1926,
+      "tainted": 0,
+      "bubble_ens": {
+        "hands": 8178.0,
+        "mean": 0.0024328499780016466
+      },
+      "bubble_champ": {
+        "hands": 7788.0,
+        "mean": 0.008547474302923512
+      }
+    },
+    "thefixersng": {
+      "ensemble_net": 0.416,
+      "ensemble_se": 0.0203340109176719,
+      "champion_net": 0.432,
+      "champion_se": 0.020166506886419373,
+      "paired_delta": -0.016,
+      "paired_se": 0.005990821727650147,
+      "paired_z": -2.6707521484328787,
+      "n_paired": 2000,
+      "n_outcome_identical": 1964,
+      "tainted": 0,
+      "bubble_ens": {
+        "hands": 8295.0,
+        "mean": 0.008510956670634192
+      },
+      "bubble_champ": {
+        "hands": 7964.0,
+        "mean": 0.012579288639303533
+      }
+    },
+    "littlegreen": {
+      "ensemble_net": 0.969,
+      "ensemble_se": 0.005524445673549522,
+      "champion_net": 0.97,
+      "champion_se": 0.005435991169970756,
+      "paired_delta": -0.001,
+      "paired_se": 0.001000000000000024,
+      "paired_z": -0.9999999999999759,
+      "n_paired": 2000,
+      "n_outcome_identical": 1999,
+      "tainted": 0,
+      "bubble_ens": {
+        "hands": 2290.0,
+        "mean": 0.01155456596428666
+      },
+      "bubble_champ": {
+        "hands": 2210.0,
+        "mean": 0.01252447321333506
+      }
+    }
+  },
+  "B1": {
+    "metric": "pooled 6-row bubble-stage delta/hand (ensemble - champion)",
+    "ensemble": {
+      "hands": 46396.0,
+      "mean": 0.003389778844726518,
+      "se": 0.0006659837261108523
+    },
+    "champion": {
+      "hands": 45290.0,
+      "mean": 0.0058030971301038245,
+      "se": 0.0006776198682866574
+    },
+    "delta": -0.0024133182853773067,
+    "se": 0.0009501068410138524,
+    "z": -2.5400493725548503,
+    "pass": false
+  },
+  "B2": {
+    "controls": {
+      "thefixersng": {
+        "z": -2.6707521484328787,
+        "pass": false
+      },
+      "littlegreen": {
+        "z": -0.9999999999999759,
+        "pass": true
+      }
+    },
+    "pass": false
+  },
+  "B3": {
+    "ensemble_killphil_net": -0.085,
+    "bar": -0.10392145727289678,
+    "pass": true
+  },
+  "B4": {
+    "pooled_6row_paired_delta": -0.010333333333333333,
+    "se": 0.003565723433756591,
+    "positive": false,
+    "note": "sign check, not kill"
+  },
+  "arm_pass": false
+}

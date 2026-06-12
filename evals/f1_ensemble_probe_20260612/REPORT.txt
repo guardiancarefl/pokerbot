@@ -1,0 +1,146 @@
+f1 ENSEMBLE PROBE — FINAL REPORT (2026-06-12)
+Registration: docs/research_program/ENSEMBLE_PROBE_DESIGN.md (followed as
+written; deviations from registered assumptions documented below).
+Status: COMPLETE. P0 PASS; P1 S1-FALSIFIED; P2 Arm A never ran (per
+registration); P2 Arm B FALSIFIED (B1 fail + B2 fail). K2 FIRED: the
+cheap-organ ensemble hypothesis is FALSIFIED. Negative result, first-class
+(Addendum 1.2). Nothing ships.
+
+Run identity: champion = ckpt_iter_1500 sha256 b79e82dd...; specialist
+(Arm B) = attacker_bubble_v1 ckpt_iter_0600 sha256 aa38ea65...;
+abstraction sha256 0fc20800.... All compute nice -n 19 taskset -c 0-3;
+stand-down watch (live listener + STANDDOWN file) armed throughout the
+resumed session; no stand-down event fired.
+
+K5 RULING (made before any compute)
+  H2 FAILED at probe 2026-06-12 (reports/EXP_H2_killphil_league.md: every
+  load-bearing bar broken; champion remains the deployed reference). K5's
+  text fires only if H2 *PASSES* before P2 ("an H2-retrained champion
+  changes the baseline"). An H2 FAIL leaves champion-b79e82dd as the
+  baseline this design measures against — unchanged. K5 does NOT kill;
+  the probe proceeds. Ruling recorded here and in results.json.
+
+P0 — selector mechanics (bar: bit-identical records): PASS
+  EnsemblePolicy(champion, champion), 50 yardstick games vs killphilmtt,
+  master_seed 2026: per-game records BIT-IDENTICAL to plain
+  CheckpointPolicy (bar met; K1 not fired). Bonus identity: the plain run
+  is also bit-identical to the committed post-fix champion records
+  (e2_rebaseline killphilmtt, first 50 games) — environment reproduces
+  the standing instrument exactly.
+  Collision characterization (constructed starting_stacks, test seam):
+  6/5/4-alive and uneven-4 cases inferred exactly; the 1-chip-live-seat
+  case inferred 4 vs true 5 — precisely the benign UNDERCOUNT documented
+  in design 1.1 (live path unaffected; scraper alive[] is ground truth).
+
+P1 — S1 screen (bar: extraction/game >= +0.040, z >= 2): ALL FAIL
+  attacker_extraction_eval --mode bubble --floors off, 2,000 games each,
+  CRN seeds 2026+7919g (paired with B5's first 2,000). No Shanky bots in
+  this instrument -> unaffected by the a8933ea adapter fix; B5 comparable.
+    ckpt_1300:          -0.0583 +/- 0.0184  (z = -3.17)  FAIL
+    ckpt_1400:          -0.0193 +/- 0.0184  (z = -1.05)  FAIL
+    attacker_bubble_v1: -0.0783 +/- 0.0132  (z = -5.93)  FAIL (B5, pre-recorded)
+  S1 (a zero-training-cost bubble specialist exists) is FALSIFIED. Per
+  registration, P2 Arm A never runs; Arm B (transfer hypothesis) stays
+  licensed.
+  b2 free answer (bubble-stage checkpoint variance, CRN-paired):
+  1300-1400 = -0.039 +/- 0.020 (z=-1.93, 1593/2000 outcome-identical);
+  1400 beats attacker_bubble_v1 by +0.055 +/- 0.023 (z=+2.37). Adjacent
+  checkpoints sit at-or-below ckpt_1500's bubble par — no hidden edge.
+
+INSTRUMENT CORRECTION (deviation from a registered assumption)
+  The design registered P2 pairing against evals/sng_baseline_20260610/
+  champion records. Those are PRE-FIX readings: commit a8933ea
+  (2026-06-12 12:26, e2 stilltoact/BB-live-bet PPL fix) changed scripted-
+  bot behavior, and the committed standing rule (e2_rebaseline REPORT)
+  forbids mixing pre/post-fix rows. Resolution executed: pair against
+  POST-FIX champion rows — reuse e2_rebaseline killphilmtt/itmstrikea/
+  itmstrikec; regenerate the 5 missing rows CRN-identically (bit-identity
+  of the fresh champion run against post-fix records verified in P0).
+  Regenerated 2026-06-12 20:02-20:18 (champ_postfix/, 2,000 games each,
+  tainted=0): fixedlimitheadsup +0.345, loosenluckymtt +0.810,
+  modernmikecash +0.866, thefixersng +0.432, littlegreen +0.970.
+  B3's bar therefore reads against the post-fix champion killphil row
+  (-0.0800 +/- 0.0223), same no-worsening semantics as registered. Note
+  the 1.2 bubble-bleed table that motivated row selection is pre-fix;
+  the registered 8 rows are kept as frozen.
+  (The 18:37 live-listener stand-down that suspended the first attempt is
+  recorded in results.json; the resumed session saw no listener.)
+
+P2 — Arm A: NEVER RAN (no P1 passer; per registration)
+
+P2 — Arm B: Ensemble(champion, attacker_bubble_v1) — FALSIFIED
+  8 rows x 2,000 games, master_seed 2026, hpl 5, mode sample, floors off
+  (exact v1 yardstick configuration), CRN-paired per game against the
+  post-fix champion baselines above. tainted=0 on all rows. Full verdict
+  json: armB_verdict.json.
+
+  Pre-registered bars (design table, fixed before any run):
+  B1  pooled 6-row bubble-stage delta/hand (ensemble - champion),
+      PASS requires > 0 with z >= 2:
+        ensemble +0.003390 (46,396 hands) vs champion +0.005803
+        (45,290 hands); delta = -0.002413 +/- 0.000950, z = -2.54.
+      FAIL — wrong sign, significantly: the specialist makes the bubble
+      WORSE. (SE unpaired/conservative — per-game stage records do not
+      exist on the baseline side.)
+  B2  control rows not significantly negative (paired z > -2):
+        thefixersng  -0.016 +/- 0.006 per game (z = -2.67)  FAIL (harm)
+        littlegreen  -0.001 +/- 0.001 per game (z = -1.00)  pass
+      FAIL — a positive-bubble control row is significantly harmed.
+  B3  killphilmtt net/game >= champion - 2*SE_paired
+      (-0.0800 - 2*0.0120 = -0.1039):
+        ensemble -0.0850 +/- 0.0223 (paired delta -0.005, z = -0.42).
+      PASS — worst row not significantly worsened (not improved either).
+  B4  pooled 6-row paired net/game delta > 0 (sign check, not kill):
+        -0.0103 +/- 0.0036  NEGATIVE — consistent with B1/B2.
+      Note: every significant paired row delta is negative (itmstrikea
+      -0.028 z=-3.46, itmstrikec -0.026 z=-3.03, thefixersng -0.016
+      z=-2.67); no row improved.
+  Arm pass requires B1 ^ B2 ^ B3: ARM B FALSIFIED (K3 also fires on B2).
+
+KILL CRITERIA — FINAL
+  K1 seam:      not fired (P0 PASS).
+  K2 S1 dead:   FIRED — no Rank-1 candidate passed P1 AND Arm B failed B1.
+                The cheap-organ ensemble (composite champion + existing
+                bubble checkpoint behind the trivial n_alive==4 selector)
+                is FALSIFIED. Do not re-run without new evidence. The only
+                registered follow-up is the Rank-3 bubble-league specialist
+                probe — gated on the H2 chain and its own pre-registration
+                (and H2 itself FAILED 2026-06-12, so that gate is not open).
+  K3 harm:      FIRED for Arm B (B2: thefixersng z = -2.67) — independent
+                of B1, the specialist sells a control row.
+  K4 budget:    not fired (~1.5 h compute total across both sessions, well
+                under 6 h). The 18:37 live-listener stand-down was the
+                type-of-problem clause, resolved by night-shift resume.
+  K5 staleness: not fired (H2 FAILED; baseline unchanged).
+
+HEADLINE
+  The ensemble SHELL works (P0: selector seam validated bit-identical,
+  live-path feasibility per design 4 unchallenged). Every available ORGAN
+  fails: both champion siblings are at-or-below champion bubble par (P1),
+  and the BR-trained attacker not only loses to the champion at the bubble
+  head-to-head (B5) but, composed in, degrades bubble-stage EV against the
+  field (B1 z=-2.54) and bleeds a positive control row (B2 z=-2.67). The
+  transfer hypothesis is dead. Residual question — a purpose-trained
+  bubble-league specialist (Rank 3) — requires its own pre-registration
+  and is gated on the H2 chain per the registration.
+
+OPERATOR FOLLOW-UPS (out of scope for this probe's new-files-only rule)
+  - Append EXPERIMENT_LOG_ENTRY.txt + this outcome to
+    docs/research_program/EXPERIMENT_LOG.md.
+  - Write reports/EXP_F_ENSEMBLE_PROBE.md from this REPORT (design 5
+    verdict-logging); add RESEARCH_MAP pillar (f) entry f3 = FALSIFIED;
+    credit b2 with P1's checkpoint-variance answer.
+
+ARTIFACTS
+  scripts/f1_ensemble_probe.py        EnsemblePolicy + driver (new file)
+  p0/                                 bit-identity games + collision json
+  p1/                                 2x2000 bubble jsonl + p1ext + verdict
+  champ_postfix/                      5 regenerated post-fix champion rows
+                                      (2,000 games + summary.json each)
+  armB/                               8 ensemble rows (games + summary each)
+  armB_verdict.json                   B1-B4 verdicts (analyze output)
+  baseline_manifest.json              machine-readable pairing map
+  results.json                        machine-readable final state
+  EXPERIMENT_LOG_ENTRY.txt            registration stamp (new-files-only
+                                      rule; operator to append to
+                                      docs/research_program/EXPERIMENT_LOG.md)

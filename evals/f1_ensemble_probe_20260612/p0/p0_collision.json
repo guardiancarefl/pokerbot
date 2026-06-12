@@ -1,0 +1,87 @@
+[
+  {
+    "case": "6_alive",
+    "stacks": [
+      1500,
+      1500,
+      1500,
+      1500,
+      1500,
+      1500
+    ],
+    "true_hand_start_alive": 6,
+    "inferred_n_alive_values": [
+      6
+    ],
+    "n_decisions": 7,
+    "error": null
+  },
+  {
+    "case": "5_alive",
+    "stacks": [
+      1500,
+      1500,
+      1500,
+      1500,
+      1500,
+      0
+    ],
+    "true_hand_start_alive": 5,
+    "inferred_n_alive_values": [
+      5
+    ],
+    "n_decisions": 5,
+    "error": null
+  },
+  {
+    "case": "4_alive",
+    "stacks": [
+      1500,
+      1500,
+      1500,
+      1500,
+      0,
+      0
+    ],
+    "true_hand_start_alive": 4,
+    "inferred_n_alive_values": [
+      4
+    ],
+    "n_decisions": 4,
+    "error": null
+  },
+  {
+    "case": "4_alive_uneven",
+    "stacks": [
+      2000,
+      2500,
+      3000,
+      1500,
+      0,
+      0
+    ],
+    "true_hand_start_alive": 4,
+    "inferred_n_alive_values": [
+      4
+    ],
+    "n_decisions": 4,
+    "error": null
+  },
+  {
+    "case": "5_alive_one_chip",
+    "stacks": [
+      1500,
+      1500,
+      1500,
+      1500,
+      1,
+      0
+    ],
+    "true_hand_start_alive": 5,
+    "inferred_n_alive_values": [
+      4
+    ],
+    "n_decisions": 4,
+    "error": null
+  }
+]

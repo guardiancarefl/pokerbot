@@ -1,0 +1,82 @@
+{
+  "probe": "f1_ensemble_probe",
+  "date": "2026-06-12",
+  "registration": "docs/research_program/ENSEMBLE_PROBE_DESIGN.md",
+  "status": "COMPLETE_FALSIFIED_K2",
+  "K5_ruling": {
+    "fired": false,
+    "basis": "H2 probe FAILED 2026-06-12 (docs/research_program/reports/EXP_H2_killphil_league.md). K5 text fires only on an H2 PASS (an H2-retrained champion would change the baseline). H2 failing leaves champion-b79e82dd as the deployed reference, unchanged. Probe licensed to proceed."
+  },
+  "P0": {
+    "verdict": "PASS",
+    "bar": "per-game records bit-identical: EnsemblePolicy(champion, champion) vs plain CheckpointPolicy, 50 games vs killphilmtt, master_seed 2026",
+    "bit_identical": true,
+    "postfix_instrument_match": "p0 plain run additionally bit-identical to first 50 committed post-fix champion records (evals/e2_rebaseline_20260612/killphilmtt/)",
+    "collision_characterization": {
+      "clean_cases_exact": true,
+      "one_chip_live_seat": "true 5-alive inferred as 4 (UNDERCOUNT, specialist fires) — exactly the benign collision documented in design 1.1",
+      "artifact": "evals/f1_ensemble_probe_20260612/p0/p0_collision.json"
+    },
+    "K1": "not fired"
+  },
+  "P1": {
+    "verdict": "S1 FALSIFIED — no zero-training-cost candidate passes",
+    "bar": "extraction/game >= +0.040 with z >= 2 (fixed pre-run)",
+    "instrument_note": "bubble extraction involves no scripted Shanky bots, so it is unaffected by the a8933ea adapter fix; B5 numbers are same-instrument",
+    "candidates": {
+      "ckpt_1300": {"extraction_per_game": -0.0583, "stderr": 0.0184, "z": -3.17, "n": 2000, "pass": false},
+      "ckpt_1400": {"extraction_per_game": -0.0193, "stderr": 0.0184, "z": -1.05, "n": 2000, "pass": false},
+      "attacker_bubble_v1": {"extraction_per_game": -0.0783, "stderr": 0.0132, "z": -5.93, "n": 4000, "pass": false, "source": "B5 pre-recorded (its P1 per registration)"}
+    },
+    "b2_free_answer": {
+      "paired_1300_minus_1400_bubble_net": {"delta": -0.039, "se": 0.0202, "z": -1.93, "n": 2000, "outcome_identical_games": 1593},
+      "paired_1400_minus_attacker_bubble_v1": {"delta": 0.055, "se": 0.0232, "z": 2.37},
+      "paired_1300_minus_attacker_bubble_v1": {"delta": 0.016, "se": 0.0229, "z": 0.70},
+      "reading": "adjacent-checkpoint bubble swing at the edge of detection at n=2000; both siblings at-or-below champion bubble par"
+    },
+    "consequence": "Arm A of P2 never runs (per registration). Arm B (attacker_bubble_v1 transfer hypothesis) licensed to run."
+  },
+  "P2": {
+    "verdict": "Arm B FALSIFIED (B1 fail + B2 fail; B3 pass; B4 negative)",
+    "arm_A": "never ran (no P1 passer, per registration)",
+    "arm_B": {
+      "history": "licensed 2026-06-12; first launch suspended by live-listener stand-down 18:37 (run_live_dryrun.py port 9000); resumed night shift 20:02 after listener check came back clean, completed 20:50",
+      "config": "Ensemble(champion ckpt_1500 b79e82dd, attacker_bubble_v1 ckpt_0600 aa38ea65), 8 rows x 2000 games, master_seed 2026, hpl 5, mode sample, floors off, CRN-paired vs post-fix champion baselines; tainted=0 all rows",
+      "bars": {
+        "B1": {"metric": "pooled 6-row bubble-stage delta/hand (ensemble - champion)", "delta": -0.0024133, "se": 0.0009501, "z": -2.54, "pass": false, "note": "wrong sign, significant — specialist makes the bubble worse"},
+        "B2": {"thefixersng": {"paired_z": -2.67, "pass": false}, "littlegreen": {"paired_z": -1.0, "pass": true}, "pass": false},
+        "B3": {"ensemble_killphil_net": -0.085, "bar": -0.1039, "pass": true},
+        "B4": {"pooled_6row_paired_delta": -0.01033, "se": 0.00357, "positive": false, "note": "sign check, not kill; itmstrikea -0.028 z=-3.46, itmstrikec -0.026 z=-3.03 also significantly negative"}
+      },
+      "arm_pass": false,
+      "detail": "evals/f1_ensemble_probe_20260612/armB_verdict.json"
+    },
+    "baseline_regeneration": "5 post-fix champion rows regenerated 20:02-20:18 (champ_postfix/, 2000 games each, tainted=0): fixedlimitheadsup +0.345, loosenluckymtt +0.810, modernmikecash +0.866, thefixersng +0.432, littlegreen +0.970",
+    "instrument_correction_required": {
+      "issue": "registered champion pairing target evals/sng_baseline_20260610/ is a PRE-FIX instrument reading; adapter fix a8933ea (2026-06-12 12:26) changed scripted-bot behavior; standing rule in evals/e2_rebaseline_20260612/REPORT.txt forbids mixing pre/post-fix rows",
+      "resolution": "pair against POST-FIX champion rows: reuse evals/e2_rebaseline_20260612/{killphilmtt,itmstrikea,itmstrikec}; regenerate the 5 missing rows (fixedlimitheadsup, loosenluckymtt, modernmikecash, thefixersng, littlegreen) with identical CRN config — relaunches were in flight when the listener appeared (partial logs in evals/f1_ensemble_probe_20260612/champ_postfix/)",
+      "verified": "fresh plain-champion run is bit-identical to committed post-fix killphilmtt records — CRN pairing valid against post-fix rows",
+      "B3_note": "B3 bar evaluates against the post-fix champion killphil row (-0.0800 +/- 0.0223), same no-worsening-beyond-2*SE_paired semantics; the registered -0.174 is a pre-fix reading of the same row"
+    },
+    "K2_status": "DECIDED — FIRED: (no P1 passer) AND (Arm B fails B1). Cheap-organ ensemble FALSIFIED."
+  },
+  "kill_criteria": {
+    "K1": "not fired (P0 PASS)",
+    "K2": "FIRED — no Rank-1 candidate passed P1 AND Arm B failed B1; cheap-organ ensemble falsified; only registered follow-up is the Rank-3 bubble-league specialist probe (own pre-registration, gated on the H2 chain — H2 itself FAILED 2026-06-12)",
+    "K3": "FIRED for Arm B — B2 control harm (thefixersng paired z = -2.67)",
+    "K4": "budget not exceeded (~1.5 h compute total across both sessions); 18:37 live-listener stand-down was the type-of-problem clause, resolved by night-shift resume; no listener during resumed session",
+    "K5": "not fired (H2 FAILED, baseline unchanged)"
+  },
+  "resume_point": null,
+  "completed_utc": "2026-06-12T20:51:00+00:00",
+  "artifacts": {
+    "harness": "scripts/f1_ensemble_probe.py (new file; EnsemblePolicy + thin driver per design 3)",
+    "p0": "evals/f1_ensemble_probe_20260612/p0/",
+    "p1": "evals/f1_ensemble_probe_20260612/p1/",
+    "baseline_manifest": "evals/f1_ensemble_probe_20260612/baseline_manifest.json",
+    "champ_postfix_baselines": "evals/f1_ensemble_probe_20260612/champ_postfix/",
+    "armB_rows": "evals/f1_ensemble_probe_20260612/armB/",
+    "armB_verdict": "evals/f1_ensemble_probe_20260612/armB_verdict.json",
+    "registration_stamp": "evals/f1_ensemble_probe_20260612/EXPERIMENT_LOG_ENTRY.txt"
+  }
+}

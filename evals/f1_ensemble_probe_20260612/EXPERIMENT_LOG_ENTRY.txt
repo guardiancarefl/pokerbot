@@ -1,0 +1,30 @@
+EXPERIMENT_LOG entry — written BEFORE P0 launch per design §5 verdict-logging.
+(Recorded here as a new file; appending to docs/research_program/EXPERIMENT_LOG.md
+is left to the operator — this probe ran under a new-files-only rule.)
+
+2026-06-12 — f1 ENSEMBLE PROBE — LAUNCH
+Registration: docs/research_program/ENSEMBLE_PROBE_DESIGN.md (committed, frozen).
+Executed exactly as written: P0 bit-identity smoke -> P1 sibling-checkpoint
+bubble screen (bar: extraction >= +0.040, z >= 2) -> P2 CRN yardstick rows
+(bars B1-B4), kill criteria K1-K5 as registered.
+
+K5 RULING (checked before any compute): H2 probe FAILED 2026-06-12
+(docs/research_program/reports/EXP_H2_killphil_league.md — all load-bearing
+bars broken; "Champion remains the deployed reference; nothing here touches
+live"). K5 fires only on an H2 PASS (an H2-retrained champion would change
+the baseline). H2 failing leaves champion-b79e82dd as the baseline this
+design measures against — unchanged. K5 does NOT kill. Probe proceeds.
+
+Reuse notes:
+- attacker_bubble_v1 needs no P1 run; B5 is its P1 (FAILED screen at
+  -0.0783 +/- 0.0132, z = -5.9).
+- b2 variance rows (evals/b2_ckpt_variance_20260612/, ckpt1300/1400 full
+  yardstick vs killphilmtt + ticketmaster) reused as context, not rerun;
+  they are standard-mode rows, not the P1 bubble screen.
+- Champion P2 arm = zero new compute (evals/sng_baseline_20260610/).
+
+Compute: cores 0-3 only, nice -n 19 taskset -c 0-3; live-listener
+stand-down rule checked before launch and every ~30 min.
+
+New code: scripts/f1_ensemble_probe.py (EnsemblePolicy wrapper + thin
+driver per design §3 — no harness modification).
