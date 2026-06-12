@@ -37,6 +37,17 @@ Decisive experiment: per-depth-bucket paired EV decomposition of v2 vs
 champion from the existing gate artifacts (read-only). Cost: ~2–4 h.
 EVoI: MEDIUM-HIGH — decides whether the bbnorm encoder is an organ worth
 transplanting (frontier pillar) despite v2's failure.
+**ANSWERED 2026-06-12 (`evals/a3_v2_decomposition_20260612/`):** the
+depth cure DID pay EV where the confusion lives — paired delta at
+<=6bb terminal depth **+0.130/game (z=+11.8, 15/19 profiles positive)**;
+mid-depth negative. The killphil hole is **depth-flat** (all |z|<=0.61)
+— a policy defect, not representation (strengthens H2's premise). v2's
+gate failures are an independent broad-spectrum over-folding regression
+(folds-facing-action elevated at EVERY depth; mid-depth losses vs
+pressure profiles). **f-pillar: bbnorm encoder upgraded to "economically
+signed at shallow" — keep as transplant organ** (one-run confound
+noted). Caveat: terminal-depth proxy (per-hand depth not recorded in
+G2/G3 artifacts; cheapest harness fix documented in the report).
 
 ## (b) Training dynamics
 

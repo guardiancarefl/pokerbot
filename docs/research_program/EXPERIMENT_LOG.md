@@ -317,3 +317,17 @@ HELD). Pipeline results:
   task's orbit (bet-field OCR); not yet a spec change — n=1 session.
 - **Ingest:** both sessions; **H4 counter 259 → 272/500.** RESEARCH_MAP
   d1 updated.
+
+## 2026-06-12 ~14:05 — a3 EV DECOMPOSITION (exploratory) DONE — three program-relevant verdicts
+
+`evals/a3_v2_decomposition_20260612/` (terminal-depth proxy; per-hand
+depth not recorded in the gate artifacts — harness fix documented):
+1. **The bbnorm depth cure paid EV at shallow:** v2-vs-champion paired
+   delta +0.130/game (z=+11.8) at <=6bb — exactly where the champion's
+   depth confusion lives. Encoder = keepable organ (f-pillar).
+2. **The killphil hole is depth-flat** (every bucket |z|<=0.61) — a
+   shove-defense POLICY defect, not representation. Strengthens H2's
+   monoculture premise independently of the adapter-artifact discount.
+3. **v2's gate failure was an independent broad-spectrum over-folding
+   regression** (folds-facing-action elevated at every depth) — travels
+   with the run, not the encoder.

@@ -1,0 +1,95 @@
+=== a3 — PER-DEPTH PAIRED EV DECOMPOSITION: v2 (bbnorm) vs CHAMPION (2026-06-12) ===
+RESEARCH_MAP item a3. Existing artifacts only; no simulations. Companion: analysis.json.
+
+QUESTION
+v2's bbnorm encoder PASSED the depth-invariance probe (median TV ratio 0.004 vs
+deployed 1.55-3.16) yet FAILED its gates (killphilmtt -0.198 vs champion -0.174,
+both pre-adapter-fix / same-instrument; calibration 2.55sigma). Depth confusion
+not EV-binding, or independent regression?
+
+DATA AND METHOD (and the hard limit)
+- G2 per-game records (evals/v2_gate_20260611_pergame/g2/, 24 profiles x 2000
+  CRN games) pair by seed against the recorded champion baseline
+  (evals/sng_baseline_20260610/), seed_mismatch=0 everywhere. They carry ONLY
+  terminal aggregates: seed, hands, level_end, n_alive_end, hero_net.
+  -> TRUE per-hand depth EV attribution is IMPOSSIBLE from existing artifacts.
+- Proxy used instead: terminal avg surviving stack in BB
+  = 9000 / n_alive_end / bb(level_end), computed on the BASELINE trajectory
+  (fixed recording -> bucket exogenous to candidate). Buckets <=6 / 6-12 /
+  12-25 / >25 bb. Caveat: terminal depth = phase where the game was decided,
+  not depth of each decision.
+- Cross-checks: per-decision behavior (hero_eff_bb is logged) from the floored
+  arms of the two A/B runs — v2 ab (seeds 1-24000) vs deployed
+  short_stack_floor_ab_hpl5 (seeds 100001+). Seed spaces DISJOINT -> unpaired,
+  behavioral only. Plus G3 self-play net by level_end.
+
+RESULT 1 — THE DEFICIT IS NOT SHALLOW; IT IS MID-DEPTH. THE SHALLOW END FLIPPED TO A GAIN.
+Pooled paired delta (v2 - champion), 48,000 paired games, by baseline terminal depth:
+    <=6bb   +0.130 / game   n= 9852   z = +11.8   <- where champion depth-confusion lives
+    6-12bb  -0.036 / game   n=27746   z =  -6.4
+    12-25bb -0.060 / game   n= 7649   z =  -4.4
+    >25bb   +0.025 / game   n= 2753   z =  +1.0
+    overall -0.0026         n=48000   z =  -0.54  (matches gate REPORT.md)
+The shallow gain is broad: 15 of 19 profiles with n>=20 at <=6bb are positive
+(e.g. minestacker +0.31 z=+7.3, thefixersng +0.22 z=+7.0, sevenv.2 +0.31 z=+6.6,
+millennium +0.27 z=+5.3, gushansen +0.23 z=+3.4, lionmtt +0.42 z=+3.1).
+The mid-depth losses concentrate in pressure profiles: 6pack 12-25bb -0.147
+(z=-5.0), lionmttv.10 12-25bb -0.182 (z=-3.9) and >25bb -0.262 (z=-3.6),
+itmstrikea/c 6-12bb ~-0.12 (z~-3.0), wildbillmtt 12-25bb -0.088 (z=-2.1).
+The overall z=-0.54 "panel-neutral" verdict hides two opposite-signed,
+depth-localized effects.
+
+RESULT 2 — THE KILLPHILMTT HOLE IS DEPTH-FLAT, UNCHANGED AT EVERY DEPTH.
+killphilmtt paired delta by bucket: <=6bb -0.040 (z=-0.61), 6-12bb -0.017
+(z=-0.41), 12-25bb -0.028 (z=-0.51), >25bb -0.017 (z=-0.22); overall -0.024
+(z=-0.86). C3's was -0.041 (z=-1.44) — also flat. A provably depth-cured
+encoder moved the hole by nothing, anywhere. The G2 C2 "FAIL" is a failure to
+hit the +0.05 improvement bar, not a regression.
+
+RESULT 3 — THE INDEPENDENT REGRESSION IS A BROAD-SPECTRUM STYLE SHIFT.
+Per-decision (floored arms, unpaired): v2 folds MORE facing action at EVERY
+depth (0-4bb: 0.571 vs deployed 0.388; 4-6bb: 0.636 vs 0.518; 15-25bb: 0.683
+vs 0.603) and carries LESS allin mass at 10-25bb (0.095-0.115 vs 0.143-0.144).
+Uniform tightening/passivity — not depth-localized. G3 self-play deficit has
+the same shape: losses at L3-L7 (mid depth, -0.03..-0.16), positive at L8
+(+0.36) — consistent with the paired decomposition, so the 2.55sigma
+calibration miss also sits mid-depth, not shallow.
+
+(1) ANSWER — concentration: NO, inverted. v2's EV deficit is mid-depth
+(6-25bb, z=-6.4/-4.4); at the <=10bb depths where the champion's depth
+confusion lives, v2 GAINS (+0.130/game at <=6bb, z=+11.8, 15/19 profiles).
+
+(2) VERDICT ON THE a3 FORK — both branches, cleanly split by failure mode:
+  (i) For the killphilmtt criterion: DEPTH WASN'T EV-BINDING. The hole is
+      flat at every depth under a cured representation (z=-0.86), and G1b's
+      floor value did not collapse (+0.320 diverged-only, run-best magnitude).
+      It is a policy defect (shove-defense), per RESEARCH_MAP b1 / H2.
+  (ii) For the rest of the gate failure (panel profile structure, G3
+      2.55sigma): INDEPENDENT REGRESSION — broad tightening producing
+      significant 6-25bb losses vs pressure profiles, offset by genuine
+      shallow gains. Evidence chain: pooled bucket z's, per-profile table,
+      unpaired behavior shift, G3-by-level shape (all in analysis.json).
+  Not indeterminate: the depth cure DID translate to EV exactly where it
+  should, and what failed is attributable elsewhere.
+
+(3) f-PILLAR / ORGAN-TRANSPLANT IMPLICATION: KEEP the bbnorm encoder.
+Status upgrade: from "representationally clean" (probe) to "economically
+signed at shallow" (+0.130/game at <=6bb, broad). Its failure modes travel
+with the run (style regression, killphil hole, G3 seat asymmetry), not the
+encoder; G4 already confirmed live-servability. Confound caveat: one run, one
+seed (G=12) — the shallow gain could in principle be run-specific.
+
+WHAT'S MISSING / CHEAPEST HARNESS FIX (for a real per-hand decomposition):
+G2/G3 runners log no per-hand state. Append per-hand records (hand_idx, level,
+hero_stack_bb, n_alive, hand_net_chips) and, under CRN pairing, the
+first-divergence hand id. The ab harness already logs per-decision
+hero_eff_bb, so the plumbing exists; ~4 fields/hand, no extra compute.
+
+Artifacts read (verified): evals/v2_gate_20260611_pergame/{REPORT.md,
+g2_paired_result.json, g2/w*/games_*.jsonl, g3/w*/games.jsonl, g3_merged.json,
+ab/shard*/}, evals/sng_baseline_20260610/, evals/short_stack_floor_ab_hpl5/,
+evals/attacker_ext_20260611_pergame/bbnorm_probe_20260611/REPORT.md,
+evals/c3_gate_20260611_pergame/g2_paired_result.json,
+configs/ignition_double_up_6max_turbo.yaml (blind schedule for the BB map).
+NOT used (different candidates, per task warning): k1000_gate_iter*.json,
+exploit_tier1_candC2000.json, sng_field_v2_20260610.
