@@ -1,6 +1,22 @@
 # Project Status
 
-**Last updated:** 2026-06-11
+**Last updated:** 2026-06-12
+
+## BEAT-THE-CHAMPION research program — 2026-06-12 — H1 COMPLETE (ship rec OQ-2)
+
+Program state lives in `docs/research_program/` (PROGRAM.md,
+EXPERIMENT_LOG.md, NEXT_RESUME.md — authoritative for this track).
+Headlines: **EXP_H1 (commitment-scaled tail floor) complete, all four
+gates green** — TG3 24k paired +0.1227 ± 0.0073 ICM/game (z=16.8); TG4
+attacker re-measure improved standard-game robustness 0.10/game (paired
+z=−4.8). **Ship recommendation OQ-2 OPEN: arming `--tail-floor-tau 0.10`
+is operator-only; flag remains OFF.** OQ-1 (scraper folded-flag +
+showdown capture) resolved → Windows brief at
+`docs/WINDOWS_TASK_SCRAPER_FOLDED_SHOWDOWN.md` (folded flag measured
+~100% stale per fold event, 0/241). H3 archive at 16 sessions; H4
+unlock 259/500. H2 next (e2 stilltoact audit done: killphil-class
+profiles DO depend on the dead predicate — spec must resolve before
+defining the probe target).
 **Current phase:** Live deployment readiness. Validated k200 blueprint
   (`runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt`).
   Bridge fixed end-to-end; three deployment-time policy floors shipped;

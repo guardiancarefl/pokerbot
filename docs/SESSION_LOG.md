@@ -12,6 +12,50 @@ Format: most recent session at the top. Each session block notes date, what was 
 
 ---
 
+## 2026-06-12 (afternoon) — H1 verdict session: TG3+TG4 PASS, ship rec filed; OQ-1 brief delivered
+
+**What was done**
+- **TG3 24k** launched the moment the dry-run gate cleared (8 CRN-invariant
+  shards, 28.7 m): all-games paired ICM delta **+0.1227 ± 0.0073 (z=16.8)**,
+  diverged-only +0.1597 ± 0.0095 — both registered ship bars PASS.
+- **TG4 instrument recovered**: the attacker eval script/ckpts/bubble artifact
+  existed only on the unmerged runpod-env branch and the runs/ dirs were gone.
+  Recovered from `mirrors/tier0_20260611/` (ckpt shas match the archived shard
+  logs), bubble4 regenerated; B4+B5 shard00 repro at HEAD **byte-identical**
+  to the 2026-06-11 archives — including with the new `--tail-tau` code at
+  tau=None.
+- **TG4 PASS both batteries**: standard extraction −0.1405 vs B4 −0.0400
+  (attacker does WORSE by 0.10/game, paired z=−4.8); bubble −0.1293 vs B5on
+  −0.0998 (z=−1.55). Kill bar (attacker gain >2σ) not triggered.
+  **EXP_H1 COMPLETE** → ship recommendation **OQ-2** (arming is operator-only).
+- **OQ-1 resolved by operator** (mid-session directive): forensics-grade
+  Windows brief at `docs/WINDOWS_TASK_SCRAPER_FOLDED_SHOWDOWN.md` + candidate
+  fixture. New measurement: the `folded` flag is ~**100% stale per fold event**
+  (0/241 chip-proven preflop folds flagged; 16 transitions in 432 hands).
+- Night sessions ingested → **H4 counter 259/500**. H2 pre-work: e2
+  `stilltoact` audit — killphil-class profiles DO depend on the dead predicate.
+
+**What was decided**
+- TG4 verdict tooling had its kill-bar sign inverted on first emission;
+  corrected against the registered wording BEFORE any verdict was logged
+  (disclosure in EXPERIMENT_LOG). Registered criteria never edited.
+- H3 counted as infrastructure, not an EV experiment, for the Addendum-1.4
+  review trigger (review fires after H2's verdict).
+
+**What was learned**
+- Unmerged-branch instruments rot fast: PROGRAM.md referenced a script and
+  checkpoints that didn't exist in any worktree. The sha-stamped shard logs +
+  the bundle in mirrors/ made exact recovery provable. Rule reinforced:
+  byte-identity repro gates before reusing any recovered instrument.
+- The tail floor is not a robustness tax: a trained best-response attacker
+  extracts LESS from the tail-armed champion (the incidental-aggression tail
+  was attack surface, not balance).
+
+**Queued**
+- H2 spec (numeric falsification thresholds first; resolve stilltoact
+  fix-vs-document before defining killphil-optimal).
+- OQ-2 awaiting operator arming decision; OQ-1 brief awaiting Windows routing.
+
 ## Dry-run readiness session — 2026-06-11 — smoke + triage tooling (track-policy)
 
 **What was done.**
