@@ -111,36 +111,62 @@ class TestSequenceParsing(unittest.TestCase):
         self.assertEqual(r["checks"], 0)
         self.assertEqual(r["last_action"], "none")
 
-    def test_check_check(self):
+    def test_preflop_limp_limp(self):
+        """PREFLOP (single-street sequence): the BB is a live bet, so 'c'
+        tokens are CALLS (limps), not checks — PPL semantics."""
         r = _count_actions_on_current_street("cc")
-        # Both 'c' are checks (no preceding raise)
+        self.assertEqual(r["calls"], 2)
+        self.assertEqual(r["checks"], 0)
+        self.assertEqual(r["last_action"], "call")
+
+    def test_preflop_open_is_raise(self):
+        """PREFLOP open-raise over the BB is raise #1 — `raises = 0` must
+        mean a genuinely unopened pot (killphil push-rule gate)."""
+        r = _count_actions_on_current_street("r200cc")
+        self.assertEqual(r["raises"], 1)
+        self.assertEqual(r["bets"], 0)
+        self.assertEqual(r["calls"], 2)
+
+    def test_preflop_open_threebet(self):
+        r = _count_actions_on_current_street("r200r400")
+        self.assertEqual(r["raises"], 2)
+        self.assertEqual(r["bets"], 0)
+        self.assertEqual(r["last_action"], "raise")
+
+    def test_postflop_check_check(self):
+        """Postflop (multi-street): leading 'c' tokens are checks."""
+        r = _count_actions_on_current_street("r200c/cc")
         self.assertEqual(r["checks"], 2)
         self.assertEqual(r["calls"], 0)
         self.assertEqual(r["last_action"], "check")
 
-    def test_bet_call_call(self):
-        r = _count_actions_on_current_street("r200cc")
-        self.assertEqual(r["bets"], 1)
-        self.assertEqual(r["calls"], 2)
-        self.assertEqual(r["raises"], 0)
-
-    def test_bet_raise(self):
-        r = _count_actions_on_current_street("r200r400")
-        self.assertEqual(r["bets"], 1)
-        self.assertEqual(r["raises"], 1)
-        self.assertEqual(r["last_action"], "raise")
-
     def test_only_current_street(self):
-        """Multi-street sequence: only the last street's actions are counted."""
-        # Preflop: bet 200 + call. Flop: bet 400 + call + call.
+        """Multi-street sequence: only the last street's actions are counted,
+        and the first postflop 'r' is a BET (no live bet at street start)."""
+        # Preflop: open + call. Flop: bet 400 + call + call.
         r = _count_actions_on_current_street("r200c/r400cc")
         # Only flop counted
         self.assertEqual(r["bets"], 1)
+        self.assertEqual(r["raises"], 0)
         self.assertEqual(r["calls"], 2)
 
     def test_folds(self):
         r = _count_actions_on_current_street("fff")
         self.assertEqual(r["folds"], 3)
+
+    def test_total_and_since_last_raise(self):
+        # Preflop: fold, open, call, call -> total 4; 2 tokens after the 'r'
+        r = _count_actions_on_current_street("fr200cc")
+        self.assertEqual(r["total"], 4)
+        self.assertEqual(r["since_last_raise"], 2)
+        # No 'r' this street: since_last_raise == total
+        r = _count_actions_on_current_street("ffc")
+        self.assertEqual(r["total"], 3)
+        self.assertEqual(r["since_last_raise"], 3)
+        # Postflop bet counts as an 'r' token for the reset
+        r = _count_actions_on_current_street("r200c/cr400f")
+        self.assertEqual(r["total"], 3)
+        self.assertEqual(r["since_last_raise"], 1)
 
 
 # ============================================================
@@ -373,6 +399,85 @@ _HAS_ML_STACK = _ml_stack_available()
 
 
 @unittest.skipUnless(_HAS_ML_STACK, "Requires treys + full ML stack (runs on the pod)")
+class TestStillToAct(unittest.TestCase):
+    """stilltoact derivation (e2 fix 2026-06-12): preflop-only, PPL
+    semantics — players still to act behind the bot, blinds included."""
+
+    def _mock_state(self):
+        state = MagicMock()
+        state.legal_actions.return_value = [0, 1, 200, 400, 1000]
+        return state
+
+    def _parsed(self, sequences, money=None, contribution=None, cp=0,
+                street_idx=0):
+        return {
+            "street_idx": street_idx,
+            "current_player": cp,
+            "pot": 150,
+            "money": money or [10000] * 6,
+            "contribution": contribution or [0, 0, 0, 50, 100, 0],
+            "private_cards": "AsKs",
+            "public_cards": "" if street_idx == 0 else "Qh7d2c",
+            "sequences": sequences,
+            "num_players": 6,
+        }
+
+    def _ctx(self, **kw):
+        return build_game_context(self._parsed(**kw), self._mock_state(),
+                                  big_blind_chips=100)
+
+    def test_utg_first_to_act(self):
+        # 6 seated, no actions yet: 5 players behind (incl. blinds).
+        self.assertEqual(self._ctx(sequences="").stilltoact, 5)
+
+    def test_button_after_three_folds(self):
+        self.assertEqual(self._ctx(sequences="fff").stilltoact, 2)
+
+    def test_sb_after_four_folds(self):
+        # killphil's loosest tier (`stilltoact <= 1`) must fire ONLY here
+        # and in the BB — not from every seat as the hardcoded 0 did.
+        self.assertEqual(self._ctx(sequences="ffff").stilltoact, 1)
+
+    def test_limpers_count_as_actors(self):
+        # UTG limp, MP fold -> CO to act: BTN, SB, BB behind.
+        self.assertEqual(self._ctx(sequences="cf").stilltoact, 3)
+
+    def test_raised_pot(self):
+        # UTG opens, MP calls -> CO to act: queue is BTN, SB, BB (the
+        # raiser does not re-act unless re-raised).
+        self.assertEqual(self._ctx(sequences="r300c").stilltoact, 3)
+
+    def test_raised_pot_excludes_allin_seat(self):
+        money = [10000, 0, 10000, 10000, 10000, 10000]
+        contribution = [0, 2000, 0, 50, 100, 0]
+        # UTG opens, seat1 calls all-in -> next to act: behind are BTN,
+        # SB, BB minus nobody else; all-in seat never re-acts.
+        ctx = build_game_context(
+            self._parsed(sequences="r300c", money=money,
+                         contribution=contribution),
+            self._mock_state(), big_blind_chips=100)
+        self.assertEqual(ctx.stilltoact, 2)
+
+    def test_busted_placeholders_excluded(self):
+        # Two busted seats (stack-1/ante-0 placeholders never act).
+        money = [10000, 1, 1, 10000, 10000, 10000]
+        contribution = [0, 0, 0, 0, 50, 100]
+        ctx = build_game_context(
+            self._parsed(sequences="", money=money,
+                         contribution=contribution),
+            self._mock_state(), big_blind_chips=100)
+        self.assertEqual(ctx.stilltoact, 3)
+
+    def test_postflop_is_zero(self):
+        # PPL defines StillToAct preflop-only.
+        self.assertEqual(
+            self._ctx(sequences="r200c/c", street_idx=1).stilltoact, 0)
+
+    def test_floor_at_zero(self):
+        # BB closing a limped pot: nobody behind.
+        self.assertEqual(self._ctx(sequences="ccccc").stilltoact, 0)
+
+
 class TestShankyProfilePolicy(unittest.TestCase):
     def test_construct_from_real_fixture(self):
         path = FIXTURE_DIR / "littlegreen.txt"

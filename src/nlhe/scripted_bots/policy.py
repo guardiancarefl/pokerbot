@@ -145,18 +145,30 @@ def _count_actions_on_current_street(sequences: str) -> dict:
       'f' = fold
       '/' = street separator
 
-    Returns {raises, bets, calls, checks, folds, last_action_char}.
+    Returns {raises, bets, calls, checks, folds, last_action, total,
+    since_last_raise}. `total` counts every action token this street;
+    `since_last_raise` counts tokens after the most recent 'r' (equal to
+    `total` when no 'r' this street) — both feed the StillToAct
+    derivation in build_game_context.
 
-    Note: 'c' represents both checks and calls — OpenSpiel doesn't distinguish.
-    We treat any 'c' following a 'c' or street-start as a check; following
-    an 'r' as a call. This is a heuristic but matches typical Shanky usage.
+    Note: 'c' represents both checks and calls — OpenSpiel doesn't
+    distinguish. PREFLOP the big blind is a live bet (Shanky/PPL
+    semantics), so the street starts in the has_raise state: a leading
+    'c' is a CALL (limp) and the first 'r' is raise #1 — `raises = 0`
+    preflop therefore means a genuinely unopened pot, matching how
+    profiles write their push rules. (Before 2026-06-12 this function
+    was street-agnostic: preflop opens were counted as `bets` and limps
+    as `checks`, which kept `raises = 0` true facing an open and killed
+    `calls >= k` preflop rules — recorded in RESEARCH_MAP e2.)
+    Postflop a 'c' at street start is a check and the first 'r' is a bet.
     """
+    streets = sequences.split("/") if sequences else [""]
+    is_preflop = len(streets) == 1
     if not sequences:
         return {"raises": 0, "bets": 0, "calls": 0, "checks": 0, "folds": 0,
-                "last_action": "none"}
+                "last_action": "none", "total": 0, "since_last_raise": 0}
 
     # Take only the current (last) street's sequence
-    streets = sequences.split("/")
     current = streets[-1] if streets else ""
 
     raises = 0
@@ -164,8 +176,10 @@ def _count_actions_on_current_street(sequences: str) -> dict:
     calls = 0
     checks = 0
     folds = 0
+    total = 0
+    since_last_raise = 0
     last = "none"
-    has_raise = False     # tracks within this street whether a raise/bet has occurred
+    has_raise = is_preflop  # preflop: the BB is a live bet (see docstring)
 
     i = 0
     while i < len(current):
@@ -179,6 +193,8 @@ def _count_actions_on_current_street(sequences: str) -> dict:
                 bets += 1
                 has_raise = True
                 last = "raise"
+            total += 1
+            since_last_raise = 0   # reset on actual 'r' tokens only
             i += 1
             while i < len(current) and current[i].isdigit():
                 i += 1
@@ -189,10 +205,14 @@ def _count_actions_on_current_street(sequences: str) -> dict:
             else:
                 checks += 1
                 last = "check"
+            total += 1
+            since_last_raise += 1
             i += 1
         elif ch == "f":
             folds += 1
             last = "fold"
+            total += 1
+            since_last_raise += 1
             i += 1
         else:
             i += 1
@@ -204,6 +224,8 @@ def _count_actions_on_current_street(sequences: str) -> dict:
         "checks": checks,
         "folds": folds,
         "last_action": last,
+        "total": total,
+        "since_last_raise": since_last_raise,
     }
 
 
@@ -273,6 +295,36 @@ def build_game_context(parsed: dict, state: Any, big_blind_chips: int = 100) -> 
     )
     opponents_at_table = max(0, seated - 1)
 
+    # StillToAct (Shanky/PPL: preflop-only — players who still have to act
+    # behind the bot this betting round, blinds included).
+    #
+    # Unraised pot: every seated-alive player acts exactly once in order,
+    # so with k action tokens consumed the bot is actor k+1 of `seated`
+    # and seated − k − 1 remain behind. Raised pot (killphil-class rules
+    # never reach this branch — they all gate on raises = 0, but keep the
+    # value sane): the post-raise queue is everyone still in the hand
+    # except the raiser and any all-in seat; subtract those who already
+    # responded since the last raise and the bot itself.
+    #
+    # Known approximation: a seat that posted its blind ALL-IN never acts,
+    # so the unraised count can run high by one per such seat — floored
+    # at 0 and irrelevant at killphil's stacksize gates. Postflop stays 0
+    # (PPL defines StillToAct preflop-only; postflop uses in profiles are
+    # dead per spec, not per adapter limitation).
+    if street == "preflop":
+        if action_counts["raises"] == 0:
+            stilltoact = max(0, seated - action_counts["total"] - 1)
+        else:
+            in_hand = seated - action_counts["folds"]
+            all_in = sum(
+                1 for i in range(len(money))
+                if money[i] == 0
+                and (contribution[i] if i < len(contribution) else 0) > 0)
+            stilltoact = max(0, in_hand - 2 - all_in
+                             - action_counts["since_last_raise"])
+    else:
+        stilltoact = 0
+
     # Position name
     position = _position_name(cp, num_players)
 
@@ -305,7 +357,7 @@ def build_game_context(parsed: dict, state: Any, big_blind_chips: int = 100) -> 
                                               # predicate in every profile was
                                               # dead at shorthanded tables)
         opponentsonflop=opponents_active,    # approximation; deserves dedicated tracking
-        stilltoact=0,                         # OpenSpiel doesn't expose; safe default
+        stilltoact=stilltoact,   # preflop-only derivation above (PPL semantics)
         position=position,
         botslastaction=botslastaction,
         opponentisallin_flag=any(m == 0 for i, m in enumerate(money) if i != cp),
