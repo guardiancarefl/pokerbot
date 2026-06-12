@@ -199,3 +199,13 @@ Operator directive, recorded verbatim in intent:
 5. **Every completed experiment triggers:** full report, RESEARCH_MAP
    update, refill check, and a one-line OPERATOR_QUEUE status note so
    the operator's morning read always reflects reality.
+6. **Post-session auto-pipeline (added 2026-06-12):** when a live
+   dry-run session ends (the dryrun tmux session disappears), auto-run
+   the post-session pipeline if the operator hasn't: `dryrun_triage` +
+   `ingest_session` on the new log, update the H4 counter (RESEARCH_MAP
+   d1), and note anomalies in EXPERIMENT_LOG — specifically tail-floor
+   firing rates vs the expected band (distribution adjusted ~70–75% of
+   decisions; sampled-action changes ~4.4% per TG2;
+   most-argmaxes-changed is anomalous). Implemented in-session as a
+   persistent tmux watcher that re-invokes the manager on the
+   appear→disappear transition.
