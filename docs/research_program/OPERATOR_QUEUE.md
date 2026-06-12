@@ -16,8 +16,11 @@ below 5bb in high-dispersion bubble states — correction fit + consumer
 re-price audit queued). P2 is BUILT+GATED-OFF and your AcKc turned out
 to be a dead-SB reconstruction failure, not a displacement — the real
 fix (carry blind structure into replay) is specced for the next build
-slot. H4 at 383/500 with the spec pre-drafted. **Decisions needed:
-P2 arming; OQ-1 Windows routing. No pod case stands.**
+slot. H4 at 383/500 with the spec pre-drafted. **Seat off-by-one: CASE A — cosmetic export bug, DB clean, dossier
+uncontaminated; conventions reconciled → your Windows Part-A patch
+(153/158 folds, 0 FP) is CLEAR to deploy. Decisions needed: P2 arming;
+Part-A deployment go; Part-B (showdown capture) when Windows CC
+resumes. No pod case stands.**
 
 ## POD_CASE (standing one-liner — Addendum 5.5, update on every state change)
 

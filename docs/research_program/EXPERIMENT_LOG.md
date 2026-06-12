@@ -509,3 +509,15 @@ re-label, H1 floor re-check — all expectations: small at equal stacks).
   verification against raw records; candidates v2 with explicit
   convention header. FIELD_DOSSIER consumers ON HOLD for per-seat
   claims until the audit reports.
+
+## 2026-06-12 ~22:25 — Seat audit: CASE A (cosmetic) — loop CLOSED, Part-A clear to deploy
+
+52 ground-truth checks (9 hands / 6 sessions): ONE uniform mapping (raw
+seatN → internal N−1) everywhere in the H3 DB — **FIELD_DOSSIER and H4
+inputs UNCONTAMINATED, no re-ingest.** The off-by-one lived only in the
+v1 candidates EXPORT (internal ints leaked out). Fixed at the source:
+extractor now emits "seatN" + seat_convention field, byte-equivalent to
+the audit's v2 (98682fa). Side finding: actions.seq is unique per
+listener run, not per file — captured_at disambiguates. **Both seat
+conventions reconciled → the Windows Part-A patch (153/158 folds, 0 FP)
+is CLEAR for live deployment.** Dossier hold lifted.
