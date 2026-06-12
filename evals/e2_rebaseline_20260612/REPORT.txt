@@ -1,0 +1,33 @@
+E2 RE-BASELINE — 9 profile rows post-adapter-fix (commit a8933ea)
+2026-06-12. Harness: scripts/sng_baseline.py, 2000 games/row, master
+seed 2026 (CRN = v1/v2 yardstick seeds), champion ckpt_iter_1500
+(b79e82dd…). Interrupted by the live window ~13:00 (gus/millennium
+killed + relaunched, CRN-identical by construction).
+
+profile              post-fix              pre-fix         delta
+killphilmtt          -0.0800 +/- 0.0223    -0.1740         +0.094  (~3.0 sigma_diff) << GATE METRIC
+gushansenmtt         +0.7910 +/- 0.0137    (v1 +0.79*)     ~flat
+millenniummttv.49    +0.8030 +/- 0.0133    n/a (new row)
+itmstrikea           +0.3180 +/- 0.0212    n/a (new row)
+itmstrikec           +0.3560 +/- 0.0209    n/a (new row)
+tighttom             +0.7780 +/- 0.0140    +0.6680         +0.110
+trickytom            +0.7790 +/- 0.0140    +0.6680         +0.111
+ticketmaster         +0.5400 +/- 0.0188    ~+0.27 (v1)     +0.27
+sng                  +0.8360 +/- 0.0123    +0.8810 (v2)    -0.045
+
+* gushansen pre-fix v1 row from memory of the v1 table; treat the
+  post-fix value as the standing baseline going forward.
+
+KEY FINDINGS
+1. killphil gate row: ~54% of the believed extraction was adapter
+   artifact (raises=0 stayed true facing opens -> killphil 3-bet-shoved
+   its entire first-in range). The post-fix -0.0800 is the registered
+   H2 baseline (spec section 3, FROZEN).
+2. tighttom/trickytom now diverge (59/2000 games outcome-differ; were
+   byte-identical) — stilltoact is live.
+3. Every row moved or held within expectations; no profile became
+   dramatically harder post-fix — the field yardstick survives with
+   killphil still the only negative row.
+STANDING RULE: all pre-2026-06-12 panel rows are PRE-FIX instrument
+readings; do not mix them with post-fix rows in any comparison without
+the instrument tag.
