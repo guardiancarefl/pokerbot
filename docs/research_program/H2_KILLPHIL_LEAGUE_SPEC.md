@@ -1,10 +1,10 @@
 # EXP_H2 — KILLPHIL-LEAGUE PROBE — registration (2026-06-12)
 
-Status: SPEC DRAFT — baselines pending `evals/e2_rebaseline_20260612/`
-(post-adapter-fix rows). **The spec FREEZES when §3's baseline table is
-filled; nothing launches before that.** Per Addendum 1: falsification
-thresholds in this file are pre-committed and may not be weakened after
-freeze; adversarial review of the rationale is §7.
+Status: **FROZEN 2026-06-12 ~14:35** (§3 filled from
+`evals/e2_rebaseline_20260612/` + `evals/h2_battery/m1_champion.json`).
+Per Addendum 1: falsification thresholds are pre-committed and may not
+be weakened; adversarial review of the rationale is §7. Probe launched
+on freeze (run dir `runs/h2_probe_league_v1`).
 
 ## 1. Hypothesis and rationale (evidence-cited)
 
@@ -82,10 +82,17 @@ games, master seed 2026) + champion battery M1 run:
 
 | quantity | value |
 |---|---|
-| killphilmtt row (post-fix) | TBF |
-| ticketmaster / sng / tighttom rows (post-fix) | TBF |
-| champion M1 EV-loss on the frozen battery | TBF |
-| tighttom-vs-trickytom divergence check (must now differ) | TBF |
+| killphilmtt row (post-fix) | **−0.0800 ± 0.0223** (was −0.1740 ± 0.0220 pre-fix) |
+| ticketmaster row (post-fix, M2b hold) | +0.5400 ± 0.0188 |
+| sng row (post-fix, M2b hold) | +0.8360 ± 0.0123 |
+| tighttom row (post-fix, M2b hold) | +0.7780 ± 0.0140 |
+| champion M1 EV-loss on the frozen battery | **0.0867 ± 0.0007** (call mass 35.9% vs oracle 7.7%) |
+| tighttom-vs-trickytom divergence check | PASS — 59/2000 games outcome-differ (pre-fix: 0, byte-identical) |
+
+Derived F-M2a target: killphil row ≥ **−0.0300** with improvement
+≥ 2σ_diff (σ_diff ≈ 0.0315 for two 2000-game rows). Derived F-M1
+target: probe M1 ≤ **0.0650**. (e2-record rows gushansenmtt /
+millenniummttv.49 complete separately; they are not §3 quantities.)
 
 ## 4. Probe (pre-registered; ONLY after §3 freeze)
 
