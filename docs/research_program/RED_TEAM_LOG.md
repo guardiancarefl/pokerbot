@@ -49,3 +49,26 @@ corpus enumeration; paired A/B (deployed chain vs +mask) before any
 arming; arming = operator line.
 
 **Status: corpus enumeration running; mitigation awaits its evidence.**
+
+### RT-1 enumeration result (2026-06-13 ~00:40, `evals/rt1_enumeration_20260612/`)
+
+Clean corpus (12 fidelity-clean logs, 522 replayed decisions; 4
+pre-header logs quarantined, listed): sub-2.5BB facing-bet universe =
+3 frames, all session 220101. **Class a = 2; realized wrong-side FOLD
+draws = 2/2** (T8s seq474 eff 2.23, FOLD .333 vs ALLIN argmax .494;
+JJ seq498 = the exhibit, masses reproduced exactly). Mirror class = 1
+(86s, FOLD argmax .600 — the mask must not and does not touch it).
+
+Counterfactual of the registered mask: **N=2.0 catches 1/2** (misses
+T8s at 2.23); **N=2.5 catches 2/2**, fires 0× against FOLD argmaxes
+(mirror-safe by construction, verified), forces 0 bad calls at the
+optimistic equity bound. Honest caveats carried: n=3 universe; both
+fires lean on OOD-adjacent argmaxes; ICM-bubble-fold spots absent from
+but not ruled out by this corpus.
+
+**Design selection (evidence-driven, pre-build):** mitigation proceeds
+at **N=2.5** (catches both realized instances; the strawman N=2.0 was
+registered before the enumeration; this selection happens BEFORE the
+mitigation's own gates run, and the paired A/B tests the chosen N on
+fresh data regardless). Build remains queued behind the operator's
+deployment-package review; gates unchanged from the RT-1 registration.

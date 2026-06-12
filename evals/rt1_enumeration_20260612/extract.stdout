@@ -1,0 +1,286 @@
+[rt1] replaying live_dryrun_20260608_004502.jsonl ...
+[rt1]   -> {"skipped": "no raw_record frames (summary-tier log)", "frames_replayed": null, "fresh_decisions": null, "fidelity_fails": null, "sub25_facing_frames": null}
+[rt1] replaying live_dryrun_20260608_045752.jsonl ...
+[rt1]   -> {"skipped": "no raw_record frames (summary-tier log)", "frames_replayed": null, "fresh_decisions": null, "fidelity_fails": null, "sub25_facing_frames": null}
+[rt1] replaying live_dryrun_20260608_050354.jsonl ...
+[rt1]   -> {"skipped": "no raw_record frames (summary-tier log)", "frames_replayed": null, "fresh_decisions": null, "fidelity_fails": null, "sub25_facing_frames": null}
+[rt1] replaying live_dryrun_20260608_051036.jsonl ...
+[rt1]   -> {"skipped": "no raw_record frames (summary-tier log)", "frames_replayed": null, "fresh_decisions": null, "fidelity_fails": null, "sub25_facing_frames": null}
+[rt1] replaying live_dryrun_20260608_152756.jsonl ...
+DeepCFR6MaxSolver  device=cpu  feature_dim=236  payout_mode=double_up  payouts=[2.0, 2.0, 2.0]
+[FLOOR] fired=[check-free]  eff_bb=58.20  cp=0  street=0  pre_argmax=FOLD  post_argmax=CALL
+[FLOOR] fired=[AA/KK]  eff_bb=27.50  cp=0  street=0  pre_argmax=BET_50  post_argmax=BET_50
+[FLOOR] fired=[short-stack]  eff_bb=5.20  cp=0  street=2  pre_argmax=CALL  post_argmax=CALL
+[rt1]   -> {"skipped": null, "frames_replayed": 200, "fresh_decisions": 19, "fidelity_fails": 20, "sub25_facing_frames": 0}
+[rt1] replaying live_dryrun_20260609_154557.jsonl ...
+[ANCHOR-REFUSED] hand-start anchor fails chips-in-play ceiling (9000): seat6 pre_hand=9927  captured_at=20260609_115039_013
+[FLOOR] fired=[short-stack]  eff_bb=4.48  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD
+[FLOOR] fired=[short-stack]  eff_bb=4.33  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD
+[FLOOR] fired=[short-stack]  eff_bb=3.18  cp=0  street=0  pre_argmax=CALL  post_argmax=CALL
+[OOD-WARN] live out-of-training-support: level=3 hero_stack=96 (1.0 BB) captured_at=20260609_115900_891
+[ANCHOR-REFUSED] hand-start anchor fails chips-in-play ceiling (9000): seat6 pre_hand=9932  captured_at=20260609_120518_206
+[OOD-WARN] live out-of-training-support: level=5 hero_stack=281 (1.4 BB) captured_at=20260609_120828_250
+[OOD-WARN] live out-of-training-support: level=5 hero_stack=281 (1.4 BB) captured_at=20260609_120829_005
+[OOD-WARN] live out-of-training-support: level=5 hero_stack=281 (1.4 BB) captured_at=20260609_120836_220
+[OOD-WARN] live out-of-training-support: level=5 hero_stack=281 (1.4 BB) captured_at=20260609_120836_877
+[FLOOR] fired=[short-stack]  eff_bb=1.55  cp=0  street=0  pre_argmax=CALL  post_argmax=CALL
+[rt1]   -> {"skipped": null, "frames_replayed": 571, "fresh_decisions": 37, "fidelity_fails": 57, "sub25_facing_frames": 4}
+[rt1] replaying live_dryrun_20260609_192543.jsonl ...
+[FLOOR] fired=[check-free]  eff_bb=18.00  cp=0  street=0  pre_argmax=FOLD  post_argmax=CALL
+[rt1]   -> {"skipped": null, "frames_replayed": 402, "fresh_decisions": 41, "fidelity_fails": 45, "sub25_facing_frames": 0}
+[rt1] replaying live_dryrun_20260611_163815.jsonl ...
+[FLOOR] fired=[check-free]  eff_bb=58.00  cp=0  street=0  pre_argmax=FOLD  post_argmax=CALL
+[FLOOR] fired=[AA/KK]  eff_bb=11.20  cp=0  street=0  pre_argmax=CALL  post_argmax=CALL
+[FLOOR] fired=[AA/KK]  eff_bb=6.35  cp=0  street=0  pre_argmax=CALL  post_argmax=CALL
+[OOD-WARN] live out-of-training-support: level=3 hero_stack=178 (1.8 BB) captured_at=20260611_125158_712
+[OOD-WARN] live out-of-training-support: level=3 hero_stack=178 (1.8 BB) captured_at=20260611_125159_645
+[OOD-WARN] live out-of-training-support: level=3 hero_stack=178 (1.8 BB) captured_at=20260611_125201_019
+[OOD-WARN] live out-of-training-support: level=3 hero_stack=178 (1.8 BB) captured_at=20260611_125202_354
+[OOD-WARN] live out-of-training-support: level=3 hero_stack=178 (1.8 BB) captured_at=20260611_125205_143
+[rt1]   -> {"skipped": null, "frames_replayed": 486, "fresh_decisions": 37, "fidelity_fails": 0, "sub25_facing_frames": 0}
+[rt1] replaying live_dryrun_20260611_181249.jsonl ...
+[rt1]   -> {"skipped": null, "frames_replayed": 54, "fresh_decisions": 4, "fidelity_fails": 0, "sub25_facing_frames": 0}
+[rt1] replaying live_dryrun_20260611_201230.jsonl ...
+[FLOOR] fired=[AA/KK]  eff_bb=45.60  cp=0  street=0  pre_argmax=ALLIN  post_argmax=ALLIN
+[ANCHOR-REFUSED] hand-start anchor fails chips-in-play ceiling (9000): sum(pre_hand)=9022  captured_at=20260611_162701_886
+[ANCHOR-REFUSED] hand-start anchor fails chips-in-play ceiling (9000): sum(pre_hand)=9022  captured_at=20260611_162710_848
+[ANCHOR-REFUSED] hand-start anchor fails chips-in-play ceiling (9000): sum(pre_hand)=9022  captured_at=20260611_162711_914
+[ANCHOR-REFUSED] hand-start anchor fails chips-in-play ceiling (9000): sum(pre_hand)=9022  captured_at=20260611_162713_729
+[ANCHOR-REFUSED] hand-start anchor fails chips-in-play ceiling (9000): sum(pre_hand)=9022  captured_at=20260611_162714_564
+[FLOOR] fired=[check-free]  eff_bb=9.03  cp=0  street=0  pre_argmax=FOLD  post_argmax=CALL
+[FLOOR] fired=[check-free]  eff_bb=12.25  cp=0  street=0  pre_argmax=ALLIN  post_argmax=ALLIN
+[FLOOR] fired=[short-stack]  eff_bb=5.96  cp=0  street=0  pre_argmax=ALLIN  post_argmax=ALLIN
+[rt1]   -> {"skipped": null, "frames_replayed": 733, "fresh_decisions": 56, "fidelity_fails": 0, "sub25_facing_frames": 0}
+[rt1] replaying live_dryrun_20260611_204751.jsonl ...
+[FLOOR] fired=[short-stack]  eff_bb=5.59  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD
+[OOD-WARN] live out-of-training-support: level=6 hero_stack=189 (0.6 BB) captured_at=20260611_173057_372
+[FLOOR] fired=[short-stack]  eff_bb=5.70  cp=0  street=0  pre_argmax=ALLIN  post_argmax=ALLIN
+[FLOOR] fired=[short-stack]  eff_bb=5.70  cp=0  street=1  pre_argmax=ALLIN  post_argmax=ALLIN
+[rt1]   -> {"skipped": null, "frames_replayed": 973, "fresh_decisions": 80, "fidelity_fails": 0, "sub25_facing_frames": 2}
+[rt1] replaying live_dryrun_20260611_222532.jsonl ...
+[ANCHOR-REFUSED] hand-start anchor fails sum-floor guard: sum(pre_hand)=8200 != chips-in-play 9000 with all 6 seats alive (no mis-alive seat to hide chips) captured_at=20260611_185150_201
+[FLOOR] fired=[AA/KK]  eff_bb=21.05  cp=0  street=0  pre_argmax=ALLIN  post_argmax=ALLIN
+[ANCHOR-REFUSED] hand-start anchor fails sum-floor guard: sum(pre_hand)=8975 != chips-in-play 9000 with all 6 seats alive (no mis-alive seat to hide chips) captured_at=20260611_204507_643
+[ANCHOR-REFUSED] hand-start anchor fails sum-floor guard: sum(pre_hand)=8200 != chips-in-play 9000 with all 6 seats alive (no mis-alive seat to hide chips) captured_at=20260611_205031_032
+[rt1]   -> {"skipped": null, "frames_replayed": 1326, "fresh_decisions": 88, "fidelity_fails": 0, "sub25_facing_frames": 0}
+[rt1] replaying live_dryrun_20260612_035454.jsonl ...
+[FLOOR] fired=[check-free]  eff_bb=35.10  cp=0  street=0  pre_argmax=FOLD  post_argmax=CALL
+[FLOOR] fired=[short-stack]  eff_bb=5.90  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD
+[FLOOR] fired=[short-stack]  eff_bb=5.60  cp=0  street=1  pre_argmax=BET_100  post_argmax=CALL
+[rt1]   -> {"skipped": null, "frames_replayed": 218, "fresh_decisions": 15, "fidelity_fails": 0, "sub25_facing_frames": 0}
+[rt1] replaying live_dryrun_20260612_042058.jsonl ...
+[FLOOR] fired=[AA/KK]  eff_bb=22.70  cp=0  street=0  pre_argmax=ALLIN  post_argmax=ALLIN
+[rt1]   -> {"skipped": null, "frames_replayed": 316, "fresh_decisions": 22, "fidelity_fails": 0, "sub25_facing_frames": 1}
+[rt1] replaying live_dryrun_20260612_125441.jsonl ...
+[FLOOR] fired=[tail]  eff_bb=49.00  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[ALLIN:0.0412]
+[FLOOR] fired=[tail]  eff_bb=48.80  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_200:0.0246]
+[rt1]   -> {"skipped": null, "frames_replayed": 84, "fresh_decisions": 2, "fidelity_fails": 0, "sub25_facing_frames": 0}
+[rt1] replaying live_dryrun_20260612_130846.jsonl ...
+[FLOOR] fired=[tail]  eff_bb=23.10  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_100:0.0121,BET_200:0.0106,ALLIN:0.0232,BET_150:0.0122]
+[FLOOR] fired=[tail]  eff_bb=22.90  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_100:0.0138,BET_200:0.0079,ALLIN:0.0079,BET_150:0.0111]
+[FLOOR] fired=[tail]  eff_bb=21.70  cp=0  street=0  pre_argmax=ALLIN  post_argmax=ALLIN  tail_pruned=[BET_200:0.0506]
+[FLOOR] fired=[tail]  eff_bb=29.70  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[CALL:0.0297,ALLIN:0.0634]
+[FLOOR] fired=[tail]  eff_bb=29.50  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[CALL:0.0151,ALLIN:0.0237]
+[FLOOR] fired=[tail]  eff_bb=29.30  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_200:0.0198,ALLIN:0.0358]
+[FLOOR] fired=[tail]  eff_bb=14.50  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_66:0.0080,BET_100:0.0036,BET_200:0.0037,ALLIN:0.0109,BET_150:0.0044]
+[FLOOR] fired=[tail]  eff_bb=14.35  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_66:0.0108,BET_100:0.0107,BET_200:0.0077,ALLIN:0.0119,BET_50:0.0175,BET_150:0.0080]
+[FLOOR] fired=[check-free]  eff_bb=13.20  cp=0  street=0  pre_argmax=FOLD  post_argmax=CALL
+[FLOOR] fired=[tail]  eff_bb=16.30  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_200:0.0281,ALLIN:0.0617]
+[FLOOR] fired=[tail]  eff_bb=16.15  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_200:0.0260,ALLIN:0.0632,BET_150:0.0227]
+[rt1]   -> {"skipped": null, "frames_replayed": 233, "fresh_decisions": 12, "fidelity_fails": 0, "sub25_facing_frames": 0}
+[rt1] replaying live_dryrun_20260612_133056.jsonl ...
+[rt1]   -> {"skipped": "no raw_record frames (summary-tier log)", "frames_replayed": null, "fresh_decisions": null, "fidelity_fails": null, "sub25_facing_frames": null}
+[rt1] replaying live_dryrun_20260612_161347.jsonl ...
+[FLOOR] fired=[tail]  eff_bb=59.60  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_200:0.0051,ALLIN:0.0055,BET_150:0.0072]
+[FLOOR] fired=[tail]  eff_bb=59.40  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_200:0.0326]
+[OOD-WARN] live out-of-training-support: level=1 hero_stack=15 (0.6 BB) captured_at=20260612_121657_085
+[OOD-WARN] live out-of-training-support: level=1 hero_stack=15 (0.6 BB) captured_at=20260612_121658_673
+[FLOOR] fired=[tail]  eff_bb=62.40  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_200:0.0038,ALLIN:0.0042,BET_150:0.0053]
+[FLOOR] fired=[check-free,tail]  eff_bb=60.80  cp=0  street=0  pre_argmax=FOLD  post_argmax=CALL  tail_pruned=[ALLIN:0.0891]
+[FLOOR] fired=[tail]  eff_bb=60.80  cp=0  street=1  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_200:0.0122,ALLIN:0.0188]
+[FLOOR] fired=[tail]  eff_bb=60.80  cp=0  street=2  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_100:0.0155,BET_200:0.0080,ALLIN:0.0137,BET_150:0.0159]
+[FLOOR] fired=[tail]  eff_bb=33.30  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[ALLIN:0.0750]
+[FLOOR] fired=[tail]  eff_bb=28.70  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_200:0.0161,ALLIN:0.0619]
+[FLOOR] fired=[tail]  eff_bb=28.50  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_66:0.0365,BET_100:0.0312,BET_50:0.0281]
+[FLOOR] fired=[tail]  eff_bb=34.70  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_100:0.0082,BET_200:0.0033,ALLIN:0.0128,BET_150:0.0061]
+[FLOOR] fired=[tail]  eff_bb=33.50  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_100:0.0168,BET_200:0.0138,ALLIN:0.0508,BET_150:0.0150]
+[FLOOR] fired=[tail]  eff_bb=40.10  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_200:0.0086,ALLIN:0.0393,BET_150:0.0129]
+[FLOOR] fired=[tail]  eff_bb=39.90  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_200:0.0089,ALLIN:0.0609,BET_150:0.0119]
+[FLOOR] fired=[tail]  eff_bb=19.80  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_66:0.0128,BET_100:0.0074,BET_200:0.0055,ALLIN:0.0078,BET_150:0.0068]
+[FLOOR] fired=[check-free,tail]  eff_bb=18.65  cp=0  street=0  pre_argmax=FOLD  post_argmax=CALL  tail_pruned=[BET_200:0.0303]
+[FLOOR] fired=[tail]  eff_bb=22.75  cp=0  street=0  pre_argmax=ALLIN  post_argmax=ALLIN  tail_pruned=[BET_100:0.0231,BET_200:0.0347,BET_150:0.0470]
+[FLOOR] fired=[tail]  eff_bb=22.60  cp=0  street=0  pre_argmax=ALLIN  post_argmax=ALLIN  tail_pruned=[BET_150:0.0225]
+[FLOOR] fired=[tail]  eff_bb=24.61  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_66:0.0084,BET_100:0.0154,BET_200:0.0064,ALLIN:0.0090,BET_50:0.0056,BET_150:0.0068]
+[FLOOR] fired=[tail]  eff_bb=16.94  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_66:0.0062,BET_100:0.0015,BET_200:0.0057,ALLIN:0.0436,BET_50:0.0029,BET_150:0.0063]
+[FLOOR] fired=[tail]  eff_bb=16.77  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_66:0.0030,BET_100:0.0039,BET_200:0.0028,ALLIN:0.0127,BET_50:0.0018,BET_150:0.0064]
+[FLOOR] fired=[tail]  eff_bb=16.77  cp=0  street=1  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[CALL:0.0273,BET_66:0.0461]
+[rt1]   -> {"skipped": null, "frames_replayed": 391, "fresh_decisions": 29, "fidelity_fails": 0, "sub25_facing_frames": 0}
+[rt1] replaying live_dryrun_20260612_163114.jsonl ...
+[rt1]   -> {"skipped": "no raw_record frames (summary-tier log)", "frames_replayed": null, "fresh_decisions": null, "fidelity_fails": null, "sub25_facing_frames": null}
+[rt1] replaying live_dryrun_20260612_183701.jsonl ...
+[FLOOR] fired=[tail]  eff_bb=59.20  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_200:0.0147,ALLIN:0.0346]
+[FLOOR] fired=[tail]  eff_bb=59.00  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_66:0.0069,BET_100:0.0056,BET_200:0.0059,ALLIN:0.0145,BET_150:0.0071]
+[FLOOR] fired=[tail]  eff_bb=58.60  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_200:0.0121,ALLIN:0.0627]
+[FLOOR] fired=[tail]  eff_bb=58.40  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_200:0.0054,ALLIN:0.0105,BET_150:0.0084]
+[FLOOR] fired=[tail]  eff_bb=56.60  cp=0  street=2  pre_argmax=CALL  post_argmax=CALL  tail_pruned=[ALLIN:0.0548]
+[FLOOR] fired=[tail]  eff_bb=56.60  cp=0  street=3  pre_argmax=BET_66  post_argmax=BET_66  tail_pruned=[ALLIN:0.0063]
+[FLOOR] fired=[tail]  eff_bb=33.96  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_100:0.0302,BET_200:0.0262,BET_150:0.0337]
+[FLOOR] fired=[tail]  eff_bb=33.20  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_200:0.0181,ALLIN:0.0835,BET_150:0.0204]
+[FLOOR] fired=[tail]  eff_bb=32.40  cp=0  street=1  pre_argmax=CALL  post_argmax=CALL  tail_pruned=[ALLIN:0.0531]
+[FLOOR] fired=[tail]  eff_bb=32.40  cp=0  street=1  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_200:0.0087,ALLIN:0.0214,BET_150:0.0159]
+[FLOOR] fired=[tail]  eff_bb=30.34  cp=0  street=2  pre_argmax=CALL  post_argmax=CALL  tail_pruned=[BET_200:0.0205,ALLIN:0.0361]
+[FLOOR] fired=[tail]  eff_bb=33.00  cp=0  street=0  pre_argmax=ALLIN  post_argmax=ALLIN  tail_pruned=[BET_66:0.0219,BET_200:0.0450,BET_150:0.0340]
+[FLOOR] fired=[tail]  eff_bb=32.80  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_100:0.0045,BET_200:0.0035,ALLIN:0.0064,BET_150:0.0039]
+[FLOOR] fired=[tail]  eff_bb=30.80  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_66:0.0090,BET_100:0.0058,BET_200:0.0127,ALLIN:0.0159,BET_50:0.0124,BET_150:0.0114]
+[FLOOR] fired=[tail]  eff_bb=32.44  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_100:0.0067,BET_200:0.0036,ALLIN:0.0081,BET_150:0.0076]
+[FLOOR] fired=[tail]  eff_bb=16.07  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_100:0.0087,BET_200:0.0090,ALLIN:0.0149,BET_150:0.0071]
+[FLOOR] fired=[tail]  eff_bb=15.92  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_66:0.0077,BET_100:0.0077,BET_200:0.0092,ALLIN:0.0190,BET_150:0.0085]
+[FLOOR] fired=[tail]  eff_bb=15.77  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_66:0.0136,BET_100:0.0168,BET_200:0.0284,BET_150:0.0338]
+[FLOOR] fired=[tail]  eff_bb=18.40  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[CALL:0.0066,BET_33:0.0162,BET_66:0.0052,BET_100:0.0051,ALLIN:0.0146,BET_50:0.0063]
+[FLOOR] fired=[tail]  eff_bb=16.87  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[CALL:0.0038,BET_33:0.0091,BET_66:0.0037,BET_100:0.0025,ALLIN:0.0131,BET_50:0.0048,BET_150:0.0061]
+[FLOOR] fired=[tail]  eff_bb=16.95  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[CALL:0.0187,BET_100:0.0140,BET_200:0.0219,ALLIN:0.0256,BET_150:0.0155]
+[FLOOR] fired=[tail]  eff_bb=16.30  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[ALLIN:0.0977]
+[FLOOR] fired=[tail]  eff_bb=16.15  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_66:0.0049,BET_100:0.0039,BET_200:0.0045,ALLIN:0.0132,BET_50:0.0065,BET_150:0.0055]
+[FLOOR] fired=[tail]  eff_bb=10.60  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_66:0.0096,BET_100:0.0062,BET_200:0.0094,ALLIN:0.0058,BET_50:0.0151,BET_150:0.0071]
+[FLOOR] fired=[tail]  eff_bb=12.93  cp=0  street=0  pre_argmax=ALLIN  post_argmax=ALLIN  tail_pruned=[BET_200:0.0441]
+[FLOOR] fired=[tail]  eff_bb=15.27  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_66:0.0034,BET_100:0.0041,BET_200:0.0032,ALLIN:0.0071,BET_50:0.0023,BET_150:0.0062]
+[FLOOR] fired=[tail]  eff_bb=14.43  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[CALL:0.0247,ALLIN:0.0447,BET_50:0.0243]
+[FLOOR] fired=[AA/KK]  eff_bb=13.10  cp=0  street=0  pre_argmax=ALLIN  post_argmax=ALLIN
+[FLOOR] fired=[tail]  eff_bb=15.57  cp=0  street=1  pre_argmax=CALL  post_argmax=CALL  tail_pruned=[ALLIN:0.0591]
+[FLOOR] fired=[tail]  eff_bb=15.57  cp=0  street=2  pre_argmax=CALL  post_argmax=CALL  tail_pruned=[BET_200:0.0046,ALLIN:0.0058]
+[FLOOR] fired=[tail]  eff_bb=15.57  cp=0  street=3  pre_argmax=CALL  post_argmax=CALL  tail_pruned=[BET_200:0.0028,ALLIN:0.0050]
+[FLOOR] fired=[tail]  eff_bb=13.41  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_33:0.0087,BET_66:0.0114,BET_100:0.0102,BET_200:0.0569,ALLIN:0.0624,BET_50:0.0129,BET_150:0.0214]
+[FLOOR] fired=[tail]  eff_bb=59.80  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_66:0.0057,BET_100:0.0048,BET_200:0.0057,ALLIN:0.0145,BET_50:0.0109,BET_150:0.0044]
+[FLOOR] fired=[tail]  eff_bb=59.60  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_200:0.0066,ALLIN:0.0081,BET_150:0.0076]
+[FLOOR] fired=[tail]  eff_bb=59.40  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_200:0.0159,ALLIN:0.0593]
+[FLOOR] fired=[tail]  eff_bb=59.20  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_100:0.0093,BET_200:0.0050,ALLIN:0.0073,BET_150:0.0071]
+[FLOOR] fired=[tail]  eff_bb=47.08  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_100:0.0225,BET_200:0.0160,ALLIN:0.0527,BET_150:0.0172]
+[FLOOR] fired=[tail]  eff_bb=23.04  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_33:0.0144,BET_66:0.0135,BET_100:0.0114,ALLIN:0.0136,BET_50:0.0224,BET_150:0.0098]
+[FLOOR] fired=[tail]  eff_bb=22.84  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_66:0.0117,BET_100:0.0071,BET_200:0.0054,ALLIN:0.0100,BET_150:0.0062]
+[FLOOR] fired=[tail]  eff_bb=21.64  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_100:0.0487,ALLIN:0.0843,BET_150:0.0318]
+[FLOOR] fired=[tail]  eff_bb=20.94  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[ALLIN:0.0178]
+[FLOOR] fired=[tail]  eff_bb=20.74  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[CALL:0.0149,BET_66:0.0027,BET_100:0.0038,ALLIN:0.0132,BET_50:0.0086]
+[FLOOR] fired=[tail]  eff_bb=20.54  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_200:0.0107,ALLIN:0.0371,BET_150:0.0157]
+[FLOOR] fired=[tail]  eff_bb=20.10  cp=0  street=3  pre_argmax=CALL  post_argmax=CALL  tail_pruned=[BET_200:0.0388]
+[FLOOR] fired=[tail]  eff_bb=14.73  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_66:0.0187,BET_100:0.0145,BET_200:0.0033,ALLIN:0.0523,BET_150:0.0140]
+[FLOOR] fired=[tail]  eff_bb=14.53  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_200:0.0251,BET_150:0.0287]
+[FLOOR] fired=[tail]  eff_bb=14.38  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_66:0.0051,BET_100:0.0053,BET_200:0.0050,ALLIN:0.0176,BET_50:0.0070,BET_150:0.0062]
+[FLOOR] fired=[tail]  eff_bb=14.23  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_100:0.0310,BET_200:0.0216,ALLIN:0.0927,BET_150:0.0431]
+[FLOOR] fired=[tail]  eff_bb=11.43  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_200:0.0117,ALLIN:0.0732,BET_150:0.0189]
+[FLOOR] fired=[tail]  eff_bb=10.08  cp=0  street=1  pre_argmax=CALL  post_argmax=CALL  tail_pruned=[BET_200:0.0173,ALLIN:0.0919]
+[FLOOR] fired=[tail]  eff_bb=10.08  cp=0  street=2  pre_argmax=CALL  post_argmax=CALL  tail_pruned=[BET_200:0.0159,ALLIN:0.0137]
+[FLOOR] fired=[tail]  eff_bb=10.08  cp=0  street=3  pre_argmax=CALL  post_argmax=CALL  tail_pruned=[BET_200:0.0040,ALLIN:0.0160,BET_150:0.0299]
+[FLOOR] fired=[tail]  eff_bb=10.08  cp=0  street=3  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_100:0.0172,ALLIN:0.0325]
+[FLOOR] fired=[tail]  eff_bb=6.45  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_66:0.0225,BET_100:0.0314,ALLIN:0.0908,BET_150:0.0204]
+[FLOOR] fired=[tail]  eff_bb=6.29  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_66:0.0320]
+[FLOOR] fired=[tail]  eff_bb=6.62  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_200:0.0372]
+[FLOOR] fired=[short-stack]  eff_bb=5.29  cp=0  street=1  pre_argmax=ALLIN  post_argmax=ALLIN
+[FLOOR] fired=[short-stack]  eff_bb=5.29  cp=0  street=2  pre_argmax=CALL  post_argmax=CALL
+[FLOOR] fired=[short-stack,tail]  eff_bb=5.29  cp=0  street=3  pre_argmax=CALL  post_argmax=CALL  tail_pruned=[ALLIN:0.0274]
+[FLOOR] fired=[tail]  eff_bb=9.62  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_100:0.0248,BET_200:0.0120,BET_150:0.0232]
+[FLOOR] fired=[tail]  eff_bb=11.62  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_66:0.0055,BET_100:0.0135,ALLIN:0.0724,BET_50:0.0113,BET_150:0.0094]
+[FLOOR] fired=[tail]  eff_bb=11.79  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_66:0.0135,BET_100:0.0182,BET_200:0.0167,ALLIN:0.0666,BET_150:0.0109]
+[FLOOR] fired=[tail]  eff_bb=11.62  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_66:0.0163,BET_100:0.0150,ALLIN:0.0258,BET_50:0.0105,BET_150:0.0108]
+[FLOOR] fired=[tail]  eff_bb=9.79  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_200:0.0158,ALLIN:0.0544,BET_150:0.0150]
+[FLOOR] fired=[tail]  eff_bb=9.29  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[CALL:0.0254]
+[FLOOR] fired=[tail]  eff_bb=6.82  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_100:0.0563,BET_150:0.0598]
+[FLOOR] fired=[short-stack]  eff_bb=5.96  cp=0  street=1  pre_argmax=ALLIN  post_argmax=ALLIN
+[FLOOR] fired=[tail]  eff_bb=7.62  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[CALL:0.0507]
+[FLOOR] fired=[tail]  eff_bb=6.96  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_200:0.0104,ALLIN:0.0596,BET_150:0.0241]
+[FLOOR] fired=[tail]  eff_bb=6.82  cp=0  street=0  pre_argmax=ALLIN  post_argmax=ALLIN  tail_pruned=[BET_150:0.0533]
+[FLOOR] fired=[tail]  eff_bb=6.67  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_66:0.0218,BET_100:0.0485,ALLIN:0.0809,BET_50:0.0370]
+[FLOOR] fired=[short-stack]  eff_bb=5.51  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD
+[FLOOR] fired=[tail]  eff_bb=59.60  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_200:0.0079,ALLIN:0.0201,BET_150:0.0109]
+[FLOOR] fired=[tail]  eff_bb=58.40  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_200:0.0132,ALLIN:0.0264,BET_150:0.0127]
+[FLOOR] fired=[tail]  eff_bb=57.60  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_66:0.0118,BET_100:0.0094,BET_200:0.0075,ALLIN:0.0182,BET_150:0.0082]
+[FLOOR] fired=[tail]  eff_bb=28.60  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_200:0.0096,ALLIN:0.0257]
+[FLOOR] fired=[tail]  eff_bb=28.40  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_200:0.0096,ALLIN:0.0293,BET_150:0.0154]
+[FLOOR] fired=[tail]  eff_bb=28.20  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_66:0.0061,BET_100:0.0034,BET_200:0.0044,ALLIN:0.0123,BET_150:0.0055]
+[FLOOR] fired=[tail]  eff_bb=28.00  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_100:0.0174,BET_200:0.0108,ALLIN:0.0317,BET_150:0.0150]
+[FLOOR] fired=[tail]  eff_bb=27.20  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_100:0.0440,BET_200:0.0330,BET_150:0.0360]
+[FLOOR] fired=[tail]  eff_bb=32.40  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_200:0.0247,BET_150:0.0309]
+[FLOOR] fired=[tail]  eff_bb=32.40  cp=0  street=1  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_66:0.0075,BET_100:0.0096,ALLIN:0.0284,BET_150:0.0067]
+[FLOOR] fired=[tail]  eff_bb=32.30  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_66:0.0172,BET_100:0.0154,BET_200:0.0154,ALLIN:0.0452,BET_150:0.0168]
+[FLOOR] fired=[tail]  eff_bb=31.00  cp=0  street=1  pre_argmax=BET_33  post_argmax=BET_33  tail_pruned=[BET_200:0.0186,ALLIN:0.0352,BET_150:0.0418]
+[FLOOR] fired=[tail]  eff_bb=27.70  cp=0  street=2  pre_argmax=CALL  post_argmax=CALL  tail_pruned=[BET_200:0.0407]
+[FLOOR] fired=[tail]  eff_bb=15.89  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_66:0.0083,BET_100:0.0117,BET_200:0.0398,ALLIN:0.0209,BET_50:0.0108,BET_150:0.0167]
+[FLOOR] fired=[tail]  eff_bb=16.50  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_66:0.0059,BET_100:0.0042,BET_200:0.0033,ALLIN:0.0062,BET_150:0.0038]
+[FLOOR] fired=[tail]  eff_bb=18.25  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_100:0.0177,BET_200:0.0353]
+[FLOOR] fired=[tail]  eff_bb=6.46  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_66:0.0272,BET_100:0.0333,ALLIN:0.0491]
+[FLOOR] fired=[short-stack]  eff_bb=5.31  cp=0  street=0  pre_argmax=CALL  post_argmax=CALL
+[FLOOR] fired=[short-stack]  eff_bb=4.46  cp=0  street=1  pre_argmax=CALL  post_argmax=CALL
+[FLOOR] fired=[tail]  eff_bb=8.11  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[ALLIN:0.0622,BET_50:0.0607]
+[FLOOR] fired=[short-stack]  eff_bb=5.26  cp=0  street=1  pre_argmax=ALLIN  post_argmax=ALLIN
+[FLOOR] fired=[tail]  eff_bb=13.21  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_100:0.0207,BET_200:0.0156,ALLIN:0.0152,BET_150:0.0202]
+[FLOOR] fired=[tail]  eff_bb=7.64  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_100:0.0280,BET_200:0.0160,BET_150:0.0200]
+[FLOOR] fired=[tail]  eff_bb=6.97  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[CALL:0.0577]
+[FLOOR] fired=[tail]  eff_bb=6.97  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[CALL:0.0757]
+[FLOOR] fired=[tail]  eff_bb=6.81  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_100:0.0262,BET_200:0.0318,ALLIN:0.0343,BET_150:0.0286]
+[FLOOR] fired=[tail]  eff_bb=6.64  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_66:0.0248,BET_100:0.0237,ALLIN:0.0610,BET_150:0.0209]
+[FLOOR] fired=[tail]  eff_bb=6.47  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_100:0.0144,ALLIN:0.0914,BET_50:0.0434]
+[FLOOR] fired=[short-stack]  eff_bb=5.31  cp=0  street=0  pre_argmax=CALL  post_argmax=CALL
+[FLOOR] fired=[short-stack]  eff_bb=3.33  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD
+[FLOOR] fired=[short-stack]  eff_bb=3.18  cp=0  street=0  pre_argmax=ALLIN  post_argmax=ALLIN
+[FLOOR] fired=[tail]  eff_bb=8.31  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_66:0.0398,BET_100:0.0286,ALLIN:0.0158]
+[FLOOR] fired=[tail]  eff_bb=7.16  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_100:0.0268,BET_200:0.0239,BET_150:0.0445]
+[FLOOR] fired=[tail]  eff_bb=10.11  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_200:0.0199,ALLIN:0.0869]
+[FLOOR] fired=[tail]  eff_bb=13.36  cp=0  street=0  pre_argmax=CALL  post_argmax=CALL  tail_pruned=[BET_100:0.0050,BET_200:0.0075,ALLIN:0.0430,BET_150:0.0073]
+[FLOOR] fired=[tail]  eff_bb=12.51  cp=0  street=1  pre_argmax=CALL  post_argmax=CALL  tail_pruned=[BET_66:0.0204,ALLIN:0.0720]
+[FLOOR] fired=[tail]  eff_bb=14.01  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_66:0.0155,BET_100:0.0240,BET_200:0.0717,BET_50:0.0115,BET_150:0.0439]
+[FLOOR] fired=[tail]  eff_bb=12.21  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_200:0.0230,BET_150:0.0295]
+[FLOOR] fired=[tail]  eff_bb=11.86  cp=0  street=1  pre_argmax=CALL  post_argmax=CALL  tail_pruned=[ALLIN:0.0677]
+[FLOOR] fired=[tail]  eff_bb=7.99  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_66:0.0046,BET_100:0.0053,BET_200:0.0138,ALLIN:0.0995,BET_50:0.0135,BET_150:0.0086]
+[FLOOR] fired=[tail]  eff_bb=7.84  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_200:0.0825]
+[FLOOR] fired=[tail]  eff_bb=6.87  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[CALL:0.0490]
+[FLOOR] fired=[tail]  eff_bb=7.75  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_200:0.0402,BET_150:0.0308]
+[FLOOR] fired=[tail]  eff_bb=7.17  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_66:0.0171,BET_100:0.0255,ALLIN:0.0805,BET_50:0.0162]
+[rt1]   -> {"skipped": null, "frames_replayed": 1519, "fresh_decisions": 139, "fidelity_fails": 0, "sub25_facing_frames": 1}
+[rt1] replaying snapshot_live_dryrun_20260612_220101.jsonl ...
+[FLOOR] fired=[tail]  eff_bb=59.20  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_200:0.0152,ALLIN:0.0372,BET_150:0.0182]
+[FLOOR] fired=[tail]  eff_bb=59.00  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[ALLIN:0.0552]
+[FLOOR] fired=[tail]  eff_bb=58.80  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_200:0.0059,ALLIN:0.0039,BET_150:0.0078]
+[FLOOR] fired=[tail]  eff_bb=55.80  cp=0  street=2  pre_argmax=BET_50  post_argmax=BET_50  tail_pruned=[ALLIN:0.0374]
+[FLOOR] fired=[tail]  eff_bb=64.20  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_66:0.0032,BET_100:0.0049,BET_200:0.0118,ALLIN:0.0160,BET_150:0.0069]
+[FLOOR] fired=[tail]  eff_bb=69.40  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[ALLIN:0.0324]
+[FLOOR] fired=[tail]  eff_bb=69.40  cp=0  street=1  pre_argmax=CALL  post_argmax=CALL  tail_pruned=[ALLIN:0.0136]
+[FLOOR] fired=[tail]  eff_bb=34.50  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_200:0.0078,ALLIN:0.0129,BET_150:0.0099]
+[FLOOR] fired=[tail]  eff_bb=34.30  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_66:0.0066,BET_100:0.0051,BET_200:0.0082,ALLIN:0.0150,BET_50:0.0077,BET_150:0.0071]
+[FLOOR] fired=[tail]  eff_bb=35.80  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_66:0.0082,BET_100:0.0047,BET_200:0.0042,ALLIN:0.0093,BET_150:0.0045]
+[FLOOR] fired=[tail]  eff_bb=35.10  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_100:0.0107,BET_200:0.0062,ALLIN:0.0187,BET_150:0.0092]
+[FLOOR] fired=[tail]  eff_bb=34.60  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_100:0.0178,BET_200:0.0199,ALLIN:0.0880,BET_150:0.0192]
+[FLOOR] fired=[tail]  eff_bb=33.90  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_100:0.0087,BET_200:0.0061,ALLIN:0.0148,BET_150:0.0066]
+[FLOOR] fired=[tail]  eff_bb=32.00  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_66:0.0125,BET_100:0.0117,BET_200:0.0186,BET_150:0.0219]
+[FLOOR] fired=[tail]  eff_bb=33.50  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_66:0.0037,BET_100:0.0031,BET_200:0.0059,ALLIN:0.0098,BET_50:0.0053,BET_150:0.0047]
+[FLOOR] fired=[tail]  eff_bb=16.60  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_66:0.0056,BET_100:0.0031,BET_200:0.0052,ALLIN:0.0175,BET_50:0.0090,BET_150:0.0059]
+[FLOOR] fired=[tail]  eff_bb=16.45  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_66:0.0117,BET_100:0.0080,BET_200:0.0070,ALLIN:0.0153,BET_150:0.0073]
+[FLOOR] fired=[tail]  eff_bb=15.30  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[CALL:0.0110,ALLIN:0.0147]
+[FLOOR] fired=[tail]  eff_bb=14.65  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_200:0.0222,ALLIN:0.0490]
+[FLOOR] fired=[tail]  eff_bb=14.50  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_100:0.0100,BET_200:0.0081,ALLIN:0.0137,BET_150:0.0082]
+[FLOOR] fired=[tail]  eff_bb=13.65  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[CALL:0.0207,ALLIN:0.0590]
+[FLOOR] fired=[tail]  eff_bb=13.20  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_66:0.0136,BET_100:0.0060,BET_200:0.0081,ALLIN:0.0145,BET_150:0.0085]
+[FLOOR] fired=[tail]  eff_bb=13.05  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_66:0.0232,BET_100:0.0198,BET_200:0.0127,ALLIN:0.0530,BET_150:0.0160]
+[FLOOR] fired=[tail]  eff_bb=6.87  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[BET_200:0.0195,ALLIN:0.0315,BET_150:0.0231]
+[FLOOR] fired=[tail]  eff_bb=6.70  cp=0  street=0  pre_argmax=ALLIN  post_argmax=ALLIN  tail_pruned=[BET_66:0.0384]
+[FLOOR] fired=[short-stack]  eff_bb=5.53  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD
+[FLOOR] fired=[short-stack]  eff_bb=5.37  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD
+[FLOOR] fired=[short-stack]  eff_bb=5.20  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD
+[FLOOR] fired=[short-stack,tail]  eff_bb=4.03  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD  tail_pruned=[CALL:0.0824]
+[FLOOR] fired=[short-stack]  eff_bb=2.23  cp=0  street=0  pre_argmax=ALLIN  post_argmax=ALLIN
+[FLOOR] fired=[short-stack]  eff_bb=2.08  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD
+[OOD-WARN] live out-of-training-support: level=5 hero_stack=385 (1.9 BB) captured_at=20260612_182248_495
+[OOD-WARN] live out-of-training-support: level=5 hero_stack=385 (1.9 BB) captured_at=20260612_182249_593
+[OOD-WARN] live out-of-training-support: level=5 hero_stack=385 (1.9 BB) captured_at=20260612_182251_551
+[OOD-WARN] live out-of-training-support: level=5 hero_stack=385 (1.9 BB) captured_at=20260612_182252_820
+[OOD-WARN] live out-of-training-support: level=5 hero_stack=385 (1.9 BB) captured_at=20260612_182254_079
+[FLOOR] fired=[short-stack]  eff_bb=1.93  cp=0  street=0  pre_argmax=CALL  post_argmax=CALL
+[OOD-WARN] live out-of-training-support: level=5 hero_stack=385 (1.9 BB) captured_at=20260612_182300_774
+[OOD-WARN] live out-of-training-support: level=5 hero_stack=185 (0.9 BB) captured_at=20260612_182302_414
+[OOD-WARN] live out-of-training-support: level=5 hero_stack=185 (0.9 BB) captured_at=20260612_182303_560
+[OOD-WARN] live out-of-training-support: level=5 hero_stack=185 (0.9 BB) captured_at=20260612_182309_288
+[OOD-WARN] live out-of-training-support: level=5 hero_stack=185 (0.9 BB) captured_at=20260612_182310_826
+[rt1]   -> {"skipped": null, "frames_replayed": 505, "fresh_decisions": 38, "fidelity_fails": 0, "sub25_facing_frames": 3}
+[rt1] replaying live_dryrun_smoke.jsonl ...
+[rt1]   -> {"skipped": "no raw_record frames (summary-tier log)", "frames_replayed": null, "fresh_decisions": null, "fidelity_fails": null, "sub25_facing_frames": null}
+[rt1] replaying live_dryrun_verify1_20260609_202137.jsonl ...
+[rt1]   -> {"skipped": null, "frames_replayed": 90, "fresh_decisions": 13, "fidelity_fails": 12, "sub25_facing_frames": 2}
+[rt1] wrote /home/quant/pokerbot/evals/rt1_enumeration_20260612/frames_raw.json (13 sub-2.5BB facing-bet decisions)

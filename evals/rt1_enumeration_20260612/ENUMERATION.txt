@@ -1,0 +1,138 @@
+========================================================================
+RT-1 DECISIVE TEST — sub-2BB floor-composition gap, FULL-CORPUS
+ENUMERATION (registered: docs/research_program/RED_TEAM_LOG.md)
+========================================================================
+generated: 2026-06-12T22:34:32.381979Z   method: per-frame replay via
+make_decision with each session's exact header flags (tail tau,
+short-stack bb, anchor-sum-floor, extended click plans, mode, seed);
+capture hooks = decision_audit pattern + accepts_d2c fix so the H1
+tail floor replays with EXACT chip costs on tau-armed sessions.
+Live session log 20260612_220101 audited from a clean snapshot
+(506 whole lines) — the live process ended during this analysis.
+
+[0] CORPUS COVERAGE + REPLAY FIDELITY
+    live_dryrun_20260608_004502.jsonl              SKIPPED (no raw_record frames (summary-tier log))
+    live_dryrun_20260608_045752.jsonl              SKIPPED (no raw_record frames (summary-tier log))
+    live_dryrun_20260608_050354.jsonl              SKIPPED (no raw_record frames (summary-tier log))
+    live_dryrun_20260608_051036.jsonl              SKIPPED (no raw_record frames (summary-tier log))
+    live_dryrun_20260608_152756.jsonl              frames=200   decisions=19   fidelity_fails=20  QUARANTINED
+    live_dryrun_20260609_154557.jsonl              frames=571   decisions=37   fidelity_fails=57  QUARANTINED
+    live_dryrun_20260609_192543.jsonl              frames=402   decisions=41   fidelity_fails=45  QUARANTINED
+    live_dryrun_20260611_163815.jsonl              frames=486   decisions=37   fidelity_fails=0   CLEAN
+    live_dryrun_20260611_181249.jsonl              frames=54    decisions=4    fidelity_fails=0   CLEAN
+    live_dryrun_20260611_201230.jsonl              frames=733   decisions=56   fidelity_fails=0   CLEAN
+    live_dryrun_20260611_204751.jsonl              frames=973   decisions=80   fidelity_fails=0   CLEAN
+    live_dryrun_20260611_222532.jsonl              frames=1326  decisions=88   fidelity_fails=0   CLEAN
+    live_dryrun_20260612_035454.jsonl              frames=218   decisions=15   fidelity_fails=0   CLEAN
+    live_dryrun_20260612_042058.jsonl              frames=316   decisions=22   fidelity_fails=0   CLEAN
+    live_dryrun_20260612_125441.jsonl              frames=84    decisions=2    fidelity_fails=0   CLEAN
+    live_dryrun_20260612_130846.jsonl              frames=233   decisions=12   fidelity_fails=0   CLEAN
+    live_dryrun_20260612_133056.jsonl              SKIPPED (no raw_record frames (summary-tier log))
+    live_dryrun_20260612_161347.jsonl              frames=391   decisions=29   fidelity_fails=0   CLEAN
+    live_dryrun_20260612_163114.jsonl              SKIPPED (no raw_record frames (summary-tier log))
+    live_dryrun_20260612_183701.jsonl              frames=1519  decisions=139  fidelity_fails=0   CLEAN
+    snapshot_live_dryrun_20260612_220101.jsonl     frames=505   decisions=38   fidelity_fails=0   CLEAN
+    live_dryrun_smoke.jsonl                        SKIPPED (no raw_record frames (summary-tier log))
+    live_dryrun_verify1_20260609_202137.jsonl      frames=90    decisions=13   fidelity_fails=12  QUARANTINED
+
+    fidelity-CLEAN: 12 logs, 6838 frames, 522 unique decisions — distributions ARE what ran live (byte-identity gate).
+    QUARANTINED:    4 logs, 1263 frames, 110 decisions — pre-header-era logs; replay on current code/seed mismatched the
+    logged actions, so their distributions are NOT certified as what
+    ran live. Their universe frames are listed separately below and
+    EXCLUDED from headline counts.
+    Note: 9 loose-filter rows dropped as artifacts (raw scraper stacks null -> eff_card spuriously 0; true
+    floor-eff measured 5.7-44.6 BB — outside the RT-1 universe).
+
+[1] UNIVERSE — facing-bet (to_call > 0) decisions at eff <= 2.5 BB
+    (eff = _hero_eff_bb_from_parsed, the measure every deployed
+     floor and the candidate mask compute)
+
+    snapshot_live_dryrun_20260612_220101.jsonl  seq=474  [fidelity_clean]
+      T8s (Th 8h)  BTN  preflop  L5  n_alive=6
+      eff_floor=2.23BB  eff_card=2.23BB  hero_behind=2.23BB  to_call=3.00BB  pot=1080
+      OOD-WARN=off  floors_fired=['short-stack']  cached_repeats=0
+      post-floor: FOLD:0.333  CALL:0.173  ALLIN:0.494
+      post_argmax=ALLIN  FOLD_mass=0.333  CALL+ALLIN_mass=0.667  CHOSEN=fold
+      chip-EV check: call_cost=445 req_eq=0.2918  equity bracket: vs-1-random=0.5155, vs-5-random=0.2053
+      classes: {a,b}
+
+    snapshot_live_dryrun_20260612_220101.jsonl  seq=485  [fidelity_clean]
+      86s (8c 6c)  HJ  preflop  L5  n_alive=6
+      eff_floor=2.08BB  eff_card=2.08BB  hero_behind=2.08BB  to_call=1.00BB  pot=480
+      OOD-WARN=off  floors_fired=['short-stack']  cached_repeats=1
+      post-floor: FOLD:0.600  CALL:0.237  ALLIN:0.163
+      post_argmax=FOLD  FOLD_mass=0.600  CALL+ALLIN_mass=0.400  CHOSEN=fold
+      chip-EV check: call_cost=200 req_eq=0.2941  equity bracket: vs-1-random=0.4635, vs-5-random=0.1761
+      classes: {c}
+
+    snapshot_live_dryrun_20260612_220101.jsonl  seq=498  [fidelity_clean]
+      JJ (Jc Js)  MP  preflop  L5  n_alive=6
+      eff_floor=1.93BB  eff_card=1.93BB  hero_behind=1.93BB  to_call=1.00BB  pot=480
+      OOD-WARN=ACTIVE  floors_fired=['short-stack']  cached_repeats=0
+      post-floor: FOLD:0.279  CALL:0.442  ALLIN:0.279
+      post_argmax=CALL  FOLD_mass=0.279  CALL+ALLIN_mass=0.721  CHOSEN=fold
+      chip-EV check: call_cost=200 req_eq=0.2941  equity bracket: vs-1-random=0.7676, vs-5-random=0.3399
+      classes: {a,b}
+
+    -- quarantined (fidelity-failed logs; not certified live) --
+    live_dryrun_20260609_154557.jsonl  seq=428  [fidelity_failed_quarantined]
+      Q9o (9h Qc)  SB  preflop  L5  n_alive=4
+      eff_floor=1.55BB  eff_card=7.41BB  hero_behind=1.41BB  to_call=3.69BB  pot=3458
+      OOD-WARN=ACTIVE  floors_fired=['short-stack']  cached_repeats=0
+      post-floor: FOLD:0.073  CALL:0.826  ALLIN:0.101
+      post_argmax=CALL  FOLD_mass=0.073  CALL+ALLIN_mass=0.927  CHOSEN=call
+      chip-EV check: call_cost=281 req_eq=0.0752  equity bracket: vs-1-random=0.5562, vs-3-random=0.2839
+      classes: {none}
+
+[2] CLASS TOTALS (headline = fidelity-clean only)
+    CLEAN: universe=3  class_a=2  class_b(realized wrong-side FOLD draws)=2  class_c(mirror)=1
+    QUARANTINED: universe=1  class_a=0  class_b(realized wrong-side FOLD draws)=0  class_c(mirror)=0
+
+    eff bands (CLEAN):
+      eff <= 2.0 BB          universe=1  class_a=1  class_b=1  class_c=0
+      2.0 < eff <= 2.5 BB    universe=2  class_a=1  class_b=1  class_c=1
+    premium pairs (JJ+) in CLEAN universe: 1 (JJ seq498) — of which class_b: 1
+    any pocket pair in CLEAN universe: 1
+
+[3] COUNTERFACTUAL — registered mitigation (mask FOLD when post-floor
+    argmax in {CALL, ALLIN} at eff <= 2.0; FOLD mass redistributed
+    proportionally to survivors)
+
+    frame                                eff argmax   FOLDm chosen  fires@2.0 fires@2.5 effect
+    run_20260612_220101.jsonl#474       2.23 ALLIN    0.333 fold        False      True MISSED at N=2.0 (eff 2.23); at N=2.5 would PREVENT the realized FOLD
+    run_20260612_220101.jsonl#485       2.08 FOLD     0.600 fold        False     False no fire (argmax FOLD)
+    run_20260612_220101.jsonl#498       1.93 CALL     0.279 fold         True      True PREVENTS realized FOLD; masked -> {"CALL": 0.612587, "ALLIN": 0.387413}
+    run_20260609_154557.jsonl#428       1.55 CALL     0.073 call         True      True no realized change (chosen was call); masked -> {"CALL": 0.891082, "ALLIN": 0.108918}
+
+    symmetry check: mask fires on a class_c (argmax=FOLD) frame: 0 times (structurally impossible — fire condition
+    requires argmax in {CALL, ALLIN}; verified empirically over the
+    whole universe, both tiers).
+
+[4] WHAT THE MASK WOULD HAVE COST (honest accounting)
+    Frames where masking FOLD could plausibly be wrong — i.e. the
+    mask fires (or would at N=2.5) and folding had a case:
+    - live_dryrun_20260609_154557.jsonl seq=428 Q9o eff=1.55BB: OOD-WARN active — the distribution arguing for the continue is itself out-of-support
+    - snapshot_live_dryrun_20260612_220101.jsonl seq=474 T8s eff=2.23BB: MARGINAL only under the pessimistic all-5-contest bound (0.205 < 0.292); heads-up bound 0.515 clears it
+    - snapshot_live_dryrun_20260612_220101.jsonl seq=498 JJ eff=1.93BB: OOD-WARN active — the distribution arguing for the continue is itself out-of-support
+
+    Structural caveats (apply corpus-wide, not per-frame):
+    - The chip-EV equity proxy ignores ICM and the double-up bubble;
+      a genuinely fold-correct OOD spot (e.g. eff ~2BB on a strict
+      bubble where folding into a near-lock cash is right) would be
+      masked into continuing. ZERO such frames exist in this corpus,
+      but n=4 (3 clean) is far too small to call the class empty.
+    - The mask trusts the model's own argmax exactly where OOD-WARN
+      says the encoder is least trustworthy (seq 498 fired WITH
+      OOD-WARN active). The mitigation removes one failure mode
+      (sampling FOLD against a continue-plurality) without making
+      the plurality itself more reliable.
+    - Equity is bracketed [vs-(n_alive-1)-random, vs-1-random]; the
+      truth (the bettor's + overcallers' actual ranges) lies between
+      and is not certified in either direction.
+
+[5] VERDICT LINE
+    CLEAN corpus: universe=3, class_a=2, class_b=2, class_c=1.
+    Registered mask (N=2.0): fires on 1/2 class_a frames, prevents 1/2 realized wrong-side FOLDs,
+    forces zero bad calls, never fires against a FOLD argmax.
+    ** N=2.0 MISSES 1 realized wrong-side FOLD(s): T8s seq474 eff=2.23BB — N=2.5 would catch all of them.
+========================================================================

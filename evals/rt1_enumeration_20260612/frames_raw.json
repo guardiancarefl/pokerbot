@@ -1,0 +1,2369 @@
+{
+ "generated_utc": "2026-06-12T22:34:32.381979Z",
+ "filter": {
+  "eff_bb_max": 2.5,
+  "facing": "to_call > 0"
+ },
+ "logs": [
+  {
+   "log": "live_dryrun_20260608_004502.jsonl",
+   "skipped": "no raw_record frames (summary-tier log)"
+  },
+  {
+   "log": "live_dryrun_20260608_045752.jsonl",
+   "skipped": "no raw_record frames (summary-tier log)"
+  },
+  {
+   "log": "live_dryrun_20260608_050354.jsonl",
+   "skipped": "no raw_record frames (summary-tier log)"
+  },
+  {
+   "log": "live_dryrun_20260608_051036.jsonl",
+   "skipped": "no raw_record frames (summary-tier log)"
+  },
+  {
+   "log": "live_dryrun_20260608_152756.jsonl",
+   "header_present": false,
+   "mode": "sample",
+   "seed": 0,
+   "flags": {
+    "short_stack_bb": 6.0,
+    "tail_floor_tau": null,
+    "anchor_sum_floor": false,
+    "extended_click_plans": false,
+    "bet_closure_recovery": false
+   },
+   "ckpt": "/home/quant/pokerbot/runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt",
+   "frames_replayed": 200,
+   "fresh_decisions": 19,
+   "fidelity_fails": 20,
+   "fidelity_fail_detail": [
+    {
+     "seq": 10,
+     "logged_status": "decision",
+     "replay_status": "decision",
+     "logged_ca": {
+      "kind": "fold",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 0
+     },
+     "replay_ca": {
+      "kind": "raise_to",
+      "chip_amount": 50,
+      "raw_openspiel_chip_int": 50
+     }
+    },
+    {
+     "seq": 31,
+     "logged_status": "decision",
+     "replay_status": "decision",
+     "logged_ca": {
+      "kind": "fold",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 0
+     },
+     "replay_ca": {
+      "kind": "call",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 1
+     }
+    },
+    {
+     "seq": 48,
+     "logged_status": "decision",
+     "replay_status": "decision",
+     "logged_ca": {
+      "kind": "fold",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 0
+     },
+     "replay_ca": {
+      "kind": "raise_to",
+      "chip_amount": 50,
+      "raw_openspiel_chip_int": 50
+     }
+    },
+    {
+     "seq": 56,
+     "logged_status": "decision",
+     "replay_status": "decision",
+     "logged_ca": {
+      "kind": "raise_to",
+      "chip_amount": 50,
+      "raw_openspiel_chip_int": 50
+     },
+     "replay_ca": {
+      "kind": "check",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 1
+     }
+    },
+    {
+     "seq": 57,
+     "logged_status": "decision_cached",
+     "replay_status": "decision_cached",
+     "logged_ca": {
+      "kind": "raise_to",
+      "chip_amount": 50,
+      "raw_openspiel_chip_int": 50
+     },
+     "replay_ca": {
+      "kind": "check",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 1
+     }
+    },
+    {
+     "seq": 83,
+     "logged_status": "decision",
+     "replay_status": "decision",
+     "logged_ca": {
+      "kind": "fold",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 0
+     },
+     "replay_ca": {
+      "kind": "raise_to",
+      "chip_amount": 150,
+      "raw_openspiel_chip_int": 150
+     }
+    },
+    {
+     "seq": 170,
+     "logged_status": "safe_fold",
+     "replay_status": "decision",
+     "logged_ca": null,
+     "replay_ca": {
+      "kind": "raise_to",
+      "chip_amount": 264,
+      "raw_openspiel_chip_int": 264
+     }
+    },
+    {
+     "seq": 173,
+     "logged_status": "decision",
+     "replay_status": "decision",
+     "logged_ca": {
+      "kind": "raise_to",
+      "chip_amount": 400,
+      "raw_openspiel_chip_int": 400
+     },
+     "replay_ca": {
+      "kind": "raise_to",
+      "chip_amount": 600,
+      "raw_openspiel_chip_int": 600
+     }
+    },
+    {
+     "seq": 174,
+     "logged_status": "decision_cached",
+     "replay_status": "decision_cached",
+     "logged_ca": {
+      "kind": "raise_to",
+      "chip_amount": 400,
+      "raw_openspiel_chip_int": 400
+     },
+     "replay_ca": {
+      "kind": "raise_to",
+      "chip_amount": 600,
+      "raw_openspiel_chip_int": 600
+     }
+    },
+    {
+     "seq": 175,
+     "logged_status": "decision_cached",
+     "replay_status": "decision_cached",
+     "logged_ca": {
+      "kind": "raise_to",
+      "chip_amount": 400,
+      "raw_openspiel_chip_int": 400
+     },
+     "replay_ca": {
+      "kind": "raise_to",
+      "chip_amount": 600,
+      "raw_openspiel_chip_int": 600
+     }
+    },
+    {
+     "seq": 176,
+     "logged_status": "decision_cached",
+     "replay_status": "decision_cached",
+     "logged_ca": {
+      "kind": "raise_to",
+      "chip_amount": 400,
+      "raw_openspiel_chip_int": 400
+     },
+     "replay_ca": {
+      "kind": "raise_to",
+      "chip_amount": 600,
+      "raw_openspiel_chip_int": 600
+     }
+    },
+    {
+     "seq": 177,
+     "logged_status": "decision_cached",
+     "replay_status": "decision_cached",
+     "logged_ca": {
+      "kind": "raise_to",
+      "chip_amount": 400,
+      "raw_openspiel_chip_int": 400
+     },
+     "replay_ca": {
+      "kind": "raise_to",
+      "chip_amount": 600,
+      "raw_openspiel_chip_int": 600
+     }
+    },
+    {
+     "seq": 181,
+     "logged_status": "decision",
+     "replay_status": "decision",
+     "logged_ca": {
+      "kind": "raise_to",
+      "chip_amount": 660,
+      "raw_openspiel_chip_int": 660
+     },
+     "replay_ca": {
+      "kind": "raise_to",
+      "chip_amount": 900,
+      "raw_openspiel_chip_int": 1410
+     }
+    },
+    {
+     "seq": 182,
+     "logged_status": "decision_cached",
+     "replay_status": "decision_cached",
+     "logged_ca": {
+      "kind": "raise_to",
+      "chip_amount": 660,
+      "raw_openspiel_chip_int": 660
+     },
+     "replay_ca": {
+      "kind": "raise_to",
+      "chip_amount": 900,
+      "raw_openspiel_chip_int": 1410
+     }
+    },
+    {
+     "seq": 183,
+     "logged_status": "decision_cached",
+     "replay_status": "decision_cached",
+     "logged_ca": {
+      "kind": "raise_to",
+      "chip_amount": 660,
+      "raw_openspiel_chip_int": 660
+     },
+     "replay_ca": {
+      "kind": "raise_to",
+      "chip_amount": 900,
+      "raw_openspiel_chip_int": 1410
+     }
+    },
+    {
+     "seq": 184,
+     "logged_status": "decision_cached",
+     "replay_status": "decision_cached",
+     "logged_ca": {
+      "kind": "raise_to",
+      "chip_amount": 660,
+      "raw_openspiel_chip_int": 660
+     },
+     "replay_ca": {
+      "kind": "raise_to",
+      "chip_amount": 900,
+      "raw_openspiel_chip_int": 1410
+     }
+    },
+    {
+     "seq": 185,
+     "logged_status": "decision_cached",
+     "replay_status": "decision_cached",
+     "logged_ca": {
+      "kind": "raise_to",
+      "chip_amount": 660,
+      "raw_openspiel_chip_int": 660
+     },
+     "replay_ca": {
+      "kind": "raise_to",
+      "chip_amount": 900,
+      "raw_openspiel_chip_int": 1410
+     }
+    },
+    {
+     "seq": 186,
+     "logged_status": "decision_cached",
+     "replay_status": "decision_cached",
+     "logged_ca": {
+      "kind": "raise_to",
+      "chip_amount": 660,
+      "raw_openspiel_chip_int": 660
+     },
+     "replay_ca": {
+      "kind": "raise_to",
+      "chip_amount": 900,
+      "raw_openspiel_chip_int": 1410
+     }
+    },
+    {
+     "seq": 187,
+     "logged_status": "decision_cached",
+     "replay_status": "decision_cached",
+     "logged_ca": {
+      "kind": "raise_to",
+      "chip_amount": 660,
+      "raw_openspiel_chip_int": 660
+     },
+     "replay_ca": {
+      "kind": "raise_to",
+      "chip_amount": 900,
+      "raw_openspiel_chip_int": 1410
+     }
+    },
+    {
+     "seq": 192,
+     "logged_status": "safe_fold",
+     "replay_status": "decision",
+     "logged_ca": null,
+     "replay_ca": {
+      "kind": "call",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 1
+     }
+    }
+   ],
+   "sub25_facing_frames": 0
+  },
+  {
+   "log": "live_dryrun_20260609_154557.jsonl",
+   "header_present": false,
+   "mode": "sample",
+   "seed": 0,
+   "flags": {
+    "short_stack_bb": 6.0,
+    "tail_floor_tau": null,
+    "anchor_sum_floor": false,
+    "extended_click_plans": false,
+    "bet_closure_recovery": false
+   },
+   "ckpt": "/home/quant/pokerbot/runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt",
+   "frames_replayed": 571,
+   "fresh_decisions": 37,
+   "fidelity_fails": 57,
+   "fidelity_fail_detail": [
+    {
+     "seq": 16,
+     "logged_status": "decision",
+     "replay_status": "decision",
+     "logged_ca": {
+      "kind": "call",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 1
+     },
+     "replay_ca": {
+      "kind": "raise_to",
+      "chip_amount": 1495,
+      "raw_openspiel_chip_int": 1500
+     }
+    },
+    {
+     "seq": 20,
+     "logged_status": "decision",
+     "replay_status": "decision",
+     "logged_ca": {
+      "kind": "check",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 1
+     },
+     "replay_ca": {
+      "kind": "raise_to",
+      "chip_amount": 180,
+      "raw_openspiel_chip_int": 180
+     }
+    },
+    {
+     "seq": 75,
+     "logged_status": "decision",
+     "replay_status": "decision",
+     "logged_ca": {
+      "kind": "raise_to",
+      "chip_amount": 50,
+      "raw_openspiel_chip_int": 50
+     },
+     "replay_ca": {
+      "kind": "fold",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 0
+     }
+    },
+    {
+     "seq": 80,
+     "logged_status": "decision",
+     "replay_status": "decision",
+     "logged_ca": {
+      "kind": "raise_to",
+      "chip_amount": 600,
+      "raw_openspiel_chip_int": 600
+     },
+     "replay_ca": {
+      "kind": "call",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 1
+     }
+    },
+    {
+     "seq": 81,
+     "logged_status": "decision_cached",
+     "replay_status": "decision_cached",
+     "logged_ca": {
+      "kind": "raise_to",
+      "chip_amount": 600,
+      "raw_openspiel_chip_int": 600
+     },
+     "replay_ca": {
+      "kind": "call",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 1
+     }
+    },
+    {
+     "seq": 82,
+     "logged_status": "decision_cached",
+     "replay_status": "decision_cached",
+     "logged_ca": {
+      "kind": "raise_to",
+      "chip_amount": 600,
+      "raw_openspiel_chip_int": 600
+     },
+     "replay_ca": {
+      "kind": "call",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 1
+     }
+    },
+    {
+     "seq": 83,
+     "logged_status": "decision_cached",
+     "replay_status": "decision_cached",
+     "logged_ca": {
+      "kind": "raise_to",
+      "chip_amount": 600,
+      "raw_openspiel_chip_int": 600
+     },
+     "replay_ca": {
+      "kind": "call",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 1
+     }
+    },
+    {
+     "seq": 84,
+     "logged_status": "decision_cached",
+     "replay_status": "decision_cached",
+     "logged_ca": {
+      "kind": "raise_to",
+      "chip_amount": 600,
+      "raw_openspiel_chip_int": 600
+     },
+     "replay_ca": {
+      "kind": "call",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 1
+     }
+    },
+    {
+     "seq": 85,
+     "logged_status": "decision_cached",
+     "replay_status": "decision_cached",
+     "logged_ca": {
+      "kind": "raise_to",
+      "chip_amount": 600,
+      "raw_openspiel_chip_int": 600
+     },
+     "replay_ca": {
+      "kind": "call",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 1
+     }
+    },
+    {
+     "seq": 94,
+     "logged_status": "decision",
+     "replay_status": "decision",
+     "logged_ca": {
+      "kind": "raise_to",
+      "chip_amount": 1585,
+      "raw_openspiel_chip_int": 1590
+     },
+     "replay_ca": {
+      "kind": "raise_to",
+      "chip_amount": 99,
+      "raw_openspiel_chip_int": 99
+     }
+    },
+    {
+     "seq": 95,
+     "logged_status": "decision_cached",
+     "replay_status": "decision_cached",
+     "logged_ca": {
+      "kind": "raise_to",
+      "chip_amount": 1585,
+      "raw_openspiel_chip_int": 1590
+     },
+     "replay_ca": {
+      "kind": "raise_to",
+      "chip_amount": 99,
+      "raw_openspiel_chip_int": 99
+     }
+    },
+    {
+     "seq": 96,
+     "logged_status": "decision_cached",
+     "replay_status": "decision_cached",
+     "logged_ca": {
+      "kind": "raise_to",
+      "chip_amount": 1585,
+      "raw_openspiel_chip_int": 1590
+     },
+     "replay_ca": {
+      "kind": "raise_to",
+      "chip_amount": 99,
+      "raw_openspiel_chip_int": 99
+     }
+    },
+    {
+     "seq": 55,
+     "logged_status": "decision",
+     "replay_status": "decision",
+     "logged_ca": {
+      "kind": "fold",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 0
+     },
+     "replay_ca": {
+      "kind": "raise_to",
+      "chip_amount": 1705,
+      "raw_openspiel_chip_int": 1715
+     }
+    },
+    {
+     "seq": 61,
+     "logged_status": "skip_data_quality",
+     "replay_status": "decision_recovered",
+     "logged_ca": null,
+     "replay_ca": {
+      "kind": "call",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 1
+     }
+    },
+    {
+     "seq": 62,
+     "logged_status": "skip_data_quality",
+     "replay_status": "decision_recovered_cached",
+     "logged_ca": null,
+     "replay_ca": {
+      "kind": "call",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 1
+     }
+    },
+    {
+     "seq": 73,
+     "logged_status": "decision",
+     "replay_status": "decision",
+     "logged_ca": {
+      "kind": "call",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 1
+     },
+     "replay_ca": {
+      "kind": "raise_to",
+      "chip_amount": 200,
+      "raw_openspiel_chip_int": 200
+     }
+    },
+    {
+     "seq": 74,
+     "logged_status": "decision_cached",
+     "replay_status": "decision_cached",
+     "logged_ca": {
+      "kind": "call",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 1
+     },
+     "replay_ca": {
+      "kind": "raise_to",
+      "chip_amount": 200,
+      "raw_openspiel_chip_int": 200
+     }
+    },
+    {
+     "seq": 76,
+     "logged_status": "decision",
+     "replay_status": "decision",
+     "logged_ca": {
+      "kind": "raise_to",
+      "chip_amount": 200,
+      "raw_openspiel_chip_int": 200
+     },
+     "replay_ca": {
+      "kind": "check",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 1
+     }
+    },
+    {
+     "seq": 77,
+     "logged_status": "decision_cached",
+     "replay_status": "decision_cached",
+     "logged_ca": {
+      "kind": "raise_to",
+      "chip_amount": 200,
+      "raw_openspiel_chip_int": 200
+     },
+     "replay_ca": {
+      "kind": "check",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 1
+     }
+    },
+    {
+     "seq": 81,
+     "logged_status": "decision",
+     "replay_status": "decision",
+     "logged_ca": {
+      "kind": "fold",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 0
+     },
+     "replay_ca": {
+      "kind": "raise_to",
+      "chip_amount": 1545,
+      "raw_openspiel_chip_int": 1655
+     }
+    },
+    {
+     "seq": 82,
+     "logged_status": "decision_cached",
+     "replay_status": "decision_cached",
+     "logged_ca": {
+      "kind": "fold",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 0
+     },
+     "replay_ca": {
+      "kind": "raise_to",
+      "chip_amount": 1545,
+      "raw_openspiel_chip_int": 1655
+     }
+    },
+    {
+     "seq": 84,
+     "logged_status": "decision",
+     "replay_status": "decision",
+     "logged_ca": {
+      "kind": "raise_to",
+      "chip_amount": 858,
+      "raw_openspiel_chip_int": 858
+     },
+     "replay_ca": {
+      "kind": "raise_to",
+      "chip_amount": 995,
+      "raw_openspiel_chip_int": 1300
+     }
+    },
+    {
+     "seq": 85,
+     "logged_status": "decision_cached",
+     "replay_status": "decision_cached",
+     "logged_ca": {
+      "kind": "raise_to",
+      "chip_amount": 858,
+      "raw_openspiel_chip_int": 858
+     },
+     "replay_ca": {
+      "kind": "raise_to",
+      "chip_amount": 995,
+      "raw_openspiel_chip_int": 1300
+     }
+    },
+    {
+     "seq": 86,
+     "logged_status": "decision_cached",
+     "replay_status": "decision_cached",
+     "logged_ca": {
+      "kind": "raise_to",
+      "chip_amount": 858,
+      "raw_openspiel_chip_int": 858
+     },
+     "replay_ca": {
+      "kind": "raise_to",
+      "chip_amount": 995,
+      "raw_openspiel_chip_int": 1300
+     }
+    },
+    {
+     "seq": 87,
+     "logged_status": "decision_cached",
+     "replay_status": "decision_cached",
+     "logged_ca": {
+      "kind": "raise_to",
+      "chip_amount": 858,
+      "raw_openspiel_chip_int": 858
+     },
+     "replay_ca": {
+      "kind": "raise_to",
+      "chip_amount": 995,
+      "raw_openspiel_chip_int": 1300
+     }
+    }
+   ],
+   "sub25_facing_frames": 4
+  },
+  {
+   "log": "live_dryrun_20260609_192543.jsonl",
+   "header_present": false,
+   "mode": "sample",
+   "seed": 0,
+   "flags": {
+    "short_stack_bb": 6.0,
+    "tail_floor_tau": null,
+    "anchor_sum_floor": false,
+    "extended_click_plans": false,
+    "bet_closure_recovery": false
+   },
+   "ckpt": "/home/quant/pokerbot/runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt",
+   "frames_replayed": 402,
+   "fresh_decisions": 41,
+   "fidelity_fails": 45,
+   "fidelity_fail_detail": [
+    {
+     "seq": 10,
+     "logged_status": "decision",
+     "replay_status": "decision",
+     "logged_ca": {
+      "kind": "fold",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 0
+     },
+     "replay_ca": {
+      "kind": "raise_to",
+      "chip_amount": 1495,
+      "raw_openspiel_chip_int": 1500
+     }
+    },
+    {
+     "seq": 11,
+     "logged_status": "decision_cached",
+     "replay_status": "decision_cached",
+     "logged_ca": {
+      "kind": "fold",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 0
+     },
+     "replay_ca": {
+      "kind": "raise_to",
+      "chip_amount": 1495,
+      "raw_openspiel_chip_int": 1500
+     }
+    },
+    {
+     "seq": 21,
+     "logged_status": "decision",
+     "replay_status": "decision",
+     "logged_ca": {
+      "kind": "raise_to",
+      "chip_amount": 1370,
+      "raw_openspiel_chip_int": 1500
+     },
+     "replay_ca": {
+      "kind": "check",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 1
+     }
+    },
+    {
+     "seq": 22,
+     "logged_status": "decision",
+     "replay_status": "decision",
+     "logged_ca": {
+      "kind": "check",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 1
+     },
+     "replay_ca": {
+      "kind": "raise_to",
+      "chip_amount": 165,
+      "raw_openspiel_chip_int": 165
+     }
+    },
+    {
+     "seq": 23,
+     "logged_status": "decision_cached",
+     "replay_status": "decision_cached",
+     "logged_ca": {
+      "kind": "check",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 1
+     },
+     "replay_ca": {
+      "kind": "raise_to",
+      "chip_amount": 165,
+      "raw_openspiel_chip_int": 165
+     }
+    },
+    {
+     "seq": 24,
+     "logged_status": "decision_cached",
+     "replay_status": "decision_cached",
+     "logged_ca": {
+      "kind": "check",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 1
+     },
+     "replay_ca": {
+      "kind": "raise_to",
+      "chip_amount": 165,
+      "raw_openspiel_chip_int": 165
+     }
+    },
+    {
+     "seq": 75,
+     "logged_status": "decision",
+     "replay_status": "decision",
+     "logged_ca": {
+      "kind": "raise_to",
+      "chip_amount": 1625,
+      "raw_openspiel_chip_int": 1630
+     },
+     "replay_ca": {
+      "kind": "call",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 1
+     }
+    },
+    {
+     "seq": 76,
+     "logged_status": "decision_cached",
+     "replay_status": "decision_cached",
+     "logged_ca": {
+      "kind": "raise_to",
+      "chip_amount": 1625,
+      "raw_openspiel_chip_int": 1630
+     },
+     "replay_ca": {
+      "kind": "call",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 1
+     }
+    },
+    {
+     "seq": 77,
+     "logged_status": "decision_cached",
+     "replay_status": "decision_cached",
+     "logged_ca": {
+      "kind": "raise_to",
+      "chip_amount": 1625,
+      "raw_openspiel_chip_int": 1630
+     },
+     "replay_ca": {
+      "kind": "call",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 1
+     }
+    },
+    {
+     "seq": 93,
+     "logged_status": "decision",
+     "replay_status": "decision",
+     "logged_ca": {
+      "kind": "call",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 1
+     },
+     "replay_ca": {
+      "kind": "raise_to",
+      "chip_amount": 1708,
+      "raw_openspiel_chip_int": 1713
+     }
+    },
+    {
+     "seq": 101,
+     "logged_status": "safe_fold",
+     "replay_status": "decision",
+     "logged_ca": null,
+     "replay_ca": {
+      "kind": "call",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 1
+     }
+    },
+    {
+     "seq": 162,
+     "logged_status": "decision",
+     "replay_status": "decision",
+     "logged_ca": {
+      "kind": "raise_to",
+      "chip_amount": 300,
+      "raw_openspiel_chip_int": 300
+     },
+     "replay_ca": {
+      "kind": "raise_to",
+      "chip_amount": 450,
+      "raw_openspiel_chip_int": 450
+     }
+    },
+    {
+     "seq": 167,
+     "logged_status": "decision",
+     "replay_status": "decision",
+     "logged_ca": {
+      "kind": "raise_to",
+      "chip_amount": 462,
+      "raw_openspiel_chip_int": 462
+     },
+     "replay_ca": {
+      "kind": "raise_to",
+      "chip_amount": 1050,
+      "raw_openspiel_chip_int": 1050
+     }
+    },
+    {
+     "seq": 169,
+     "logged_status": "decision_cached",
+     "replay_status": "decision_cached",
+     "logged_ca": {
+      "kind": "raise_to",
+      "chip_amount": 462,
+      "raw_openspiel_chip_int": 462
+     },
+     "replay_ca": {
+      "kind": "raise_to",
+      "chip_amount": 1050,
+      "raw_openspiel_chip_int": 1050
+     }
+    },
+    {
+     "seq": 171,
+     "logged_status": "decision_cached",
+     "replay_status": "decision_cached",
+     "logged_ca": {
+      "kind": "raise_to",
+      "chip_amount": 462,
+      "raw_openspiel_chip_int": 462
+     },
+     "replay_ca": {
+      "kind": "raise_to",
+      "chip_amount": 1050,
+      "raw_openspiel_chip_int": 1050
+     }
+    },
+    {
+     "seq": 173,
+     "logged_status": "decision_cached",
+     "replay_status": "decision_cached",
+     "logged_ca": {
+      "kind": "raise_to",
+      "chip_amount": 462,
+      "raw_openspiel_chip_int": 462
+     },
+     "replay_ca": {
+      "kind": "raise_to",
+      "chip_amount": 1050,
+      "raw_openspiel_chip_int": 1050
+     }
+    },
+    {
+     "seq": 186,
+     "logged_status": "decision",
+     "replay_status": "decision",
+     "logged_ca": {
+      "kind": "fold",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 0
+     },
+     "replay_ca": {
+      "kind": "raise_to",
+      "chip_amount": 3283,
+      "raw_openspiel_chip_int": 3293
+     }
+    },
+    {
+     "seq": 199,
+     "logged_status": "decision",
+     "replay_status": "decision",
+     "logged_ca": {
+      "kind": "call",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 1
+     },
+     "replay_ca": {
+      "kind": "fold",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 0
+     }
+    },
+    {
+     "seq": 200,
+     "logged_status": "decision_cached",
+     "replay_status": "decision_cached",
+     "logged_ca": {
+      "kind": "call",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 1
+     },
+     "replay_ca": {
+      "kind": "fold",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 0
+     }
+    },
+    {
+     "seq": 203,
+     "logged_status": "decision",
+     "replay_status": "decision",
+     "logged_ca": {
+      "kind": "fold",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 0
+     },
+     "replay_ca": {
+      "kind": "call",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 1
+     }
+    },
+    {
+     "seq": 209,
+     "logged_status": "decision",
+     "replay_status": "decision",
+     "logged_ca": {
+      "kind": "fold",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 0
+     },
+     "replay_ca": {
+      "kind": "call",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 1
+     }
+    },
+    {
+     "seq": 221,
+     "logged_status": "decision",
+     "replay_status": "decision",
+     "logged_ca": {
+      "kind": "fold",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 0
+     },
+     "replay_ca": {
+      "kind": "call",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 1
+     }
+    },
+    {
+     "seq": 222,
+     "logged_status": "decision_cached",
+     "replay_status": "decision_cached",
+     "logged_ca": {
+      "kind": "fold",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 0
+     },
+     "replay_ca": {
+      "kind": "call",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 1
+     }
+    },
+    {
+     "seq": 238,
+     "logged_status": "decision",
+     "replay_status": "decision",
+     "logged_ca": {
+      "kind": "raise_to",
+      "chip_amount": 750,
+      "raw_openspiel_chip_int": 750
+     },
+     "replay_ca": {
+      "kind": "fold",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 0
+     }
+    },
+    {
+     "seq": 239,
+     "logged_status": "decision_cached",
+     "replay_status": "decision_cached",
+     "logged_ca": {
+      "kind": "raise_to",
+      "chip_amount": 750,
+      "raw_openspiel_chip_int": 750
+     },
+     "replay_ca": {
+      "kind": "fold",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 0
+     }
+    }
+   ],
+   "sub25_facing_frames": 0
+  },
+  {
+   "log": "live_dryrun_20260611_163815.jsonl",
+   "header_present": true,
+   "mode": "sample",
+   "seed": 2026,
+   "flags": {
+    "short_stack_bb": 6.0,
+    "tail_floor_tau": null,
+    "anchor_sum_floor": false,
+    "extended_click_plans": false,
+    "bet_closure_recovery": false
+   },
+   "ckpt": "/home/quant/pokerbot/runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt",
+   "frames_replayed": 486,
+   "fresh_decisions": 37,
+   "fidelity_fails": 0,
+   "fidelity_fail_detail": [],
+   "sub25_facing_frames": 0
+  },
+  {
+   "log": "live_dryrun_20260611_181249.jsonl",
+   "header_present": true,
+   "mode": "sample",
+   "seed": 2026,
+   "flags": {
+    "short_stack_bb": 6.0,
+    "tail_floor_tau": null,
+    "anchor_sum_floor": false,
+    "extended_click_plans": false,
+    "bet_closure_recovery": false
+   },
+   "ckpt": "/home/quant/pokerbot/runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt",
+   "frames_replayed": 54,
+   "fresh_decisions": 4,
+   "fidelity_fails": 0,
+   "fidelity_fail_detail": [],
+   "sub25_facing_frames": 0
+  },
+  {
+   "log": "live_dryrun_20260611_201230.jsonl",
+   "header_present": true,
+   "mode": "sample",
+   "seed": 2026,
+   "flags": {
+    "short_stack_bb": 6.0,
+    "tail_floor_tau": null,
+    "anchor_sum_floor": false,
+    "extended_click_plans": false,
+    "bet_closure_recovery": false
+   },
+   "ckpt": "/home/quant/pokerbot/runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt",
+   "frames_replayed": 733,
+   "fresh_decisions": 56,
+   "fidelity_fails": 0,
+   "fidelity_fail_detail": [],
+   "sub25_facing_frames": 0
+  },
+  {
+   "log": "live_dryrun_20260611_204751.jsonl",
+   "header_present": true,
+   "mode": "sample",
+   "seed": 2026,
+   "flags": {
+    "short_stack_bb": 6.0,
+    "tail_floor_tau": null,
+    "anchor_sum_floor": false,
+    "extended_click_plans": false,
+    "bet_closure_recovery": false
+   },
+   "ckpt": "/home/quant/pokerbot/runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt",
+   "frames_replayed": 973,
+   "fresh_decisions": 80,
+   "fidelity_fails": 0,
+   "fidelity_fail_detail": [],
+   "sub25_facing_frames": 2
+  },
+  {
+   "log": "live_dryrun_20260611_222532.jsonl",
+   "header_present": true,
+   "mode": "sample",
+   "seed": 2026,
+   "flags": {
+    "short_stack_bb": 6.0,
+    "tail_floor_tau": null,
+    "anchor_sum_floor": true,
+    "extended_click_plans": true,
+    "bet_closure_recovery": false
+   },
+   "ckpt": "/home/quant/pokerbot/runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt",
+   "frames_replayed": 1326,
+   "fresh_decisions": 88,
+   "fidelity_fails": 0,
+   "fidelity_fail_detail": [],
+   "sub25_facing_frames": 0
+  },
+  {
+   "log": "live_dryrun_20260612_035454.jsonl",
+   "header_present": true,
+   "mode": "sample",
+   "seed": 2026,
+   "flags": {
+    "short_stack_bb": 6.0,
+    "tail_floor_tau": null,
+    "anchor_sum_floor": true,
+    "extended_click_plans": true,
+    "bet_closure_recovery": false
+   },
+   "ckpt": "/home/quant/pokerbot/runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt",
+   "frames_replayed": 218,
+   "fresh_decisions": 15,
+   "fidelity_fails": 0,
+   "fidelity_fail_detail": [],
+   "sub25_facing_frames": 0
+  },
+  {
+   "log": "live_dryrun_20260612_042058.jsonl",
+   "header_present": true,
+   "mode": "sample",
+   "seed": 2026,
+   "flags": {
+    "short_stack_bb": 6.0,
+    "tail_floor_tau": null,
+    "anchor_sum_floor": true,
+    "extended_click_plans": true,
+    "bet_closure_recovery": false
+   },
+   "ckpt": "/home/quant/pokerbot/runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt",
+   "frames_replayed": 316,
+   "fresh_decisions": 22,
+   "fidelity_fails": 0,
+   "fidelity_fail_detail": [],
+   "sub25_facing_frames": 1
+  },
+  {
+   "log": "live_dryrun_20260612_125441.jsonl",
+   "header_present": true,
+   "mode": "sample",
+   "seed": 2026,
+   "flags": {
+    "short_stack_bb": 6.0,
+    "tail_floor_tau": 0.1,
+    "anchor_sum_floor": true,
+    "extended_click_plans": true,
+    "bet_closure_recovery": false
+   },
+   "ckpt": "/home/quant/pokerbot/runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt",
+   "frames_replayed": 84,
+   "fresh_decisions": 2,
+   "fidelity_fails": 0,
+   "fidelity_fail_detail": [],
+   "sub25_facing_frames": 0
+  },
+  {
+   "log": "live_dryrun_20260612_130846.jsonl",
+   "header_present": true,
+   "mode": "sample",
+   "seed": 2026,
+   "flags": {
+    "short_stack_bb": 6.0,
+    "tail_floor_tau": 0.1,
+    "anchor_sum_floor": true,
+    "extended_click_plans": true,
+    "bet_closure_recovery": false
+   },
+   "ckpt": "/home/quant/pokerbot/runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt",
+   "frames_replayed": 233,
+   "fresh_decisions": 12,
+   "fidelity_fails": 0,
+   "fidelity_fail_detail": [],
+   "sub25_facing_frames": 0
+  },
+  {
+   "log": "live_dryrun_20260612_133056.jsonl",
+   "skipped": "no raw_record frames (summary-tier log)"
+  },
+  {
+   "log": "live_dryrun_20260612_161347.jsonl",
+   "header_present": true,
+   "mode": "sample",
+   "seed": 2026,
+   "flags": {
+    "short_stack_bb": 6.0,
+    "tail_floor_tau": 0.1,
+    "anchor_sum_floor": true,
+    "extended_click_plans": true,
+    "bet_closure_recovery": false
+   },
+   "ckpt": "/home/quant/pokerbot/runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt",
+   "frames_replayed": 391,
+   "fresh_decisions": 29,
+   "fidelity_fails": 0,
+   "fidelity_fail_detail": [],
+   "sub25_facing_frames": 0
+  },
+  {
+   "log": "live_dryrun_20260612_163114.jsonl",
+   "skipped": "no raw_record frames (summary-tier log)"
+  },
+  {
+   "log": "live_dryrun_20260612_183701.jsonl",
+   "header_present": true,
+   "mode": "sample",
+   "seed": 2026,
+   "flags": {
+    "short_stack_bb": 6.0,
+    "tail_floor_tau": 0.1,
+    "anchor_sum_floor": true,
+    "extended_click_plans": true,
+    "bet_closure_recovery": false
+   },
+   "ckpt": "/home/quant/pokerbot/runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt",
+   "frames_replayed": 1519,
+   "fresh_decisions": 139,
+   "fidelity_fails": 0,
+   "fidelity_fail_detail": [],
+   "sub25_facing_frames": 1
+  },
+  {
+   "log": "snapshot_live_dryrun_20260612_220101.jsonl",
+   "header_present": true,
+   "mode": "sample",
+   "seed": 2026,
+   "flags": {
+    "short_stack_bb": 6.0,
+    "tail_floor_tau": 0.1,
+    "anchor_sum_floor": true,
+    "extended_click_plans": true,
+    "bet_closure_recovery": false
+   },
+   "ckpt": "/home/quant/pokerbot/runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt",
+   "frames_replayed": 505,
+   "fresh_decisions": 38,
+   "fidelity_fails": 0,
+   "fidelity_fail_detail": [],
+   "sub25_facing_frames": 3
+  },
+  {
+   "log": "live_dryrun_smoke.jsonl",
+   "skipped": "no raw_record frames (summary-tier log)"
+  },
+  {
+   "log": "live_dryrun_verify1_20260609_202137.jsonl",
+   "header_present": false,
+   "mode": "sample",
+   "seed": 0,
+   "flags": {
+    "short_stack_bb": 6.0,
+    "tail_floor_tau": null,
+    "anchor_sum_floor": false,
+    "extended_click_plans": false,
+    "bet_closure_recovery": false
+   },
+   "ckpt": "/home/quant/pokerbot/runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt",
+   "frames_replayed": 90,
+   "fresh_decisions": 13,
+   "fidelity_fails": 12,
+   "fidelity_fail_detail": [
+    {
+     "seq": 10,
+     "logged_status": "decision",
+     "replay_status": "decision",
+     "logged_ca": {
+      "kind": "fold",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 0
+     },
+     "replay_ca": {
+      "kind": "call",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 1
+     }
+    },
+    {
+     "seq": 11,
+     "logged_status": "decision_cached",
+     "replay_status": "decision_cached",
+     "logged_ca": {
+      "kind": "fold",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 0
+     },
+     "replay_ca": {
+      "kind": "call",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 1
+     }
+    },
+    {
+     "seq": 19,
+     "logged_status": "decision",
+     "replay_status": "decision",
+     "logged_ca": {
+      "kind": "fold",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 0
+     },
+     "replay_ca": {
+      "kind": "call",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 1
+     }
+    },
+    {
+     "seq": 20,
+     "logged_status": "decision_cached",
+     "replay_status": "decision_cached",
+     "logged_ca": {
+      "kind": "fold",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 0
+     },
+     "replay_ca": {
+      "kind": "call",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 1
+     }
+    },
+    {
+     "seq": 43,
+     "logged_status": "decision",
+     "replay_status": "decision",
+     "logged_ca": {
+      "kind": "call",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 1
+     },
+     "replay_ca": {
+      "kind": "fold",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 0
+     }
+    },
+    {
+     "seq": 72,
+     "logged_status": "decision",
+     "replay_status": "decision",
+     "logged_ca": {
+      "kind": "raise_to",
+      "chip_amount": 50,
+      "raw_openspiel_chip_int": 50
+     },
+     "replay_ca": {
+      "kind": "fold",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 0
+     }
+    },
+    {
+     "seq": 79,
+     "logged_status": "decision",
+     "replay_status": "decision",
+     "logged_ca": {
+      "kind": "raise_to",
+      "chip_amount": 150,
+      "raw_openspiel_chip_int": 150
+     },
+     "replay_ca": {
+      "kind": "raise_to",
+      "chip_amount": 300,
+      "raw_openspiel_chip_int": 300
+     }
+    },
+    {
+     "seq": 80,
+     "logged_status": "decision_cached",
+     "replay_status": "decision_cached",
+     "logged_ca": {
+      "kind": "raise_to",
+      "chip_amount": 150,
+      "raw_openspiel_chip_int": 150
+     },
+     "replay_ca": {
+      "kind": "raise_to",
+      "chip_amount": 300,
+      "raw_openspiel_chip_int": 300
+     }
+    },
+    {
+     "seq": 81,
+     "logged_status": "decision_cached",
+     "replay_status": "decision_cached",
+     "logged_ca": {
+      "kind": "raise_to",
+      "chip_amount": 150,
+      "raw_openspiel_chip_int": 150
+     },
+     "replay_ca": {
+      "kind": "raise_to",
+      "chip_amount": 300,
+      "raw_openspiel_chip_int": 300
+     }
+    },
+    {
+     "seq": 88,
+     "logged_status": "skip_data_quality",
+     "replay_status": "decision_recovered",
+     "logged_ca": null,
+     "replay_ca": {
+      "kind": "raise_to",
+      "chip_amount": 600,
+      "raw_openspiel_chip_int": 600
+     }
+    },
+    {
+     "seq": 92,
+     "logged_status": "skip_data_quality",
+     "replay_status": "decision_recovered",
+     "logged_ca": null,
+     "replay_ca": {
+      "kind": "call",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 1
+     }
+    },
+    {
+     "seq": 94,
+     "logged_status": "skip_data_quality",
+     "replay_status": "decision_recovered",
+     "logged_ca": null,
+     "replay_ca": {
+      "kind": "call",
+      "chip_amount": null,
+      "raw_openspiel_chip_int": 1
+     }
+    }
+   ],
+   "sub25_facing_frames": 2
+  }
+ ],
+ "frames": [
+  {
+   "session": "live_dryrun_20260609_154557.jsonl",
+   "seq": 61,
+   "captured_at": "20260609_115411_544",
+   "level": 2,
+   "blinds": [
+    25,
+    50,
+    10
+   ],
+   "street": "flop",
+   "cards": [
+    "Jd",
+    "Ad"
+   ],
+   "board": [
+    "Qc",
+    "5h",
+    "Qd"
+   ],
+   "position": "UTG",
+   "n_alive": 5,
+   "pot": 375,
+   "hero_stack": 1655,
+   "hero_stack_bb": 33.1,
+   "eff_card_bb": 0.0,
+   "eff_floor_bb": 33.3,
+   "to_call": 0,
+   "to_call_bb": 0.0,
+   "pot_odds": null,
+   "ood_warn": false,
+   "floors_fired": [],
+   "dist": {
+    "FOLD": {
+     "pre": 0.39883,
+     "post": 0.39883,
+     "chip": 0
+    },
+    "CALL": {
+     "pre": 0.512328,
+     "post": 0.512328,
+     "chip": 1
+    },
+    "BET_100": {
+     "pre": 0.035952,
+     "post": 0.035952,
+     "chip": 500
+    },
+    "BET_200": {
+     "pre": 0.005482,
+     "post": 0.005482,
+     "chip": 1000
+    },
+    "ALLIN": {
+     "pre": 0.019291,
+     "post": 0.019291,
+     "chip": 1715
+    },
+    "BET_150": {
+     "pre": 0.028118,
+     "post": 0.028118,
+     "chip": 750
+    }
+   },
+   "post_argmax": "CALL",
+   "chosen_chip_int": 1,
+   "chosen_kind": "call",
+   "chosen_amount": null,
+   "decision_identity": "(2, (25, 50, 10), (True, True, True, False, True, True), ('Jd', 'Ad'), ('Qc', '5h', 'Qd'), 0, 200)",
+   "cached_repeats": 1
+  },
+  {
+   "session": "live_dryrun_20260609_154557.jsonl",
+   "seq": 184,
+   "captured_at": "20260609_115908_671",
+   "level": 3,
+   "blinds": [
+    50,
+    100,
+    15
+   ],
+   "street": "preflop",
+   "cards": [
+    "Kd",
+    "8d"
+   ],
+   "board": [],
+   "position": "SB",
+   "n_alive": 5,
+   "pot": 225,
+   "hero_stack": 896,
+   "hero_stack_bb": 8.96,
+   "eff_card_bb": 0.0,
+   "eff_floor_bb": 8.96,
+   "to_call": 0,
+   "to_call_bb": 0.0,
+   "pot_odds": null,
+   "ood_warn": false,
+   "floors_fired": [],
+   "dist": {
+    "FOLD": {
+     "pre": 0.266511,
+     "post": 0.266511,
+     "chip": 0
+    },
+    "CALL": {
+     "pre": 0.263478,
+     "post": 0.263478,
+     "chip": 1
+    },
+    "BET_100": {
+     "pre": 0.124449,
+     "post": 0.124449,
+     "chip": 200
+    },
+    "BET_200": {
+     "pre": 0.065599,
+     "post": 0.065599,
+     "chip": 400
+    },
+    "ALLIN": {
+     "pre": 0.187643,
+     "post": 0.187643,
+     "chip": 961
+    },
+    "BET_150": {
+     "pre": 0.092319,
+     "post": 0.092319,
+     "chip": 300
+    }
+   },
+   "post_argmax": "FOLD",
+   "chosen_chip_int": 961,
+   "chosen_kind": "raise_to",
+   "chosen_amount": 946,
+   "decision_identity": "(5, (50, 100, 15), (True, True, True, False, True, True), ('Kd', '8d'), (), 0, 100)",
+   "cached_repeats": 0
+  },
+  {
+   "session": "live_dryrun_20260609_154557.jsonl",
+   "seq": 194,
+   "captured_at": "20260609_115937_827",
+   "level": 3,
+   "blinds": [
+    50,
+    100,
+    15
+   ],
+   "street": "turn",
+   "cards": [
+    "Kd",
+    "8d"
+   ],
+   "board": [
+    "Jh",
+    "4h",
+    "5c",
+    "2h"
+   ],
+   "position": "SB",
+   "n_alive": 5,
+   "pot": 375,
+   "hero_stack": 846,
+   "hero_stack_bb": 8.46,
+   "eff_card_bb": 0.0,
+   "eff_floor_bb": 8.61,
+   "to_call": 0,
+   "to_call_bb": 0.0,
+   "pot_odds": null,
+   "ood_warn": false,
+   "floors_fired": [],
+   "dist": {
+    "FOLD": {
+     "pre": 0.381563,
+     "post": 0.381563,
+     "chip": 0
+    },
+    "CALL": {
+     "pre": 0.53243,
+     "post": 0.53243,
+     "chip": 1
+    },
+    "BET_100": {
+     "pre": 0.053179,
+     "post": 0.053179,
+     "chip": 400
+    },
+    "BET_200": {
+     "pre": 0.004784,
+     "post": 0.004784,
+     "chip": 800
+    },
+    "ALLIN": {
+     "pre": 0.005411,
+     "post": 0.005411,
+     "chip": 961
+    },
+    "BET_150": {
+     "pre": 0.022633,
+     "post": 0.022633,
+     "chip": 600
+    }
+   },
+   "post_argmax": "CALL",
+   "chosen_chip_int": 1,
+   "chosen_kind": "call",
+   "chosen_amount": null,
+   "decision_identity": "(5, (50, 100, 15), (True, True, True, False, True, True), ('Kd', '8d'), ('Jh', '4h', '5c', '2h'), 0, 100)",
+   "cached_repeats": 0
+  },
+  {
+   "session": "live_dryrun_20260609_154557.jsonl",
+   "seq": 428,
+   "captured_at": "20260609_120836_877",
+   "level": 5,
+   "blinds": [
+    100,
+    200,
+    30
+   ],
+   "street": "preflop",
+   "cards": [
+    "9h",
+    "Qc"
+   ],
+   "board": [],
+   "position": "SB",
+   "n_alive": 4,
+   "pot": 3458,
+   "hero_stack": 281,
+   "hero_stack_bb": 1.405,
+   "eff_card_bb": 7.405,
+   "eff_floor_bb": 1.555,
+   "to_call": 738,
+   "to_call_bb": 3.69,
+   "pot_odds": 4.69,
+   "ood_warn": true,
+   "floors_fired": [
+    "short-stack"
+   ],
+   "dist": {
+    "FOLD": {
+     "pre": 0.073273,
+     "post": 0.073273,
+     "chip": 0
+    },
+    "CALL": {
+     "pre": 0.825791,
+     "post": 0.825791,
+     "chip": 1
+    },
+    "ALLIN": {
+     "pre": 0.100937,
+     "post": 0.100937,
+     "chip": 0
+    }
+   },
+   "post_argmax": "CALL",
+   "chosen_chip_int": 1,
+   "chosen_kind": "call",
+   "chosen_amount": null,
+   "decision_identity": "(4, (100, 200, 30), (True, True, True, False, True, False), ('9h', 'Qc'), (), 0, 1938)",
+   "cached_repeats": 0
+  },
+  {
+   "session": "live_dryrun_20260611_204751.jsonl",
+   "seq": 1363,
+   "captured_at": "20260611_171529_483",
+   "level": 3,
+   "blinds": [
+    50,
+    100,
+    15
+   ],
+   "street": "preflop",
+   "cards": [
+    "2s",
+    "9c"
+   ],
+   "board": [],
+   "position": "HJ",
+   "n_alive": 6,
+   "pot": 240,
+   "hero_stack": 1876,
+   "hero_stack_bb": 18.76,
+   "eff_card_bb": 0.0,
+   "eff_floor_bb": 18.76,
+   "to_call": 0,
+   "to_call_bb": 0.0,
+   "pot_odds": null,
+   "ood_warn": false,
+   "floors_fired": [],
+   "dist": {
+    "FOLD": {
+     "pre": 0.877897,
+     "post": 0.877897,
+     "chip": 0
+    },
+    "CALL": {
+     "pre": 0.065356,
+     "post": 0.065356,
+     "chip": 1
+    },
+    "BET_66": {
+     "pre": 0.006879,
+     "post": 0.006879,
+     "chip": 264
+    },
+    "BET_100": {
+     "pre": 0.007775,
+     "post": 0.007775,
+     "chip": 400
+    },
+    "BET_200": {
+     "pre": 0.004277,
+     "post": 0.004277,
+     "chip": 800
+    },
+    "ALLIN": {
+     "pre": 0.01846,
+     "post": 0.01846,
+     "chip": 1891
+    },
+    "BET_50": {
+     "pre": 0.013522,
+     "post": 0.013522,
+     "chip": 200
+    },
+    "BET_150": {
+     "pre": 0.005835,
+     "post": 0.005835,
+     "chip": 600
+    }
+   },
+   "post_argmax": "FOLD",
+   "chosen_chip_int": 0,
+   "chosen_kind": "fold",
+   "chosen_amount": null,
+   "decision_identity": "(1, (50, 100, 15), (True, True, True, True, True, True), ('2s', '9c'), (), 0, 100)",
+   "cached_repeats": 0
+  },
+  {
+   "session": "live_dryrun_20260611_204751.jsonl",
+   "seq": 1680,
+   "captured_at": "20260611_173139_618",
+   "level": 6,
+   "blinds": [
+    150,
+    300,
+    45
+   ],
+   "street": "preflop",
+   "cards": [
+    "Qs",
+    "Ah"
+   ],
+   "board": [],
+   "position": "BB",
+   "n_alive": 4,
+   "pot": 1780,
+   "hero_stack": 4074,
+   "hero_stack_bb": 13.58,
+   "eff_card_bb": 0.0,
+   "eff_floor_bb": 5.703,
+   "to_call": 0,
+   "to_call_bb": 0.0,
+   "pot_odds": null,
+   "ood_warn": false,
+   "floors_fired": [
+    "short-stack"
+   ],
+   "dist": {
+    "FOLD": {
+     "pre": 0.202941,
+     "post": 0.314186,
+     "chip": 0
+    },
+    "CALL": {
+     "pre": 0.205868,
+     "post": 0.318718,
+     "chip": 1
+    },
+    "BET_66": {
+     "pre": 0.093298,
+     "post": 0.0,
+     "chip": 1683
+    },
+    "BET_100": {
+     "pre": 0.112612,
+     "post": 0.0,
+     "chip": 2550
+    },
+    "ALLIN": {
+     "pre": 0.237116,
+     "post": 0.367095,
+     "chip": 4419
+    },
+    "BET_150": {
+     "pre": 0.148166,
+     "post": 0.0,
+     "chip": 3825
+    }
+   },
+   "post_argmax": "ALLIN",
+   "chosen_chip_int": 1,
+   "chosen_kind": "call",
+   "chosen_amount": null,
+   "decision_identity": "(2, (150, 300, 45), (True, True, True, True, False, False), ('Qs', 'Ah'), (), 0, 850)",
+   "cached_repeats": 1
+  },
+  {
+   "session": "live_dryrun_20260612_042058.jsonl",
+   "seq": 374,
+   "captured_at": "20260612_002644_396",
+   "level": 2,
+   "blinds": [
+    25,
+    50,
+    10
+   ],
+   "street": "preflop",
+   "cards": [
+    "4d",
+    "5s"
+   ],
+   "board": [],
+   "position": "HJ",
+   "n_alive": 6,
+   "pot": 2675,
+   "hero_stack": 1800,
+   "hero_stack_bb": 36.0,
+   "eff_card_bb": 0.0,
+   "eff_floor_bb": 33.2,
+   "to_call": 0,
+   "to_call_bb": 0.0,
+   "pot_odds": null,
+   "ood_warn": false,
+   "floors_fired": [],
+   "dist": {
+    "FOLD": {
+     "pre": 0.969962,
+     "post": 0.969962,
+     "chip": 0
+    },
+    "CALL": {
+     "pre": 0.01184,
+     "post": 0.01184,
+     "chip": 1
+    },
+    "ALLIN": {
+     "pre": 0.018198,
+     "post": 0.018198,
+     "chip": 1810
+    }
+   },
+   "post_argmax": "FOLD",
+   "chosen_chip_int": 0,
+   "chosen_kind": "fold",
+   "chosen_amount": null,
+   "decision_identity": "(1, (25, 50, 10), (True, True, True, True, True, True), ('4d', '5s'), (), 0, 1270)",
+   "cached_repeats": 0
+  },
+  {
+   "session": "live_dryrun_20260612_183701.jsonl",
+   "seq": 1143,
+   "captured_at": "20260612_154114_488",
+   "level": 3,
+   "blinds": [
+    50,
+    100,
+    15
+   ],
+   "street": "preflop",
+   "cards": [
+    "Jh",
+    "Kd"
+   ],
+   "board": [],
+   "position": "MP",
+   "n_alive": 6,
+   "pot": 240,
+   "hero_stack": 2220,
+   "hero_stack_bb": 22.2,
+   "eff_card_bb": 0.0,
+   "eff_floor_bb": 18.25,
+   "to_call": 0,
+   "to_call_bb": 0.0,
+   "pot_odds": null,
+   "ood_warn": false,
+   "floors_fired": [
+    "tail"
+   ],
+   "dist": {
+    "FOLD": {
+     "pre": 0.484805,
+     "post": 0.511924,
+     "chip": 0
+    },
+    "CALL": {
+     "pre": 0.066174,
+     "post": 0.069876,
+     "chip": 1
+    },
+    "BET_66": {
+     "pre": 0.021594,
+     "post": 0.022801,
+     "chip": 330
+    },
+    "BET_100": {
+     "pre": 0.017662,
+     "post": 0.0,
+     "chip": 500
+    },
+    "BET_200": {
+     "pre": 0.035313,
+     "post": 0.0,
+     "chip": 1000
+    },
+    "ALLIN": {
+     "pre": 0.283836,
+     "post": 0.299713,
+     "chip": 2235
+    },
+    "BET_50": {
+     "pre": 0.023957,
+     "post": 0.025297,
+     "chip": 250
+    },
+    "BET_150": {
+     "pre": 0.06666,
+     "post": 0.070389,
+     "chip": 750
+    }
+   },
+   "post_argmax": "FOLD",
+   "chosen_chip_int": 2235,
+   "chosen_kind": "raise_to",
+   "chosen_amount": 2220,
+   "decision_identity": "(2, (50, 100, 15), (True, True, True, True, True, True), ('Jh', 'Kd'), (), 0, 100)",
+   "cached_repeats": 1
+  },
+  {
+   "session": "snapshot_live_dryrun_20260612_220101.jsonl",
+   "seq": 474,
+   "captured_at": "20260612_182205_850",
+   "level": 5,
+   "blinds": [
+    100,
+    200,
+    30
+   ],
+   "street": "preflop",
+   "cards": [
+    "Th",
+    "8h"
+   ],
+   "board": [],
+   "position": "BTN",
+   "n_alive": 6,
+   "pot": 1080,
+   "hero_stack": 445,
+   "hero_stack_bb": 2.225,
+   "eff_card_bb": 2.225,
+   "eff_floor_bb": 2.225,
+   "to_call": 600,
+   "to_call_bb": 3.0,
+   "pot_odds": 1.8,
+   "ood_warn": false,
+   "floors_fired": [
+    "short-stack"
+   ],
+   "dist": {
+    "FOLD": {
+     "pre": 0.332785,
+     "post": 0.332785,
+     "chip": 0
+    },
+    "CALL": {
+     "pre": 0.17293,
+     "post": 0.17293,
+     "chip": 1
+    },
+    "ALLIN": {
+     "pre": 0.494286,
+     "post": 0.494286,
+     "chip": 0
+    }
+   },
+   "post_argmax": "ALLIN",
+   "chosen_chip_int": 0,
+   "chosen_kind": "fold",
+   "chosen_amount": null,
+   "decision_identity": "(0, (100, 200, 30), (True, True, True, True, True, True), ('Th', '8h'), (), 0, 600)",
+   "cached_repeats": 0
+  },
+  {
+   "session": "snapshot_live_dryrun_20260612_220101.jsonl",
+   "seq": 485,
+   "captured_at": "20260612_182232_183",
+   "level": 5,
+   "blinds": [
+    100,
+    200,
+    30
+   ],
+   "street": "preflop",
+   "cards": [
+    "8c",
+    "6c"
+   ],
+   "board": [],
+   "position": "HJ",
+   "n_alive": 6,
+   "pot": 480,
+   "hero_stack": 415,
+   "hero_stack_bb": 2.075,
+   "eff_card_bb": 2.075,
+   "eff_floor_bb": 2.075,
+   "to_call": 200,
+   "to_call_bb": 1.0,
+   "pot_odds": 2.4,
+   "ood_warn": false,
+   "floors_fired": [
+    "short-stack"
+   ],
+   "dist": {
+    "FOLD": {
+     "pre": 0.495676,
+     "post": 0.59996,
+     "chip": 0
+    },
+    "CALL": {
+     "pre": 0.195779,
+     "post": 0.236968,
+     "chip": 1
+    },
+    "ALLIN": {
+     "pre": 0.134727,
+     "post": 0.163072,
+     "chip": 445
+    },
+    "BET_50": {
+     "pre": 0.173817,
+     "post": 0.0,
+     "chip": 400
+    }
+   },
+   "post_argmax": "FOLD",
+   "chosen_chip_int": 0,
+   "chosen_kind": "fold",
+   "chosen_amount": null,
+   "decision_identity": "(1, (100, 200, 30), (True, True, True, True, True, True), ('8c', '6c'), (), 0, 200)",
+   "cached_repeats": 1
+  },
+  {
+   "session": "snapshot_live_dryrun_20260612_220101.jsonl",
+   "seq": 498,
+   "captured_at": "20260612_182254_079",
+   "level": 5,
+   "blinds": [
+    100,
+    200,
+    30
+   ],
+   "street": "preflop",
+   "cards": [
+    "Jc",
+    "Js"
+   ],
+   "board": [],
+   "position": "MP",
+   "n_alive": 6,
+   "pot": 480,
+   "hero_stack": 385,
+   "hero_stack_bb": 1.925,
+   "eff_card_bb": 1.925,
+   "eff_floor_bb": 1.925,
+   "to_call": 200,
+   "to_call_bb": 1.0,
+   "pot_odds": 2.4,
+   "ood_warn": true,
+   "floors_fired": [
+    "short-stack"
+   ],
+   "dist": {
+    "FOLD": {
+     "pre": 0.27871,
+     "post": 0.27871,
+     "chip": 0
+    },
+    "CALL": {
+     "pre": 0.441853,
+     "post": 0.441853,
+     "chip": 1
+    },
+    "ALLIN": {
+     "pre": 0.279437,
+     "post": 0.279437,
+     "chip": 415
+    }
+   },
+   "post_argmax": "CALL",
+   "chosen_chip_int": 0,
+   "chosen_kind": "fold",
+   "chosen_amount": null,
+   "decision_identity": "(2, (100, 200, 30), (True, True, True, True, True, True), ('Jc', 'Js'), (), 0, 200)",
+   "cached_repeats": 0
+  },
+  {
+   "session": "live_dryrun_verify1_20260609_202137.jsonl",
+   "seq": 92,
+   "captured_at": "20260609_162630_893",
+   "level": 1,
+   "blinds": [
+    15,
+    25,
+    5
+   ],
+   "street": "river",
+   "cards": [
+    "Qs",
+    "4c"
+   ],
+   "board": [
+    "4d",
+    "7d",
+    "9s",
+    "Qh",
+    "5c"
+   ],
+   "position": "UTG",
+   "n_alive": 6,
+   "pot": 960,
+   "hero_stack": 1110,
+   "hero_stack_bb": 44.4,
+   "eff_card_bb": 0.0,
+   "eff_floor_bb": 44.6,
+   "to_call": 0,
+   "to_call_bb": 0.0,
+   "pot_odds": null,
+   "ood_warn": false,
+   "floors_fired": [],
+   "dist": {
+    "FOLD": {
+     "pre": 0.010986,
+     "post": 0.010986,
+     "chip": 0
+    },
+    "CALL": {
+     "pre": 0.814389,
+     "post": 0.814389,
+     "chip": 1
+    },
+    "ALLIN": {
+     "pre": 0.174626,
+     "post": 0.174626,
+     "chip": 1315
+    }
+   },
+   "post_argmax": "CALL",
+   "chosen_chip_int": 1,
+   "chosen_kind": "call",
+   "chosen_amount": null,
+   "decision_identity": "(3, (15, 25, 5), (True, True, True, True, True, True), ('Qs', '4c'), ('4d', '7d', '9s', 'Qh', '5c'), 0, 480)",
+   "cached_repeats": 0
+  },
+  {
+   "session": "live_dryrun_verify1_20260609_202137.jsonl",
+   "seq": 94,
+   "captured_at": "20260609_162636_764",
+   "level": 1,
+   "blinds": [
+    15,
+    25,
+    5
+   ],
+   "street": "river",
+   "cards": [
+    "Qs",
+    "4c"
+   ],
+   "board": [
+    "4d",
+    "7d",
+    "9s",
+    "Qh",
+    "5c"
+   ],
+   "position": "UTG",
+   "n_alive": 6,
+   "pot": 2637,
+   "hero_stack": 150,
+   "hero_stack_bb": 6.0,
+   "eff_card_bb": 0.0,
+   "eff_floor_bb": 6.2,
+   "to_call": 0,
+   "to_call_bb": 0.0,
+   "pot_odds": null,
+   "ood_warn": false,
+   "floors_fired": [],
+   "dist": {
+    "FOLD": {
+     "pre": 0.004524,
+     "post": 0.004524,
+     "chip": 0
+    },
+    "CALL": {
+     "pre": 0.991821,
+     "post": 0.991821,
+     "chip": 1
+    },
+    "ALLIN": {
+     "pre": 0.003654,
+     "post": 0.003654,
+     "chip": 0
+    }
+   },
+   "post_argmax": "CALL",
+   "chosen_chip_int": 1,
+   "chosen_kind": "call",
+   "chosen_amount": null,
+   "decision_identity": "(3, (15, 25, 5), (True, True, True, True, True, True), ('Qs', '4c'), ('4d', '7d', '9s', 'Qh', '5c'), 0, 1197)",
+   "cached_repeats": 0
+  }
+ ]
+}
