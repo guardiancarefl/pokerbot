@@ -407,3 +407,17 @@ resume completes.
 - Operator restarted a listener OUTSIDE tmux again (header-only log
   163114 waiting): window ACTIVE, compute stays down. Probe resume +
   battery queue on true window end.
+
+## 2026-06-12 ~16:55 — window over; ingest done (H4 296/500); probe RESUMED 1800→2000
+
+- Window-end verified (0 listeners; 163114 stayed header-only). Session
+  161347 ingested: +24 opp-observed → **H4 296/500**.
+- **Probe resumed** from ckpt_iter_1800 (tmux h2_probe, run dir
+  `runs/h2_probe_league_v1_resume`, league pool 3/0.300 confirmed,
+  20.8 s/iter → ~70 min). DEVIATION RECORDED: ckpt_1800 is SLIM
+  (10.9 MB, no buffers) — the 1800-2000 segment trains on a
+  fresh-rebuilt reservoir, the run's second buffer rebuild
+  (interruption-induced). Outcome-based falsification unaffected;
+  noted so the verdict reads the training path honestly.
+- b2-tm relaunched (cores 0-1). Verdict battery fires on
+  runs/H2_PROBE.DONE via the staged launcher.
