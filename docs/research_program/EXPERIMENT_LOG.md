@@ -92,3 +92,17 @@ opponent hole cards unobservable in the scraper schema; stale folded flags
 ⇒ fold-vs-shove undercounted. Ingest command added to DRYRUN_CHECKLIST.
 Artifacts: `src/nlhe/opponent_db/`, `scripts/ingest_session.py`,
 `data/opponent_db/` (sqlite + FIELD_REPORT.txt).
+
+## 2026-06-12 — H1 TG3 HARNESS BUILT + GATED (run deferred)
+
+`scripts/tail_floor_ab.py`: deployed floor chain BOTH arms via
+make_live_policy_filter, tail floor (tau=0.10, exact-commit d2c path,
+dispatch verified 46/46) the only delta. V0-identity gate PASS (100 games,
+tail off both arms: all deltas exactly 0, 0 diverged); shard-split
+reproduces unsharded records exactly. Smoke 200 paired games: 0.52 s/pair
+(24k ~ 3.5 h single-process / ~1 h 8-way sharded), tail fired 73.9% of hero
+decisions (consistent w/ TG2 71.1%), 161/200 games diverged; direction
+positive (+0.200 +/- 0.076 all-games) — RECORDED ONLY, underpowered, per
+H1.2 no conclusion before the registered 24k run. Evidence:
+evals/h1_tail_floor_20260612/tg3_harness_gates.txt. 24k launch awaits a
+dry-run-free window; command in NEXT_RESUME.

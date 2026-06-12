@@ -20,7 +20,7 @@ entries), OPERATOR_QUEUE.md (check stale), then this. Cross-check
 
 ## Exact next actions (priority order)
 
-1. **H1 TG3 harness build (runs anytime, light):** adapt
+1. DONE 06:55 — TG3 harness built+gated (scripts/tail_floor_ab.py, V0-identity PASS). Original item: adapt
    `scripts/short_stack_floor_ab.py` per H1.2 registration — both arms run
    the full deployed floor chain via `make_live_policy_filter`, arm-1 adds
    `tail_floor_tau=0.10`, exact-commit d2c path; V0-identity check (adapted
@@ -28,7 +28,7 @@ entries), OPERATOR_QUEUE.md (check stale), then this. Cross-check
    on ~100 games) BEFORE any 24k launch.
 2. **H1 TG3 RUN (ONLY when `pgrep -f run_live_dryrun` is empty AND
    `tmux ls | grep dryrun` shows no live session):**
-   24k paired games, seeds 1..24000, hpl=5, nice -n 19 taskset -c 0-7.
+   `nice -n 19 taskset -c 0-7 .venv/bin/python -m scripts.tail_floor_ab --games 24000 --base-seed 1 --hpl 5 --tau 0.10 --out evals/h1_tail_floor_20260612/tg3_24k.json` (or 8-way sharded, ~1 h).
    Ship bars in H1.2 (log entry 2026-06-12 item 8). Then TG4: re-measure
    B4/B5-style batteries floors-ON+tail using
    `runs/attacker_v1/ckpt_iter_1000.pt` + `runs/attacker_bubble_v1/ckpt_iter_0600.pt`
