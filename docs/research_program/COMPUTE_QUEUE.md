@@ -23,12 +23,19 @@ Live-listener stand-down overrides everything.
    retrain hypothesis.
 2. **a1 blur map — LAUNCHED on cores 2-3** (agent abc07b…; ~3 h run
    after harness build). Slate 2a mining happens inside its report.
-3. **f1 ensemble probe** (post-H2-verdict; per slate 2c's spec once
-   written — runs only with its pre-registered criteria committed).
-4. **c1 ICM-gap probe** (NIGHT SHIFT class, ~6-10 h: design lands via
-   slate 2e first; runs overnight when designed + no live play).
-5. **b2 checkpoint-selection variance** (NIGHT SHIFT class, ~4 h:
-   paired panel on 2-3 champion-run checkpoints).
+3. **f1 ensemble probe — PRE-REGISTERED, READY**
+   (`ENSEMBLE_PROBE_DESIGN.md`): P0 bit-identity smoke → P1 bubble
+   screen (bar ≥+0.040 z≥2) → P2 CRN yardstick paired vs existing
+   per-game jsonls (zero champion cost). ≤6 h wall / ~21 core-h.
+   Launches post-H2-verdict (selector candidates partly answered by
+   the running b2).
+4. **c1 ICM-gap probe — DESIGNED, NIGHT SHIFT**
+   (`ICM_GAP_STUDY_DESIGN.md`): tiered 17-43 core-h, 50-rollout rate
+   benchmark gate first, MDE80 0.0093 at N=250×M=100. Tonight's
+   primary night-shift item if cores free.
+5. **b2 checkpoint-selection variance — RUNNING (cores 0-1)**:
+   killphil row at ckpt_1300/1400. Doubles as ensemble-candidate
+   screen (2c design).
 
 ## Night shift (Addendum 5.4)
 
