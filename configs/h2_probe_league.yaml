@@ -10,12 +10,11 @@
 # decisions never write to the strategy buffer (non-traverser
 # short-circuit) — the traverser learns RESPONSES only.
 #
-# Use (after H2 spec §3 freeze; benchmark 1 iter first per spec):
-#   python -m scripts.continue_k200_real_ante \
-#       --config configs/h2_probe_league.yaml \
-#       --resume runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt \
-#       --target-iter 2000 --checkpoint-every 100 \
-#       --out runs/h2_probe_league_v1
+# Use (after H2 spec §3 freeze; benchmark 1-2 iters first per spec —
+# continue_k200_real_ante is NOT used here: it strips parallel_groups;
+# train_6max honors parallel mode and supports --resume):
+#   python -m scripts.train_6max --config configs/h2_probe_league.yaml \
+#       --resume runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt
 
 tag: h2_probe_league
 abstraction_path: runs/abstraction_20260521_223018_retrofit/abstraction.pkl
@@ -53,3 +52,8 @@ seed: 2026
 league_mix: 0.30
 league_registry_path: configs/league/registry_h2_probe.json
 league_sample_strategy: uniform
+
+# Parallel traversal (production path, commit b2571aa lineage). G=8
+# leaves headroom on the 12-vCPU box per standing rules.
+parallel_groups: 8
+checkpoint_every: 100
