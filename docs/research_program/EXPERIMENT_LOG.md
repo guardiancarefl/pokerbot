@@ -363,3 +363,14 @@ e2-record rows (gushansen, millennium) still completing on cores 0-3.
   reads its +0.05 bar against checkpoint noise.
 - Core ledger: 0-1 b2, 2-3 blur map (agent), 4-11 probe (~16:40),
   slate agents 2b/2c/2e/2f rolling.
+
+## 2026-06-12 ~15:40 — b2 (killphil half): gate metric is CHECKPOINT-STABLE
+
+killphil row across adjacent champion checkpoints (2000 games CRN each):
+ckpt_1300 −0.1020 ± 0.0222 · ckpt_1400 −0.0830 ± 0.0223 · ckpt_1500
+−0.0800 ± 0.0223 (gate baseline). Max spread 0.022 < 1σ_diff (0.031).
+**F-M2a's +0.05 bar is ~2.3× the observed checkpoint swing — an H2
+probe pass cannot be checkpoint-selection noise.** RESEARCH_MAP b2
+updated by this entry (ticketmaster complement still running, shared
+cores). Probe note: iter ~1700/2000, slowed to ~28 s/iter under full
+ledger (ETA ~17:45) — acceptable per Addendum 5 throughput-first.
