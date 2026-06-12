@@ -20,10 +20,19 @@ Evidence base:
 - The champion was trained pure self-play (k200_real_ante recipe);
   nothing in training ever shoved wide at it. The depth-confusion work
   (STATUS 2026-06-08) independently shows weak short-stack play.
-- ADAPTER CAVEAT (now closed): pre-2026-06-12 the killphil row was
-  measured against a corrupted adapter (stilltoact dead + preflop
-  raises/limps miscounted — RESEARCH_MAP e2). The fix (commit a8933ea)
-  changes killphil's as-played behavior; **all H2 numbers use the
+- ADAPTER CAVEAT (now closed — and it BITES): pre-2026-06-12 the
+  killphil row was measured against a corrupted adapter (stilltoact
+  dead + preflop raises/limps miscounted — RESEARCH_MAP e2). The fix
+  (commit a8933ea) changes killphil's as-played behavior materially:
+  the re-baseline killphil row moved from −0.1740 ± 0.0220 toward
+  ≈ −0.07 (final number in §3) — **a sizable share of the believed
+  extraction was instrument artifact** (the broken counter kept
+  `raises = 0` true facing opens, so adapter-killphil 3-bet-shoved its
+  entire first-in range over the champion's opens). The hypothesis
+  survives at reduced magnitude: the row is still the champion's worst
+  and still negative, and the champion's M1 diagnostic (call mass 35.9%
+  vs oracle 7.7% on the frozen battery) independently shows a real
+  shove-defense gap — dominantly OVER-calling. **All H2 numbers use the
   POST-FIX baselines** from `evals/e2_rebaseline_20260612/`.
 
 ## 2. Instruments
@@ -74,11 +83,21 @@ games, master seed 2026) + champion battery M1 run:
 
 ## 4. Probe (pre-registered; ONLY after §3 freeze)
 
-500 iterations continued training on Contabo, parallel groups per the
-measured-benchmark rule (benchmark 1 iter first; pick G for ≤ 60 s/iter
-wall), league mix per §2, all other hyperparameters identical to the
-k200_real_ante recipe. Checkpoint every 100. tmux + watcher per
-Addendum 4.2. Est. 6–10 h CPU.
+500 iterations continued training on Contabo via
+`scripts/train_6max.py --config configs/h2_probe_league.yaml --resume
+<champion ckpt_iter_1500>` (continue_k200_real_ante strips
+parallel_groups — not used). **Benchmark DONE (2026-06-12): 15.0 s/iter
+at G=8 on a contended box → ~2.1 h projected**; league pool loads (3
+eligible, mix 0.300), resume at iter 1500 confirmed, losses at
+champion-level (strat 0.76). Checkpoint every 100; tmux + watcher per
+Addendum 4.2.
+
+NOTED DEVIATION (benchmark finding): the deployed champion checkpoint
+is SLIM (10.9 MB — nets + optimizers, no reservoir buffers), so the
+probe rebuilds reservoirs from fresh league-mix traversals during the
+first iterations rather than continuing the champion's buffer state.
+Outcome-based falsification (M1/M2) is unaffected; recorded so the
+probe is not misread as literal bit-continuation.
 
 ## 5. Falsification (pre-committed; any failure ⇒ H2 dies at probe)
 

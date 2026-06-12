@@ -263,3 +263,21 @@ OFF since c9a2b14; this is configuration only.
   seq-315-class spots cataloged. Substrate caveat: per-decision
   context regenerated via the instrument's replay path, census-matched
   to TG2 exactly. `evals/h1_tail_floor_20260612/tail_concentration_map.txt`.
+
+## 2026-06-12 ~16:20 — d2 CI-vs-n (exploratory) DONE; H2 probe benchmark GREEN
+
+- **d2 (RESEARCH_MAP):** field VPIP lower bound 20.1% ± 1.9pp (Wilson) —
+  already decision-grade; 5-15BB field-pooled 20.4% ± 4.1pp. Per-opponent
+  reads: 51% of opponent-keys end a session below ±15pp but only from
+  hand ~26-39 — **per-opponent precision is capped by session length,
+  not archive size; field-pooling is the only viable estimator for
+  H2's regime.** Fold-vs-shove 0/13 structurally uninformative until the
+  OQ-1 scraper fix (now the binding constraint for H4 fidelity).
+  H4 unlock projected ~11-13 more sessions.
+  Evidence: `evals/d2_ci_vs_n_20260612/`.
+- **H2 probe wiring benchmark (spec §4 rule):** 2 iters via train_6max
+  resume — 15.0 s/iter at G=8 contended (~2.1 h for 500), league pool 3
+  eligible mix 0.300, resume at 1500, strat loss 0.76 (champion-level).
+  Finding: deployed ckpt is SLIM (no buffers) → probe rebuilds
+  reservoirs; recorded in spec §4. Probe launches on §3 freeze
+  (awaiting gushansen + millennium re-baseline rows).

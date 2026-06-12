@@ -1,0 +1,198 @@
+================================================================================
+d2 — CI-vs-n ANALYSIS: DECISION-GRADE THRESHOLDS FOR OPPONENT-MODELING READS
+generated 2026-06-12 | substrate: data/opponent_db/opponent_db.sqlite
+(16 sessions, 467 hands, 11 raw-record sessions / 420 hands with per-seat data,
+H4 counter 259/500 opponent-observed hands)
+machine-readable: analysis.json (same directory)
+================================================================================
+
+METHOD & ASSUMPTIONS
+  - Wilson 95% score intervals throughout; "half-width" = half the CI width,
+    so "within +-Xpp" means half-width <= X percentage points.
+  - VPIP convention matches src/nlhe/opponent_db/db.py::_session_vpip:
+    denominator = non-hero dealt seat-hands; numerator = seat-hands with >=1
+    voluntary preflop frame_diff action. decision_record rows excluded per
+    data/opponent_db/README.md.
+  - i.i.d. Bernoulli assumption on seat-hands. This ignores within-session and
+    within-opponent correlation (same opponents repeat across the session's
+    seat-hands), so true CIs are somewhat WIDER than reported. Treat every
+    threshold below as a best-case (lower-bound) sample-size requirement.
+  - Projection rate: 19 opponent-observed hands/session (task-stated live
+    rate). Observed rate over the 11 raw-record sessions is 23.5/session;
+    both are used in Q4.
+  - Depth subset (Q3) uses pre-hand start stacks, available only for anchored
+    hands: 314/420 raw-record hands. Mild selection toward clean-frame hands.
+
+BIAS FLAGS (every number below inherits these; fix queued Windows-side, OQ-1)
+  [B1] VPIP is an OBSERVED LOWER BOUND: frames sample every few seconds, so
+       limp/call actions falling between frames are lost and checks are
+       invisible. All CIs here cover the observed rate, not the true VPIP.
+       True VPIP >= every point estimate below.
+  [B2] Folds are systematically undercounted: forensic re-measure (RESEARCH_MAP
+       d3, 2026-06-12) found the stale `folded` flag misses ~100% of fold
+       events (0/241 chip-proven preflop folds flagged). Consequence: ANY
+       fold-frequency statistic (fold-vs-shove, fold-to-3bet) is currently
+       uncomputable, not just noisy — its numerator is structurally ~0. Only
+       chip-moving frequencies (VPIP, raise, call, all-in rates) are
+       trustworthy lower bounds. Marked [B2] where it bites below.
+  [B3] Per-opponent CIs with p-hat near 0 look deceptively narrow: a Wilson CI
+       around a numerator suppressed by [B1] is precise about the OBSERVED
+       rate while the true rate may sit above the upper limit. Low-p-hat
+       "decision-grade" keys in Q2/Q3 should be discounted accordingly.
+
+--------------------------------------------------------------------------------
+Q1. FIELD-LEVEL VPIP (lower bound) — CURRENT CI AND CI-WIDTH vs n
+--------------------------------------------------------------------------------
+
+  Current estimate: 349/1734 seat-hands = 20.1%   [B1: lower bound]
+  Wilson 95% CI:    [18.3%, 22.1%]   half-width = +-1.9pp
+
+  The field estimate is ALREADY decision-grade at both target precisions.
+
+  CI half-width vs n (at p-hat = 0.201):
+
+      seat-hands   half-width      ~opp-obs hands   ~sessions @19/sess
+      ----------   ----------      --------------   ------------------
+              50      +-10.9pp                  8                    1
+             100       +-7.8pp                 15                    1
+             250       +-5.0pp                 38                    2
+             500       +-3.5pp                 75                    4
+            1000       +-2.5pp                150                    8
+            1734       +-1.9pp   <-- NOW      259 (current)         14 (done)
+            2500       +-1.6pp                374                   20
+            3349       +-1.4pp   <-- H4 unlock 500                  27
+            5000       +-1.1pp                748                   40
+           10000       +-0.8pp               1495                   79
+
+  Conversion rates measured from the archive:
+      6.69 seat-hands per opponent-observed hand (1734/259)
+      4.13 non-hero dealt seats per raw-record hand (1734/420)
+
+  Threshold crossings (smallest n meeting target, Wilson at p-hat=0.201):
+
+      target     seat-hands   opp-obs hands   sessions @19   status
+      -------    ----------   -------------   ------------   ------------------
+      +-5pp             246              37              2   MET long ago
+      +-3pp             685             103              6   MET long ago
+      +-2pp            1543             231             13   MET (just crossed)
+      +-1pp            6174             923             49   ~35 more sessions
+
+  Answer: the field VPIP CI passed +-5pp at ~37 opponent-observed hands and
+  +-3pp at ~103; with 259 banked it now sits at +-1.9pp. Field-level
+  action-frequency estimation is no longer sample-limited — it is
+  observability-limited ([B1]/[B2]).
+
+--------------------------------------------------------------------------------
+Q2. PER-OPPONENT VPIP — WHAT WITHIN-MATCH ADAPTATION CAN CONDITION ON
+--------------------------------------------------------------------------------
+
+  Opponent keys = (session_id, seat), non-hero, never linked across sessions
+  (anonymity constraint). 55 keys in the archive.
+
+  Hands dealt per opponent-key:
+
+      min   p25    median   p75   p90    max    mean
+        2   10.5     31      45   69.6    79    31.5
+
+      dealt hands    keys
+      -----------    ----
+        1-4             1
+        5-9            11
+        10-19          13
+        20-29           2
+        30-39           9
+        40-59           9
+        60+            10
+
+  Sample size needed for a VPIP read with half-width < +-15pp (Wilson):
+      at field p-hat = 0.20:   n >= 26 hands
+      worst case p-hat = 0.50: n >= 39 hands
+
+  How many keys ever get there (by END of session — within-match availability
+  is strictly later than this):
+      keys with n >= 26:                        29/55 (53%)
+      keys with n >= 39:                        20/55 (36%)
+      keys whose OWN (k,n) Wilson half-width
+        ends below +-15pp:                      28/55 (51%)
+        (these 28 keys cover 83% of all observed seat-hands;
+         minimum n among them: 31; all come from the 7 longer sessions)
+
+  Reading for RNR/H4: roughly HALF of opponent-keys eventually support a
+  +-15pp VPIP read, but only after ~26-39 observed hands — i.e. from roughly
+  the midpoint of a longer session onward, and never in short sessions
+  (every key from a session with <31 hands fails). Within-match adaptation
+  can therefore use per-opponent VPIP as a LATE-session signal on long
+  matches only; for the first ~25 hands of any match the field prior is
+  strictly better. Per-key table: analysis.json -> per_opponent.keys.
+
+--------------------------------------------------------------------------------
+Q3. DEPTH-CONDITIONED (5-15BB START STACK — H2-RELEVANT REGIME)
+--------------------------------------------------------------------------------
+
+  Denominator = non-hero dealt seat-hands whose pre-hand stack was 5-15bb
+  (anchored hands only, 314/420).
+
+  FIELD level:
+      VPIP-in-band: 75/367 = 20.4%   Wilson 95% [16.6%, 24.9%]  (+-4.1pp)
+      -> field-pooled depth-conditioned VPIP is already inside +-5pp.
+      [B1] lower bound applies.
+
+  PER-OPPONENT level:
+      keys with ANY 5-15bb seat-hands:  29
+      max per-key n in band:            32  (vs 26-39 needed for +-15pp)
+      keys with own half-width <+-15pp:  6/55 (11%)
+        ... and 4 of those 6 are narrow only because p-hat is near 0,
+        which is exactly where the [B1]/[B3] undercount bites — their
+        apparent precision about the TRUE rate is spurious.
+      Honestly decision-grade per-opponent depth reads: ~2/55 (~4%),
+      both at n=29-32, i.e. the extreme tail of session length.
+
+  Fold-vs-shove in band: 13 observed facing-allin events, 0 observed folds.
+      [B2] STRUCTURALLY UNINFORMATIVE — the numerator cannot register until
+      the Windows folded-flag fix lands. Do not read 0/13 as "nobody folds".
+
+  Answer: NO per-opponent depth-conditioned read reliably becomes
+  decision-grade within a session at live data rates. The best key in the
+  archive (32 in-band hands over a 76-hand session) only just grazes the
+  +-15pp bar. FIELD-POOLING IS THE ONLY VIABLE ESTIMATOR for the 5-15bb
+  regime — H2/H4 should condition depth-specific responses on the field
+  prior, with at most a coarse per-opponent activity offset (their overall
+  VPIP vs field), never a per-opponent in-band frequency.
+
+--------------------------------------------------------------------------------
+Q4. PROJECTION FORWARD
+--------------------------------------------------------------------------------
+
+  H4 unlock (500 opponent-observed hands): 241 remaining.
+      at 19 opp-obs hands/session (task-stated):    13 more sessions
+      at 23.5/session (observed raw-record rate):   11 more sessions
+
+  At unlock, field VPIP CI (p-hat held at 0.201, n ~= 500*6.69 = 3349
+  seat-hands): half-width ~= +-1.4pp.
+
+  When do the Q1 answers change materially? They don't, going forward:
+  +-5pp and +-3pp were crossed at ~37 and ~103 opp-obs hands respectively,
+  +-2pp at ~231 (just crossed). The next milestone, +-1pp, needs ~923
+  opp-obs hands (~49 sessions total at 19/session, ~35 more from here) and
+  buys little: sampling error is already an order of magnitude smaller than
+  the unquantified observability bias [B1]. The binding constraint on
+  opponent-modeling quality from here is the scraper folded/showdown fix
+  (OQ-1), not more hands.
+
+  Per-opponent picture at unlock: unchanged. n-per-key is capped by session
+  length (max observed 79), not by archive size — accumulating sessions
+  never improves within-match per-opponent precision. Only longer matches,
+  faster frame sampling, or relaxing anonymity (off the table) would.
+
+================================================================================
+BOTTOM LINE
+  - Field VPIP (lower bound) 20.1% +-1.9pp — already decision-grade; was
+    within +-5pp after ~2 sessions, +-3pp after ~6.
+  - Per-opponent VPIP: decision-grade (+-15pp) for ~half of keys, but only
+    after hand ~26-39 of a match — a late-session signal on long matches.
+  - Depth-conditioned (5-15bb): field-pooling is the only viable estimator;
+    best per-opponent key barely grazes +-15pp once in 16 sessions.
+  - Fold-based stats are uncomputable until OQ-1 lands ([B2]); that fix, not
+    sample size, is now the limiting factor on read quality.
+  - H4 unlock in ~11-13 more sessions at current rates.
+================================================================================
