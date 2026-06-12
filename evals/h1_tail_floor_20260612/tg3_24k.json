@@ -1,0 +1,50 @@
+{
+  "harness": "tail_floor_ab",
+  "registration": "EXP_H1 H1.2 / TG3",
+  "config": {
+    "games_requested": 24000,
+    "base_seed": 1,
+    "shards": 8,
+    "shard": -1,
+    "tau": 0.1,
+    "threshold_bb": 6.0,
+    "hpl": 5,
+    "max_hands": 200,
+    "starting_stack": 1500,
+    "checkpoint": "runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt",
+    "abstraction": "runs/abstraction_20260521_223018_retrofit/abstraction.pkl",
+    "structure": "configs/ignition_double_up_6max_turbo.yaml"
+  },
+  "games_completed": 24000,
+  "all_games": {
+    "n": 24000,
+    "mean": 0.12266666666666666,
+    "se": 0.0073210308350745885,
+    "z": 16.75538178025129
+  },
+  "diverged_only": {
+    "n": 18436,
+    "mean": 0.15968756780212628,
+    "se": 0.009513745175841536,
+    "z": 16.78493220604904
+  },
+  "n_diverged": 18436,
+  "diverged_frac": 0.7681666666666667,
+  "firing": {
+    "v1_hero_decisions": 473915,
+    "v1_tail_fired_decisions": 350642,
+    "v1_tail_firing_rate": 0.7398837344249496,
+    "v1_any_floor_fired_decisions": 391942,
+    "games_with_tail_fire": 23855
+  },
+  "elapsed_s": 13666.922842502594,
+  "sec_per_paired_game": 0.5694551184376081,
+  "aggregate_of_shards": 8,
+  "elapsed_s_wall_max_shard": 1755.5164937973022,
+  "ship_bars": {
+    "all_games_z_gt_minus2": true,
+    "diverged_mean_positive": true,
+    "diverged_z_ge_2": true
+  },
+  "ship_verdict": "PASS"
+}

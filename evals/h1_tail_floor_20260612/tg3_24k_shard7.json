@@ -1,0 +1,42 @@
+{
+  "harness": "tail_floor_ab",
+  "registration": "EXP_H1 H1.2 / TG3",
+  "config": {
+    "games_requested": 24000,
+    "base_seed": 1,
+    "shards": 8,
+    "shard": 7,
+    "tau": 0.1,
+    "threshold_bb": 6.0,
+    "hpl": 5,
+    "max_hands": 200,
+    "starting_stack": 1500,
+    "checkpoint": "runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt",
+    "abstraction": "runs/abstraction_20260521_223018_retrofit/abstraction.pkl",
+    "structure": "configs/ignition_double_up_6max_turbo.yaml"
+  },
+  "games_completed": 3000,
+  "all_games": {
+    "n": 3000,
+    "mean": 0.14,
+    "se": 0.020694832495835206,
+    "z": 6.764973817892691
+  },
+  "diverged_only": {
+    "n": 2297,
+    "mean": 0.1828471919895516,
+    "se": 0.02696670011156838,
+    "z": 6.780480786787569
+  },
+  "n_diverged": 2297,
+  "diverged_frac": 0.7656666666666667,
+  "firing": {
+    "v1_hero_decisions": 58500,
+    "v1_tail_fired_decisions": 43315,
+    "v1_tail_firing_rate": 0.7404273504273504,
+    "v1_any_floor_fired_decisions": 48267,
+    "games_with_tail_fire": 2979
+  },
+  "elapsed_s": 1680.4109554290771,
+  "sec_per_paired_game": 0.5601369851430257
+}

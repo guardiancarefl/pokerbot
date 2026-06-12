@@ -169,3 +169,23 @@ Gates ALL PASS: B4 + B5 shard00 repro at HEAD byte-identical to the
 tg4_verdict.py self-test paired delta exactly 0 both modes. Full record:
 `evals/h1_tail_floor_20260612/tg4/tg4_instrument_gates.txt`. F-TG4 kill
 bar unchanged. TG4 launches after the TG3 verdict.
+
+## 2026-06-12 ~12:55 — H1 TG3 24k VERDICT: PASS (both ship bars, z=16.8)
+
+Registered run completed exactly as specified (24,000 paired games, seeds
+1..24000, tau=0.10, full deployed floor chain both arms, 8 shards, 28.7 m
+wall). Aggregation coverage gate: 24000/24000 games exactly once.
+
+- **All-games paired ICM delta V1-V0 = +0.1227 +/- 0.0073 (z = +16.76)**
+  — bar was z > -2 (non-inferiority); measured massively positive.
+- **Diverged-only = +0.1597 +/- 0.0095 (z = +16.78, n = 18,436)** — bar
+  was mean > 0 with z >= 2.
+- Divergence 76.8% of games; tail fired 74.0% of 473,915 hero decisions
+  (TG2 71.1%, smoke 73.9% — instrument consistent).
+- vs the smoke's +0.200 +/- 0.076: the 24k point sits 1.0 sigma below the
+  smoke point — consistent, the smoke was simply underpowered as recorded.
+
+**F-TG3: PASS. No seed re-rolls, no tau shopping (single pre-registered
+tau=0.10).** Evidence: `evals/h1_tail_floor_20260612/tg3_24k.json`
+(+ .games.jsonl, 8 shard files, logs). Remaining before ship
+recommendation: TG4 (kill bar F-TG4).
