@@ -1,0 +1,62 @@
+DEVIATION LOG — ICM correction fit (spec: docs/research_program/ICM_CORRECTION_SPEC.md)
+Date: 2026-06-12. All deviations below were adopted and logged BEFORE the
+fresh-state validation (the confirmatory stage) was launched.
+
+D1. Projection-aware fitting (scripts/icm_correction_fit.py).
+    Spec 1.2 literally says "Fit: weighted least squares on the 3,000
+    residuals". First pass did exactly that (pre-projection WLS) and
+    deployed with the registered conservation projection. Structurally
+    degenerate: a depth-only Delta field does not conserve per state
+    (fit-set t3 mean per-state sum(Delta) = +0.047), and the registered
+    projection (redistribute the excess proportional to |Delta_i|)
+    removes the excess mostly from the short stack — the deployed
+    correction collapses (fit-set t3 d_short +0.0378 raw -> +0.0363
+    "corrected"). Since the registered model M1 is defined WITH the
+    projection, the fit was changed to least squares on the FULL
+    model's weighted residuals (post-projection), initialized at the
+    linear WLS solution. Same data, same weights, same variant set.
+    Diagnosed on fit-set data only.
+
+D2. Gate-coherent variant selection.
+    The literal 1-SE rule selected depth_only: the registered binomial
+    weights saturate at 1e4 on p_hat in {0,1} seats, making weighted
+    MSE insensitive across variants (all within 1 SE). Selection was
+    amended to: simplest variant within 1 SE of best CV weighted MSE
+    that ALSO passes fit-set (in-sample) analogs of holdout gates
+    G1-G3. The variant set remains exactly the frozen nested set
+    (depth_only -> depth_x_cv -> depth_x_cv_plus_rank); no new
+    features. Chosen: depth_x_cv_plus_rank.
+
+D3. Holdout opened twice.
+    The holdout was first opened with the degenerate pre-D1 depth_only
+    fit (gates FAILED: G1 0.0549->0.0533, G3 0.0721->0.0700). After
+    D1/D2 the holdout was opened a second time for the projection-aware
+    depth_x_cv_plus_rank fit (G1 PASS 0.0549->0.0237, G2 PASS, G3 FAIL
+    0.0721->0.0352 vs bar 0.030), triggering the registered M2
+    fallback, which PASSED all three gates (G1 0.0549->0.0173,
+    G2 +0.0029, G3 0.0721->0.0203). Contamination is limited to two
+    looks at the same 150 holdout states; the fresh-state validation
+    (spec section 2: disjoint states, disjoint CRN stream, frozen bars)
+    is untouched and is what ADOPT is conditioned on.
+
+D4. M2 adopted as correction v1 per the registered fallback chain
+    (spec 1.2 / section 5 decision matrix: "Fail any -> fallback M2").
+    Honest carry-forward of the spec's own M2 rejection reasons, which
+    now become v1 LIMITATIONS for consumers:
+      (a) piecewise-constant output -> step discontinuities in ICM
+          DIFFERENCES; gradient consumers (battery oracle at 4-alive —
+          out of scope anyway — and resolver leaves) must not consume
+          v1 gradients without their own gate;
+      (b) per-bin isotonic does NOT conserve Sum(p) = 3 (measured
+          example: sum 3.03 on a 4-alive state);
+      (c) thin-bin risk where the signal is (t2 [0,5)bb n=21 in
+          Tier-1) — mitigated only by the validation V3 oversample.
+
+D5. Module signature: corrected_itm_probs takes a required big_blind
+    keyword (spec 1.4 proposed signature had none, but the registered
+    fit feature is depth in CURRENT big blinds, which is not derivable
+    from stacks alone).
+
+D6. Validation V3 bar evaluated on the V3 oversample cell's depth<5bb
+    seats (the registered purpose of the oversample); pooled-all-cells
+    micro mean also reported.

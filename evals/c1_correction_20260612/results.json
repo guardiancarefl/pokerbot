@@ -1,0 +1,208 @@
+{
+  "record_type": "icm_correction_c1_item2",
+  "spec": "docs/research_program/ICM_CORRECTION_SPEC.md",
+  "generated_utc": "2026-06-12T21:32:54.626107+00:00",
+  "git_head": "d3731bebf229db03d94d48992f9ebef03d194d8f",
+  "verdict": "ADOPT (registered fallback M2; V1+V2+V3 pass on fresh states)",
+  "model_adopted": "M2 per-bin isotonic (CV-tertile x depth-band), registered fallback after M1 failed holdout G3",
+  "artifact": "data/icm_correction_v1.json",
+  "module": "src/nlhe/icm_correction.py (standalone, NOT wired into icm.py or any consumer)",
+  "fit": {
+    "m1_chosen_variant": "depth_x_cv_plus_rank",
+    "m1_holdout_gates": {
+      "G1_t3_half_bias": {
+        "raw_mean": 0.05489106058878716,
+        "corrected_mean": 0.0236635487706681,
+        "target_abs": 0.02744553029439358,
+        "pass": true
+      },
+      "G2_t1_band": {
+        "raw_mean": 0.0015102220056266947,
+        "corrected_mean": 0.0013128077109616399,
+        "band": [
+          -0.01,
+          0.01
+        ],
+        "pass": true
+      },
+      "G3_micro_depth": {
+        "n_seats": 37,
+        "raw_mean": 0.07213439573959735,
+        "corrected_mean": 0.03523574855641175,
+        "bar": 0.03,
+        "pass": false
+      }
+    },
+    "m1_holdout_pass": false,
+    "m2_fallback": {
+      "gates": {
+        "G1_t3_half_bias": {
+          "raw_mean": 0.05489106058878716,
+          "corrected_mean": 0.0172514034995358,
+          "target_abs": 0.02744553029439358,
+          "pass": true
+        },
+        "G2_t1_band": {
+          "raw_mean": 0.0015102220056266947,
+          "corrected_mean": 0.00288201231210633,
+          "band": [
+            -0.01,
+            0.01
+          ],
+          "pass": true
+        },
+        "G3_micro_depth": {
+          "n_seats": 37,
+          "raw_mean": 0.07213439573959735,
+          "corrected_mean": 0.020318664259816037,
+          "bar": 0.03,
+          "pass": true
+        }
+      },
+      "pass": true,
+      "n_bins": 11
+    },
+    "final_model": "M2",
+    "deviations": "see DEVIATION_LOG.txt (D1-D6)"
+  },
+  "validation": {
+    "rollouts": 40000,
+    "states": {
+      "t1": 150,
+      "t3": 150,
+      "v3": 100
+    },
+    "M": 100,
+    "caps": 0,
+    "taints": 0,
+    "bars": {
+      "V1_t3": {
+        "half_bias": true,
+        "ci_contains_0_or_small": true,
+        "raw_replication_check_vs_+0.0412": 0.037973712665748206,
+        "pass": true
+      },
+      "V2_t1": {
+        "ci95_in_band": true,
+        "no_degradation": true,
+        "pass": true
+      },
+      "V3_micro": {
+        "corrected_mean": 0.01419572362218636,
+        "bar": 0.03,
+        "pass": true
+      }
+    },
+    "cells": {
+      "t1": {
+        "n_states_scored": 150,
+        "raw_d_short": {
+          "mean": 0.0008330249464579153,
+          "se": 0.004624096630536114,
+          "ci95": [
+            -0.008304250930343225,
+            0.009970300823259056
+          ]
+        },
+        "corrected_d_short": {
+          "mean": 0.005031881352017807,
+          "se": 0.004803713163873279,
+          "ci95": [
+            -0.004460319161586619,
+            0.014524081865622231
+          ]
+        },
+        "sigma_bias_raw": 0.029084696523420033,
+        "sigma_bias_corrected": 0.033165164686678995,
+        "fraction_sigma2_bias_explained": -0.3002750914921546,
+        "micro_depth_seats": {
+          "n": 0,
+          "raw_mean": null,
+          "corrected_mean": null
+        }
+      },
+      "t3": {
+        "n_states_scored": 150,
+        "raw_d_short": {
+          "mean": 0.037973712665748206,
+          "se": 0.005813678089964587,
+          "ci95": [
+            0.0264858081491936,
+            0.04946161718230281
+          ]
+        },
+        "corrected_d_short": {
+          "mean": 0.007821541972789819,
+          "se": 0.005233070968434845,
+          "ci95": [
+            -0.0025190752205676518,
+            0.018162159166147288
+          ]
+        },
+        "sigma_bias_raw": 0.0530622814986118,
+        "sigma_bias_corrected": 0.04305267171592397,
+        "fraction_sigma2_bias_explained": 0.3416931461190412,
+        "micro_depth_seats": {
+          "n": 80,
+          "raw_mean": 0.06846724691071597,
+          "corrected_mean": 0.017212676404469655
+        }
+      },
+      "v3": {
+        "n_states_scored": 100,
+        "raw_d_short": {
+          "mean": 0.07310651013283823,
+          "se": 0.0071092514510202025,
+          "ci95": [
+            0.05900021289118624,
+            0.0872128073744902
+          ]
+        },
+        "corrected_d_short": {
+          "mean": 0.015493867840427077,
+          "se": 0.007737218018482017,
+          "ci95": [
+            0.00014154869063663818,
+            0.030846186990217517
+          ]
+        },
+        "sigma_bias_raw": 0.054728754128649734,
+        "sigma_bias_corrected": 0.06267012985181368,
+        "fraction_sigma2_bias_explained": -0.3112637811091068,
+        "micro_depth_seats": {
+          "n": 107,
+          "raw_mean": 0.06706182393141949,
+          "corrected_mean": 0.01419572362218636
+        }
+      }
+    },
+    "verdict": "ADOPT (V1+V2+V3 pass)"
+  },
+  "consumer_audit_v1": {
+    "battery_flip_check": {
+      "label_flips": 0,
+      "n_spots": 8112,
+      "max_abs_icm_diff": 0.0,
+      "reconstruction_mismatches": 0
+    },
+    "sng_baseline_capped_grep": {
+      "files": 34,
+      "games": 66000,
+      "capped_true": 0,
+      "expectation_met": "zero diffs on all existing headline hero_net"
+    },
+    "tg3_reread": {
+      "scorer": "cfr6.compute_icm_payouts = exact cash/bust +/-1 (verified src/nlhe/cfr6.py:181), not MH",
+      "headline": "+0.1227 +/- 0.0073 (evals/h1_tail_floor_20260612/tg3_24k.json) stands untouched"
+    },
+    "tg4_reread": "spec section-3 row is the re-read; verdict stands (CRN-paired start_eq cancels exactly)",
+    "floor_panel_reprice": "NOT EXECUTABLE as written: evals/icm_panel_floor_v2.json stores only per-seat/pooled aggregates, no per-hand records; offline re-price requires a re-run. Forward rule applies (new gates run with correction flag, both numbers reported).",
+    "mh_pinning_tests": "tests/test_icm.py + test_icm_returns.py 48/48 green (icm.py untouched)"
+  },
+  "limitations_for_consumers": [
+    "M2 is piecewise-constant: step discontinuities in ICM DIFFERENCES; gradient consumers (resolver leaves, any oracle pricing diffs of nearby stack vectors) must gate separately (Tier-2b)",
+    "M2 does not conserve Sum(p)=3 over alive seats (example state: 3.03); per-state seat sums can drift up to a few 0.01",
+    "scope: n_alive==4 only, top-3-equal payouts, hand-start states; identity elsewhere; Tier-1 evidence is levels 3-4 only",
+    "residual heterogeneity: fresh-t3 corrected sigma_bias 0.043 (raw 0.053, 34% of sigma2 explained); per-decision label accuracy is bounded by this number (spec 2.5, goes verbatim into any battery re-label report)"
+  ]
+}

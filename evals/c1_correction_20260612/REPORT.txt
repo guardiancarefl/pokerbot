@@ -1,0 +1,115 @@
+ICM CORRECTION FIT + CONSUMER RE-PRICE AUDIT — cycle-2 item #2
+================================================================
+Spec (binding): docs/research_program/ICM_CORRECTION_SPEC.md
+Date: 2026-06-12   git head at run: 852b05a (track-policy)
+Inputs: evals/c1_icm_gap_20260612/tier1_t{1,2,3}.jsonl (750 states,
+3,000 seat residuals; sha256 in fit_results.json), champion ckpt
+b79e82dd…, frame f87aaab2…. No commits made.
+
+VERDICT: ADOPT — via the REGISTERED FALLBACK M2 (V1+V2+V3 all pass on
+fresh states). M1 failed holdout gate G3; per the spec section-5
+decision matrix the fallback chain M1 -> M2 was followed, M2 passed
+G1-G3, and the pre-registered 40k-rollout fresh-state validation was
+then run against the frozen bars.
+
+1. FIT + HOLDOUT (zero new rollouts) — fit_results.json
+--------------------------------------------------------
+80/20 stratified split by state, random.Random(20260613), 200 fit /
+50 holdout per cell. CV anchors (t1/t3 fit medians): cv0=0.2825,
+cv1=0.6412.
+
+M1 (registered primary): projection-aware least squares (deviation D1),
+gate-coherent variant selection (D2) -> depth_x_cv_plus_rank,
+g(0,5,10,20)=[+0.070,+0.077,+0.033,+0.012], rank1-3=[-0.040,-0.072,
+-0.044] (x h(CV)), state-clustered SEs in fit_results.json.
+  Holdout: G1 PASS 0.0549 -> 0.0237 (bar <=0.0274)
+           G2 PASS +0.0013 in (-0.01,+0.01)
+           G3 FAIL 0.0721 -> 0.0352 (bar <=0.030)   => fallback M2.
+
+M2 (registered fallback, ADOPTED): per-bin weighted isotonic (PAVA) of
+p_hat on q, bins = CV tertile x depth band {[0,5),[5,10),[10,20),20+},
+11 non-empty bins, piecewise-constant prediction, no conservation.
+  Holdout: G1 PASS 0.0549 -> 0.0173   G2 PASS +0.0029
+           G3 PASS 0.0721 -> 0.0203               => gates PASS.
+M4 lookup floor + weighted-MSE table: fit_results.json.
+Deviations D1-D6 logged in DEVIATION_LOG.txt (incl. D3: holdout was
+opened twice — first opening was the degenerate pre-D1 M1 fit; the
+fresh-state validation below is uncontaminated and is what ADOPT is
+conditioned on).
+
+2. FRESH-STATE VALIDATION (the only new compute) — validation_results.json
+--------------------------------------------------------------------------
+400 states x M=100 = 40,000 rollouts, ~25 min wall on cores 0-3
+(nice 19, ~0.065 s/rollout as budgeted; caps=0, taints=0). States from
+the same frame, all 750 Tier-1 tuples excluded, sampling seed 20260614,
+CRN stream sha256("2026|<cell>|val|<idx>|<m>") — disjoint from Tier-1.
+Same instrument (icm_gap_probe machinery, corrected ITM definition D2).
+
+  V1 (t3, N=150, primary): raw d_short +0.0380 CI[+0.0265,+0.0495]
+     (replicates Tier-1 +0.0412); corrected +0.0078 CI[-0.0025,+0.0182].
+     |corr| <= 0.5x|raw| AND CI contains 0 -> PASS (79% bias reduction).
+  V2 (t1, N=150, no-degradation): corrected +0.0050
+     CI[-0.0045,+0.0145] strictly inside (-0.015,+0.015); |corr| <=
+     |raw|+0.005 (0.0050 <= 0.0058) -> PASS (no lambda-shrink needed).
+  V3 (micro oversample, N=100, depth<5bb seats n=107): raw +0.0671 ->
+     corrected +0.0142 <= 0.03 -> PASS. (Fresh-t3 micro seats n=80:
+     +0.0685 -> +0.0172, consistent.)
+
+Heterogeneity honesty clause (spec 2.5): fresh-t3 sigma_bias raw 0.0531
+-> corrected 0.0431 (34.2% of sigma2_bias explained). In t1/v3 the
+corrected sigma_bias is slightly HIGHER than raw (0.029->0.033,
+0.055->0.063): the step corrections remove mean bias but add per-state
+variance. 0.043 bounds the per-decision accuracy any corrected oracle
+label can claim; this number goes verbatim into any future battery
+re-label report.
+
+3. CONSUMER-AUDIT v1 (spec section 3, top-to-bottom)
+-----------------------------------------------------
+- H2 battery (8,112 spots): re-priced all 3 ICM terms per spot with the
+  corrected map — 0 value diffs (max |diff| = 0.0), reconstruction of
+  stored ev_fold exact, 0 stack vectors with 4 alive => 0/8112 label
+  flips ASSERTED (battery_flip_check.json). Real re-label remains
+  contingent on Tier-2/Tier-2b (queued, separate registration).
+- TG4: re-read only — verdict stands (CRN-paired start_eq cancels).
+- TG3 24k: re-read confirmed scorer is cfr6.compute_icm_payouts
+  (cfr6.py:181) = exact cash/bust +/-1, NOT MH; +0.1227 +/- 0.0073
+  stands untouched.
+- H1 floor panel: NOT EXECUTABLE as written — evals/icm_panel_floor_v2
+  .json stores only aggregates, no per-hand records; offline re-price
+  requires a re-run (flagged to manager; forward rule: any new
+  floor-panel gate runs with the correction flag, both numbers shown).
+- sng_baseline capped-grep: 0 capped games in all 66,000 e2-rebaseline
+  + sng_baseline_20260610 games => zero diffs on headline hero_net.
+- Comparative harnesses (#7,8,14-20): no retroactive re-issue; forward
+  rule applies.
+- Resolver / training / c1 instrument: untouched per spec section 4;
+  training-flag retrain stays a separate manager-gated pod item.
+- MH pinning: src/nlhe/icm.py NOT edited; tests/test_icm.py +
+  test_icm_returns.py 48/48 green. (Full suite has 33F/27E that are
+  PRE-EXISTING branch state: zero tracked files modified by this work;
+  test_subgame_leaf errors reproduce in isolation on idle cores.)
+
+4. WHAT WAS BUILT (no consumer wiring, no commits)
+---------------------------------------------------
+- src/nlhe/icm_correction.py — standalone module: IcmCorrection.load(),
+  corrected_itm_probs(stacks, payouts, eligible, *, big_blind) +
+  corrected_icm_equity wrapper; identity outside the registered scope
+  (n_alive==4, top-3-equal, hand-start). Supports both M1 and M2.
+- data/icm_correction_v1.json — serialized M2 artifact (tertile cuts,
+  bin step tables, scope, fit hashes, seed, git head).
+- scripts/icm_correction_fit.py, icm_correction_validate.py,
+  icm_correction_battery_check.py — reproducible pipeline.
+- evals/c1_correction_20260612/ — fit_results.json, val_{t1,t3,v3}
+  .jsonl (+run headers), validation_results.json,
+  battery_flip_check.json, results.json, DEVIATION_LOG.txt, val_run.log.
+
+LIMITATIONS consumers must price before adopting (each behind own gate):
+piecewise-constant output (step discontinuities in ICM differences —
+gradient consumers blocked pending Tier-2b); does NOT conserve
+Sum(p)=3 (example state sums 3.03); scope is bubble-cell levels 3-4
+evidence only; residual sigma_bias 0.043.
+
+Per spec 2.4 on ADOPT: DECISIONS.md entry + RESEARCH_MAP c1 update +
+artifact commit are MANAGER actions (no commits from this task);
+EXPERIMENT_LOG verdict appended. Queue next: Tier-2 27-cell map,
+Tier-2b gradient probe, retrain-flag pod item (COMPUTE_QUEUE).

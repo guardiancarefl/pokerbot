@@ -1,0 +1,12 @@
+{
+  "record_type": "battery_flip_check",
+  "battery": "evals/h2_battery/battery_v1.json",
+  "n_spots": 8112,
+  "reconstruction_mismatches": 0,
+  "max_reconstruction_err": 0.0,
+  "icm_value_diffs": 0,
+  "max_abs_icm_diff": 0.0,
+  "stack_vectors_with_4_alive": 0,
+  "label_flips": 0,
+  "assert_0_flips": true
+}

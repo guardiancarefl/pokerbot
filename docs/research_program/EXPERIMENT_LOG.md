@@ -568,3 +568,38 @@ PANEL = {lionmttv.10, modernmikemtt, itmstrikea, minestackermttv.7.3},
 2000 CRN-paired games per row, tail+shove vs tail-only config, bars per
 supplement §2. LAUNCH CONDITION: M-C holds (within 1 SE of −0.08).
 M-C still unread at this log entry.
+
+## 2026-06-12 ~21:35 — c1 item #2: ICM correction v1 — VERDICT: ADOPT (via registered fallback M2)
+
+Spec executed: `ICM_CORRECTION_SPEC.md` (fit on the existing 3,000
+Tier-1 seat residuals; holdout gates BEFORE rollouts; pre-registered
+40k-rollout fresh-state validation; consumer-audit v1).
+
+1. **M1 failed holdout G3** (micro-depth 0.0721 → 0.0352 vs bar 0.030;
+   G1/G2 passed) after two logged methodology deviations (D1
+   projection-aware fit, D2 gate-coherent variant selection — the
+   literal pre-projection WLS + 1-SE rule is structurally degenerate
+   under the registered conservation projection; full trail in
+   `evals/c1_correction_20260612/DEVIATION_LOG.txt`, incl. D3 holdout
+   double-opening).
+2. **M2 (registered fallback) passed G1–G3** (t3 d_short 0.0549 →
+   0.0173; micro 0.0721 → 0.0203) ⇒ validation launched.
+3. **Fresh validation (400 states × M=100, caps=0, taints=0): V1+V2+V3
+   ALL PASS.** t3 raw +0.0380 (replicates +0.0412) → corrected +0.0078
+   CI95 [−0.0025,+0.0182]; t1 corrected +0.0050 CI ⊂ ±0.015; micro
+   oversample +0.0671 → +0.0142 ≤ 0.03. No λ-shrink needed.
+   Heterogeneity (§2.5): fresh-t3 σ_bias 0.0531 → 0.0431 (34% of
+   σ²_bias explained) — 0.043 bounds corrected per-decision accuracy.
+4. **Consumer-audit v1:** battery 0/8112 flips ASSERTED (max ICM diff
+   0.0); TG3/TG4 re-reads hold (TG3 scorer verified exact cash, not
+   MH); sng_baseline capped count 0/66,000 games; floor-panel re-price
+   NOT EXECUTABLE (no per-hand records persisted — manager flag);
+   MH-pinning icm tests 48/48 green, `icm.py` untouched.
+5. Artifacts: `src/nlhe/icm_correction.py` (standalone, NOT wired into
+   any consumer), `data/icm_correction_v1.json`,
+   `evals/c1_correction_20260612/{REPORT.txt,results.json,…}`.
+   UNCOMMITTED per task mandate. Adoption limitations (M2 steps ⇒ no
+   gradient consumption pending Tier-2b; non-conservation ΣP up to
+   ~3.03; bubble-cell scope only) listed in REPORT.txt §4. Manager
+   actions on ADOPT: commit + DECISIONS.md + RESEARCH_MAP c1; queue
+   Tier-2 / Tier-2b / retrain-flag pod item.
