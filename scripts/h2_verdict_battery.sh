@@ -3,7 +3,7 @@
 # Usage: bash scripts/h2_verdict_battery.sh
 set -u
 cd ~/pokerbot
-PROBE=runs/h2_probe_league_v1/checkpoints/ckpt_iter_2000.pt
+PROBE=runs/h2_probe_league_v1_resume/checkpoints/ckpt_iter_2000.pt
 CHAMP=runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt
 ABS=runs/abstraction_20260521_223018_retrofit/abstraction.pkl
 D=evals/h2_verdict_20260612

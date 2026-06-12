@@ -504,6 +504,16 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                           "refuse hand-start anchors whose pre-hand sum != "
                           "chips-in-play while all seats read alive (the "
                           "seq-1363 poisoned-anchor class). OFF by default.")
+    ap.add_argument("--bet-closure-recovery", action="store_true",
+                     help="P2 bet-closure recovery (approved 2026-06-11): "
+                          "recover invariant-failed frames whose deltas "
+                          "close under a single seat's bet/stack transfer "
+                          "(the displacement signature, live seq-276 "
+                          "2026-06-12 class) by deriving the corrected "
+                          "split against the clean hand-start anchor and "
+                          "re-validating through the unchanged replay+"
+                          "invariant gate. Requires --anchor-sum-floor "
+                          "(gated on P1). OFF by default.")
     ap.add_argument("--extended-click-plans", action="store_true",
                      help="Stage-2 click-executor completion (approved "
                           "2026-06-11): typed-raise verify step, ALLIN-button "
@@ -548,6 +558,13 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
             "real deployment bug of the 8-cycle arc (fixed argmax → sample); "
             "argmax caricatures the mixed strategy and is for audits only.")
 
+    if args.bet_closure_recovery and not args.anchor_sum_floor:
+        ap.error(
+            "--bet-closure-recovery requires --anchor-sum-floor: P2 is "
+            "gated on P1 — recovery derives chip values from the hand-"
+            "start anchor, so the anchor must be sum-floor guarded "
+            "(seq-1363 poisoned-anchor postmortem).")
+
     return args
 
 
@@ -575,10 +592,17 @@ def main() -> int:
     print(_color(f"[run_live_dryrun] ante convention: {conv} (servable)",
                   CYAN), flush=True)
 
-    tracker = SessionTracker(anchor_sum_floor=args.anchor_sum_floor)
+    tracker = SessionTracker(anchor_sum_floor=args.anchor_sum_floor,
+                              bet_closure_recovery=args.bet_closure_recovery)
     if args.anchor_sum_floor:
         header["anchor_sum_floor"] = True
         print(_color("[run_live_dryrun] P1 anchor sum-floor guard ARMED",
+                      YELLOW), flush=True)
+    if args.bet_closure_recovery:
+        header["bet_closure_recovery"] = True
+        print(_color("[run_live_dryrun] P2 bet-closure recovery ARMED "
+                      "(displacement-signature invariant_fail frames may "
+                      "recover via anchor-derived bet/stack split)",
                       YELLOW), flush=True)
     if args.extended_click_plans:
         header["extended_click_plans"] = True
@@ -719,7 +743,8 @@ def main() -> int:
                                mode=args.mode, seq=seq,
                                decision_cache=decision_cache,
                                extended_click_plans=args.extended_click_plans,
-                               tail_floor_tau=args.tail_floor_tau)
+                               tail_floor_tau=args.tail_floor_tau,
+                               bet_closure_recovery=args.bet_closure_recovery)
 
             # Enforced session abort: decisions still computed + logged,
             # but the EXECUTION surface (click plan) is suppressed until

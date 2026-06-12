@@ -377,6 +377,43 @@ def pre_hand_stacks(frame: ScraperFrame) -> tuple[int, ...]:
     return tuple(out)
 
 
+def is_preblind_hand_start(frame: ScraperFrame) -> bool:
+    """True iff this frame is an ANTE-ONLY hand-start capture: board
+    empty, no bets posted yet, and the pot holds exactly the antes
+    (n_alive * ante, ante > 0).
+
+    One UI beat earlier than `is_hand_start` (which requires the SB+BB
+    posts to be visible). Used ONLY by the flag-gated P2 pre-blind
+    anchor capture: when a blind post is displaced into a seat's stack
+    (the bet-closure signature), `is_hand_start` never fires for that
+    hand, so the ante-only frame is the last clean anchorable view.
+    The pot == antes requirement is what excludes between-hands and
+    mid-hand frames: once any blind/bet is posted the pot exceeds the
+    antes (under Ignition's bets-in-pot convention), and post-hand
+    frames read pot == 0."""
+    if frame.board:
+        return False
+    ante = int(frame.blinds.ante)
+    if ante <= 0:
+        return False
+    if any(int(frame.bet[i]) != 0 for i in range(NUM_SEATS)):
+        return False
+    n_alive = sum(frame.alive)
+    return int(frame.pot_total) == n_alive * ante
+
+
+def preblind_pre_hand_stacks(frame: ScraperFrame) -> tuple[int, ...]:
+    """Per-seat hand-start stacks from an ante-only frame
+    (`is_preblind_hand_start`): stack + ante per alive seat — only the
+    ante has left the stack so far. Non-alive seats stay at 0, mirroring
+    `pre_hand_stacks`."""
+    ante = int(frame.blinds.ante)
+    return tuple(
+        frame.stack[i] + ante if frame.alive[i] else 0
+        for i in range(NUM_SEATS)
+    )
+
+
 def chip_conservation_total(frame: ScraperFrame) -> int:
     """Total chips at the table = sum of pre-hand stacks across alive seats.
 
@@ -442,7 +479,8 @@ class SessionTracker:
     # meaningful (early under-read transients would false-alarm it).
     _OOD_MIN_ANCHORS: int = 5
 
-    def __init__(self, anchor_sum_floor: bool = False) -> None:
+    def __init__(self, anchor_sum_floor: bool = False,
+                 bet_closure_recovery: bool = False) -> None:
         self._current_pre_hand: tuple[int, ...] | None = None
         self._current_hand_key: tuple | None = None
         # Accepted-anchor chip sums for the [ANCHOR-OOD] cross-check.
@@ -460,6 +498,37 @@ class SessionTracker:
         # rationale (mis-alive seats legitimately sum BELOW) still
         # applies whenever any seat reads non-alive. OFF by default.
         self._anchor_sum_floor = bool(anchor_sum_floor)
+        # P2 bet-closure recovery (approved 2026-06-11, session-3
+        # postmortem; built 2026-06-12): when ON, observe() additionally
+        # captures a PRE-BLIND hand-start anchor from clean ante-only
+        # frames (board empty, all bets 0, pot == n_alive*ante). The
+        # displacement signature P2 recovers from — one seat's blind/bet
+        # rendered into its stack — corrupts the blinds-posted hand-start
+        # too (is_hand_start sees no BB poster), so the REGULAR anchor is
+        # systematically absent for exactly the hands P2 needs one
+        # (live seq-276, 2026-06-12). The pre-blind capture happens one
+        # UI beat earlier, before any blind can be displaced. Stored in a
+        # SEPARATE slot served ONLY via bet_closure_anchors_for(): the
+        # regular anchor flow (pre_hand_for / anchor_for /
+        # corrected_pot_for) is byte-identical with the flag ON.
+        # Gated on P1: a pre-blind anchor must clear the same ceiling +
+        # sum-floor guards as a regular one (enforced in __init__).
+        self._bet_closure_recovery = bool(bet_closure_recovery)
+        if self._bet_closure_recovery and not self._anchor_sum_floor:
+            raise ValueError(
+                "bet_closure_recovery requires anchor_sum_floor (P2 is "
+                "gated on P1 — recovery derives chip values from the "
+                "anchor, so the anchor must be sum-floor guarded; "
+                "seq-1363 poisoned-anchor postmortem)")
+        self._preblind_pre_hand: tuple[int, ...] | None = None
+        self._preblind_key: tuple | None = None
+        self._preblind_refused_key: tuple | None = None
+        # Blind-posting evidence for the P2 dead-SB guard (first capture
+        # per hand-key wins): "sb_only" / "bb_only" — see
+        # blind_posting_evidence_for. Captured in the same flag-gated
+        # hook as the pre-blind anchor; never read outside P2.
+        self._blind_evidence: str | None = None
+        self._blind_evidence_key: tuple | None = None
 
     def _hand_key(self, frame: ScraperFrame) -> tuple:
         """Identifying tuple for a hand. A change in any component
@@ -506,6 +575,13 @@ class SessionTracker:
                     or internally-inconsistent capture).
         """
         if not is_hand_start(frame):
+            # P2 pre-blind anchor capture (flag-gated; see __init__).
+            # Never changes observe()'s return value or any regular-
+            # anchor state — flag-ON behavior outside the bet-closure
+            # path stays byte-identical.
+            if self._bet_closure_recovery:
+                self._maybe_capture_preblind_anchor(frame)
+                self._maybe_capture_blind_evidence(frame)
             return None
         key = self._hand_key(frame)
         if key == self._current_hand_key:
@@ -632,6 +708,146 @@ class SessionTracker:
         if self._hand_key(frame) != self._current_hand_key:
             return None
         return self._current_pre_hand
+
+    @property
+    def anchor_sum_floor_armed(self) -> bool:
+        """True iff the P1 anchor sum-floor guard is armed (P2's
+        bet-closure recovery refuses to run without it)."""
+        return self._anchor_sum_floor
+
+    def _maybe_capture_preblind_anchor(self, frame: ScraperFrame) -> None:
+        """Record a pre-blind hand-start anchor (P2, flag-gated).
+
+        First capture per hand-key wins; a guard refusal is sticky for
+        the key (recorded so bet_closure_anchors_for can surface
+        "anchor refused" instead of "no anchor"). Guards mirror
+        observe()'s regular-anchor guards exactly: per-seat + sum
+        chips-in-play ceiling, and the P1 sum-floor (armed by
+        construction — __init__ enforces the P1 gating). The regular
+        internal-consistency check (sum(pre) == visible stacks + pot)
+        is an identity for an ante-only frame, so it adds nothing here.
+        """
+        key = self._hand_key(frame)
+        if key in (self._preblind_key, self._preblind_refused_key):
+            return
+        if not is_preblind_hand_start(frame):
+            return
+        pre = preblind_pre_hand_stacks(frame)
+        ceiling = self._CHIPS_IN_PLAY_CEILING
+        over_seats = [
+            i for i in range(NUM_SEATS) if int(pre[i]) > ceiling
+        ]
+        if over_seats or sum(pre) > ceiling:
+            detail = (
+                ", ".join(f"seat{i+1} pre_hand={pre[i]}"
+                          for i in over_seats)
+                or f"sum(pre_hand)={sum(pre)}"
+            )
+            print(f"[ANCHOR-REFUSED] pre-blind hand-start anchor fails "
+                  f"chips-in-play ceiling ({ceiling}): {detail}  "
+                  f"captured_at={frame.captured_at}", flush=True)
+            self._preblind_refused_key = key
+            return
+        if sum(pre) != ceiling and all(frame.alive):
+            print(f"[ANCHOR-REFUSED] pre-blind hand-start anchor fails "
+                  f"sum-floor guard: sum(pre_hand)={sum(pre)} != "
+                  f"chips-in-play {ceiling} with all {NUM_SEATS} seats "
+                  f"alive (no mis-alive seat to hide chips) "
+                  f"captured_at={frame.captured_at}", flush=True)
+            self._preblind_refused_key = key
+            return
+        self._preblind_pre_hand = pre
+        self._preblind_key = key
+
+    def _maybe_capture_blind_evidence(self, frame: ScraperFrame) -> None:
+        """Record single-blind posting evidence (P2 dead-SB guard,
+        flag-gated; first capture per hand-key wins).
+
+        At the post-blinds moment of a hand whose start `is_hand_start`
+        cannot anchor, exactly ONE blind is visible. The two patterns
+        mean opposite things for the recovery's trust argument:
+
+          "sb_only" — one alive seat shows bet == SB and the pot holds
+              antes + SB. The BB post is MISSING from bet/pot/stack
+              arithmetic: positive evidence for a displaced BB (Ignition
+              never plays a dead BB) — the recon's default blind
+              assignment is right and the displacement is real.
+          "bb_only" — one alive seat shows bet == BB and the pot holds
+              antes + BB. No SB was posted: a DEAD-SB hand (SB seat
+              busted the previous hand — live 2026-06-12 seq 270-276,
+              seat3 bust -> dead SB, BB on seat4) or a displaced SB.
+              Either way the recon's next-alive-after-dealer default
+              mis-assigns the blinds whenever per-frame dead-SB
+              detection has lost the posting evidence (the BB poster
+              raised), and the resulting invariant deltas mimic the
+              displacement signature with a phantom BB — recovery must
+              REFUSE.
+        """
+        key = self._hand_key(frame)
+        if key == self._blind_evidence_key:
+            return
+        if frame.board:
+            return
+        sb, bb = int(frame.blinds.sb), int(frame.blinds.bb)
+        ante = int(frame.blinds.ante)
+        nonzero = [
+            (i, int(frame.bet[i])) for i in range(NUM_SEATS)
+            if frame.alive[i] and int(frame.bet[i]) != 0
+        ]
+        if len(nonzero) != 1:
+            return
+        _, posted = nonzero[0]
+        antes_total = sum(frame.alive) * ante
+        evidence = None
+        if posted == sb and int(frame.pot_total) == antes_total + sb:
+            evidence = "sb_only"
+        elif posted == bb and int(frame.pot_total) == antes_total + bb:
+            evidence = "bb_only"
+        if evidence is not None:
+            self._blind_evidence = evidence
+            self._blind_evidence_key = key
+
+    def blind_posting_evidence_for(self, frame: ScraperFrame) -> str | None:
+        """Single-blind posting evidence for this frame's hand-key
+        ("sb_only" / "bb_only"), or None. P2 dead-SB guard only."""
+        if self._hand_key(frame) != self._blind_evidence_key:
+            return None
+        return self._blind_evidence
+
+    def bet_closure_anchors_for(
+        self, frame: ScraperFrame,
+    ) -> tuple[list[tuple[tuple[int, ...], str]], str | None]:
+        """Anchors usable by the P2 bet-closure recovery path ONLY.
+
+        Returns (anchors, refused_why):
+          anchors     — [(pre_hand, source), ...] for this frame's hand
+                        key: the regular hand-start anchor (if tracked)
+                        plus the pre-blind anchor (if captured and
+                        distinct). Like anchor_for, NO closure check —
+                        broken closure is what recovery solves for; the
+                        caller must re-validate through the full replay
+                        + invariant gate.
+          refused_why — audit string when a pre-blind hand-start for
+                        this key was REFUSED by the anchor guards (the
+                        P2 "P1 refused the anchor" refusal class),
+                        else None.
+        """
+        key = self._hand_key(frame)
+        anchors: list[tuple[tuple[int, ...], str]] = []
+        if (self._current_pre_hand is not None
+                and key == self._current_hand_key):
+            anchors.append((self._current_pre_hand, "anchor"))
+        if (self._bet_closure_recovery
+                and self._preblind_pre_hand is not None
+                and key == self._preblind_key
+                and not any(pre == self._preblind_pre_hand
+                            for pre, _ in anchors)):
+            anchors.append((self._preblind_pre_hand, "preblind_anchor"))
+        refused_why = None
+        if key == self._preblind_refused_key:
+            refused_why = ("pre-blind hand-start anchor was refused by "
+                           "the anchor guard (ceiling/sum-floor)")
+        return anchors, refused_why
 
     def _closure_plausible(self, frame: ScraperFrame) -> bool:
         """True iff chip conservation against the anchor is plausible
@@ -850,6 +1066,162 @@ def build_stack_recovery_candidates(
             out.append((_rebuild_frame_with_stack(frame, bad_seat, cand),
                         label))
     return out
+
+
+# --------------------------------------------------------------------------
+# Bet-closure recovery for the displacement signature (P2 — 2026-06-11
+# session-3 postmortem, built 2026-06-12). The scraper sometimes renders a
+# seat's posted blind/bet folded into its stack (live seq 276: seat5's BB
+# read stack=1222 bet=0 pot=560 against the true 1122/100/660). The frame
+# parses cleanly and is NOT suspect-flagged — it fails only the strict
+# invariant, with a recognizable signature: the scraper-vs-reconstruction
+# deltas CLOSE under a single seat's bet/stack transfer (stack reads X
+# high, bet reads X low, pot reads X low — or all three reversed). These
+# helpers classify that signature and build the corrected frame, with
+# chip conservation against the clean hand-start anchor as an independent
+# post-patch check; live_loop re-validates the result through the full
+# replay + invariant gate before it can become a decision. The invariant
+# is NOT loosened: recovery only adds one derived candidate per anchor
+# that must clear the same bar every clean frame clears.
+# --------------------------------------------------------------------------
+
+
+_DELTA_STACK_RE = re.compile(r"^stack\[seat([1-6])\]$")
+_DELTA_BET_RE = re.compile(r"^bet\[seat([1-6])\]$")
+
+
+def classify_displacement_deltas(deltas) -> tuple[str, object]:
+    """Classify an invariant-fail delta list against the displacement
+    signature. `deltas` is InvariantResult.deltas:
+    [(field_name, scraper_val, reconstructed_val), ...].
+
+    Returns one of:
+      ("not_signature", None)   — not the displacement family at all (any
+                                  non-pot/stack/bet delta, or no seat
+                                  stack/bet delta). The caller must leave
+                                  the frame's drop byte-identical.
+      ("refused", why)          — displacement-family deltas that P2 must
+                                  refuse (multi-seat, or amounts that do
+                                  not close). Caller drops as before,
+                                  reason annotated.
+      ("closure", (seat, x))    — single-seat closure: seat (0-indexed)
+                                  reads `x` chips too HIGH in stack and
+                                  `x` too LOW in bet and pot (x < 0 is
+                                  the reverse direction). Transferring x
+                                  from stack to bet and adding x to pot
+                                  reproduces the reconstruction exactly.
+    """
+    pot_delta = 0
+    seats: dict[int, dict[str, int]] = {}
+    for name, scraper_val, recon_val in deltas:
+        if name == "pot":
+            pot_delta = int(scraper_val) - int(recon_val)
+            continue
+        m = _DELTA_STACK_RE.match(str(name))
+        if m:
+            seats.setdefault(int(m.group(1)) - 1, {})["stack"] = (
+                int(scraper_val) - int(recon_val))
+            continue
+        m = _DELTA_BET_RE.match(str(name))
+        if m:
+            seats.setdefault(int(m.group(1)) - 1, {})["bet"] = (
+                int(scraper_val) - int(recon_val))
+            continue
+        # Any other delta type (current_player, street_idx, cards,
+        # scraper_self_consistency, legal_actions) — corruption beyond a
+        # bet/stack displacement; not this signature.
+        return ("not_signature", None)
+    if not seats:
+        return ("not_signature", None)
+    if len(seats) > 1:
+        return ("refused",
+                f"closure would touch {len(seats)} seats' bet/stack "
+                f"pairs (only single-seat displacement is recoverable)")
+    seat, d = next(iter(seats.items()))
+    x = d.get("stack", 0)
+    if x == 0 or d.get("bet", 0) != -x or pot_delta != -x:
+        return ("refused",
+                "deltas do not close under a single bet/stack transfer "
+                f"(stack {d.get('stack', 0):+d}, bet {d.get('bet', 0):+d},"
+                f" pot {pot_delta:+d})")
+    return ("closure", (seat, x))
+
+
+def build_bet_closure_candidate(
+    frame: ScraperFrame, seat: int, x: int, pre_hand: tuple[int, ...],
+) -> tuple[ScraperFrame | None, str]:
+    """Apply the single-seat bet/stack transfer (move `x` chips from
+    stack[seat] to bet[seat], add `x` to the pot) and hold the result to
+    chip conservation against the anchored pre-hand stacks.
+
+    The conservation check is the independent post-patch verification:
+    the corrected stacks + corrected pot must reproduce the anchor's
+    chip total exactly under the strict (bets-in-pot) convention. A
+    frame whose corruption is anything OTHER than a pure displacement
+    (UI-lag pot, mis-alive hidden chips, a second bad field) fails here
+    or in the caller's replay + invariant re-validation.
+
+    Returns (frame, "ok") or (None, why)."""
+    if int(pre_hand[seat]) <= 0:
+        return None, (f"seat{seat + 1} not at hand start per the anchor "
+                      f"(pre_hand=0)")
+    new_stack = int(frame.stack[seat]) - int(x)
+    new_bet = int(frame.bet[seat]) + int(x)
+    new_pot = int(frame.pot_total) + int(x)
+    upper = int(pre_hand[seat]) - int(frame.blinds.ante)
+    if not (0 <= new_stack <= upper):
+        return None, (f"corrected stack {new_stack} out of range "
+                      f"(0..{upper})")
+    if seat == frame.hero_seat and new_stack == 0:
+        return None, ("corrected hero stack would be 0 (an all-in hero "
+                      "has no decision UI)")
+    if new_bet < 0:
+        return None, f"corrected bet {new_bet} negative"
+    if new_pot <= 0:
+        return None, f"corrected pot {new_pot} not positive"
+    seats_at_start = [
+        i for i in range(NUM_SEATS) if int(pre_hand[i]) > 0
+    ]
+    corrected_stack_sum = sum(
+        (new_stack if i == seat else int(frame.stack[i]))
+        for i in seats_at_start
+    )
+    expected_total = sum(int(pre_hand[i]) for i in seats_at_start)
+    if corrected_stack_sum + new_pot != expected_total:
+        return None, ("corrected frame fails chip conservation against "
+                      f"the anchor ({corrected_stack_sum} + {new_pot} != "
+                      f"{expected_total})")
+    return _rebuild_frame_with_bet_closure(
+        frame, seat, new_stack, new_bet, new_pot), "ok"
+
+
+def _rebuild_frame_with_bet_closure(
+    frame: ScraperFrame, seat: int, new_stack: int, new_bet: int,
+    new_pot: int,
+) -> ScraperFrame:
+    """Copy of `frame` with seat's stack/bet and the pot replaced, derived
+    fields (alive, hero_facing_bet) recomputed with parse_frame's exact
+    formulas — same contract as _rebuild_frame_with_stack."""
+    stack = list(frame.stack)
+    bet = list(frame.bet)
+    stack[seat] = int(new_stack)
+    bet[seat] = int(new_bet)
+    alive = tuple(
+        (not frame.empty[i]) and (stack[i] > 0 or bet[i] > 0)
+        for i in range(NUM_SEATS)
+    )
+    if alive[frame.hero_seat]:
+        max_opp_bet = max(
+            (bet[i] for i in range(NUM_SEATS)
+             if i != frame.hero_seat and alive[i]),
+            default=0,
+        )
+        hero_facing_bet = max_opp_bet > bet[frame.hero_seat]
+    else:
+        hero_facing_bet = False
+    return dataclasses.replace(
+        frame, stack=tuple(stack), bet=tuple(bet), pot_total=int(new_pot),
+        alive=alive, hero_facing_bet=hero_facing_bet)
 
 
 # --------------------------------------------------------------------------

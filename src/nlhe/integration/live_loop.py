@@ -57,12 +57,16 @@ class LiveDecision:
     #                              hand/street/bet-state; returning the locked-
     #                              in action to prevent the per-frame re-sample
     #                              lottery (CFR mixed strategies → sample once)
-    #   "decision_recovered"     — decision on a scraper-suspect frame whose
-    #                              single flagged stack field was derived from
-    #                              the clean hand-start anchor via chip
-    #                              conservation and re-validated through the
-    #                              full replay+invariant gate (Layer 1,
-    #                              2026-06-09 blackout postmortem)
+    #   "decision_recovered"     — decision on a repaired frame, re-validated
+    #                              through the full replay+invariant gate:
+    #                              either a scraper-suspect frame whose single
+    #                              flagged stack was derived from the clean
+    #                              hand-start anchor via chip conservation
+    #                              (Layer 1, 2026-06-09 blackout postmortem)
+    #                              or a flag-gated P2 bet-closure recovery of
+    #                              an invariant-failed displacement-signature
+    #                              frame (2026-06-11 postmortem; field labels
+    #                              "(bet_closure...)" in recovered_fields)
     #   "decision_recovered_cached" — ditto, action came from DecisionCache
     #   "safe_fold"              — invariant fail / replay error → no plan
     #   "skip_not_hero_to_act"   — frame parsed, hero not to act
@@ -704,6 +708,155 @@ def _attempt_suspect_stack_recovery(record: dict, structure, tracker):
     return cand_frame, recovered, "ok"
 
 
+def _attempt_bet_closure_recovery(frame, inv, structure, tracker):
+    """P2 bet-closure recovery for invariant-failed frames with the
+    displacement signature (2026-06-11 session-3 postmortem; live seq 276
+    2026-06-12: seat5's posted BB rendered into its stack — scraper read
+    stack=1222 bet=0 pot=560 vs true 1122/100/660; the frame parsed
+    cleanly, was never suspect-flagged, and dropped as a 3-delta
+    invariant_fail on a real AcKc decision).
+
+    Returns (frame, pack, recovered_fields, why):
+      frame None, why None  -> NOT the displacement signature; the caller
+                               must drop the frame byte-identically to the
+                               pre-P2 path (no annotation).
+      frame None, why set   -> signature family, recovery REFUSED; caller
+                               drops exactly as before plus the audit
+                               annotation.
+      frame set             -> re-validated corrected ScraperFrame + its
+                               replay pack; recovered_fields like
+                               ["stack.seat5=1122 (bet_closure)", ...].
+
+    Gates — ALL must hold, else refuse:
+      1. inv.deltas match the displacement signature: deltas confined to
+         {pot, stack[K], bet[K]} for exactly ONE seat K, closing under a
+         single bet/stack transfer of x chips (multi-seat or non-closing
+         deltas refuse; any other delta type is not the signature)
+      2. P1's anchor sum-floor guard is armed (P2 is gated on P1 — the
+         derivation trusts the anchor, seq-1363 poisoned-anchor lesson)
+      3. a clean hand-start anchor exists for this hand-key (regular or
+         flag-gated pre-blind); an anchor REFUSED by the P1/ceiling
+         guard is surfaced as its own refusal, never used
+      3b. dead-SB guard: positive blind-structure evidence exists — a
+         regular anchor (both blinds seen posted) or sb_only posting
+         evidence; bb_only posting evidence always refuses (the live
+         seq-276 ground-truth lesson: a dead-SB hand mimics the
+         displacement signature with a phantom BB)
+      4. the corrected frame passes chip conservation against the anchor
+         (the independent post-patch check, inside
+         build_bet_closure_candidate) and the in-range bounds
+      5. the corrected frame passes replay_to_decision WITH the anchor
+         (no simple-model fallback — the derived values' trust argument
+         rests on the anchor) AND check_mid_hand_invariant
+      6. if more than one DISTINCT anchor survives re-validation ->
+         more than one candidate closure -> ambiguous -> refuse
+
+    The invariant is not loosened anywhere: the corrected frame clears
+    the same replay+invariant bar as every clean frame, with the five
+    other seats' stacks, the other bets, current_player, street and
+    cards carrying the independent verification (the patched seat's
+    stack/bet and the pot equality are satisfied by construction —
+    same documented power loss as the Layer-1 suspect recovery)."""
+    from src.nlhe.integration.scraper_schema import (
+        classify_displacement_deltas, build_bet_closure_candidate,
+    )
+    from src.nlhe.integration.replay import replay_to_decision, ReplayError
+    from src.nlhe.integration.invariant import check_mid_hand_invariant
+
+    kind, payload = classify_displacement_deltas(inv.deltas)
+    if kind == "not_signature":
+        return None, None, None, None
+    if kind == "refused":
+        return None, None, None, payload
+    seat, x = payload
+
+    if not getattr(tracker, "anchor_sum_floor_armed", False):
+        return None, None, None, ("anchor sum-floor guard not armed "
+                                  "(P2 is gated on P1)")
+    anchors, refused_why = tracker.bet_closure_anchors_for(frame)
+    if not anchors:
+        if refused_why is not None:
+            return None, None, None, refused_why
+        return None, None, None, ("no clean hand-start anchor for this "
+                                  "hand-key (regular or pre-blind)")
+
+    # Dead-SB guard (live 2026-06-12 ground-truth disproof of the seq-276
+    # "displacement"): a dead-SB hand — SB seat busted the previous hand,
+    # BB falls one seat later — reproduces the displacement signature
+    # EXACTLY once the BB poster's bet changes (per-frame dead-SB
+    # detection loses its evidence, the replay falls back to the
+    # next-alive-after-dealer default and reconstructs a phantom BB on
+    # the wrong seat). Chip conservation cannot distinguish the two
+    # (a displacement is sum-invariant everywhere), so recovery demands
+    # positive evidence that the recon's blind assignment is right:
+    # either a REGULAR anchor (is_hand_start saw both blinds posted) or
+    # captured "sb_only" posting evidence (the BB was missing at the
+    # post moment — a real displaced BB, never a dead one). "bb_only"
+    # evidence is the dead-SB/displaced-SB pattern: always refuse.
+    evidence = tracker.blind_posting_evidence_for(frame)
+    has_regular_anchor = any(src == "anchor" for _, src in anchors)
+    if evidence == "bb_only":
+        return None, None, None, (
+            "hand shows BB-only posting (dead-SB hand or displaced SB) "
+            "— the reconstruction's blind assignment is unverifiable "
+            "and the deltas may be a phantom-BB artifact")
+    if not has_regular_anchor and evidence != "sb_only":
+        return None, None, None, (
+            "no blind-structure evidence: neither a regular hand-start "
+            "anchor (both blinds seen posted) nor sb_only posting "
+            "evidence exists for this hand-key")
+
+    validated = []
+    decline_why = None
+    for pre, source in anchors:
+        cand_frame, why = build_bet_closure_candidate(frame, seat, x, pre)
+        if cand_frame is None:
+            decline_why = why
+            continue
+        # Mirror make_decision's pot handling exactly so the surviving
+        # candidate behaves identically when it re-runs the main
+        # pipeline. (For a conservation-passing candidate the strict
+        # closure holds, so this is a no-op by construction; kept for
+        # exactness with the Layer-1 recovery path.)
+        eff = cand_frame
+        corrected = tracker.corrected_pot_for(cand_frame)
+        if corrected is not None:
+            eff = dataclasses.replace(cand_frame, pot_total=int(corrected))
+        try:
+            pack = replay_to_decision(
+                eff, structure, pre_hand_override=pre)
+        except ReplayError as e:
+            decline_why = f"replay rejected corrected frame: {str(e)[:80]}"
+            continue
+        inv2 = check_mid_hand_invariant(eff, pack)
+        if not inv2.ok:
+            decline_why = ("corrected frame still fails the invariant "
+                           f"({len(inv2.deltas)} deltas)")
+            continue
+        # No dedupe here: bet_closure_anchors_for already collapses
+        # identical anchors, so two survivors mean two DISTINCT pre-hand
+        # vectors both reconstruct cleanly — that's ambiguity (the packs
+        # differ even when the corrected frame is the same), and the
+        # arbitration below must refuse rather than pick one.
+        validated.append((eff, pack, source))
+
+    if not validated:
+        return None, None, None, (
+            "no candidate passed replay+invariant re-validation"
+            + (f" ({decline_why})" if decline_why else ""))
+    if len(validated) > 1:
+        return None, None, None, (
+            "ambiguous: multiple distinct anchors both re-validate the "
+            "closure (regular vs pre-blind disagree on pre-hand stacks)")
+    eff, pack, source = validated[0]
+    recovered = [
+        f"stack.seat{seat + 1}={int(eff.stack[seat])} (bet_closure)",
+        f"bet.seat{seat + 1}={int(eff.bet[seat])} (bet_closure)",
+        f"pot={int(eff.pot_total)} (bet_closure:{source})",
+    ]
+    return eff, pack, recovered, "ok"
+
+
 def make_decision(
     record: dict,
     structure,
@@ -716,6 +869,7 @@ def make_decision(
     short_stack_floor_bb: float = _DEFAULT_SHORT_STACK_FLOOR_BB,
     extended_click_plans: bool = False,
     tail_floor_tau: "float | None" = None,
+    bet_closure_recovery: bool = False,
 ) -> LiveDecision:
     """Process one scraper record. Returns a LiveDecision.
 
@@ -739,6 +893,12 @@ def make_decision(
         tail_floor_tau: H1 commitment-scaled tail floor tau_max. Default
             None = OFF (the composed policy filter never calls the tail
             floor; live path byte-identical to pre-H1).
+        bet_closure_recovery: P2 displacement-signature recovery on
+            invariant-failed frames (see _attempt_bet_closure_recovery).
+            Default False = OFF (invariant_fail drops byte-identical to
+            pre-P2). Requires a tracker built with
+            SessionTracker(anchor_sum_floor=True,
+            bet_closure_recovery=True) — gated on P1.
 
     Returns:
         A LiveDecision. Never raises; internal errors surface as a
@@ -881,11 +1041,39 @@ def make_decision(
     # 6. Strict invariant check.
     inv = check_mid_hand_invariant(frame, pack)
     if not inv.ok:
-        out.status = "safe_fold"
-        out.skip_reason = f"invariant_fail ({len(inv.deltas)} deltas)"
-        out.invariant_deltas = [list(d) for d in inv.deltas]
-        out.click_plan = click_plan_for_safe_fold(out.skip_reason)
-        return out
+        # 6b. P2 bet-closure recovery (flag-gated). A frame whose ONLY
+        # invariant failure is the displacement signature — one seat's
+        # bet/stack split misrendered, deltas closing under a single
+        # transfer — may be recoverable by deriving the corrected split
+        # against the clean hand-start anchor and re-validating through
+        # the full replay + invariant gate. Every refusal path below is
+        # byte-for-byte the pre-P2 drop, plus an audit note; frames not
+        # matching the signature drop with no annotation at all.
+        bc_frame = bc_pack = bc_recovered = bc_why = None
+        if bet_closure_recovery:
+            bc_frame, bc_pack, bc_recovered, bc_why = (
+                _attempt_bet_closure_recovery(frame, inv, structure,
+                                              tracker))
+        if bc_frame is None:
+            out.status = "safe_fold"
+            out.skip_reason = f"invariant_fail ({len(inv.deltas)} deltas)"
+            if bc_why is not None:
+                out.skip_reason += (f" (bet-closure recovery declined: "
+                                     f"{bc_why})")
+            out.invariant_deltas = [list(d) for d in inv.deltas]
+            out.click_plan = click_plan_for_safe_fold(out.skip_reason)
+            return out
+        # Recovered: continue the pipeline on the corrected frame + pack,
+        # refreshing every READ-summary field the correction can touch.
+        frame = bc_frame
+        pack = bc_pack
+        out.recovered_fields = (out.recovered_fields or []) + bc_recovered
+        out.pot_total = int(frame.pot_total)
+        out.hero_stack = int(frame.stack[frame.hero_seat]) \
+            if frame.alive[frame.hero_seat] else 0
+        out.n_alive = int(sum(frame.alive))
+        out.facing_bet = bool(frame.hero_facing_bet)
+        out.street_idx = int(pack.street_idx)
 
     # 7. Decide-once gate. Compute the decision-identity from the frame;
     # if the cache holds an action for that identity (same actual decision,

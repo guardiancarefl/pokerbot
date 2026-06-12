@@ -1,0 +1,65 @@
+P2 bet-closure recovery — build + gates summary (2026-06-12)
+=============================================================
+Base: 650045d (track-policy). Built per the 2026-06-11 session-3
+postmortem P2 proposal, operator-approved, full gate treatment.
+
+WHAT WAS BUILT (all flag-gated, OFF by default)
+  --bet-closure-recovery (requires --anchor-sum-floor; P2 gated on P1,
+  enforced at argparse AND SessionTracker.__init__ AND a defensive
+  check in the recovery path):
+  - src/nlhe/integration/scraper_schema.py:
+      SessionTracker(bet_closure_recovery=) — flag-gated pre-blind
+      (ante-only) hand-start anchor capture + blind-posting evidence
+      capture (sb_only/bb_only), both stored in separate slots served
+      ONLY to the P2 path (regular anchor flow byte-identical flag-ON);
+      is_preblind_hand_start / preblind_pre_hand_stacks /
+      classify_displacement_deltas / build_bet_closure_candidate (chip
+      conservation against the anchor as the independent post-patch
+      check) / _rebuild_frame_with_bet_closure.
+  - src/nlhe/integration/live_loop.py:
+      _attempt_bet_closure_recovery + step-6b hook in make_decision.
+      Recover only when ALL hold: single-seat closure signature; P1
+      armed; clean anchor (regular or pre-blind, P1-guarded — refused
+      anchors surface as their own refusal); dead-SB guard (positive
+      blind-structure evidence; bb_only always refuses); bounds + chip
+      conservation; full UNCHANGED replay+invariant re-validation with
+      the anchor (no simple-model fallback); unambiguous (multiple
+      distinct surviving anchors refuse). Statuses follow the Layer-1
+      pattern (decision_recovered / decision_recovered_cached,
+      recovered_fields "(bet_closure...)"); every refusal drops exactly
+      as before with the reason annotated; non-signature invariant
+      failures are untouched (no annotation).
+  - scripts/run_live_dryrun.py: flag + header + ARMED banner, threaded
+    like P1; scripts/replay_make_decision_diff.py: counterfactual flags.
+
+CENTRAL FINDING — seq=276 disproof (seq276_ground_truth_disproof.txt):
+  the named fixture is NOT a displacement; it is a DEAD-SB hand (seat3
+  busted the previous hand) whose phantom-BB reconstruction mimics the
+  signature. Recovering it = wrong-state decision (seq-1363 harm
+  class). The dead-SB guard refuses it; the brief's "must recover"
+  expectation is overridden by its own ground-truth proof obligation.
+  The mechanism is proven instead on the synthetic live-SB twin
+  (identical decision frame, sb_only evidence) which recovers and
+  matches its clean twin's decision. Corpus-wide, seq=276 is the ONLY
+  closure-signature frame in 6077 frames — no true displacement has
+  occurred live yet (invariant_fail_classification.txt).
+
+GATES (all GREEN)
+  1. flag-OFF byte-identity: 6077/6077 frames identical across all 14
+     raw-record logs, --strict (flag_off_byte_identity.txt).
+  2. flag-ON counterfactual (armA=P1 vs armB=P1+P2): 9 diffs / 6077,
+     all annotation-only refusals on displacement-family frames; zero
+     decision changes; not_signature frames byte-identical
+     (flag_on_armA_vs_armB.txt). Replay artifacts: /tmp/p2gate/.
+  3. tests: tests/test_bet_closure_recovery.py 23/23 (recover cases +
+     every refusal class incl. dead-SB, P1-not-armed, refused anchor,
+     no-evidence, conservation, re-validation, ambiguity, flag-OFF
+     byte-identity, clean-twin equality); bridge-side suites 153/153;
+     full tests/ = 1054 passed with the same 33F/27E that fail at HEAD
+     without these changes (pre-existing, research files, verified by
+     stash run).
+
+NOT DONE / FOLLOW-UP CANDIDATE (root cause, replay-side, un-gated path,
+out of approved scope): carry detected blind structure forward within a
+hand so dead-SB hands replay correctly after the BB poster's bet
+changes (seq 272 decided correctly; seq 276 could not).

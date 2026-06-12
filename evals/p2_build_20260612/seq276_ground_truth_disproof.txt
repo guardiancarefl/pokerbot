@@ -1,0 +1,89 @@
+P2 bet-closure recovery — seq=276 ground-truth disproof (2026-06-12)
+====================================================================
+
+CLAIM UNDER TEST (session-3 postmortem P2 proposal + build brief): the
+seq=276 invariant_fail in logs/live_dryrun_20260612_161347.jsonl
+(AcKc; deltas pot 560->660, stack[seat5] 1222->1122, bet[seat5] 0->100)
+is a "displacement" — seat5's posted BB rendered folded into its stack —
+and bet-closure recovery should recover the corrected state
+(stack 1122 / bet 100 / pot 660) and decide.
+
+VERDICT: DISPROVEN by post-hand ground truth. The hand was a DEAD-SMALL-
+BLIND hand. The scraper read the chips correctly; the reconstruction's
+phantom BB on seat5 produced the deltas. Recovering would have fed the
+model a provably false state (the seq-1363 harm class). The shipped P2
+therefore includes a dead-SB guard that refuses this frame; the
+recovery mechanism itself is exercised by a synthetic live-SB twin in
+tests/test_bet_closure_recovery.py (identical decision frame, sb_only
+posting evidence) which recovers and matches its clean-twin decision.
+
+PROOF CHAIN (all values verbatim from the session log)
+-------------------------------------------------------
+
+1. seat3 busted the IMMEDIATELY PRECEDING hand (dealer seat6):
+     seq 255: stacks s1=2275 s3=1193 s4=1488 s5=1237 s6=2382,
+              bets s1=50(SB) s3=100(BB) s4=200, pot 425
+     seq 261: seat3 all-in for 1093 (bets s3=1093, pot 1791)
+     seq 262-264: seat3 stack 0; seat4 395 -> 3106 (won pot 2711)
+   For the next hand (dealer -> seat1/hero), the SB was due on the
+   just-busted seat3 => Ignition dead-SB: no SB posted, BB on seat4.
+
+2. The AcKc hand start confirms BB=seat4, seat5 owes NOTHING:
+     seq 269 (ante-only): pot 60 = 4*15; stacks 2260/3091/1222/2367
+              (each exactly pre - 15)
+     seq 270-272: pot 160 = 60 antes + 100 (ONE blind only);
+              bets: seat4=100, ALL others 0;
+              seat4 stack 2991 = 3106 - 15(ante) - 100(BB)  [exact]
+              seat5 stack 1222 = 1237 - 15(ante)            [exact]
+   A live-SB seat4 cannot have 100 committed before its preflop turn
+   (SB acts after the button preflop), and pot 160 is unexplainable in
+   any live-SB universe (would be 110 or 210).
+
+3. Why seq 272 decided cleanly but 276 failed: the replay's per-frame
+   dead-SB detector (_detect_blinds_from_bb_post) keys on a visible
+   bet == BB. At 272 seat4's bet was still 100 -> dead-SB detected ->
+   correct recon -> invariant PASS -> "decision". At 275 seat4 raised
+   to 400 -> detection returns (None, None) -> falls back to the
+   next-alive-after-dealer default (SB seat4 / BB seat5) -> recon
+   fabricates a phantom 100 BB on seat5 -> the 3 deltas at 276.
+
+4. The hand's outcome frames show the scraper's universe was real:
+     seq 278: hero shoves (bets s1=2260), pot 2720 = 560 + 2160
+     seq 279: seat4 folded; hero collects 860 = 60 + 400 + 400
+              (NO 100 from seat5 anywhere)
+     seq 280-281 (idle, pot 0, no bets left to displace):
+              hero 2720 = 2275 - 15 - 400 + 860; seat5 STILL 1222.
+   In the "corrected" universe the pot would have been 960 and idle
+   hero 2820 / seat5 1122 — contradicted by every idle read.
+
+5. Next exact-9000 anchor pins seat5's true stack:
+     seq 301 (regular hand-start, dealer seat4): pre-hand
+     (2705, -, -, 2476, 1467, 2352), sum = 9000 EXACT.
+     seat5 1467 is reachable from 1222 (+245: won the in-between
+     hand's 260 pot over its own commitment; seat4 -215, hero -15,
+     seat6 -15, sum of nets = 0 exact) and NOT from 1122 without
+     also assuming the idle reads in (4) were wrong.
+
+6. Chip conservation CANNOT arbitrate: a bet/stack displacement is
+   sum-invariant in every aggregate (per-seat stack+bet total, table
+   sum, pot+stacks closure) — both universes conserve 9000 on every
+   frame. Only game-rule structure (who owed which blind) separates
+   them, hence the dead-SB guard's demand for positive blind-structure
+   evidence (regular anchor = both blinds seen posted, or sb_only
+   posting evidence = BB missing at the post moment, which is a true
+   displacement since Ignition never plays a dead BB; bb_only evidence
+   = dead-SB or displaced-SB -> always refuse).
+
+CORPUS NOTE: across all 14 raw-record dry-run logs (6077 frames),
+exactly ONE frame matches the single-seat closure signature — seq=276
+itself, i.e. the only live "displacement" candidate to date is a
+dead-SB artifact. Every other invariant_fail is multi-seat,
+non-closing, or carries foreign delta types (see
+flag_on_armA_vs_armB.txt for the armed-replay confirmation).
+
+ROOT-CAUSE NOTE (out of P2 scope, candidate follow-up): the seq-276
+class would be fixed at the source by carrying the hand's detected
+blind structure forward from the frames where the posting evidence is
+still visible (seq 272 detected dead-SB correctly; seq 276 could not).
+That is a replay-side change to the un-gated path and was not touched
+under this build's scope.

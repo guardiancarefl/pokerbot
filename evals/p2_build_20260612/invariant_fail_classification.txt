@@ -1,0 +1,57 @@
+Classification of EVERY invariant_fail frame across all 14 raw-record
+dry-run logs (baseline flag-OFF replay outputs), through
+classify_displacement_deltas — the P2 signature gate.
+========================================================================
+20260611_163815 seq=429 cap=20260611_130121_831
+  kind=refused payload=closure would touch 2 seats' bet/stack pairs (only single-seat displacement is recoverable)
+  deltas=[['pot', 400, 325], ['stack[seat1]', 3457, 3532], ['bet[seat1]', 0, 75], ['bet[seat2]', 0, 150]]
+20260611_201230 seq=13 cap=20260611_161937_746
+  kind=refused payload=deltas do not close under a single bet/stack transfer (stack -53, bet +0, pot +53)
+  deltas=[['pot', 176, 123], ['stack[seat5]', 1442, 1495]]
+20260611_201230 seq=14 cap=20260611_161939_102
+  kind=refused payload=deltas do not close under a single bet/stack transfer (stack -53, bet +0, pot +53)
+  deltas=[['pot', 176, 123], ['stack[seat5]', 1442, 1495]]
+20260611_222532 seq=1891 cap=20260611_183517_645
+  kind=refused payload=closure would touch 2 seats' bet/stack pairs (only single-seat displacement is recoverable)
+  deltas=[['pot', 710, 135], ['stack[seat1]', 707, 982], ['bet[seat1]', 0, 25], ['stack[seat4]', 1605, 1905]]
+20260611_222532 seq=2097 cap=20260611_184658_780
+  kind=refused payload=closure would touch 4 seats' bet/stack pairs (only single-seat displacement is recoverable)
+  deltas=[['pot', 130, 70], ['stack[seat1]', 1500, 1510], ['bet[seat1]', 0, 15], ['bet[seat2]', 0, 25], ['stack[seat5]', 1355, 1380], ['stack[seat6]', 1433, 1458]]
+20260611_222532 seq=2679 cap=20260611_204408_252
+  kind=refused payload=closure would touch 2 seats' bet/stack pairs (only single-seat displacement is recoverable)
+  deltas=[['pot', 70, 75], ['stack[seat3]', 1470, 1490], ['bet[seat3]', 25, 5], ['stack[seat5]', 1495, 1470], ['bet[seat5]', 0, 25]]
+20260611_222532 seq=2681 cap=20260611_204412_697
+  kind=refused payload=closure would touch 2 seats' bet/stack pairs (only single-seat displacement is recoverable)
+  deltas=[['pot', 70, 75], ['stack[seat3]', 1470, 1490], ['bet[seat3]', 25, 5], ['stack[seat5]', 1495, 1470], ['bet[seat5]', 0, 25]]
+20260612_035454 seq=153 cap=20260612_000213_894
+  kind=refused payload=closure would touch 3 seats' bet/stack pairs (only single-seat displacement is recoverable)
+  deltas=[['pot', 210, 135], ['stack[seat1]', 270, 295], ['bet[seat1]', 0, 25], ['bet[seat2]', 0, 50], ['stack[seat5]', 1460, 1510]]
+20260612_042058 seq=327 cap=20260612_002430_235
+  kind=not_signature payload=None
+  deltas=[['pot', 70, 75], ['stack[seat4]', 1220, 1230], ['bet[seat4]', 15, 5], ['scraper_self_consistency:pot', 70, 85]]
+20260612_042058 seq=330 cap=20260612_002444_072
+  kind=not_signature payload=None
+  deltas=[['pot', 1505, 1510], ['stack[seat4]', 1220, 1230], ['bet[seat4]', 15, 5], ['scraper_self_consistency:pot', 1505, 1520]]
+20260612_042058 seq=340 cap=20260612_002509_708
+  kind=not_signature payload=None
+  deltas=[['pot', 205, 210], ['stack[seat4]', 1215, 1225], ['bet[seat4]', 15, 5], ['scraper_self_consistency:pot', 205, 220]]
+20260612_042058 seq=341 cap=20260612_002510_812
+  kind=not_signature payload=None
+  deltas=[['pot', 205, 210], ['stack[seat4]', 1215, 1225], ['bet[seat4]', 15, 5], ['scraper_self_consistency:pot', 205, 220]]
+20260612_042058 seq=355 cap=20260612_002556_567
+  kind=not_signature payload=None
+  deltas=[['pot', 70, 75], ['stack[seat4]', 1210, 1220], ['bet[seat4]', 15, 5], ['scraper_self_consistency:pot', 70, 85]]
+20260612_042058 seq=363 cap=20260612_002615_721
+  kind=not_signature payload=None
+  deltas=[['pot', 70, 75], ['stack[seat4]', 1205, 1215], ['bet[seat4]', 15, 5], ['scraper_self_consistency:pot', 70, 85]]
+20260612_042058 seq=364 cap=20260612_002616_777
+  kind=not_signature payload=None
+  deltas=[['pot', 70, 75], ['stack[seat4]', 1205, 1215], ['bet[seat4]', 15, 5], ['scraper_self_consistency:pot', 70, 85]]
+20260612_161347 seq=276 cap=20260612_122700_038
+  kind=closure payload=(4, 100)
+  deltas=[['pot', 560, 660], ['stack[seat5]', 1222, 1122], ['bet[seat5]', 0, 100]]
+========================================================================
+total invariant_fail frames: 16
+closure-signature frames: 1 (seq=276, 20260612_161347 — the dead-SB
+false positive; see seq276_ground_truth_disproof.txt). No true
+displacement exists in the live corpus to date.

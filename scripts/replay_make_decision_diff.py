@@ -41,7 +41,9 @@ BEHAVIORAL_KEYS = (
 
 
 def process(log_path: str, out_path: str, checkpoint: str,
-            abstraction: str, seed: int):
+            abstraction: str, seed: int,
+            anchor_sum_floor: bool = False,
+            bet_closure_recovery: bool = False):
     from src.nlhe.abstraction import Abstraction
     from src.nlhe.game_strings import TournamentStructure
     from src.nlhe.integration.live_loop import DecisionCache, make_decision
@@ -52,7 +54,8 @@ def process(log_path: str, out_path: str, checkpoint: str,
     structure = TournamentStructure.from_yaml(STRUCTURE_YAML)
     abstr = Abstraction.load(abstraction)
     solver = _load_solver(checkpoint, abstr, structure)
-    tracker = SessionTracker()
+    tracker = SessionTracker(anchor_sum_floor=anchor_sum_floor,
+                             bet_closure_recovery=bet_closure_recovery)
     cache = DecisionCache()
     rng = random.Random(seed)
 
@@ -69,7 +72,8 @@ def process(log_path: str, out_path: str, checkpoint: str,
                 continue
             d = make_decision(raw, structure, solver, tracker, rng,
                               mode="sample", seq=seq,
-                              decision_cache=cache)
+                              decision_cache=cache,
+                              bet_closure_recovery=bet_closure_recovery)
             row = {"seq": seq, "captured_at": d.captured_at}
             row["status"] = d.status
             row["skip_reason"] = d.skip_reason
@@ -172,6 +176,12 @@ def main():
     p1.add_argument("--checkpoint", required=True)
     p1.add_argument("--abstraction", required=True)
     p1.add_argument("--seed", type=int, default=42)
+    p1.add_argument("--anchor-sum-floor", action="store_true",
+                    help="arm the P1 anchor sum-floor guard in the "
+                         "replayed SessionTracker (counterfactual runs)")
+    p1.add_argument("--bet-closure-recovery", action="store_true",
+                    help="arm P2 bet-closure recovery (requires "
+                         "--anchor-sum-floor; counterfactual runs)")
     p2 = sub.add_parser("diff")
     p2.add_argument("--pre", required=True)
     p2.add_argument("--post", required=True)
@@ -181,7 +191,8 @@ def main():
     args = ap.parse_args()
     if args.cmd == "run":
         process(args.log, args.out, args.checkpoint, args.abstraction,
-                args.seed)
+                args.seed, anchor_sum_floor=args.anchor_sum_floor,
+                bet_closure_recovery=args.bet_closure_recovery)
     elif args.cmd == "diff":
         n = diff(args.pre, args.post,
                  ignore_skip_reason_on_suspect=not args.strict)
