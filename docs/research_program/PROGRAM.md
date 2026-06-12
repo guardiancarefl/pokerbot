@@ -209,3 +209,25 @@ Operator directive, recorded verbatim in intent:
    most-argmaxes-changed is anomalous). Implemented in-session as a
    persistent tmux watcher that re-invokes the manager on the
    appear→disappear transition.
+
+## ADDENDUM 5 (2026-06-12) — Laboratory intensification: single-site max utilization (permanent)
+
+Operator directive, recorded in intent:
+1. **Core ledger:** the active heavy job owns its taskset; every
+   remaining core runs something at all times. Idle cores are a bug.
+   Live-play deference unchanged (full stand-down when a listener is up).
+2. **Analysis-heavy parallelism:** background specialist agents spawn
+   freely for file-only work (no core cost). Standing slate (a-f:
+   blur-map mining, bbnorm-transplant spec, ensemble-probe design,
+   field dossier, ICM-gap study design, ReBeL-class design memo); each
+   produces a mini-report into RESEARCH_MAP; refill per Addendum 4.4
+   when fewer than 3 remain.
+3. **COMPUTE_QUEUE.md:** every runnable experiment pre-registered,
+   sorted by EVoI per core-hour; next job launches within minutes of
+   any heavy-job completion, watcher-armed. H2 chain keeps priority.
+4. **Night shift:** overnight (no operator, no live play) is 100%
+   compute — longest queued items run then automatically.
+5. **POD_CASE:** a one-line standing entry in OPERATOR_QUEUE stating
+   what a 27-core pod would currently unlock and its time savings.
+   If the H2 probe PASSES: full league retrain carrying the bbnorm
+   organ — ~3 h pod vs ~28 h here.
