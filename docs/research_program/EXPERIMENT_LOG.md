@@ -374,3 +374,18 @@ probe pass cannot be checkpoint-selection noise.** RESEARCH_MAP b2
 updated by this entry (ticketmaster complement still running, shared
 cores). Probe note: iter ~1700/2000, slowed to ~28 s/iter under full
 ledger (ETA ~17:45) — acceptable per Addendum 5 throughput-first.
+
+## 2026-06-12 ~16:15 — LIVE SESSION #2 (armed) — probe interrupted at ckpt_1800
+
+Session `logs/live_dryrun_20260612_161347.jsonl` started, tail floor +
+Stage-2 set armed (banner verified). Stand-down per standing rule:
+**H2 probe killed at iter ~1800 (ckpt_iter_1800.pt on disk — resume
+path: train_6max --resume ckpt_iter_1800, 200 iters ≈ 50 min
+post-session; recorded as an infrastructure interruption per spec §5's
+relaunch clause, resume-from-checkpoint variant; checkpoint
+slim-vs-full buffer caveat to be checked at resume and recorded)**;
+b2-tm killed (CRN relaunch later). Blur shards had finished pre-session
+(corrected-proxy rerun complete, 414k+413k decisions, 0 tainted);
+aggregation is file-only and proceeds. Verdict battery launcher staged
+(scripts/h2_verdict_battery.sh) — fires after the post-session probe
+resume completes.
