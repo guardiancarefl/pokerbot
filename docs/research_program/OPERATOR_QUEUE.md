@@ -14,10 +14,11 @@ over-calls shoves: 35.9% call mass vs 7.7% oracle), adapter fixed —
 believed extraction was adapter artifact** (e2 fix, commit a8933ea).
 H2 probe interrupted at ckpt_1800 for your live window (resumes
 automatically when the listener exits; verdict ~1.5 h later). H1 live:
-2 armed sessions, both in-band, 0 tail-caused argmax changes. **Your
-AcKc got safe-folded by a transient invariant failure — that's the
-approved-can-ride P2 bet-closure recovery, still unbuilt; say the word
-and it enters the build queue.** OQ-1 Windows brief still awaits
+2 armed sessions, both in-band, 0 tail-caused argmax changes. **P2
+bet-closure recovery: APPROVED TO BUILD (your line, 2026-06-12) —
+queued immediately after the H2 verdict chain, full gate treatment per
+the original session-3 spec; today's AcKc safe-fold becomes a test
+fixture.** OQ-1 Windows brief still awaits
 routing (today's 49 suspect-frames/session says it matters). Nothing
 else needs you.
 

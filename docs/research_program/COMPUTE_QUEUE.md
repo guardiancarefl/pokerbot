@@ -41,3 +41,12 @@ Live-listener stand-down overrides everything.
 
 Tonight's candidates in order: whatever of 1-2 remains, then 4 if its
 design (slate 2e) has landed, else 5.
+
+## Build queue (non-eval; slot after H2 verdict chain)
+
+1. **P2 bet-closure recovery (OPERATOR-APPROVED 2026-06-12)** — original
+   session-3 spec (SESSION_LOG 2026-06-11: displacement-signature
+   recovery, gated on P1 [armed], pot-equality independent check,
+   counterfactual + byte-identity proof obligations). Test fixture:
+   session 161347 seq 276 AcKc invariant_fail. Flag-gated OFF; full
+   replay gates over ALL raw-record logs; arming = operator line.
