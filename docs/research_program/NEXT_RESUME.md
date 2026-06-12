@@ -27,6 +27,21 @@ three entries), OPERATOR_QUEUE.md (both items Resolved), then this. Cross-check 
   467 hands ingested incl. both 2026-06-12 night sessions).
 - **H2:** not started — NOW NEXT IN QUEUE.
 
+## SESSION_HANDOFF (~15:00 — context insurance per Addendum 4.3)
+
+Three tracks in flight, each with a watcher/agent that re-invokes the
+manager: (1) e2 re-baseline, 7 profiles, tmux `e2_rebaseline`, watcher
+on *.DONE count; (2) H2 fold-vs-shove battery freeze, tmux `h2_battery`,
+watcher on MAKE.DONE — output evals/h2_battery/battery_v1.json; (3)
+tail-concentration map exploratory via background agent (writes
+evals/h1_tail_floor_20260612/tail_concentration_map.{txt,json}; manager
+commits). On resume after any landing: fill H2 spec §3 from the
+re-baseline (incl. tighttom-vs-trickytom divergence check + new
+killphil gate row), run champion M1 grade
+(`fold_vs_shove_battery grade --ckpt <champion>`), FREEZE the spec, then
+launch the H2 probe per spec §4 (benchmark 1 iter first). Addendum 4 is
+now in PROGRAM.md — perpetual operation, queue never empties.
+
 ## In flight RIGHT NOW (2026-06-12 ~14:30)
 
 - **e2 ADAPTER FIX LANDED (a8933ea):** stilltoact derived (PPL preflop
