@@ -4,6 +4,18 @@ Rule (Addendum 2): a track that hits an operator boundary parks its request
 HERE and the program continues elsewhere. Check for stale entries at every
 resume; move resolved entries to the Resolved section with the decision.
 
+## Status (morning read — updated 2026-06-12 ~16:00)
+
+H1 COMPLETE + ARMED (tail floor standard config per your OQ-2 approval;
+first armed session will be auto-triaged per Addendum 4.6 watcher).
+H2 probe IMMINENT: spec registered, battery frozen (champion
+over-calls shoves: 35.9% call mass vs 7.7% oracle), adapter fixed —
+**killphil gate row is now −0.080 ± 0.022, not −0.174: ~half the
+believed extraction was adapter artifact** (e2 fix, commit a8933ea).
+Re-baseline 7/9 rows done; probe launches when the last two land and
+spec §3 freezes. OQ-1 Windows brief awaits your routing. Nothing else
+needs you.
+
 ## Open
 
 (none)
