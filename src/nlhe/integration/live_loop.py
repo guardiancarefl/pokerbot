@@ -414,24 +414,130 @@ def apply_short_stack_floor(policy, legal_mask, parsed, state,
 
 
 # --------------------------------------------------------------------------
+# Commitment-scaled tail floor (H1; deployment-only policy patch, flag-OFF)
+# --------------------------------------------------------------------------
+#
+# Sample mode draws from the full mixed strategy, so individual low-mass
+# draws can commit the whole stack (session-1 seq-315: 2d5c open-shove
+# sampled from a 7.5% ALLIN tail). Hypothesis (H1, binding spec at
+# docs/research_program/H1_TAIL_FLOOR_SPEC.md): pruning low-probability
+# actions *in proportion to how much they commit* gains EV against the
+# live field without opening an exploitable leak.
+#
+# Threshold scales with commitment: tau(a) = tau_max * commit_frac(a),
+# where commit_frac(a) = chips the action would ADD / hero stack. Prune
+# every action with 0 < policy[a] < tau(a); renormalize. Consequences:
+# FOLD and free CHECK are never pruned (commit 0); a 7.5% ALLIN is pruned
+# at tau_max >= 0.075; a 7.5% quarter-stack bet needs tau_max >= 0.30.
+# Calling off a shove is treated identically to jamming (commit ~= 1).
+#
+# Wiring is flag-gated OFF: make_live_policy_filter only invokes this
+# function when tail_floor_tau is not None, so the OFF chain is
+# byte-identical to the pre-H1 build (TG1 gate).
+
+def apply_commitment_tail_floor(policy, legal_mask, parsed, state,
+                                  tau_max: float,
+                                  discrete_to_chip: dict | None = None):
+    """Prune legal actions whose mass is positive but below
+    tau_max * (chips-the-action-would-add / hero_stack); renormalize.
+
+    Commitment source (adversarial-review finding, EXP_H1): when
+    `discrete_to_chip` is supplied (the discretize map already built at
+    the sampling call site), chips-added is EXACT: bet-class chip ints
+    are whole-hand totals, so added = chip - contribution[cp]. The
+    fallback formula approximates pot from sum(contribution), which
+    UNDERSTATES universal_poker's parsed pot and misclassified 28/1579
+    corpus bets in the dangerous (commit-underestimating) direction —
+    kept only for callers without a chip map.
+
+    Returns the SAME `policy` reference when nothing fires (identity
+    short-circuit contract shared by all deployment floors)."""
+    import numpy as np
+    from src.nlhe.actions import DiscreteAction, BET_FRACTIONS
+
+    cp = parsed.get("current_player")
+    money = parsed.get("money", [])
+    contribs = parsed.get("contribution", [])
+    if cp is None or not money or not contribs:
+        return policy
+    if cp >= len(money) or cp >= len(contribs):
+        return policy
+    stack = float(money[cp])
+    if stack <= 0:
+        return policy
+    to_call = float(max(contribs)) - float(contribs[cp])
+    pot = float(sum(contribs))
+    my_contrib = float(contribs[cp])
+
+    def _commit(da: DiscreteAction) -> float:
+        """Chips this action would ADD (CHECK == CALL at to_call=0 =>
+        commit 0). FOLD/CALL/ALLIN are exact in both modes; bet sizes
+        are exact iff discrete_to_chip is present."""
+        if da == DiscreteAction.FOLD:
+            return 0.0
+        if da == DiscreteAction.CALL:
+            return min(to_call, stack)
+        if da == DiscreteAction.ALLIN:
+            return stack
+        if discrete_to_chip is not None:
+            chip = discrete_to_chip.get(da)
+            if chip is None:
+                chip = discrete_to_chip.get(int(da))
+            if chip is not None and chip not in (0, 1):
+                return max(0.0, min(float(chip) - my_contrib, stack))
+        f = BET_FRACTIONS[da]
+        return min(to_call + f * (pot + to_call), stack)
+
+    prune_idxs = []
+    for da in DiscreteAction:
+        idx = int(da)
+        if legal_mask[idx] == 0.0:
+            continue
+        mass = float(policy[idx])
+        if mass <= 0.0:
+            continue
+        tau = float(tau_max) * (_commit(da) / stack)
+        if mass < tau:
+            prune_idxs.append(idx)
+
+    if not prune_idxs:
+        return policy
+
+    new_policy = policy.copy()
+    for idx in prune_idxs:
+        new_policy[idx] = 0.0
+    s = float(new_policy.sum())
+    if s <= 1e-12:
+        # Degenerate: pruning would zero out the whole distribution.
+        return policy
+    return (new_policy / s).astype(policy.dtype)
+
+
+# --------------------------------------------------------------------------
 # Live policy filter — composes all deployment-time floors with logging
 # --------------------------------------------------------------------------
 
 def make_live_policy_filter(short_stack_threshold_bb: float = _DEFAULT_SHORT_STACK_FLOOR_BB,
-                             *, log_prefix: str = "[FLOOR]"):
+                             *, log_prefix: str = "[FLOOR]",
+                             tail_floor_tau: "float | None" = None):
     """Build the composed deployment-only policy filter.
 
-    Order: AA/KK preflop → check-when-free → short-stack.
+    Order: AA/KK preflop → check-when-free → short-stack → tail floor.
     Each filter is identity-short-circuited when its gate doesn't fire
     (returns the same `policy` reference), so the chain's net cost when
-    nothing fires is three reference-equality checks.
+    nothing fires is a few reference-equality checks.
+
+    The H1 commitment-scaled tail floor runs LAST and ONLY when
+    `tail_floor_tau` is not None — the default OFF chain never calls it
+    and is byte-identical to the pre-H1 build.
 
     Logs to stdout each time any floor changes the action distribution.
     """
     import numpy as np
     from src.nlhe.actions import DiscreteAction
 
-    def composed_filter(policy, legal_mask, parsed, state):
+    def composed_filter(policy, legal_mask, parsed, state,
+                        discrete_to_chip=None):
         p1 = apply_aa_kk_preflop_floor(policy, legal_mask, parsed, state)
         aa_kk_fired = (p1 is not policy)
         p2 = apply_check_when_free_floor(p1, legal_mask, parsed, state)
@@ -440,28 +546,47 @@ def make_live_policy_filter(short_stack_threshold_bb: float = _DEFAULT_SHORT_STA
             p2, legal_mask, parsed, state,
             threshold_bb=short_stack_threshold_bb)
         ss_fired = (p3 is not p2)
+        if tail_floor_tau is not None:
+            p4 = apply_commitment_tail_floor(
+                p3, legal_mask, parsed, state, tau_max=tail_floor_tau,
+                discrete_to_chip=discrete_to_chip)
+        else:
+            p4 = p3
+        tail_fired = (p4 is not p3)
 
-        if aa_kk_fired or check_free_fired or ss_fired:
+        if aa_kk_fired or check_free_fired or ss_fired or tail_fired:
             fires = []
             if aa_kk_fired: fires.append("AA/KK")
             if check_free_fired: fires.append("check-free")
             if ss_fired: fires.append("short-stack")
+            if tail_fired: fires.append("tail")
             eff_bb, _ = _hero_eff_bb_from_parsed(parsed)
             cp = parsed.get("current_player", -1)
             # Best-effort argmax for pre/post audit
             masked_pre = policy * legal_mask
-            masked_post = p3 * legal_mask
+            masked_post = p4 * legal_mask
             pre_a = int(np.argmax(masked_pre)) if masked_pre.sum() > 0 else -1
             post_a = int(np.argmax(masked_post)) if masked_post.sum() > 0 else -1
             pre_name = DiscreteAction(pre_a).name if pre_a >= 0 else "?"
             post_name = DiscreteAction(post_a).name if post_a >= 0 else "?"
             street = parsed.get("street_idx", -1)
+            tail_note = ""
+            if tail_fired:
+                pruned = [f"{DiscreteAction(i).name}:{float(p3[i]):.4f}"
+                          for i in range(len(p3))
+                          if float(p3[i]) > 0.0 and float(p4[i]) == 0.0]
+                tail_note = f"  tail_pruned=[{','.join(pruned)}]"
             print(f"{log_prefix} fired=[{','.join(fires)}]  "
                   f"eff_bb={eff_bb:.2f}  cp={cp}  street={street}  "
-                  f"pre_argmax={pre_name}  post_argmax={post_name}",
+                  f"pre_argmax={pre_name}  post_argmax={post_name}"
+                  f"{tail_note}",
                   flush=True)
-        return p3
+        return p4
 
+    # Sampling call sites that have the discretize map check this marker
+    # and pass discrete_to_chip= so the tail floor sees exact chip costs.
+    # Callers unaware of it use the legacy 4-arg call — fully compatible.
+    composed_filter.accepts_d2c = True
     return composed_filter
 
 
@@ -590,6 +715,7 @@ def make_decision(
     decision_cache: "DecisionCache | None" = None,
     short_stack_floor_bb: float = _DEFAULT_SHORT_STACK_FLOOR_BB,
     extended_click_plans: bool = False,
+    tail_floor_tau: "float | None" = None,
 ) -> LiveDecision:
     """Process one scraper record. Returns a LiveDecision.
 
@@ -610,6 +736,9 @@ def make_decision(
             decision identity return the cached action with
             status="decision_cached". When None, every frame samples
             independently (the pre-fix per-frame-lottery behaviour).
+        tail_floor_tau: H1 commitment-scaled tail floor tau_max. Default
+            None = OFF (the composed policy filter never calls the tail
+            floor; live path byte-identical to pre-H1).
 
     Returns:
         A LiveDecision. Never raises; internal errors surface as a
@@ -784,7 +913,8 @@ def make_decision(
             chip_int = _sample_action_from_policy(
                 solver, parsed, pack.state, rng, mode=mode,
                 policy_filter=make_live_policy_filter(
-                    short_stack_threshold_bb=short_stack_floor_bb),
+                    short_stack_threshold_bb=short_stack_floor_bb,
+                    tail_floor_tau=tail_floor_tau),
             )
         except Exception as e:  # pragma: no cover (defensive)
             out.status = "safe_fold"

@@ -164,7 +164,13 @@ def _sample_action_from_policy(
     policy = solver.policy_nets.inference_policy(cp, features, legal_mask)
 
     if policy_filter is not None:
-        policy = policy_filter(policy, legal_mask, parsed, state)
+        if getattr(policy_filter, "accepts_d2c", False):
+            # Filters that opt in (live floor chain) get the discretize
+            # map so commitment-scaled pruning uses exact chip costs.
+            policy = policy_filter(policy, legal_mask, parsed, state,
+                                   discrete_to_chip=discrete_to_chip)
+        else:
+            policy = policy_filter(policy, legal_mask, parsed, state)
 
     if mode == "argmax":
         chosen_da_idx = int(np.argmax(policy))

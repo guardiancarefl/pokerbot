@@ -459,6 +459,8 @@ def build_session_header(args: argparse.Namespace,
             "aa_kk": True,
             "check_when_free": True,
             "short_stack_bb": float(short_stack_bb),
+            "tail_floor_tau": (float(args.tail_floor_tau)
+                               if args.tail_floor_tau is not None else None),
         },
         "git_head": head,
         "git_dirty": dirty,
@@ -523,6 +525,13 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     ap.add_argument("--abort-reset-file", default="logs/ABORT_RESET",
                      help="Path the operator touches to clear an enforced "
                           "abort. Deleted on reset. Default logs/ABORT_RESET.")
+    ap.add_argument("--tail-floor-tau", type=float, default=None,
+                     help="H1 commitment-scaled tail floor tau_max "
+                          "(docs/research_program/H1_TAIL_FLOOR_SPEC.md): "
+                          "prune actions with 0 < mass < tau_max * "
+                          "(commit/stack), renormalize. Runs LAST in the "
+                          "floor chain. Default None = OFF; the OFF path "
+                          "never calls the tail floor (TG1 byte-identity).")
     ap.add_argument("--watchdog-v2", action="store_true",
                      help="Watchdog v2 (approved 2026-06-11): the fallback "
                           "deadline anchors per SPOT (hand+board) and "
@@ -575,6 +584,10 @@ def main() -> int:
         header["extended_click_plans"] = True
         print(_color("[run_live_dryrun] extended click plans ARMED "
                       "(verify step + ALLIN mapping + call-only realization)",
+                      YELLOW), flush=True)
+    if args.tail_floor_tau is not None:
+        print(_color(f"[run_live_dryrun] H1 commitment-scaled tail floor "
+                      f"ARMED: tau_max={args.tail_floor_tau:.3f}",
                       YELLOW), flush=True)
 
     abort_gate = None
@@ -705,7 +718,8 @@ def main() -> int:
             d = make_decision(rec, structure, solver, tracker, rng,
                                mode=args.mode, seq=seq,
                                decision_cache=decision_cache,
-                               extended_click_plans=args.extended_click_plans)
+                               extended_click_plans=args.extended_click_plans,
+                               tail_floor_tau=args.tail_floor_tau)
 
             # Enforced session abort: decisions still computed + logged,
             # but the EXECUTION surface (click plan) is suppressed until

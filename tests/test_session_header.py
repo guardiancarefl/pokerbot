@@ -53,10 +53,12 @@ def test_header_parses_with_required_keys_and_matching_hashes(tmp_path):
     assert parsed["record_type"] == "session_header"
     assert REQUIRED_HEADER_KEYS.issubset(parsed.keys())
     assert set(parsed["floors"].keys()) == {
-        "aa_kk", "check_when_free", "short_stack_bb"}
+        "aa_kk", "check_when_free", "short_stack_bb", "tail_floor_tau"}
     assert parsed["floors"]["aa_kk"] is True
     assert parsed["floors"]["check_when_free"] is True
     assert parsed["floors"]["short_stack_bb"] == 6.0
+    # H1 tail floor defaults OFF (None) — header must say so explicitly.
+    assert parsed["floors"]["tail_floor_tau"] is None
     assert isinstance(parsed["git_dirty"], bool)
     assert parsed["seed"] == 2026
 
