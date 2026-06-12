@@ -12,9 +12,14 @@ H2 probe IMMINENT: spec registered, battery frozen (champion
 over-calls shoves: 35.9% call mass vs 7.7% oracle), adapter fixed —
 **killphil gate row is now −0.080 ± 0.022, not −0.174: ~half the
 believed extraction was adapter artifact** (e2 fix, commit a8933ea).
-Re-baseline 7/9 rows done; probe launches when the last two land and
-spec §3 freezes. OQ-1 Windows brief awaits your routing. Nothing else
-needs you.
+H2 probe interrupted at ckpt_1800 for your live window (resumes
+automatically when the listener exits; verdict ~1.5 h later). H1 live:
+2 armed sessions, both in-band, 0 tail-caused argmax changes. **Your
+AcKc got safe-folded by a transient invariant failure — that's the
+approved-can-ride P2 bet-closure recovery, still unbuilt; say the word
+and it enters the build queue.** OQ-1 Windows brief still awaits
+routing (today's 49 suspect-frames/session says it matters). Nothing
+else needs you.
 
 ## POD_CASE (standing one-liner — Addendum 5.5, update on every state change)
 

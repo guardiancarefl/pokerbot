@@ -389,3 +389,21 @@ b2-tm killed (CRN relaunch later). Blur shards had finished pre-session
 aggregation is file-only and proceeds. Verdict battery launcher staged
 (scripts/h2_verdict_battery.sh) — fires after the post-session probe
 resume completes.
+
+## 2026-06-12 ~16:50 — Session-2 main log triaged (tail floor IN-BAND again); listener restarted (window continues)
+
+- `161347` (391 frames / 51 decisions / 30 hands): **tail floor 19
+  firings, 0 tail-caused argmax changes** (2 argmax changes were
+  check-when-free saves co-firing — that floor's job). H1 live evidence
+  now 2 sessions, both in-band.
+- Silence profile worse than session 1: 31 hero-to-act skips, 3 hands
+  lost, dominant cause 49 scraper-suspect frames — the Windows P1/P2
+  SanityChecker fix (routed, pending) remains root cause. RED FLAG:
+  AcKc preflop safe-fold on a transient invariant_fail (pot/stack
+  deltas of exactly 100) — exactly the approved-can-ride P2
+  bet-closure-recovery class (NOT YET BUILT; operator visibility via
+  this entry + morning read).
+- Ingest deferred (mtime guard, possibly-live) — re-run post-window.
+- Operator restarted a listener OUTSIDE tmux again (header-only log
+  163114 waiting): window ACTIVE, compute stays down. Probe resume +
+  battery queue on true window end.
