@@ -1,0 +1,53 @@
+{
+  "record_type": "c0_control",
+  "design": "docs/research_program/ICM_GAP_STUDY_DESIGN.md",
+  "phase": "c0",
+  "ckpt_path": "/home/quant/pokerbot/runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt",
+  "ckpt_sha256": "b79e82dd0ce9e78e4eb666b7379df953dadbf2a6e026c6bd4b6eec695e9b1b11",
+  "abstraction_sha256": "0fc20800dc7ce89ea950c975decbd530ac6c6f3c164105e8ab99d24359de4c8e",
+  "dist_sha256": "f87aaab2ac180dd9d2a6c437316e38ce7517e2a3305f4fa2d2db138c08edece5",
+  "master_seed": 2026,
+  "git_head": "a7d12a4255963b24d0fc761ad6f4ce58a6d3be8c",
+  "started_utc": "2026-06-12T18:30:52.780968+00:00",
+  "stacks": [
+    1500,
+    1500,
+    1500,
+    1500,
+    1500,
+    1500
+  ],
+  "level": 1,
+  "dealer": 0,
+  "M": 2000,
+  "M_eff": 2000,
+  "n_capped": 0,
+  "n_tainted": 0,
+  "taints": [],
+  "survive_counts": [
+    1027,
+    921,
+    982,
+    963,
+    960,
+    1026
+  ],
+  "itm_counts": [
+    1043,
+    946,
+    1004,
+    980,
+    981,
+    1046
+  ],
+  "survivor_sum_hist": {
+    "3": 1885,
+    "2": 109,
+    "1": 6
+  },
+  "itm_sum_hist": {
+    "3": 2000
+  },
+  "mean_hands": 15.9295,
+  "elapsed_s": 196.3425316810608
+}

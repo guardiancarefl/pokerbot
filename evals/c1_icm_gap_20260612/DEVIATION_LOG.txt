@@ -1,0 +1,65 @@
+DEVIATION LOG — c1 ICM gap study, Tier 0/1 execution (2026-06-12)
+Logged BEFORE any Tier-1 rollout was launched or looked at, per the
+design's registration rule. (Design says deviations go in
+EXPERIMENT_LOG.md; this run is under a new-files-only constraint, so
+the entry lives here and in TIER1_REPORT.txt — owner should copy it
+into docs/research_program/EXPERIMENT_LOG.md.)
+
+D1. Runner filename: scripts/icm_gap_probe.py (task-mandated name)
+    instead of the design's placeholder scripts/icm_gap_study.py.
+    Output dir: evals/c1_icm_gap_20260612/ instead of evals/icm_gap_<date>/.
+
+D2. INSTRUMENT FIX (the C0 halt condition fired, 18:24-18:26 local):
+    First C0 run (M=2000, symmetric start, design's outcome definition
+    "Y=1 iff seat has chips when the loop breaks at n_alive<=3"):
+      survive counts [1027, 921, 982, 963, 960, 1026], capped=0,
+      tainted=0, survivor-sum histogram {3: 1885, 2: 109, 1: 6}.
+      Seat-averaged error = -0.01008, SE ~ 0.00093, t ~ -10.8 ->
+      CI excludes 0 -> the pre-registered INSTRUMENT FAILURE branch.
+    Diagnosis (exact): 115/2000 games terminate with FEWER than 3
+    chip-holders (simultaneous multi-bust hands at the 4-alive bubble:
+    109 double-busts, 6 triple-busts). The raw definition then pays
+    <3 seats, while the real format always pays exactly 3 (a player
+    busting simultaneously with another still finishes 3rd if their
+    hand-start stack was bigger). Deficit (109*1 + 6*2)/12000 =
+    0.010083 matches the measured offset to 4 decimals. This is a
+    definitional artifact of the design's Y, not a seam/blind-guard/
+    capping bug; play_sng_game's hero_net shares the same semantics
+    (noted as a finding for the owner, out of scope here).
+    Fix (applied before Tier 1): Y_i = 1 iff seat i finishes in the
+    top 3, with elimination order tracked during the rollout;
+    simultaneous busts are ranked by hand-start stack (bigger stack
+    finishes higher), ties -> lower seat index finishes worse. This is
+    the standard tournament rule and the quantity MH ICM actually
+    predicts. Both definitions are recorded per state; the corrected
+    one is primary, the raw one is reported as a sensitivity line.
+    Consequence: the C0 seat-averaged test becomes structurally exact
+    (sum of ITM flags = 3 in every non-excluded game), so the binding
+    C0 checks are taints=0, caps<=2%, and the position-effect
+    sensitivity probe. C0 was re-run after the fix.
+
+D3. Implementation choices the design left open (documented, not
+    deviations): sha256-based rollout-seed hash; population-std CV with
+    tertile cuts recomputed exactly from the artifact (design table is
+    the rounded version); capped-dropped states are not replaced;
+    depth-band edges [0,5),[5,10),[10,20),[20,inf) BB; per-seat
+    survival measured by a verbatim mirror of play_sng_game's loop
+    (rng schedule preserved) because play_sng_game only returns the
+    hero seat's outcome and existing files could not be modified.
+
+A1. ADAPTIVE-RULE CHECKPOINT (design section 4, pre-registered; executed
+    2026-06-12 20:13 local, AFTER t1 completed and BEFORE t2/t3 were
+    launched): t1 (N=250, M=100, caps=0, taints=0) gives
+    sigma_total=0.0633, sigma_noise=0.0486, sigma_bias=0.0405.
+    sigma_bias <= 0.05 -> rule does NOT trigger; N=250 retained for
+    t2/t3. Only the variance decomposition was computed at this point;
+    no mean-bias number was examined before t2/t3 launch.
+
+R1. RESUME (not a deviation; mechanics note): t1 was killed mid-run at
+    49/250 states by a live-session window (2026-06-12). A --resume
+    flag was added to scripts/icm_gap_probe.py (tier1 phase only): it
+    re-derives the deterministic state sample, asserts on-disk rows
+    match by state_idx/stacks/level/dealer, and runs only missing
+    states. Rollout seeds are f(cell, state_idx, m) (CRN), so resumed
+    rows are bit-identical to what an uninterrupted run would produce.
+    tier1_t1.jsonl therefore contains two run_header lines.

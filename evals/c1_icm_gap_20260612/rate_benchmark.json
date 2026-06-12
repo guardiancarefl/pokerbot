@@ -1,0 +1,56 @@
+{
+  "record_type": "rate_benchmark",
+  "n_rollouts": 50,
+  "frame_meta": {
+    "n_records": 54164,
+    "tertile_cuts": [
+      0.3692705299363029,
+      0.5349218010670503
+    ],
+    "distinct_tuples": {
+      "t1": 18025,
+      "t2": 18039,
+      "t3": 18052
+    }
+  },
+  "bench_states": {
+    "bubble_4alive_l34": {
+      "stacks": [
+        0,
+        2610,
+        1820,
+        3675,
+        0,
+        870
+      ],
+      "level": 3,
+      "dealer": 5,
+      "s_per_rollout": 0.06472365856170655,
+      "mean_hands": 5.08,
+      "elapsed_s": 3.236182928085327
+    },
+    "sixalive_l1_full": {
+      "stacks": [
+        1500,
+        1500,
+        1500,
+        1500,
+        1500,
+        1500
+      ],
+      "level": 1,
+      "dealer": 0,
+      "s_per_rollout": 0.39276445388793946,
+      "mean_hands": 17.04,
+      "elapsed_s": 19.638222694396973
+    }
+  },
+  "bracket": [
+    0.15,
+    0.8
+  ],
+  "in_bracket": false,
+  "below_bracket": true,
+  "tier1_core_h_proj": 1.3484095533688862,
+  "tier1_wall_h_proj_4cores": 0.33710238834222156
+}

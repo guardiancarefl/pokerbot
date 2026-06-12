@@ -1,0 +1,89 @@
+TIER1_REPORT — c1 ICM-gap probe, Tier 0 + Tier 1 (primary confirmatory cells)
+==============================================================================
+Design (binding registration): docs/research_program/ICM_GAP_STUDY_DESIGN.md
+Run dir: evals/c1_icm_gap_20260612/   Runner: scripts/icm_gap_probe.py
+Date: 2026-06-12.  Champion ckpt sha256 b79e82dd… (pinned, = e2 rebaseline);
+artifact data/training_dist_v1.json.gz sha256 f87aaab2…; master seed 2026;
+git head at run a7d12a4 (analysis re-run after a --resume flag was added to
+the harness; rollout rows are CRN-deterministic and unaffected).
+Deviations: see DEVIATION_LOG.txt (D1 naming, D2 instrument fix, D3 open
+implementation choices, A1 adaptive checkpoint, R1 resume mechanics).
+Owner should copy D-entries into docs/research_program/EXPERIMENT_LOG.md.
+
+VERDICT (design §6 decision matrix): **MATERIAL — re-price.**
+B* = +0.0412 (cell t3, high-dispersion bubble), Bonferroni-corrected
+98.33% CI [+0.0286, +0.0539] — mean ≥ 0.02 and the CI excludes +0.01.
+MH ICM is falsified at the registered ±0.01 band (design §7):
+falsification requires a primary-cell Bonferroni CI entirely outside
+(−0.01, +0.01) — t3 satisfies it ([+0.0286, +0.0539]); t2's CI
+[+0.0051,+0.0245] straddles +0.01 and is by itself INCONCLUSIVE;
+t1 straddles 0 (equivalence not established either: TOST 90% CI
+[−0.0100,+0.0032] touches the −0.01 bound). The MATERIAL branch is
+carried by t3 alone, which is sufficient ("any primary cell").
+
+Tier 0 — gates
+--------------
+1. Rate benchmark (rate_benchmark.json): bubble rollout 0.065 s — BELOW
+   the [0.15, 0.8] bracket (faster than planned; schedule kept). PASS.
+2. C0 negative control (c0_control.json, M=2000, symmetric start):
+   - The design's raw outcome definition FAILED C0 (seat-avg error
+     −0.0101, t≈−10.8) — the registered INSTRUMENT-FAILURE halt fired.
+     Cause was definitional (115/2000 games end with <3 chip-holders on
+     simultaneous busts; the format always pays exactly 3). Fix logged
+     BEFORE Tier 1 (DEVIATION_LOG D2): Y = top-3 finish with
+     simultaneous busts ranked by hand-start stack. C0 re-run: clean
+     (itm_sum ≡ 3 in all 2000 games, capped=0, tainted=0). PASS.
+   - Position-effect sensitivity probe (per-seat dev from 0.5, M_eff=2000,
+     binom SE ≈ 0.011): BTN +0.022, CO +0.023, SB −0.027, UTG −0.010,
+     HJ −0.010, BB +0.002. Late position worth ~+2pp, SB worst — the
+     known-direction effect MH ignores; instrument is sensitive. PASS.
+
+Tier 1 — primary cells (n_alive=4, levels 3-4, CV tertiles; N=250, M=100)
+-------------------------------------------------------------------------
+Primary scalar d_short = p̂(short stack ITM) − q_MH, probability units
+(0.01 prob = 0.02 buy-in equity). Bonferroni α = 0.05/3 per cell
+(CI level 98.33%); BCa bootstrap agrees with the t-interval everywhere.
+caps=0, taints=0, dropped states=0 in all cells (750/750 states scored).
+
+cell  disp      mean      se     Bonferroni CI       BCa CI (98.33%)     p(t)      σ_bias
+t1    low CV   −0.0034  0.0040  [−0.0131, +0.0062]  [−0.0127, +0.0067]  3.9e-01   0.0405
+t2    mid CV   +0.0148  0.0040  [+0.0051, +0.0245]  [+0.0054, +0.0247]  2.8e-04   0.0407
+t3    high CV  +0.0412  0.0052  [+0.0286, +0.0539]  [+0.0291, +0.0541]  1.1e-13   0.0683
+
+Adaptive rule (§4, checkpoint logged before t2/t3 launch): t1
+σ̂_bias = 0.0405 ≤ 0.05 → N stayed 250. Note σ̂_bias(t3) = 0.068 > 0.05 —
+the HETEROGENEOUS condition also holds in t3, but MATERIAL dominates.
+
+Direction and structure (exploratory secondary maps, in results.json):
+- MH UNDERPRICES the short stack at the bubble, increasingly with stack
+  dispersion. The error loads on micro-stacks: depth band [0,5) bb in
+  t3 has mean d = +0.065, while 5-20bb bands are ≈ 0 to −0.02.
+  Interpretation: with payouts [2,2,2] and 3 covered opponents, a
+  micro-stack survives (laddering through others' collisions) far more
+  often than chip-proportional MH predicts.
+- By stack rank (t3): rank1 +0.041, rank2 −0.023, rank3 −0.022,
+  rank4 (chip leader) +0.003 — mid stacks pay for the short stack's
+  extra survival; the chip leader is priced about right.
+- Raw-definition sensitivity line (design's original Y): t1 −0.0172,
+  t2 +0.0030, t3 +0.0287 — same qualitative t3 conclusion; the raw
+  definition's known −0.01-scale artifact shifts all cells down.
+
+Decision-matrix actions (MATERIAL branch, design §6 — for the owner):
+ (1) Fit calibrated correction p_corr = f(q, depth_bb, position, level),
+     monotone in q, from Tier-1 (+ future Tier-2) per-state data; hold
+     out 20% of Tier-1 states for validation (§9.4). The depth-band
+     pattern above says depth_bb is the first feature to include.
+ (2) Wrap icm_adjust_returns / subgame_leaf behind a correction flag
+     for the next league retrain (HIGH-EVoI branch).
+ (3) Re-label the H2 battery oracle (8,112 spots) with corrected
+     equities; re-issue verdicts.
+ (4) Re-examine H1 tail-floor pricing against the corrected panel.
+Not run here (out of task scope, design licenses them next): Tier-2
+27-cell map (BH-FDR, exploratory) and Tier-2b gradient/sign-flip probe.
+The flip rate no longer gates the verdict (MATERIAL is decided), but it
+prices how aggressive action (3) must be — run it with Tier 2.
+
+Files: rate_benchmark.json, c0_control.json (+ _PREFIX_rawdef),
+tier1_t{1,2,3}.jsonl (t1 contains two run_header lines — see R1),
+results.json (full per-cell stats incl. d_short value lists),
+DEVIATION_LOG.txt, t{1,2,3}_*.log.
