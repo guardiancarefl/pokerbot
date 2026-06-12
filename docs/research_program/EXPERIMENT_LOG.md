@@ -494,3 +494,18 @@ Follow-ups queued to refill: correction fit (depth_bb first feature);
 consumer re-price audit (icm_adjust_returns, subgame leaves, H2-battery
 re-label, H1 floor re-check — all expectations: small at equal stacks).
 **Addendum 1.4 PROGRAM REVIEW now due (3 completed experiments).**
+
+## 2026-06-12 ~22:00 — Windows Part-A PROVEN; cross-machine seat off-by-one routed to audit
+
+- **OQ-1 Part A (folded-flag fix) replay-proven on Windows: 0/241 →
+  153/158 folds detected, 0 false positives, bridge untouched.** Patch
+  holds for live deployment pending the seat-convention reconciliation
+  below.
+- **Windows CC root-caused a seat off-by-one in OUR candidates file**
+  (extract_stale_folded_candidates.py: candidate seat i = scraper seat
+  i+1). HIGH-PRIORITY audit launched: does the H3 ingester itself
+  misattribute per-seat data (Case B would contaminate FIELD_DOSSIER
+  positional/per-opponent claims and H4's training target)? Ground-truth
+  verification against raw records; candidates v2 with explicit
+  convention header. FIELD_DOSSIER consumers ON HOLD for per-seat
+  claims until the audit reports.
