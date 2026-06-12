@@ -51,8 +51,17 @@ G2/G3 artifacts; cheapest harness fix documented in the report).
 
 ## (b) Training dynamics
 
-**b1. Is the killphilmtt hole (champion −0.174) a self-play monoculture
-artifact?** = **H2**, ACTIVE QUEUE. Evidence: C3's deltas (encoder channel,
+**b1. Is the killphilmtt hole a self-play monoculture artifact?** =
+**H2 — CLOSED AT PROBE, FAIL (2026-06-12,
+`reports/EXP_H2_killphil_league.md`).** The 500-iter league probe
+collapsed broadly (self-anchor −0.216, all bars broken); collapse
+predates the live-window interruption (ckpt_1800 worse than final).
+UNRESOLVED MECHANISM: league-teaching-failure vs slim-checkpoint
+fine-tuning fragility (evidence leans fragility: M1 healed 1800→2000
+as the reservoir matured; v2 showed the same broad-regression
+signature). Successor H2b (full-buffer or from-iter-0 league run) is a
+refill candidate on EVoI. The hole itself is REAL and depth-flat (a3);
+the post-fix gate row is −0.0800 ± 0.0223. ORIGINAL ENTRY: Evidence: C3's deltas (encoder channel,
 distribution fix) did NOT close it (C3 candidate −0.215); more iterations
 falsified; the hole is specifically shove-defense at 5–15 BB.
 Decisive experiment: H2 league probe (500 iters, league mix incl.

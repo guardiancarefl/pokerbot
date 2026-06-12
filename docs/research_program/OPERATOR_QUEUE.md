@@ -12,8 +12,10 @@ H2 probe IMMINENT: spec registered, battery frozen (champion
 over-calls shoves: 35.9% call mass vs 7.7% oracle), adapter fixed —
 **killphil gate row is now −0.080 ± 0.022, not −0.174: ~half the
 believed extraction was adapter artifact** (e2 fix, commit a8933ea).
-H2 probe interrupted at ckpt_1800 for your live window (resumes
-automatically when the listener exits; verdict ~1.5 h later). H1 live:
+**H2 VERDICT: FAIL at probe — all load-bearing bars broken; H2 closed**
+(full report committed; mechanism note inside — slim-checkpoint
+fine-tuning fragility is the live suspect, H2b is a refill candidate).
+P2 build starts now per your sequencing. H1 live:
 2 armed sessions, both in-band, 0 tail-caused argmax changes. **P2
 bet-closure recovery: APPROVED TO BUILD (your line, 2026-06-12) —
 queued immediately after the H2 verdict chain, full gate treatment per
@@ -24,13 +26,13 @@ else needs you.
 
 ## POD_CASE (standing one-liner — Addendum 5.5, update on every state change)
 
-RIGHT NOW a 27-core pod would unlock: nothing yet decision-grade — the
-H2 probe verdict lands ~17:00 today on this box. **IF the probe PASSES:
-the bbnorm-carrying league retrain per BBNORM_TRANSPLANT_SPEC.md is the
-immediate case — measured ~6-8 pod-hours vs ~18-26 Contabo-hours**
-(two-phase: 1500 self-play + 500 league iters; bbnorm port from the
-v2gate bundle is a blocking P0 either way), plus a pod frees all 12
-local cores for eval batteries.
+RIGHT NOW: **no active pod case — H2 FAILED at probe** (all bars,
+report: reports/EXP_H2_killphil_league.md; collapse predates the
+interruption, relaunch clause rejected on evidence). The
+bbnorm-transplant pod case is SUSPENDED pending the refill-pass verdict
+on H2b (slim-ckpt fine-tuning fragility is the live suspect — any
+successor must solve buffer continuity first). Next pod-relevant
+decision point: H2b registration or ensemble-probe results.
 
 ## Open
 

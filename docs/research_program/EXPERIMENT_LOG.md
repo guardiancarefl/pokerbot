@@ -421,3 +421,17 @@ resume completes.
   noted so the verdict reads the training path honestly.
 - b2-tm relaunched (cores 0-1). Verdict battery fires on
   runs/H2_PROBE.DONE via the staged launcher.
+
+## 2026-06-12 ~18:25 — EXP_H2 VERDICT: FAIL AT PROBE — H2 CLOSED
+
+Full report: `reports/EXP_H2_killphil_league.md`. All load-bearing bars
+broken (M1 0.1375 vs ≤0.0650; killphil −0.2360 vs ≥−0.0300; anchor
+z=−9.9; ticketmaster −5.2σ). ckpt_1800 diagnostic killed the
+interruption excuse (collapse pre-dates it; relaunch clause rejected as
+results-motivated). Mechanism left open per the report: league-teaching
+failure vs slim-ckpt fine-tuning fragility (evidence leans fragility).
+RESEARCH_MAP b1 closed; POD_CASE suspended; battery + baselines +
+league infra survive as instruments. **H2 is experiment #2 complete
+(H1 #1) — Addendum 1.4 program review triggers after the NEXT completed
+experiment.** Next per operator sequencing: P2 build (task #7), refill
+pass for the experiment queue.
