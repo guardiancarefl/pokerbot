@@ -550,3 +550,21 @@ receipt time — the supplement is clean pre-registration):
    computed next, logged below before any panel launch).
 3. **Interaction-check gray zone z ∈ (−2, 0) reaffirmed as registered
    PASS.**
+
+## 2026-06-12 ~23:15 — Shoviest-rows panel SELECTION logged (pre-launch, per supplement §2)
+
+Method (as registered): open-shove range size through the fixed
+adapter at the canonical short-stack spots (UTG + SB first-in, 8bb,
+L5 — the battery cells), union of the two; neighbor by mean Jaccard
+overlap of (UTG, SB) shove sets vs killphilmtt.
+
+- 3 highest shove-frequency: **lionmttv.10** (union 123/169),
+  **modernmikemtt** (63), **itmstrikea** (58; itmstrikec ties at 58 —
+  same family, tie broken to the A-variant, logged here).
+- killphil nearest stylistic neighbor: **minestackermttv.7.3**
+  (Jaccard 0.717; runners-up thefixersng/sng 0.712).
+
+PANEL = {lionmttv.10, modernmikemtt, itmstrikea, minestackermttv.7.3},
+2000 CRN-paired games per row, tail+shove vs tail-only config, bars per
+supplement §2. LAUNCH CONDITION: M-C holds (within 1 SE of −0.08).
+M-C still unread at this log entry.
