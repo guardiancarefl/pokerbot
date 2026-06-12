@@ -106,3 +106,52 @@ positive (+0.200 +/- 0.076 all-games) — RECORDED ONLY, underpowered, per
 H1.2 no conclusion before the registered 24k run. Evidence:
 evals/h1_tail_floor_20260612/tg3_harness_gates.txt. 24k launch awaits a
 dry-run-free window; command in NEXT_RESUME.
+
+## 2026-06-12 ~11:25 — H1 TG3 24k LAUNCHED + night-session ingest
+
+- Dry-run gate VERIFIED CLEAR before launch: `pgrep -f run_live_dryrun`
+  empty (only the checking shell matched), no dryrun tmux session, box
+  idle (15-min load 0.15).
+- **TG3 24k launched** per H1.2 registration: 8-way sharded
+  `scripts.tail_floor_ab --games 24000 --base-seed 1 --hpl 5 --tau 0.10
+  --shards 8 --shard K`, nice 19, one core per shard (0-7). Ckpt/abstr
+  shas confirmed in every shard log (b79e82dd… / 0fc20800…). Rate at
+  launch ~1.7 g/s/shard, ETA ~30 min. Out:
+  `evals/h1_tail_floor_20260612/tg3_24k_shard{0..7}.json[.games.jsonl]`
+  (+ .log). Aggregation = concat games.jsonl (shard-invariance gate in
+  tg3_harness_gates.txt).
+- **H3 ingest (NEXT_RESUME item 4):** `live_dryrun_20260612_042058.jsonl`
+  ingested NEW (35 hands / 106 actions / 36 opp-voluntary / 19
+  opp-observed / 1 showdown); `035454` re-ingest idempotent-replaced
+  (already counted). **H4 unlock counter 240 → 259/500 — still LOCKED.**
+  RESEARCH_MAP d1 updated.
+
+Verdict: pending (TG3 ship bars: all-games z > −2 AND diverged-only
+per-firing > 0 with z ≥ 2 at τ=0.10).
+
+## 2026-06-12 ~12:00 — OQ-1 RESOLVED → WINDOWS_TASK brief written
+
+Operator approved OQ-1 with expanded scope and raised priority (folded
+flags first; showdown capture as specced). Delivered:
+
+- `docs/WINDOWS_TASK_SCRAPER_FOLDED_SHOWDOWN.md` — forensics-grade brief
+  for the Windows CC session: PNG-evidence-first (A-1), fix-proposal
+  review (A-2), offline replay proof over >=2 archived sessions with a
+  ZERO-new-false-positive hard bar (A-3 — false `folded=true` is
+  live-path dangerous because `_repair_folded_from_chip_deductions`
+  trusts pre-existing flags); showdown capture as optional
+  `shown_cards` + `schema_version: 2` (B); Contabo gates pre-committed
+  (G1 replay+injection bridge-untouched, G2 ingester behind
+  parser_version bump w/ FIELD_REPORT idempotence, G3 first-live-session
+  stale rate <= 5%).
+- `scripts/extract_stale_folded_candidates.py` +
+  `tools/scraper_folded_showdown_task/stale_folded_candidates.jsonl`:
+  **new forensic headline — 0/241 chip-proven non-blind preflop folds
+  (postflop-reaching, outcome-known hands) ever got a `folded`
+  transition (100% stale per fold event; whole corpus has 16
+  transitions across 432 hands).** The remembered ~30% was a
+  per-frame, different-denominator measure.
+- OPERATOR_QUEUE OQ-1 moved to Resolved; RESEARCH_MAP d3 updated.
+
+Not an EV experiment — falsification n/a; acceptance = the Windows-side
+gates in the brief, pre-committed before any scraper change.

@@ -6,23 +6,26 @@ resume; move resolved entries to the Resolved section with the decision.
 
 ## Open
 
-### OQ-1 (2026-06-12) — Windows scraper: showdown hole-card capture (route to Windows CC)
-- **Decision needed:** add opponent shown-card OCR at showdown to the scraper
-  frame schema (new optional field; bridge ignores it, only the H3 ingester
-  reads it).
-- **Evidence:** H3 pipeline build found the schema has no opponent hole-card
-  field — 0 opponent holdings observable across 432 archived hands; also
-  `folded` flags are stale (~30%), so fold-vs-shove is systematically
-  undercounted (0/23 events). `data/opponent_db/README.md` documents both.
-- **Recommendation:** queue it with the existing Layer-2 scraper work
-  (SanityChecker reference decay); not urgent — H4 can proceed on
-  action-frequency tendencies alone, but showdown capture upgrades the RNR
-  target from frequencies to ranges.
-- **Unblocks:** higher-fidelity H4 (range-conditioned RNR); does NOT block
-  H4's 500-hand unlock (240/500 as of today).
-- **Track state:** H3 continues unblocked (per-session ingest now in
-  DRYRUN_CHECKLIST).
+(none)
 
 ## Resolved
 
-(none yet)
+### OQ-1 (filed 2026-06-12, RESOLVED 2026-06-12) — Windows scraper: folded-flag fix + showdown capture
+- **Decision (operator):** APPROVED, scope EXPANDED, priority RAISED.
+  (1) The stale `folded` flags are the priority half — they corrupt
+  fold-vs-shove counting, which is both H3's field stats AND H2's probe
+  metric. Fix first. (2) Showdown hole-card capture approved as specced
+  (optional schema field, bridge ignores, ingester reads).
+- **Action taken:** full forensics-grade Windows-task brief written at
+  `docs/WINDOWS_TASK_SCRAPER_FOLDED_SHOWDOWN.md` (PNG-evidence-first,
+  fix proposal review, offline replay proof over archived sessions
+  before live use; bridge provably untouched via replay + injection
+  gates; H3 ingester gains the new fields behind `schema_version: 2`).
+  Candidate forensic frames packaged at
+  `tools/scraper_folded_showdown_task/stale_folded_candidates.jsonl`
+  (extractor: `scripts/extract_stale_folded_candidates.py`).
+- **New evidence found while packaging:** staleness is near-TOTAL per
+  fold event, not ~30% — 241 chip-proven non-blind preflop folds in
+  postflop-reaching outcome-known hands, **0/241** got a `folded`
+  transition; the whole 432-hand corpus has only 16 transitions.
+- **Awaiting:** operator routes the brief to a Windows CC session.

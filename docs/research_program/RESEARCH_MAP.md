@@ -72,9 +72,11 @@ ICM-adjusted return in training; LOW if ICM holds (still worth a report).
 
 **d1. Field tendencies (H3/H4 track).** ACTIVE — pipeline BUILT 2026-06-12
 (`src/nlhe/opponent_db/`, `scripts/ingest_session.py`,
-`data/opponent_db/`). 15 sessions / 432 hands ingested; reconciliation vs
-the audited session-1 ground truth exact (37 hands / 61 decision frames).
-**H4 unlock counter: 240/500 opponent-observed hands — LOCKED** (~4–6 more
+`data/opponent_db/`). 16 sessions / 467 hands ingested (2026-06-12: night
+session 042058 added 35 hands / 19 opp-observed; 035454 re-ingest was an
+idempotent replace); reconciliation vs the audited session-1 ground truth
+exact (37 hands / 61 decision frames).
+**H4 unlock counter: 259/500 opponent-observed hands — LOCKED** (~4–6 more
 sessions at current rates).
 **d2. Pre-threshold field pre-analysis** (exploratory, pre-approved): first
 cut exists in `data/opponent_db/FIELD_REPORT.txt` (opponent VPIP lower bound
@@ -88,8 +90,12 @@ stale `folded` flags make fold-vs-shove a systematic undercount (0/23
 observed). Consequence: H4's RNR target must be built from
 action-frequency tendencies (VPIP, raise sizes, all-in rates by depth),
 NOT showdown-conditioned ranges, unless the scraper grows a showdown
-capture. Operator item filed in OPERATOR_QUEUE.md. EVoI of the scraper
-fix: HIGH for H4 fidelity.
+capture. **2026-06-12: OQ-1 RESOLVED — operator approved both halves,
+folded-fix prioritized; Windows brief at
+`docs/WINDOWS_TASK_SCRAPER_FOLDED_SHOWDOWN.md`. Forensic re-measure
+while packaging: stale rate is ~100% per fold event (0/241 chip-proven
+preflop folds flagged), not the earlier ~30%-of-frames figure.** EVoI
+of the scraper fix: HIGH for H4 fidelity (and H2's probe metric).
 
 ## (e) Measurement methodology
 
