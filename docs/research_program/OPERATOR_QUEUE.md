@@ -19,10 +19,12 @@ needs you.
 ## POD_CASE (standing one-liner — Addendum 5.5, update on every state change)
 
 RIGHT NOW a 27-core pod would unlock: nothing yet decision-grade — the
-H2 probe verdict lands ~17:15 today on this box. **IF the probe PASSES:
-the full 2000-iter league retrain carrying the bbnorm depth organ
-(slate 2b spec in progress) is the immediate case — ~3 h pod vs ~28 h
-Contabo**, plus it frees all 12 local cores for the eval batteries.
+H2 probe verdict lands ~17:00 today on this box. **IF the probe PASSES:
+the bbnorm-carrying league retrain per BBNORM_TRANSPLANT_SPEC.md is the
+immediate case — measured ~6-8 pod-hours vs ~18-26 Contabo-hours**
+(two-phase: 1500 self-play + 500 league iters; bbnorm port from the
+v2gate bundle is a blocking P0 either way), plus a pod frees all 12
+local cores for eval batteries.
 
 ## Open
 
