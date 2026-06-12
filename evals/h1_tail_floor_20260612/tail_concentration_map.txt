@@ -1,0 +1,175 @@
+==========================================================================
+H1 TAIL FLOOR — TAIL-CONCENTRATION MAP (tau_max = 0.10, shipped value)
+==========================================================================
+
+Substrate: evals/h1_tail_floor_20260612/tail_floor_counterfactual.json
+  (TG2 exact-commit instrument). The TG2 summary JSON retains only
+  aggregates — it does NOT carry per-decision street / depth /
+  commitment / distributions. Those fields were therefore regenerated
+  here by re-running the SAME replay machinery the instrument used
+  (scripts.tail_floor_counterfactual.replay_log + the deployed
+  apply_commitment_tail_floor), then joined to each dry-run log
+  record's street_idx/board/n_alive/facing_bet by seq. Sanity gate:
+  n_frames 412 (substrate 412), frames fired 293 (substrate 293), pruned-action census match = True.
+
+HEADLINE
+  decisions (fresh frames):       412
+  decisions with any pruning:     293  (71.1%)
+  altered decisions (TG2):        18  (4.37%)   argmax changes: 0
+  total pruned mass (sum):        16.318
+  mean pruned mass | fired:       0.0557
+  mean pruned mass | all:         0.0396
+  max pruned mass (one decision): 0.1519
+  faithful-only (7 logs, 302 frames): fired 221 (73.2%), mean|fired 0.0578
+
+[1] BY STREET
+  bin            dec  fired    rate  massSum mass|fired  massMax  top pruned actions (mass)
+  preflop        310    243   78.4%   13.507     0.0556   0.1519  ALLIN=5.62, BET_200=2.43, BET_150=2.19
+  flop            67     27   40.3%    1.673     0.0620   0.1476  ALLIN=1.07, BET_200=0.42, BET_100=0.08
+  turn            29     18   62.1%    1.028     0.0571   0.1337  ALLIN=0.73, BET_200=0.19, BET_150=0.11
+  river            6      5   83.3%    0.111     0.0222   0.0361  ALLIN=0.11, BET_150=0.00, BET_200=0.00
+
+[2] BY HERO EFFECTIVE DEPTH (BB, min(hero, biggest live opp))
+  bin            dec  fired    rate  massSum mass|fired  massMax  top pruned actions (mass)
+  <6              11      1    9.1%    0.067     0.0665   0.0665  ALLIN=0.07
+  6-10            44     29   65.9%    1.894     0.0653   0.1369  ALLIN=0.44, BET_150=0.39, BET_100=0.32
+  10-20          113     81   71.7%    5.183     0.0640   0.1519  ALLIN=2.12, BET_200=1.09, BET_150=0.57
+  20-40          107     72   67.3%    3.964     0.0551   0.1283  ALLIN=1.53, BET_150=0.81, BET_200=0.73
+  40+            137    110   80.3%    5.211     0.0474   0.1392  ALLIN=3.38, BET_200=0.91, BET_150=0.59
+
+[3] BY ACTION CLASS PRUNED (events = action-prunes, mass = sum of pre-renorm probability removed)
+  ALLIN                    events= 211  mass=   7.531  (46.1% of all pruned mass)
+  big_bet (150/200pot)     events= 345  mass=   5.400  (33.1% of all pruned mass)
+  mid_bet (66/100pot)      events= 188  mass=   2.526  (15.5% of all pruned mass)
+  small_bet (33/50pot)     events=  46  mass=   0.470  (2.9% of all pruned mass)
+  CALL                     events=  18  mass=   0.391  (2.4% of all pruned mass)
+
+  per-action detail:
+    ALLIN      events= 211  mass=7.531
+    BET_200    events= 197  mass=3.041
+    BET_150    events= 148  mass=2.359
+    BET_100    events= 119  mass=1.537
+    BET_66     events=  69  mass=0.989
+    BET_50     events=  44  mass=0.447
+    CALL       events=  18  mass=0.391
+    BET_33     events=   2  mass=0.023
+
+  commit-fraction of pruned actions (chips-added / hero stack — the
+  exact quantity the floor scales tau by; ALLIN is always 100%):
+    0-10%      events=  28  mass=0.164
+    10-25%     events= 229  mass=2.052
+    25-50%     events= 197  mass=2.809
+    50-90%     events= 125  mass=3.201
+    90-100%    events= 229  mass=8.093
+
+[4] BY HERO POT-COMMITMENT (chips already in / (already in + stack))
+  bin            dec  fired    rate  massSum mass|fired  massMax  top pruned actions (mass)
+  0-5%           302    235   77.8%   12.890     0.0549   0.1519  ALLIN=6.12, BET_200=2.23, BET_150=1.93
+  5-15%           75     44   58.7%    2.522     0.0573   0.1369  ALLIN=0.90, BET_200=0.54, BET_150=0.37
+  15-30%          23     11   47.8%    0.794     0.0722   0.1476  ALLIN=0.40, BET_200=0.27, BET_150=0.06
+  30%+            12      3   25.0%    0.111     0.0369   0.0665  ALLIN=0.11
+
+[5] SEQ-315-CLASS SPOTS — ALLIN tails > 5% pruned at tau=0.10 (57 spots)
+  session              seq  street   effBB  potCmt  cards  ALLINmass  sampled-live  faithful
+  20260612_035454       51  preflop   59.2   0.013  Ks7c      0.0988          YES  yes
+  20260612_042058      299  turn      50.0   0.167  5dAd      0.0981          YES  yes
+  20260611_201230      585  preflop   11.0   0.013  6h7h      0.0973          no   yes
+  20260612_042058      546  preflop   18.7   0.003  4hJc      0.0972          no   yes
+  20260609_154557       94  turn      63.4   0.003  As6d      0.0953          no   NO
+  20260611_222532     1977  flop      17.2   0.169  8s7s      0.0950          no   yes
+  20260611_201230      237  preflop   46.5   0.015  3s2h      0.0948          no   yes
+  20260611_163815      443  preflop   10.7   0.008  9d3h      0.0931          YES  yes
+  20260611_181249       31  preflop   57.8   0.003  JcQs      0.0928          no   yes
+  20260609_192543      326  preflop   15.0   0.004  Ah9d      0.0902          no   NO
+  20260611_201230      120  preflop   72.2   0.003  JsQs      0.0902          no   yes
+  verify1_20260609_202137    10  preflop   58.8   0.020  6d8d      0.0900          no   NO
+  20260611_204751      792  flop      57.6   0.034  4c4s      0.0886          no   yes
+  20260609_154557      419  preflop    6.9   0.086  9hTc      0.0877          no   NO
+  20260611_163815      108  preflop   32.3   0.006  QhJc      0.0831          no   yes
+  20260611_204751     1149  preflop   58.8   0.020  Jh2h      0.0817          no   yes
+  20260611_204751      982  preflop   51.3   0.004  Ac2h      0.0807          no   yes
+  verify1_20260609_202137    48  flop      56.8   0.017  6s7c      0.0806          no   NO
+  20260611_163815      131  turn      31.4   0.112  QhJc      0.0799          no   yes
+  20260611_163815       32  preflop   58.0   0.020  7cJh      0.0796          no   yes
+  20260609_192543      155  preflop   33.9   0.020  7cQh      0.0794          no   NO
+  20260608_152756      158  preflop   28.2   0.041  Jd2h      0.0789          no   NO
+  20260611_163815      425  preflop   15.9   0.028  4c5d      0.0786          no   yes
+  20260611_201230      255  preflop   46.3   0.004  2c8d      0.0781          no   yes
+  20260611_204751     1093  preflop   16.6   0.011  7s5h      0.0757          no   yes
+  20260611_204751      798  flop      57.6   0.034  4c4s      0.0754          no   yes
+  20260611_204751      888  preflop   44.7   0.004  Kh4s      0.0747          no   yes
+  20260611_163815      315  preflop   11.7   0.033  2d5c      0.0746          YES  yes
+  20260611_222532     2098  flop      60.2   0.016  AsJh      0.0737          no   yes
+  verify1_20260609_202137    79  flop      50.6   0.038  Qs4c      0.0736          no   NO
+  20260611_201230       21  turn      56.9   0.052  AdAs      0.0722          no   yes
+  20260611_201230      362  preflop   16.3   0.009  9hQs      0.0719          no   yes
+  20260612_042058      443  preflop   35.3   0.033  4cKh      0.0716          no   yes
+  20260611_204751     1067  preflop   18.6   0.003  9cQd      0.0703          no   yes
+  20260611_201230      350  preflop   16.4   0.038  4d3d      0.0687          no   yes
+  20260611_222532     2253  preflop   17.9   0.008  QhJd      0.0682          no   yes
+  20260611_163815      337  preflop   17.7   0.009  QsJh      0.0670          no   yes
+  20260608_152756      192  turn       5.2   0.816  AhAs      0.0665          no   NO
+  20260611_222532     2560  flop      23.9   0.164  Qs6d      0.0655          no   yes
+  20260611_222532     1770  flop      54.8   0.081  2hAs      0.0653          no   yes
+  20260609_192543      334  turn      14.4   0.118  Ah9d      0.0648          no   NO
+  20260609_192543       15  flop      59.0   0.017  6cAc      0.0639          no   NO
+  20260611_222532     1971  preflop   19.5   0.058  8s7s      0.0639          no   yes
+  20260611_222532     1993  flop      11.4   0.150  QcKd      0.0634          no   yes
+  verify1_20260609_202137    51  turn      56.8   0.017  6s7c      0.0612          no   NO
+  20260609_192543       21  flop      55.0   0.083  6cAc      0.0587          YES  NO
+  20260611_204751      783  preflop   59.4   0.003  4c4s      0.0582          no   yes
+  20260611_222532     2961  preflop   13.3   0.011  4d5c      0.0577          no   yes
+  20260611_204751      810  preflop   57.2   0.003  QhKc      0.0569          no   yes
+  20260609_154557      281  preflop    7.5   0.022  Qs7h      0.0560          no   NO
+  20260609_192543       93  preflop   61.6   0.003  Qd9h      0.0557          no   NO
+  20260611_163815      210  preflop   23.1   0.006  9cKs      0.0554          no   yes
+  20260611_222532     2870  preflop   31.0   0.022  7h8d      0.0552          no   yes
+  20260608_152756       10  preflop   59.6   0.003  Qs9c      0.0538          no   NO
+  20260611_204751     1333  preflop   20.2   0.049  4d7c      0.0523          no   yes
+  20260612_042058      421  preflop   36.9   0.019  9d2c      0.0517          no   yes
+  20260611_201230      447  preflop   11.4   0.014  8hTh      0.0516          no   yes
+
+[6] TOP-10 LARGEST SINGLE-DECISION PRUNES (by total pruned mass)
+  #1  20260611_163815 seq=443   preflop  effBB= 10.7 potCmt=0.008 cards=9d3h facing_bet=True total=0.1519
+      pruned: ALLIN 0.093 (commit 100%); BET_200 0.039 (commit 52%); BET_100 0.012 (commit 25%); BET_50 0.007 (commit 12%)
+  #2  20260611_222532 seq=1977  flop     effBB= 17.2 potCmt=0.169 cards=8s7s facing_bet=False total=0.1476
+      pruned: ALLIN 0.095 (commit 100%); BET_200 0.053 (commit 61%)
+  #3  20260611_204751 seq=888   preflop  effBB= 44.7 potCmt=0.004 cards=Kh4s facing_bet=True total=0.1392
+      pruned: ALLIN 0.075 (commit 100%); BET_150 0.020 (commit 37%); BET_100 0.018 (commit 24%); BET_200 0.017 (commit 49%); BET_50 0.010 (commit 12%)
+  #4  20260609_154557 seq=419   preflop  effBB=  6.9 potCmt=0.086 cards=9hTc facing_bet=True total=0.1369  [non-faithful log]
+      pruned: ALLIN 0.088 (commit 100%); BET_100 0.026 (commit 78%); BET_66 0.024 (commit 48%)
+  #5  20260611_201230 seq=671   preflop  effBB=  9.2 potCmt=0.016 cards=3d6c facing_bet=True total=0.1364
+      pruned: ALLIN 0.041 (commit 100%); BET_150 0.039 (commit 80%); BET_66 0.022 (commit 34%); BET_100 0.018 (commit 53%); BET_50 0.017 (commit 26%)
+  #6  20260611_201230 seq=625   preflop  effBB= 12.5 potCmt=0.012 cards=KsQd facing_bet=True total=0.1351
+      pruned: BET_150 0.063 (commit 71%); BET_200 0.027 (commit 95%); BET_50 0.017 (commit 23%); BET_66 0.015 (commit 30%); BET_100 0.012 (commit 47%)
+  #7  20260612_042058 seq=299   turn     effBB= 50.0 potCmt=0.167 cards=5dAd facing_bet=False total=0.1337
+      pruned: ALLIN 0.098 (commit 100%); BET_200 0.036 (commit 60%)
+  #8  20260611_163815 seq=108   preflop  effBB= 32.3 potCmt=0.006 cards=QhJc facing_bet=True total=0.1283
+      pruned: ALLIN 0.083 (commit 100%); BET_150 0.021 (commit 25%); BET_100 0.012 (commit 16%); BET_200 0.011 (commit 33%)
+  #9  20260611_201230 seq=585   preflop  effBB= 11.0 potCmt=0.013 cards=6h7h facing_bet=True total=0.1283
+      pruned: ALLIN 0.097 (commit 100%); BET_150 0.017 (commit 80%); CALL 0.008 (commit 9%); BET_66 0.003 (commit 35%); BET_50 0.002 (commit 26%); BET_100 0.001 (commit 53%)
+  #10 20260611_163815 seq=337   preflop  effBB= 17.7 potCmt=0.009 cards=QsJh facing_bet=True total=0.1271
+      pruned: ALLIN 0.067 (commit 100%); BET_100 0.020 (commit 30%); BET_200 0.013 (commit 62%); BET_150 0.013 (commit 46%); BET_66 0.007 (commit 20%); BET_50 0.007 (commit 15%)
+
+[7] CAVEATS / FIELD AVAILABILITY
+  - The substrate summary JSON lacks per-decision fields (policy
+    distribution, street, stacks, commitment). They were regenerated
+    via the instrument's own replay path; the sanity gate above shows
+    exact agreement with the substrate's aggregate counts.
+  - 4 of 11 logs (20260608_152756, 20260609_154557, 20260609_192543,
+    verify1_20260609_202137) fail replay fidelity: their frames are
+    reconstructions under current code, not byte-faithful to live.
+    Faithful-only headline is given above; bin tables include all
+    412 frames to match the TG2 substrate.
+  - Position (seat/button-relative) is NOT in the substrate or the
+    captured parsed snapshot in a directly usable form; no position
+    breakdown is given rather than inferring one.
+  - pre-fix _BIASED_COMMIT instrument at tau=0.10: fired 305/412 (74.03%), altered 21 — vs fixed 293/412 (71.12%), altered 18; biased variant NOT used for any number in this report.
+
+[8] WHAT THIS SUGGESTS FOR TAU TUNING (observations only — tau=0.10
+    is shipped and registered; no change recommended here)
+    The floor's mass removal is dominated by ALLIN (7.53 of 16.32 total pruned mass, 46%) and big bets, exactly the commitment-scaled design intent: tau for an action is tau_max*(chips-added/stack), so near-full-commit actions face thresholds near 0.10 while small bets face near-zero thresholds and are almost never pruned.
+    Concentration is overwhelmingly preflop (310/412 decisions, 13.51/16.32 = 83% of pruned mass) — partly exposure (most fresh frames are preflop) but the preflop firing rate (78.4%) also exceeds flop (40.3%) and turn (62.1%). Across depth, firing is high everywhere from 6bb up (66-80%) and per-fire mass is mildly DEEPER-shaded in count but shallower-shaded in intensity (mass|fired 0.065 at 6-10bb vs 0.047 at 40+bb); the floor is nearly silent below 6bb (1/11 fired) where the short-stack floor already owns the action space.
+    Hero pot-commitment behaves exactly as the commitment-scaled design intends: firing rate falls monotonically as hero gets committed — 77.8% at 0-5% committed, 58.7% at 5-15%, 47.8% at 15-30%, 25.0% at 30%+ — i.e. the floor prunes speculative full-commit tails when hero has little invested and stands down once hero is genuinely pot-committed (where shove mass is legitimately large and clears tau).
+    The seq-315 class (ALLIN tails >5%) is 57 spots ([5]), of which only 5 were actually drawn by the live sampler; the gap between firing rate (71.1%) and altered-decision rate (4.37%) is the intended cheap-insurance profile — most fires remove tails the sampler never drew. Per-fire pruned mass is small (mean 0.056, max 0.152) and argmax changes were 0 at every tau TG2 tested, so at tau=0.10 the floor is purely a tail-shaper, well clear of reshaping mainline play.
+==========================================================================

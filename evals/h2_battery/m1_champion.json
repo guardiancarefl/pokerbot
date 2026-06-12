@@ -1,0 +1,9 @@
+{
+  "battery": "h2_battery_v1",
+  "ckpt": "runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt",
+  "n_spots_graded": 8112,
+  "m1_mean_ev_loss": 0.08673686258402144,
+  "m1_se": 0.0007391063301476376,
+  "oracle_call_rate": 0.07692307692307693,
+  "policy_call_mass_mean": 0.3591451695208801
+}

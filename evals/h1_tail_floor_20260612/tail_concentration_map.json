@@ -1,0 +1,1499 @@
+{
+  "label": "H1 tail-floor tail-concentration map (tau_max=0.10, exact-commit instrument substrate)",
+  "generated": "2026-06-12",
+  "substrate": "/home/quant/pokerbot/evals/h1_tail_floor_20260612/tail_floor_counterfactual.json",
+  "tau_max": 0.1,
+  "sanity_vs_substrate": {
+    "n_frames": {
+      "this": 412,
+      "substrate": 412
+    },
+    "n_fired": {
+      "this": 293,
+      "substrate": 293
+    },
+    "pruned_census_match": true
+  },
+  "headline": {
+    "n_decisions": 412,
+    "n_with_any_pruning": 293,
+    "firing_rate": 0.7112,
+    "total_pruned_mass": 16.3183,
+    "mean_pruned_mass_over_fired": 0.0557,
+    "mean_pruned_mass_over_all": 0.0396,
+    "max_pruned_mass_single_decision": 0.1519,
+    "n_altered_decisions_substrate": 18,
+    "n_argmax_changes_substrate": 0
+  },
+  "faithful_only_headline": {
+    "n_decisions": 302,
+    "n_fired": 221,
+    "firing_rate": 0.7318,
+    "pruned_mass_mean_over_fired": 0.0578
+  },
+  "by_street": {
+    "preflop": {
+      "n_decisions": 310,
+      "n_fired": 243,
+      "firing_rate": 0.7839,
+      "pruned_mass_total": 13.5065,
+      "pruned_mass_mean_over_fired": 0.0556,
+      "pruned_mass_max": 0.1519,
+      "pruned_mass_by_action": {
+        "ALLIN": 5.6174,
+        "BET_200": 2.4307,
+        "BET_150": 2.1857,
+        "BET_100": 1.4545,
+        "BET_66": 0.9893,
+        "BET_50": 0.4472,
+        "CALL": 0.359,
+        "BET_33": 0.0228
+      }
+    },
+    "flop": {
+      "n_decisions": 67,
+      "n_fired": 27,
+      "firing_rate": 0.403,
+      "pruned_mass_total": 1.6728,
+      "pruned_mass_mean_over_fired": 0.062,
+      "pruned_mass_max": 0.1476,
+      "pruned_mass_by_action": {
+        "ALLIN": 1.0702,
+        "BET_200": 0.4216,
+        "BET_100": 0.0825,
+        "BET_150": 0.066,
+        "CALL": 0.0324
+      }
+    },
+    "turn": {
+      "n_decisions": 29,
+      "n_fired": 18,
+      "firing_rate": 0.6207,
+      "pruned_mass_total": 1.0281,
+      "pruned_mass_mean_over_fired": 0.0571,
+      "pruned_mass_max": 0.1337,
+      "pruned_mass_by_action": {
+        "ALLIN": 0.734,
+        "BET_200": 0.188,
+        "BET_150": 0.1061
+      }
+    },
+    "river": {
+      "n_decisions": 6,
+      "n_fired": 5,
+      "firing_rate": 0.8333,
+      "pruned_mass_total": 0.1109,
+      "pruned_mass_mean_over_fired": 0.0222,
+      "pruned_mass_max": 0.0361,
+      "pruned_mass_by_action": {
+        "ALLIN": 0.109,
+        "BET_150": 0.0014,
+        "BET_200": 0.0004
+      }
+    }
+  },
+  "by_depth_bin_bb": {
+    "<6": {
+      "n_decisions": 11,
+      "n_fired": 1,
+      "firing_rate": 0.0909,
+      "pruned_mass_total": 0.0665,
+      "pruned_mass_mean_over_fired": 0.0665,
+      "pruned_mass_max": 0.0665,
+      "pruned_mass_by_action": {
+        "ALLIN": 0.0665
+      }
+    },
+    "6-10": {
+      "n_decisions": 44,
+      "n_fired": 29,
+      "firing_rate": 0.6591,
+      "pruned_mass_total": 1.8937,
+      "pruned_mass_mean_over_fired": 0.0653,
+      "pruned_mass_max": 0.1369,
+      "pruned_mass_by_action": {
+        "ALLIN": 0.4379,
+        "BET_150": 0.3907,
+        "BET_100": 0.3213,
+        "BET_200": 0.306,
+        "BET_66": 0.2932,
+        "BET_50": 0.0871,
+        "CALL": 0.0576
+      }
+    },
+    "10-20": {
+      "n_decisions": 113,
+      "n_fired": 81,
+      "firing_rate": 0.7168,
+      "pruned_mass_total": 5.183,
+      "pruned_mass_mean_over_fired": 0.064,
+      "pruned_mass_max": 0.1519,
+      "pruned_mass_by_action": {
+        "ALLIN": 2.1194,
+        "BET_200": 1.0883,
+        "BET_150": 0.57,
+        "BET_66": 0.4795,
+        "BET_100": 0.4747,
+        "BET_50": 0.2441,
+        "CALL": 0.1979,
+        "BET_33": 0.009
+      }
+    },
+    "20-40": {
+      "n_decisions": 107,
+      "n_fired": 72,
+      "firing_rate": 0.6729,
+      "pruned_mass_total": 3.9643,
+      "pruned_mass_mean_over_fired": 0.0551,
+      "pruned_mass_max": 0.1283,
+      "pruned_mass_by_action": {
+        "ALLIN": 1.5307,
+        "BET_150": 0.8071,
+        "BET_200": 0.7344,
+        "BET_100": 0.4609,
+        "BET_66": 0.1908,
+        "CALL": 0.1359,
+        "BET_50": 0.0908,
+        "BET_33": 0.0138
+      }
+    },
+    "40+": {
+      "n_decisions": 137,
+      "n_fired": 110,
+      "firing_rate": 0.8029,
+      "pruned_mass_total": 5.2107,
+      "pruned_mass_mean_over_fired": 0.0474,
+      "pruned_mass_max": 0.1392,
+      "pruned_mass_by_action": {
+        "ALLIN": 3.3762,
+        "BET_200": 0.912,
+        "BET_150": 0.5915,
+        "BET_100": 0.2801,
+        "BET_66": 0.0258,
+        "BET_50": 0.0252
+      }
+    }
+  },
+  "by_hero_pot_commitment": {
+    "0-5%": {
+      "n_decisions": 302,
+      "n_fired": 235,
+      "firing_rate": 0.7781,
+      "pruned_mass_total": 12.8905,
+      "pruned_mass_mean_over_fired": 0.0549,
+      "pruned_mass_max": 0.1519,
+      "pruned_mass_by_action": {
+        "ALLIN": 6.1181,
+        "BET_200": 2.2309,
+        "BET_150": 1.9257,
+        "BET_100": 1.1524,
+        "BET_66": 0.7697,
+        "BET_50": 0.4472,
+        "CALL": 0.2237,
+        "BET_33": 0.0228
+      }
+    },
+    "5-15%": {
+      "n_decisions": 75,
+      "n_fired": 44,
+      "firing_rate": 0.5867,
+      "pruned_mass_total": 2.5225,
+      "pruned_mass_mean_over_fired": 0.0573,
+      "pruned_mass_max": 0.1369,
+      "pruned_mass_by_action": {
+        "ALLIN": 0.8973,
+        "BET_200": 0.5448,
+        "BET_150": 0.3715,
+        "BET_100": 0.354,
+        "BET_66": 0.2196,
+        "CALL": 0.1352
+      }
+    },
+    "15-30%": {
+      "n_decisions": 23,
+      "n_fired": 11,
+      "firing_rate": 0.4783,
+      "pruned_mass_total": 0.7944,
+      "pruned_mass_mean_over_fired": 0.0722,
+      "pruned_mass_max": 0.1476,
+      "pruned_mass_by_action": {
+        "ALLIN": 0.4044,
+        "BET_200": 0.265,
+        "BET_150": 0.0621,
+        "CALL": 0.0324,
+        "BET_100": 0.0305
+      }
+    },
+    "30%+": {
+      "n_decisions": 12,
+      "n_fired": 3,
+      "firing_rate": 0.25,
+      "pruned_mass_total": 0.1108,
+      "pruned_mass_mean_over_fired": 0.0369,
+      "pruned_mass_max": 0.0665,
+      "pruned_mass_by_action": {
+        "ALLIN": 0.1108
+      }
+    }
+  },
+  "by_action_class": {
+    "ALLIN": {
+      "prune_events": 211,
+      "pruned_mass": 7.5306
+    },
+    "big_bet (150/200pot)": {
+      "prune_events": 345,
+      "pruned_mass": 5.4
+    },
+    "mid_bet (66/100pot)": {
+      "prune_events": 188,
+      "pruned_mass": 2.5263
+    },
+    "small_bet (33/50pot)": {
+      "prune_events": 46,
+      "pruned_mass": 0.47
+    },
+    "CALL": {
+      "prune_events": 18,
+      "pruned_mass": 0.3914
+    }
+  },
+  "by_action": {
+    "ALLIN": {
+      "prune_events": 211,
+      "pruned_mass": 7.5306
+    },
+    "BET_200": {
+      "prune_events": 197,
+      "pruned_mass": 3.0407
+    },
+    "BET_150": {
+      "prune_events": 148,
+      "pruned_mass": 2.3593
+    },
+    "BET_100": {
+      "prune_events": 119,
+      "pruned_mass": 1.5369
+    },
+    "BET_66": {
+      "prune_events": 69,
+      "pruned_mass": 0.9893
+    },
+    "BET_50": {
+      "prune_events": 44,
+      "pruned_mass": 0.4472
+    },
+    "CALL": {
+      "prune_events": 18,
+      "pruned_mass": 0.3914
+    },
+    "BET_33": {
+      "prune_events": 2,
+      "pruned_mass": 0.0228
+    }
+  },
+  "pruned_action_commit_fraction_hist": {
+    "0-10%": {
+      "events": 28,
+      "mass": 0.1636
+    },
+    "10-25%": {
+      "events": 229,
+      "mass": 2.0517
+    },
+    "25-50%": {
+      "events": 197,
+      "mass": 2.8093
+    },
+    "50-90%": {
+      "events": 125,
+      "mass": 3.2009
+    },
+    "90-100%": {
+      "events": 229,
+      "mass": 8.0928
+    }
+  },
+  "top10_single_decision_prunes": [
+    {
+      "session": "20260611_163815",
+      "seq": 443,
+      "street": "preflop",
+      "eff_bb": 10.7,
+      "pot_commit": 0.008,
+      "faithful": true,
+      "hero_cards": [
+        "9d",
+        "3h"
+      ],
+      "facing_bet": true,
+      "pruned_mass": 0.1519,
+      "pruned": [
+        {
+          "action": "ALLIN",
+          "mass": 0.0931,
+          "commit_frac": 1.0
+        },
+        {
+          "action": "BET_200",
+          "mass": 0.0391,
+          "commit_frac": 0.515
+        },
+        {
+          "action": "BET_100",
+          "mass": 0.0122,
+          "commit_frac": 0.253
+        },
+        {
+          "action": "BET_50",
+          "mass": 0.0075,
+          "commit_frac": 0.123
+        }
+      ]
+    },
+    {
+      "session": "20260611_222532",
+      "seq": 1977,
+      "street": "flop",
+      "eff_bb": 17.2,
+      "pot_commit": 0.169,
+      "faithful": true,
+      "hero_cards": [
+        "8s",
+        "7s"
+      ],
+      "facing_bet": false,
+      "pruned_mass": 0.1476,
+      "pruned": [
+        {
+          "action": "ALLIN",
+          "mass": 0.095,
+          "commit_frac": 1.0
+        },
+        {
+          "action": "BET_200",
+          "mass": 0.0526,
+          "commit_frac": 0.61
+        }
+      ]
+    },
+    {
+      "session": "20260611_204751",
+      "seq": 888,
+      "street": "preflop",
+      "eff_bb": 44.7,
+      "pot_commit": 0.004,
+      "faithful": true,
+      "hero_cards": [
+        "Kh",
+        "4s"
+      ],
+      "facing_bet": true,
+      "pruned_mass": 0.1392,
+      "pruned": [
+        {
+          "action": "ALLIN",
+          "mass": 0.0747,
+          "commit_frac": 1.0
+        },
+        {
+          "action": "BET_150",
+          "mass": 0.0196,
+          "commit_frac": 0.366
+        },
+        {
+          "action": "BET_100",
+          "mass": 0.0181,
+          "commit_frac": 0.242
+        },
+        {
+          "action": "BET_200",
+          "mass": 0.0165,
+          "commit_frac": 0.489
+        },
+        {
+          "action": "BET_50",
+          "mass": 0.0103,
+          "commit_frac": 0.119
+        }
+      ]
+    },
+    {
+      "session": "20260609_154557",
+      "seq": 419,
+      "street": "preflop",
+      "eff_bb": 6.9,
+      "pot_commit": 0.086,
+      "faithful": false,
+      "hero_cards": [
+        "9h",
+        "Tc"
+      ],
+      "facing_bet": true,
+      "pruned_mass": 0.1369,
+      "pruned": [
+        {
+          "action": "ALLIN",
+          "mass": 0.0877,
+          "commit_frac": 1.0
+        },
+        {
+          "action": "BET_100",
+          "mass": 0.0257,
+          "commit_frac": 0.775
+        },
+        {
+          "action": "BET_66",
+          "mass": 0.0235,
+          "commit_frac": 0.479
+        }
+      ]
+    },
+    {
+      "session": "20260611_201230",
+      "seq": 671,
+      "street": "preflop",
+      "eff_bb": 9.2,
+      "pot_commit": 0.016,
+      "faithful": true,
+      "hero_cards": [
+        "3d",
+        "6c"
+      ],
+      "facing_bet": true,
+      "pruned_mass": 0.1364,
+      "pruned": [
+        {
+          "action": "ALLIN",
+          "mass": 0.0406,
+          "commit_frac": 1.0
+        },
+        {
+          "action": "BET_150",
+          "mass": 0.0392,
+          "commit_frac": 0.802
+        },
+        {
+          "action": "BET_66",
+          "mass": 0.0217,
+          "commit_frac": 0.344
+        },
+        {
+          "action": "BET_100",
+          "mass": 0.018,
+          "commit_frac": 0.529
+        },
+        {
+          "action": "BET_50",
+          "mass": 0.0168,
+          "commit_frac": 0.256
+        }
+      ]
+    },
+    {
+      "session": "20260611_201230",
+      "seq": 625,
+      "street": "preflop",
+      "eff_bb": 12.5,
+      "pot_commit": 0.012,
+      "faithful": true,
+      "hero_cards": [
+        "Ks",
+        "Qd"
+      ],
+      "facing_bet": true,
+      "pruned_mass": 0.1351,
+      "pruned": [
+        {
+          "action": "BET_150",
+          "mass": 0.0633,
+          "commit_frac": 0.707
+        },
+        {
+          "action": "BET_200",
+          "mass": 0.0272,
+          "commit_frac": 0.947
+        },
+        {
+          "action": "BET_50",
+          "mass": 0.0173,
+          "commit_frac": 0.228
+        },
+        {
+          "action": "BET_66",
+          "mass": 0.015,
+          "commit_frac": 0.304
+        },
+        {
+          "action": "BET_100",
+          "mass": 0.0123,
+          "commit_frac": 0.467
+        }
+      ]
+    },
+    {
+      "session": "20260612_042058",
+      "seq": 299,
+      "street": "turn",
+      "eff_bb": 50.0,
+      "pot_commit": 0.167,
+      "faithful": true,
+      "hero_cards": [
+        "5d",
+        "Ad"
+      ],
+      "facing_bet": false,
+      "pruned_mass": 0.1337,
+      "pruned": [
+        {
+          "action": "ALLIN",
+          "mass": 0.0981,
+          "commit_frac": 1.0
+        },
+        {
+          "action": "BET_200",
+          "mass": 0.0357,
+          "commit_frac": 0.6
+        }
+      ]
+    },
+    {
+      "session": "20260611_163815",
+      "seq": 108,
+      "street": "preflop",
+      "eff_bb": 32.3,
+      "pot_commit": 0.006,
+      "faithful": true,
+      "hero_cards": [
+        "Qh",
+        "Jc"
+      ],
+      "facing_bet": true,
+      "pruned_mass": 0.1283,
+      "pruned": [
+        {
+          "action": "ALLIN",
+          "mass": 0.0831,
+          "commit_frac": 1.0
+        },
+        {
+          "action": "BET_150",
+          "mass": 0.0215,
+          "commit_frac": 0.248
+        },
+        {
+          "action": "BET_100",
+          "mass": 0.0122,
+          "commit_frac": 0.163
+        },
+        {
+          "action": "BET_200",
+          "mass": 0.0115,
+          "commit_frac": 0.332
+        }
+      ]
+    },
+    {
+      "session": "20260611_201230",
+      "seq": 585,
+      "street": "preflop",
+      "eff_bb": 11.0,
+      "pot_commit": 0.013,
+      "faithful": true,
+      "hero_cards": [
+        "6h",
+        "7h"
+      ],
+      "facing_bet": true,
+      "pruned_mass": 0.1283,
+      "pruned": [
+        {
+          "action": "ALLIN",
+          "mass": 0.0973,
+          "commit_frac": 1.0
+        },
+        {
+          "action": "BET_150",
+          "mass": 0.0171,
+          "commit_frac": 0.803
+        },
+        {
+          "action": "CALL",
+          "mass": 0.0077,
+          "commit_frac": 0.091
+        },
+        {
+          "action": "BET_66",
+          "mass": 0.0029,
+          "commit_frac": 0.346
+        },
+        {
+          "action": "BET_50",
+          "mass": 0.0022,
+          "commit_frac": 0.259
+        },
+        {
+          "action": "BET_100",
+          "mass": 0.0012,
+          "commit_frac": 0.531
+        }
+      ]
+    },
+    {
+      "session": "20260611_163815",
+      "seq": 337,
+      "street": "preflop",
+      "eff_bb": 17.7,
+      "pot_commit": 0.009,
+      "faithful": true,
+      "hero_cards": [
+        "Qs",
+        "Jh"
+      ],
+      "facing_bet": true,
+      "pruned_mass": 0.1271,
+      "pruned": [
+        {
+          "action": "ALLIN",
+          "mass": 0.067,
+          "commit_frac": 1.0
+        },
+        {
+          "action": "BET_100",
+          "mass": 0.0196,
+          "commit_frac": 0.304
+        },
+        {
+          "action": "BET_200",
+          "mass": 0.0133,
+          "commit_frac": 0.616
+        },
+        {
+          "action": "BET_150",
+          "mass": 0.0131,
+          "commit_frac": 0.46
+        },
+        {
+          "action": "BET_66",
+          "mass": 0.0075,
+          "commit_frac": 0.197
+        },
+        {
+          "action": "BET_50",
+          "mass": 0.0067,
+          "commit_frac": 0.147
+        }
+      ]
+    }
+  ],
+  "seq315_class_allin_gt5pct": [
+    {
+      "session": "20260612_035454",
+      "seq": 51,
+      "street": "preflop",
+      "eff_bb": 59.2,
+      "pot_commit": 0.013,
+      "hero_cards": [
+        "Ks",
+        "7c"
+      ],
+      "allin_mass": 0.0988,
+      "was_sampled_live": true,
+      "faithful": true
+    },
+    {
+      "session": "20260612_042058",
+      "seq": 299,
+      "street": "turn",
+      "eff_bb": 50.0,
+      "pot_commit": 0.167,
+      "hero_cards": [
+        "5d",
+        "Ad"
+      ],
+      "allin_mass": 0.0981,
+      "was_sampled_live": true,
+      "faithful": true
+    },
+    {
+      "session": "20260611_201230",
+      "seq": 585,
+      "street": "preflop",
+      "eff_bb": 11.0,
+      "pot_commit": 0.013,
+      "hero_cards": [
+        "6h",
+        "7h"
+      ],
+      "allin_mass": 0.0973,
+      "was_sampled_live": false,
+      "faithful": true
+    },
+    {
+      "session": "20260612_042058",
+      "seq": 546,
+      "street": "preflop",
+      "eff_bb": 18.7,
+      "pot_commit": 0.003,
+      "hero_cards": [
+        "4h",
+        "Jc"
+      ],
+      "allin_mass": 0.0972,
+      "was_sampled_live": false,
+      "faithful": true
+    },
+    {
+      "session": "20260609_154557",
+      "seq": 94,
+      "street": "turn",
+      "eff_bb": 63.4,
+      "pot_commit": 0.003,
+      "hero_cards": [
+        "As",
+        "6d"
+      ],
+      "allin_mass": 0.0953,
+      "was_sampled_live": false,
+      "faithful": false
+    },
+    {
+      "session": "20260611_222532",
+      "seq": 1977,
+      "street": "flop",
+      "eff_bb": 17.2,
+      "pot_commit": 0.169,
+      "hero_cards": [
+        "8s",
+        "7s"
+      ],
+      "allin_mass": 0.095,
+      "was_sampled_live": false,
+      "faithful": true
+    },
+    {
+      "session": "20260611_201230",
+      "seq": 237,
+      "street": "preflop",
+      "eff_bb": 46.5,
+      "pot_commit": 0.015,
+      "hero_cards": [
+        "3s",
+        "2h"
+      ],
+      "allin_mass": 0.0948,
+      "was_sampled_live": false,
+      "faithful": true
+    },
+    {
+      "session": "20260611_163815",
+      "seq": 443,
+      "street": "preflop",
+      "eff_bb": 10.7,
+      "pot_commit": 0.008,
+      "hero_cards": [
+        "9d",
+        "3h"
+      ],
+      "allin_mass": 0.0931,
+      "was_sampled_live": true,
+      "faithful": true
+    },
+    {
+      "session": "20260611_181249",
+      "seq": 31,
+      "street": "preflop",
+      "eff_bb": 57.8,
+      "pot_commit": 0.003,
+      "hero_cards": [
+        "Jc",
+        "Qs"
+      ],
+      "allin_mass": 0.0928,
+      "was_sampled_live": false,
+      "faithful": true
+    },
+    {
+      "session": "20260609_192543",
+      "seq": 326,
+      "street": "preflop",
+      "eff_bb": 15.0,
+      "pot_commit": 0.004,
+      "hero_cards": [
+        "Ah",
+        "9d"
+      ],
+      "allin_mass": 0.0902,
+      "was_sampled_live": false,
+      "faithful": false
+    },
+    {
+      "session": "20260611_201230",
+      "seq": 120,
+      "street": "preflop",
+      "eff_bb": 72.2,
+      "pot_commit": 0.003,
+      "hero_cards": [
+        "Js",
+        "Qs"
+      ],
+      "allin_mass": 0.0902,
+      "was_sampled_live": false,
+      "faithful": true
+    },
+    {
+      "session": "verify1_20260609_202137",
+      "seq": 10,
+      "street": "preflop",
+      "eff_bb": 58.8,
+      "pot_commit": 0.02,
+      "hero_cards": [
+        "6d",
+        "8d"
+      ],
+      "allin_mass": 0.09,
+      "was_sampled_live": false,
+      "faithful": false
+    },
+    {
+      "session": "20260611_204751",
+      "seq": 792,
+      "street": "flop",
+      "eff_bb": 57.6,
+      "pot_commit": 0.034,
+      "hero_cards": [
+        "4c",
+        "4s"
+      ],
+      "allin_mass": 0.0886,
+      "was_sampled_live": false,
+      "faithful": true
+    },
+    {
+      "session": "20260609_154557",
+      "seq": 419,
+      "street": "preflop",
+      "eff_bb": 6.9,
+      "pot_commit": 0.086,
+      "hero_cards": [
+        "9h",
+        "Tc"
+      ],
+      "allin_mass": 0.0877,
+      "was_sampled_live": false,
+      "faithful": false
+    },
+    {
+      "session": "20260611_163815",
+      "seq": 108,
+      "street": "preflop",
+      "eff_bb": 32.3,
+      "pot_commit": 0.006,
+      "hero_cards": [
+        "Qh",
+        "Jc"
+      ],
+      "allin_mass": 0.0831,
+      "was_sampled_live": false,
+      "faithful": true
+    },
+    {
+      "session": "20260611_204751",
+      "seq": 1149,
+      "street": "preflop",
+      "eff_bb": 58.8,
+      "pot_commit": 0.02,
+      "hero_cards": [
+        "Jh",
+        "2h"
+      ],
+      "allin_mass": 0.0817,
+      "was_sampled_live": false,
+      "faithful": true
+    },
+    {
+      "session": "20260611_204751",
+      "seq": 982,
+      "street": "preflop",
+      "eff_bb": 51.3,
+      "pot_commit": 0.004,
+      "hero_cards": [
+        "Ac",
+        "2h"
+      ],
+      "allin_mass": 0.0807,
+      "was_sampled_live": false,
+      "faithful": true
+    },
+    {
+      "session": "verify1_20260609_202137",
+      "seq": 48,
+      "street": "flop",
+      "eff_bb": 56.8,
+      "pot_commit": 0.017,
+      "hero_cards": [
+        "6s",
+        "7c"
+      ],
+      "allin_mass": 0.0806,
+      "was_sampled_live": false,
+      "faithful": false
+    },
+    {
+      "session": "20260611_163815",
+      "seq": 131,
+      "street": "turn",
+      "eff_bb": 31.4,
+      "pot_commit": 0.112,
+      "hero_cards": [
+        "Qh",
+        "Jc"
+      ],
+      "allin_mass": 0.0799,
+      "was_sampled_live": false,
+      "faithful": true
+    },
+    {
+      "session": "20260611_163815",
+      "seq": 32,
+      "street": "preflop",
+      "eff_bb": 58.0,
+      "pot_commit": 0.02,
+      "hero_cards": [
+        "7c",
+        "Jh"
+      ],
+      "allin_mass": 0.0796,
+      "was_sampled_live": false,
+      "faithful": true
+    },
+    {
+      "session": "20260609_192543",
+      "seq": 155,
+      "street": "preflop",
+      "eff_bb": 33.9,
+      "pot_commit": 0.02,
+      "hero_cards": [
+        "7c",
+        "Qh"
+      ],
+      "allin_mass": 0.0794,
+      "was_sampled_live": false,
+      "faithful": false
+    },
+    {
+      "session": "20260608_152756",
+      "seq": 158,
+      "street": "preflop",
+      "eff_bb": 28.2,
+      "pot_commit": 0.041,
+      "hero_cards": [
+        "Jd",
+        "2h"
+      ],
+      "allin_mass": 0.0789,
+      "was_sampled_live": false,
+      "faithful": false
+    },
+    {
+      "session": "20260611_163815",
+      "seq": 425,
+      "street": "preflop",
+      "eff_bb": 15.9,
+      "pot_commit": 0.028,
+      "hero_cards": [
+        "4c",
+        "5d"
+      ],
+      "allin_mass": 0.0786,
+      "was_sampled_live": false,
+      "faithful": true
+    },
+    {
+      "session": "20260611_201230",
+      "seq": 255,
+      "street": "preflop",
+      "eff_bb": 46.3,
+      "pot_commit": 0.004,
+      "hero_cards": [
+        "2c",
+        "8d"
+      ],
+      "allin_mass": 0.0781,
+      "was_sampled_live": false,
+      "faithful": true
+    },
+    {
+      "session": "20260611_204751",
+      "seq": 1093,
+      "street": "preflop",
+      "eff_bb": 16.6,
+      "pot_commit": 0.011,
+      "hero_cards": [
+        "7s",
+        "5h"
+      ],
+      "allin_mass": 0.0757,
+      "was_sampled_live": false,
+      "faithful": true
+    },
+    {
+      "session": "20260611_204751",
+      "seq": 798,
+      "street": "flop",
+      "eff_bb": 57.6,
+      "pot_commit": 0.034,
+      "hero_cards": [
+        "4c",
+        "4s"
+      ],
+      "allin_mass": 0.0754,
+      "was_sampled_live": false,
+      "faithful": true
+    },
+    {
+      "session": "20260611_204751",
+      "seq": 888,
+      "street": "preflop",
+      "eff_bb": 44.7,
+      "pot_commit": 0.004,
+      "hero_cards": [
+        "Kh",
+        "4s"
+      ],
+      "allin_mass": 0.0747,
+      "was_sampled_live": false,
+      "faithful": true
+    },
+    {
+      "session": "20260611_163815",
+      "seq": 315,
+      "street": "preflop",
+      "eff_bb": 11.7,
+      "pot_commit": 0.033,
+      "hero_cards": [
+        "2d",
+        "5c"
+      ],
+      "allin_mass": 0.0746,
+      "was_sampled_live": true,
+      "faithful": true
+    },
+    {
+      "session": "20260611_222532",
+      "seq": 2098,
+      "street": "flop",
+      "eff_bb": 60.2,
+      "pot_commit": 0.016,
+      "hero_cards": [
+        "As",
+        "Jh"
+      ],
+      "allin_mass": 0.0737,
+      "was_sampled_live": false,
+      "faithful": true
+    },
+    {
+      "session": "verify1_20260609_202137",
+      "seq": 79,
+      "street": "flop",
+      "eff_bb": 50.6,
+      "pot_commit": 0.038,
+      "hero_cards": [
+        "Qs",
+        "4c"
+      ],
+      "allin_mass": 0.0736,
+      "was_sampled_live": false,
+      "faithful": false
+    },
+    {
+      "session": "20260611_201230",
+      "seq": 21,
+      "street": "turn",
+      "eff_bb": 56.9,
+      "pot_commit": 0.052,
+      "hero_cards": [
+        "Ad",
+        "As"
+      ],
+      "allin_mass": 0.0722,
+      "was_sampled_live": false,
+      "faithful": true
+    },
+    {
+      "session": "20260611_201230",
+      "seq": 362,
+      "street": "preflop",
+      "eff_bb": 16.3,
+      "pot_commit": 0.009,
+      "hero_cards": [
+        "9h",
+        "Qs"
+      ],
+      "allin_mass": 0.0719,
+      "was_sampled_live": false,
+      "faithful": true
+    },
+    {
+      "session": "20260612_042058",
+      "seq": 443,
+      "street": "preflop",
+      "eff_bb": 35.3,
+      "pot_commit": 0.033,
+      "hero_cards": [
+        "4c",
+        "Kh"
+      ],
+      "allin_mass": 0.0716,
+      "was_sampled_live": false,
+      "faithful": true
+    },
+    {
+      "session": "20260611_204751",
+      "seq": 1067,
+      "street": "preflop",
+      "eff_bb": 18.6,
+      "pot_commit": 0.003,
+      "hero_cards": [
+        "9c",
+        "Qd"
+      ],
+      "allin_mass": 0.0703,
+      "was_sampled_live": false,
+      "faithful": true
+    },
+    {
+      "session": "20260611_201230",
+      "seq": 350,
+      "street": "preflop",
+      "eff_bb": 16.4,
+      "pot_commit": 0.038,
+      "hero_cards": [
+        "4d",
+        "3d"
+      ],
+      "allin_mass": 0.0687,
+      "was_sampled_live": false,
+      "faithful": true
+    },
+    {
+      "session": "20260611_222532",
+      "seq": 2253,
+      "street": "preflop",
+      "eff_bb": 17.9,
+      "pot_commit": 0.008,
+      "hero_cards": [
+        "Qh",
+        "Jd"
+      ],
+      "allin_mass": 0.0682,
+      "was_sampled_live": false,
+      "faithful": true
+    },
+    {
+      "session": "20260611_163815",
+      "seq": 337,
+      "street": "preflop",
+      "eff_bb": 17.7,
+      "pot_commit": 0.009,
+      "hero_cards": [
+        "Qs",
+        "Jh"
+      ],
+      "allin_mass": 0.067,
+      "was_sampled_live": false,
+      "faithful": true
+    },
+    {
+      "session": "20260608_152756",
+      "seq": 192,
+      "street": "turn",
+      "eff_bb": 5.2,
+      "pot_commit": 0.816,
+      "hero_cards": [
+        "Ah",
+        "As"
+      ],
+      "allin_mass": 0.0665,
+      "was_sampled_live": false,
+      "faithful": false
+    },
+    {
+      "session": "20260611_222532",
+      "seq": 2560,
+      "street": "flop",
+      "eff_bb": 23.9,
+      "pot_commit": 0.164,
+      "hero_cards": [
+        "Qs",
+        "6d"
+      ],
+      "allin_mass": 0.0655,
+      "was_sampled_live": false,
+      "faithful": true
+    },
+    {
+      "session": "20260611_222532",
+      "seq": 1770,
+      "street": "flop",
+      "eff_bb": 54.8,
+      "pot_commit": 0.081,
+      "hero_cards": [
+        "2h",
+        "As"
+      ],
+      "allin_mass": 0.0653,
+      "was_sampled_live": false,
+      "faithful": true
+    },
+    {
+      "session": "20260609_192543",
+      "seq": 334,
+      "street": "turn",
+      "eff_bb": 14.4,
+      "pot_commit": 0.118,
+      "hero_cards": [
+        "Ah",
+        "9d"
+      ],
+      "allin_mass": 0.0648,
+      "was_sampled_live": false,
+      "faithful": false
+    },
+    {
+      "session": "20260609_192543",
+      "seq": 15,
+      "street": "flop",
+      "eff_bb": 59.0,
+      "pot_commit": 0.017,
+      "hero_cards": [
+        "6c",
+        "Ac"
+      ],
+      "allin_mass": 0.0639,
+      "was_sampled_live": false,
+      "faithful": false
+    },
+    {
+      "session": "20260611_222532",
+      "seq": 1971,
+      "street": "preflop",
+      "eff_bb": 19.5,
+      "pot_commit": 0.058,
+      "hero_cards": [
+        "8s",
+        "7s"
+      ],
+      "allin_mass": 0.0639,
+      "was_sampled_live": false,
+      "faithful": true
+    },
+    {
+      "session": "20260611_222532",
+      "seq": 1993,
+      "street": "flop",
+      "eff_bb": 11.4,
+      "pot_commit": 0.15,
+      "hero_cards": [
+        "Qc",
+        "Kd"
+      ],
+      "allin_mass": 0.0634,
+      "was_sampled_live": false,
+      "faithful": true
+    },
+    {
+      "session": "verify1_20260609_202137",
+      "seq": 51,
+      "street": "turn",
+      "eff_bb": 56.8,
+      "pot_commit": 0.017,
+      "hero_cards": [
+        "6s",
+        "7c"
+      ],
+      "allin_mass": 0.0612,
+      "was_sampled_live": false,
+      "faithful": false
+    },
+    {
+      "session": "20260609_192543",
+      "seq": 21,
+      "street": "flop",
+      "eff_bb": 55.0,
+      "pot_commit": 0.083,
+      "hero_cards": [
+        "6c",
+        "Ac"
+      ],
+      "allin_mass": 0.0587,
+      "was_sampled_live": true,
+      "faithful": false
+    },
+    {
+      "session": "20260611_204751",
+      "seq": 783,
+      "street": "preflop",
+      "eff_bb": 59.4,
+      "pot_commit": 0.003,
+      "hero_cards": [
+        "4c",
+        "4s"
+      ],
+      "allin_mass": 0.0582,
+      "was_sampled_live": false,
+      "faithful": true
+    },
+    {
+      "session": "20260611_222532",
+      "seq": 2961,
+      "street": "preflop",
+      "eff_bb": 13.3,
+      "pot_commit": 0.011,
+      "hero_cards": [
+        "4d",
+        "5c"
+      ],
+      "allin_mass": 0.0577,
+      "was_sampled_live": false,
+      "faithful": true
+    },
+    {
+      "session": "20260611_204751",
+      "seq": 810,
+      "street": "preflop",
+      "eff_bb": 57.2,
+      "pot_commit": 0.003,
+      "hero_cards": [
+        "Qh",
+        "Kc"
+      ],
+      "allin_mass": 0.0569,
+      "was_sampled_live": false,
+      "faithful": true
+    },
+    {
+      "session": "20260609_154557",
+      "seq": 281,
+      "street": "preflop",
+      "eff_bb": 7.5,
+      "pot_commit": 0.022,
+      "hero_cards": [
+        "Qs",
+        "7h"
+      ],
+      "allin_mass": 0.056,
+      "was_sampled_live": false,
+      "faithful": false
+    },
+    {
+      "session": "20260609_192543",
+      "seq": 93,
+      "street": "preflop",
+      "eff_bb": 61.6,
+      "pot_commit": 0.003,
+      "hero_cards": [
+        "Qd",
+        "9h"
+      ],
+      "allin_mass": 0.0557,
+      "was_sampled_live": false,
+      "faithful": false
+    },
+    {
+      "session": "20260611_163815",
+      "seq": 210,
+      "street": "preflop",
+      "eff_bb": 23.1,
+      "pot_commit": 0.006,
+      "hero_cards": [
+        "9c",
+        "Ks"
+      ],
+      "allin_mass": 0.0554,
+      "was_sampled_live": false,
+      "faithful": true
+    },
+    {
+      "session": "20260611_222532",
+      "seq": 2870,
+      "street": "preflop",
+      "eff_bb": 31.0,
+      "pot_commit": 0.022,
+      "hero_cards": [
+        "7h",
+        "8d"
+      ],
+      "allin_mass": 0.0552,
+      "was_sampled_live": false,
+      "faithful": true
+    },
+    {
+      "session": "20260608_152756",
+      "seq": 10,
+      "street": "preflop",
+      "eff_bb": 59.6,
+      "pot_commit": 0.003,
+      "hero_cards": [
+        "Qs",
+        "9c"
+      ],
+      "allin_mass": 0.0538,
+      "was_sampled_live": false,
+      "faithful": false
+    },
+    {
+      "session": "20260611_204751",
+      "seq": 1333,
+      "street": "preflop",
+      "eff_bb": 20.2,
+      "pot_commit": 0.049,
+      "hero_cards": [
+        "4d",
+        "7c"
+      ],
+      "allin_mass": 0.0523,
+      "was_sampled_live": false,
+      "faithful": true
+    },
+    {
+      "session": "20260612_042058",
+      "seq": 421,
+      "street": "preflop",
+      "eff_bb": 36.9,
+      "pot_commit": 0.019,
+      "hero_cards": [
+        "9d",
+        "2c"
+      ],
+      "allin_mass": 0.0517,
+      "was_sampled_live": false,
+      "faithful": true
+    },
+    {
+      "session": "20260611_201230",
+      "seq": 447,
+      "street": "preflop",
+      "eff_bb": 11.4,
+      "pot_commit": 0.014,
+      "hero_cards": [
+        "8h",
+        "Th"
+      ],
+      "allin_mass": 0.0516,
+      "was_sampled_live": false,
+      "faithful": true
+    }
+  ],
+  "biased_commit_note": "pre-fix _BIASED_COMMIT instrument at tau=0.10: fired 305/412 (74.03%), altered 21 \u2014 vs fixed 293/412 (71.12%), altered 18; biased variant NOT used for any number in this report",
+  "fidelity_caveat": {
+    "non_faithful_logs": [
+      "20260608_152756",
+      "20260609_154557",
+      "20260609_192543",
+      "verify1_20260609_202137"
+    ],
+    "note": "frames from these logs are reconstructions under CURRENT code, not byte-faithful to live"
+  }
+}

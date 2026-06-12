@@ -244,3 +244,22 @@ listener line updated (+ ARMED-banner check + expected firing magnitudes
 pending the next live session; first armed-session observations to be
 logged here under H1.** No code change — the flag was built, gated, and
 OFF since c9a2b14; this is configuration only.
+
+## 2026-06-12 ~15:10 — H2 battery FROZEN + champion M1 baseline; tail-concentration map (exploratory)
+
+- **Battery frozen:** `evals/h2_battery/battery_v1.json` — 8,112 spots
+  (24 nonempty range cells), oracle gradients sane (BB>SB>BTN call
+  rates; 5bb 17-18% vs 8bb+ ~5-6%; killphil ranges 73/169 @5bb,
+  45/169 @8bb+ through the POST-FIX adapter). Double-up equal-stack ICM
+  is bubble-harsh: overall oracle call rate 7.7%.
+- **Champion M1 = 0.0867 ± 0.0007 ICM-loss/spot.** Diagnostic: champion
+  call mass 35.9% vs oracle 7.7% — the shove-defense gap is dominantly
+  OVER-CALLING. F-M1 bar for the probe: M1 ≤ 0.0650 (-25% relative).
+- **Tail-concentration map (RESEARCH_MAP backlog #1) DONE** (subagent):
+  83% of pruned mass preflop; ALLIN 46% + big bets 33% of pruned mass;
+  firing falls monotonically with commitment (77.8% at 0-5% committed →
+  25.0% at 30%+) — the commitment scaling behaves as designed; near
+  silent <6bb where the short-stack floor owns the space. 57
+  seq-315-class spots cataloged. Substrate caveat: per-decision
+  context regenerated via the instrument's replay path, census-matched
+  to TG2 exactly. `evals/h1_tail_floor_20260612/tail_concentration_map.txt`.
