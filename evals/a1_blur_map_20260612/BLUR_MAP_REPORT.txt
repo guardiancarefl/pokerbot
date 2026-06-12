@@ -1,0 +1,275 @@
+A1 BLUR MAP — champion decision-entropy x stake, self-play
+generated: 2026-06-12T15:21:54.822626+00:00
+ckpt: /home/quant/pokerbot/runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt
+ckpt sha256: b79e82dd0ce9e78e…  abstraction sha256: 0fc20800dc7ce89e…
+games=8000 (master_seed=4242, hpl=5, mode=sample, all-champion 6 seats)  hands=128694  tainted=0
+decisions=826855  scored=826851  single-action(skipped)=4  no-discrete=0  no-bb=0  no-bucket=0
+
+stake proxy: pot_bb + eff_bb (eff = min(actor stack, max alive opp stack) / raw BB): pot plus actor's matchable remaining commitment — ceiling of the chip swing from the node
+entropy: H/ln(n_legal) over the masked deployment policy on legal discrete actions; n_legal<2 decisions excluded
+
+== street x depth-band (normalized entropy) ==
+street   depth         n   meanH    p90H  fr>0.5    stake     pot
+preflop  <6        48146   0.768   0.975   0.875     35.9    32.6
+preflop  6-10      54470   0.678   0.939   0.776     32.9    24.8
+preflop  10-20    149818   0.609   0.907   0.667     38.4    24.0
+preflop  20-40    207066   0.586   0.897   0.628     61.2    32.8
+preflop  40+      277646   0.557   0.882   0.578    103.2    44.7
+flop     <6         6698   0.706   0.981   0.766     36.5    33.7
+flop     6-10       4417   0.764   0.970   0.856     36.2    28.3
+flop     10-20     10171   0.765   0.965   0.877     39.8    25.2
+flop     20-40     16008   0.764   0.957   0.893     54.2    26.5
+flop     40+       25086   0.758   0.947   0.904     86.6    30.0
+turn     <6         1952   0.707   0.987   0.760     44.0    41.3
+turn     6-10       1124   0.743   0.978   0.834     43.2    35.2
+turn     10-20      2626   0.742   0.964   0.861     41.5    26.8
+turn     20-40      4670   0.708   0.939   0.853     51.8    24.0
+turn     40+        8604   0.713   0.916   0.898     78.4    22.9
+river    <6          750   0.656   0.980   0.701     46.9    44.2
+river    6-10        378   0.690   0.964   0.770     43.8    35.7
+river    10-20      1022   0.660   0.952   0.747     43.4    28.4
+river    20-40      2087   0.616   0.904   0.706     50.0    22.0
+river    40+        4112   0.619   0.862   0.765     75.0    20.0
+
+== street x depth-band, split by facing-allin (to_call >= actor stack) ==
+street   depth  allin         n   meanH    stake
+preflop  <6     no        24791   0.764     12.4
+preflop  <6     YES       23355   0.772     60.8
+preflop  6-10   no        42117   0.663     19.0
+preflop  6-10   YES       12353   0.729     80.2
+preflop  10-20  no       132043   0.601     28.4
+preflop  10-20  YES       17775   0.674    112.9
+preflop  20-40  no       187474   0.581     48.3
+preflop  20-40  YES       19592   0.635    184.6
+preflop  40+    no       251964   0.559     84.2
+preflop  40+    YES       25682   0.543    289.1
+flop     <6     no         4188   0.784     24.3
+flop     <6     YES        2510   0.575     56.8
+flop     6-10   no         3578   0.789     26.9
+flop     6-10   YES         839   0.655     76.1
+flop     10-20  no         8965   0.777     31.5
+flop     10-20  YES        1206   0.673    102.0
+flop     20-40  no        14727   0.771     46.5
+flop     20-40  YES        1281   0.683    143.1
+flop     40+    no        23277   0.764     77.1
+flop     40+    YES        1809   0.676    209.2
+turn     <6     no         1325   0.786     35.0
+turn     <6     YES         627   0.541     63.2
+turn     6-10   no          957   0.771     34.7
+turn     6-10   YES         167   0.582     92.0
+turn     10-20  no         2389   0.753     35.4
+turn     10-20  YES         237   0.640    103.1
+turn     20-40  no         4402   0.710     46.4
+turn     20-40  YES         268   0.685    140.2
+turn     40+    no         8303   0.714     74.4
+turn     40+    YES         301   0.685    187.5
+river    <6     no          566   0.715     41.7
+river    <6     YES         184   0.474     63.1
+river    6-10   no          334   0.717     37.6
+river    6-10   YES          44   0.486     90.4
+river    10-20  no          950   0.671     38.0
+river    10-20  YES          72   0.512    114.4
+river    20-40  no         2027   0.616     47.1
+river    20-40  YES          60   0.611    149.4
+river    40+    no         4046   0.619     73.3
+river    40+    YES          66   0.586    182.6
+
+== top-20 preflop buckets by blur_score = meanH x mean_stake (n >= 30) ==
+bucket       n   meanH    sdH    stake     pot   effbb   frAI    score  avg-policy top3
+    10    6294   0.869  0.163     72.3    38.7    33.7  0.158    62.85  ALLIN:0.249, CALL:0.237, FOLD:0.195
+     5    7767   0.844  0.195     73.8    40.4    33.4  0.174    62.25  CALL:0.309, ALLIN:0.206, FOLD:0.140
+     7   39835   0.859  0.136     71.3    37.5    33.8  0.150    61.28  FOLD:0.276, ALLIN:0.253, CALL:0.228
+    16    3660   0.841  0.136     72.9    39.0    33.9  0.156    61.25  FOLD:0.362, ALLIN:0.206, CALL:0.180
+    12    3684   0.841  0.166     71.4    37.9    33.5  0.159    60.06  FOLD:0.244, ALLIN:0.241, CALL:0.210
+     4    7849   0.821  0.224     71.9    38.4    33.5  0.160    59.04  CALL:0.321, ALLIN:0.222, BET_100:0.086
+    15    5987   0.819  0.156     70.9    37.5    33.4  0.151    58.08  FOLD:0.355, ALLIN:0.216, CALL:0.199
+    18   47980   0.789  0.145     70.4    36.7    33.7  0.145    55.55  FOLD:0.381, CALL:0.218, ALLIN:0.211
+    14   68893   0.735  0.154     68.7    35.1    33.6  0.140    50.48  FOLD:0.484, CALL:0.184, ALLIN:0.173
+    19   46935   0.677  0.176     68.6    35.0    33.6  0.140    46.42  FOLD:0.545, CALL:0.165, ALLIN:0.147
+     9   50999   0.663  0.176     68.3    34.6    33.7  0.135    45.31  FOLD:0.563, CALL:0.164, ALLIN:0.142
+     1   22215   0.658  0.178     68.8    35.1    33.7  0.135    45.23  FOLD:0.572, ALLIN:0.148, CALL:0.145
+    11   89549   0.555  0.198     68.1    34.2    33.9  0.130    37.79  FOLD:0.659, CALL:0.145, ALLIN:0.093
+    17   36634   0.503  0.203     67.6    33.6    34.0  0.123    34.00  FOLD:0.715, CALL:0.105, ALLIN:0.091
+     8   13229   0.482  0.205     69.4    35.1    34.3  0.127    33.46  FOLD:0.725, CALL:0.110, ALLIN:0.068
+     3   57766   0.474  0.212     67.5    33.8    33.7  0.126    32.05  FOLD:0.729, CALL:0.112, ALLIN:0.082
+    13   66282   0.473  0.202     67.7    33.9    33.8  0.127    32.01  FOLD:0.733, CALL:0.107, ALLIN:0.073
+     0   66713   0.469  0.210     68.1    34.3    33.8  0.127    31.99  FOLD:0.735, CALL:0.100, ALLIN:0.072
+     6   58362   0.470  0.200     67.9    34.2    33.7  0.127    31.89  FOLD:0.735, CALL:0.113, ALLIN:0.070
+     2   36513   0.464  0.214     67.6    33.9    33.7  0.128    31.37  FOLD:0.740, CALL:0.100, ALLIN:0.071
+
+== top-20 flop buckets by blur_score = meanH x mean_stake (n >= 30) ==
+bucket       n   meanH    sdH    stake     pot   effbb   frAI    score  avg-policy top3
+    46     350   0.847  0.159     65.2    30.9    34.3  0.137    55.17  CALL:0.309, ALLIN:0.224, FOLD:0.149
+   153     388   0.827  0.181     64.9    30.5    34.4  0.144    53.66  CALL:0.311, ALLIN:0.236, BET_100:0.147
+    48    1251   0.807  0.214     66.4    33.1    33.2  0.129    53.52  CALL:0.391, ALLIN:0.240, BET_100:0.126
+    83     782   0.835  0.179     63.8    30.9    32.9  0.119    53.25  CALL:0.337, ALLIN:0.280, BET_100:0.109
+   115    1184   0.820  0.211     64.7    31.6    33.1  0.117    53.02  CALL:0.371, ALLIN:0.243, BET_100:0.109
+   123     694   0.781  0.266     67.6    33.7    34.0  0.150    52.83  CALL:0.383, ALLIN:0.221, BET_100:0.143
+    67    1222   0.829  0.175     63.5    30.2    33.3  0.133    52.65  CALL:0.376, ALLIN:0.244, FOLD:0.104
+    88     125   0.871  0.156     60.4    28.5    31.9  0.080    52.57  CALL:0.331, ALLIN:0.220, BET_100:0.127
+   143     293   0.813  0.163     63.8    30.6    33.1  0.126    51.85  CALL:0.407, ALLIN:0.191, FOLD:0.136
+    40    1255   0.825  0.183     62.7    30.1    32.6  0.125    51.73  CALL:0.358, ALLIN:0.260, FOLD:0.123
+    64    1248   0.817  0.212     63.3    30.7    32.6  0.134    51.70  CALL:0.398, ALLIN:0.241, BET_100:0.108
+    99    1476   0.795  0.180     65.0    31.3    33.7  0.127    51.66  CALL:0.355, ALLIN:0.188, FOLD:0.176
+    14     454   0.821  0.222     62.6    31.7    31.0  0.126    51.41  CALL:0.367, ALLIN:0.237, BET_100:0.131
+   168     484   0.824  0.192     61.9    29.6    32.3  0.126    51.04  CALL:0.308, ALLIN:0.274, FOLD:0.133
+    29    1244   0.772  0.251     66.1    34.2    31.9  0.146    51.00  CALL:0.412, ALLIN:0.225, BET_100:0.131
+   194    1150   0.755  0.275     67.5    35.6    31.9  0.163    50.96  CALL:0.438, ALLIN:0.185, BET_100:0.127
+     4     635   0.847  0.198     60.2    28.1    32.0  0.117    50.96  CALL:0.343, ALLIN:0.264, BET_100:0.105
+   145    1275   0.786  0.245     64.7    33.6    31.1  0.143    50.90  CALL:0.387, ALLIN:0.222, BET_100:0.140
+   167     364   0.820  0.184     61.8    29.1    32.7  0.140    50.69  CALL:0.338, ALLIN:0.252, FOLD:0.133
+    23     612   0.818  0.185     62.0    29.1    32.8  0.124    50.68  CALL:0.401, ALLIN:0.211, BET_100:0.107
+
+== top-20 turn buckets by blur_score = meanH x mean_stake (n >= 30) ==
+bucket       n   meanH    sdH    stake     pot   effbb   frAI    score  avg-policy top3
+   134      32   0.877  0.146     69.6    32.6    37.0  0.094    61.00  CALL:0.365, ALLIN:0.227, BET_100:0.107
+    40     154   0.845  0.135     66.5    27.1    39.4  0.058    56.15  CALL:0.377, ALLIN:0.244, FOLD:0.108
+    14      93   0.794  0.142     65.9    29.2    36.7  0.086    52.30  CALL:0.388, ALLIN:0.218, FOLD:0.143
+   174      36   0.757  0.248     68.5    36.5    32.0  0.111    51.79  CALL:0.469, ALLIN:0.173, BET_100:0.147
+   104     319   0.756  0.268     68.4    34.6    33.7  0.088    51.66  CALL:0.389, BET_100:0.170, ALLIN:0.137
+    85      48   0.710  0.226     72.3    36.3    36.0  0.083    51.36  CALL:0.539, ALLIN:0.182, BET_66:0.078
+   131     365   0.767  0.211     66.7    34.3    32.4  0.118    51.20  CALL:0.483, ALLIN:0.178, BET_100:0.111
+    98     117   0.700  0.210     72.8    38.0    34.8  0.154    50.97  CALL:0.520, ALLIN:0.149, FOLD:0.115
+   141      95   0.794  0.194     63.9    29.8    34.1  0.074    50.77  CALL:0.451, ALLIN:0.222, BET_100:0.099
+    88     188   0.829  0.135     61.2    25.6    35.6  0.101    50.73  CALL:0.382, ALLIN:0.184, BET_100:0.144
+    21     436   0.743  0.274     68.2    35.7    32.5  0.115    50.66  CALL:0.466, ALLIN:0.155, BET_100:0.130
+    31      48   0.794  0.181     63.7    25.7    38.0  0.083    50.55  CALL:0.427, ALLIN:0.166, BET_100:0.154
+    28     171   0.776  0.144     65.0    30.2    34.8  0.070    50.48  CALL:0.434, ALLIN:0.169, FOLD:0.136
+    17     378   0.763  0.220     65.8    33.9    31.9  0.119    50.22  CALL:0.497, ALLIN:0.166, BET_100:0.121
+   180      72   0.814  0.145     61.5    27.4    34.1  0.042    50.05  CALL:0.329, ALLIN:0.244, BET_100:0.157
+   188     146   0.770  0.219     64.4    29.6    34.8  0.096    49.56  CALL:0.501, ALLIN:0.150, BET_100:0.135
+   119     233   0.778  0.229     63.5    28.4    35.1  0.090    49.41  CALL:0.454, ALLIN:0.199, BET_100:0.116
+   113      77   0.795  0.157     62.1    24.7    37.4  0.130    49.33  CALL:0.349, FOLD:0.181, ALLIN:0.150
+   117      85   0.767  0.164     63.8    27.1    36.6  0.082    48.91  CALL:0.430, ALLIN:0.157, FOLD:0.140
+   100     238   0.753  0.203     64.9    31.8    33.1  0.109    48.89  CALL:0.516, ALLIN:0.182, BET_100:0.095
+
+== top-20 river buckets by blur_score = meanH x mean_stake (n >= 30) ==
+bucket       n   meanH    sdH    stake     pot   effbb   frAI    score  avg-policy top3
+     7     214   0.774  0.241     68.0    31.9    36.1  0.051    52.67  CALL:0.425, BET_100:0.182, BET_66:0.143
+   113     351   0.746  0.275     68.4    34.6    33.8  0.071    50.97  CALL:0.436, BET_100:0.163, BET_66:0.118
+   123      30   0.670  0.205     71.9    36.3    35.6  0.200    48.15  CALL:0.541, FOLD:0.162, ALLIN:0.105
+    93      46   0.761  0.228     63.1    29.9    33.2  0.109    48.05  CALL:0.425, BET_100:0.188, ALLIN:0.134
+    74     245   0.765  0.246     61.6    28.7    33.0  0.065    47.15  CALL:0.427, BET_100:0.185, BET_66:0.121
+    23      34   0.755  0.237     61.7    29.1    32.6  0.059    46.60  CALL:0.497, BET_100:0.162, BET_66:0.101
+    32      88   0.743  0.272     61.0    31.0    30.0  0.034    45.30  CALL:0.500, ALLIN:0.145, BET_100:0.122
+   136     186   0.688  0.236     65.4    32.8    32.6  0.075    44.94  CALL:0.567, BET_66:0.128, BET_100:0.113
+     2     188   0.660  0.230     67.9    35.0    32.9  0.080    44.83  CALL:0.621, ALLIN:0.115, BET_100:0.094
+   195      35   0.709  0.267     63.2    27.5    35.8  0.029    44.81  CALL:0.467, BET_100:0.179, BET_66:0.122
+   174     140   0.670  0.139     65.3    26.0    39.3  0.014    43.80  CALL:0.543, FOLD:0.131, BET_100:0.105
+   107     220   0.654  0.261     66.3    30.0    36.3  0.100    43.35  CALL:0.585, BET_66:0.116, BET_100:0.111
+   118      33   0.744  0.255     58.1    24.1    34.0  0.030    43.24  CALL:0.409, BET_100:0.164, BET_66:0.138
+   170     175   0.607  0.253     70.6    35.7    34.8  0.063    42.83  CALL:0.630, BET_66:0.107, BET_100:0.104
+   173     257   0.684  0.234     62.6    27.8    34.8  0.047    42.82  CALL:0.562, BET_100:0.146, BET_66:0.125
+   155      53   0.642  0.158     65.6    22.5    43.1  0.000    42.06  CALL:0.599, BET_66:0.106, FOLD:0.094
+    65      39   0.689  0.172     60.5    24.3    36.2  0.026    41.64  CALL:0.495, FOLD:0.162, BET_100:0.121
+    10      34   0.733  0.243     56.6    22.6    34.0  0.029    41.50  CALL:0.480, BET_100:0.186, BET_66:0.136
+    31      48   0.679  0.211     60.4    17.6    42.8  0.042    41.01  CALL:0.542, BET_100:0.106, ALLIN:0.097
+    24     103   0.660  0.176     61.7    20.8    40.9  0.039    40.71  CALL:0.477, FOLD:0.155, BET_100:0.143
+
+======================================================================
+CROSS-REFERENCE — blur map vs known leak evidence
+======================================================================
+
+1) The known shove-defense hole (EXP_H2, evals/h2_battery/m1_champion.json)
+   Frozen battery: 8,112 preflop facing-all-in spots, hero 5-15bb eff,
+   killphil-optimal oracle. Champion (same ckpt b79e82dd as this map):
+     M1 mean ICM-EV loss = 0.0867 +/- 0.0007
+     champion CALL mass  = 35.9%   vs oracle call rate = 7.7%
+   The blur map flags EXACTLY this region, independently and from pure
+   self-play telemetry. Preflop facing-allin (to_call >= stack) rows:
+
+     band    n(allin)  meanH(allin)  meanH(no-allin)  delta   stake
+     <6      23,355      0.772          0.764         +0.008    61
+     6-10    12,353      0.729          0.663         +0.066    80
+     10-20   17,775      0.674          0.601         +0.073   113
+     20-40   19,592      0.635          0.581         +0.054   185
+     40+     25,682      0.543          0.559         -0.016   289
+
+   The entropy EXCESS of facing-allin over ordinary nodes peaks in the
+   6-20bb bands — the battery's 5-15bb window. Facing a shove the legal
+   set is essentially binary (fold/call-commit), so meanH ~ 0.7 means
+   the deployed policy is near a coin flip on a stack-decisive decision;
+   the H2 oracle says the right answer is FOLD ~92% of the time. The
+   blur metric and the oracle audit agree: this is indecision, not
+   mixed-strategy equilibrium texture. On every other street, facing-
+   allin nodes are SHARPER than average (flop -0.21 to -0.09; river
+   <6 0.474 vs 0.715) — preflop short-stack shove defense is the one
+   place where maximal stake coincides with maximal blur.
+
+2) Worst buckets sit in the same neighborhood. Top preflop blur_scores:
+   bucket 10 (n=6,294, meanH .869, frAI .158, policy ALLIN .249 / CALL
+   .237 / FOLD .195) and bucket 7 (n=39,835, meanH .859, frAI .150,
+   FOLD .276 / ALLIN .253 / CALL .228). These mid-strength preflop
+   buckets spread mass over fold/call/allin near-uniformly at ~70bb
+   mean stake; bucket 7 alone carries 39.8k decisions (~5% of all
+   scored decisions). Bucket 10 is the worst by score; bucket 7 is the
+   worst by score x mass.
+
+3) Attacker batteries (evals/attacker_ext_20260611_pergame/.../REPORT.md)
+   The Tier-0 trained BR attackers concentrated extraction NOWHERE:
+   <= 0 in all four batteries (standard/bubble x floors ON/OFF; bubble
+   specialist -0.078/game, z=-5.9 — *below* par). So the attacker
+   evidence neither confirms nor contradicts the blur map's hot cells:
+   that attacker class shares the champion's action enum + abstraction
+   and never learned to manufacture the 5-15bb facing-shove nodes where
+   H2's oracle (a *scripted, off-tree* shover) shows a 0.087 ICM-unit
+   leak. Consistent picture: the champion's exploitability is not
+   findable by same-tree BR but is demonstrable by off-tree shove
+   pressure — i.e. the blur map + H2, not the attackers, point at the
+   real repair target. (killphilmtt's 0.174/game with 5 coordinated
+   seats remains the standing external bar.)
+
+======================================================================
+SLATE-2A DELIVERABLE — cheapest intervention probe for the worst bucket
+(pre-registration sketch, 2026-06-12)
+======================================================================
+
+TARGET. Preflop facing-allin nodes (to_call >= hero stack, exactly one
+all-in raiser) at 5-15bb effective — the cell where blur (meanH .67-.77)
+x stake (80-113bb) peaks and where the frozen H2 oracle shows champion
+call mass 35.9% vs optimal 7.7%. Worst-bucket instance: preflop bucket
+10 (blur_score 62.9); mass-weighted worst: bucket 7.
+
+INTERVENTION (what to change). A deployment-time SHOVE-DEFENSE FLOOR in
+the existing composed-filter family (premium floor / check-free /
+short-stack floor — zero retraining, new-file harness only):
+  At a qualifying node, compute hero hand-class equity vs a FIXED wide
+  shove range (the battery's own killphil ranges, already frozen in
+  evals/h2_battery/battery_v1.json) via equity_vs_range, and the ICM
+  break-even call equity from Malmuth-Harville fold-vs-call EVs (same
+  arithmetic as fold_vs_shove_battery's oracle). If equity < threshold:
+  move the policy's CALL/ALLIN mass to FOLD; else leave the policy
+  untouched. One scalar knob: threshold margin tau (pre-register
+  tau = 0, the pure break-even gate).
+
+MEASUREMENT (in order; stop on first falsification).
+  M-A  Re-grade the frozen battery: scripts/fold_vs_shove_battery grade
+       with floor ON. Cost: minutes.
+  M-B  CRN-paired self-play A/B, floor ON vs OFF, 4,000 SNGs, per-game
+       seeds 2026 + 7919*g (the attacker-eval schedule), net ICM
+       buy-ins/game delta on the paired sample.
+  M-C  (secondary) killphilmtt 5-seat extraction yardstick, floor ON
+       vs the standing 0.174/game.
+
+FALSIFICATION BARS (numeric, pre-committed).
+  F1 PASS: M1 mean ICM-EV loss <= 0.0434 (>= 50% reduction from
+     0.0867; SE 0.0007, so the bar sits ~60 SE from baseline — any
+     directionally real fix clears or fails it unambiguously) AND
+     graded call mass in [5%, 15%] (oracle 7.7%; below 5% means the
+     gate over-folds, above 15% means it under-bites).
+  F2 PASS: paired self-play delta >= -0.005 buy-ins/game and not
+     significantly negative (z > -2). The floor must not pay for its
+     battery win with self-play EV.
+  F3 (secondary, non-blocking): killphilmtt extraction < 0.174/game.
+  FALSIFIED if M1 reduction < 25% (M1 > 0.065) OR call mass > 20%
+  OR paired delta < -0.01/game with z < -2. A falsified probe rules
+  out the cheapest class (static equity gate) and escalates to the
+  next-cheapest: targeted retraining with shove-pressure traversal
+  seeding (a1 follow-up, separate pre-registration).
+
+WHY THIS IS THE CHEAPEST PROBE. No training, no new nets, no encoder
+change; reuses three frozen instruments (battery_v1, CRN A/B harness,
+killphil yardstick) and one frozen range table; one tunable scalar
+fixed in advance; total compute ~ one battery grade + 4k paired games
+(~ the cost of one attacker eval shard sweep, well under a day on 10
+cores).
