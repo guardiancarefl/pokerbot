@@ -81,12 +81,15 @@ payout)?** Evidence: none measured — ICM is assumed throughout training and
 eval. The known failure modes (ignores position/blinds/skill, equal-payout
 flattening near the bubble) are exactly where our gates concentrate
 (bubble edge).
-Decisive experiment: empirical tournament-value probe — from N sampled
-mid-tournament states, compare ICM-predicted finish-distribution vs
-self-play rollout finish-distribution (the harness exists: self-play games
-with fixed starts). Gap map by stack-config/level. Cost: ~6–10 h CPU
-(deferred-class). EVoI: HIGH if the gap is material — it re-prices every
-ICM-adjusted return in training; LOW if ICM holds (still worth a report).
+Decisive experiment: empirical tournament-value probe (run 2026-06-12).
+**ANSWERED — MATERIAL (`evals/c1_icm_gap_20260612/`):** B*=+0.0412
+[+0.0286,+0.0539] in high-dispersion bubble states; MH underprices
+short-stack survival (<5bb error +0.065), overprices mid stacks;
+equal-stack states clean. HETEROGENEOUS (σ_bias 0.068) → correction
+must be state-dependent (depth_bb first feature). Consumers flagged:
+icm_adjust_returns, subgame leaves, H2-battery oracle, H1 floor evals
+(equal-stack metrics expected robust). Follow-ups in refill: correction
+fit + consumer re-price audit.
 
 ## (d) Opponent modeling & exploitation
 

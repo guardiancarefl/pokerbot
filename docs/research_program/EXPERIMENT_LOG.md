@@ -477,3 +477,20 @@ call; flag table update for DRYRUN_CHECKLIST queued with it.
 Unlock ~1-2 sessions away — **H4 spec drafting promoted to the refill
 slate** (draft before unlock so the experiment starts the day the
 counter crosses). RESEARCH_MAP d1 updated.
+
+## 2026-06-12 ~21:10 — EXP_c1 (ICM gap Tier-1) VERDICT: MATERIAL — re-price
+
+Third completed program experiment (H1 PASS, H2 FAIL, c1 MATERIAL).
+MH ICM bias B* = +0.0412 [+0.0286, +0.0539] Bonferroni 98.33% in
+high-dispersion bubble states — H_c1 falsified, "re-price" branch of
+the pre-registered decision matrix. Structure: MH underprices
+short-stack survival (depth <5bb error +0.065), overprices mid stacks;
+equal-stack states ≈ clean (t1 −0.0034 n.s.) so TG3/battery
+equal-stack metrics are not invalidated wholesale — the bias
+concentrates exactly where the program's bubble interest lives.
+σ_bias(t3)=0.068 → HETEROGENEOUS (a correction must be state-dependent).
+C0 instrument-halt fired + fixed + re-run clean (DEVIATION_LOG).
+Follow-ups queued to refill: correction fit (depth_bb first feature);
+consumer re-price audit (icm_adjust_returns, subgame leaves, H2-battery
+re-label, H1 floor re-check — all expectations: small at equal stacks).
+**Addendum 1.4 PROGRAM REVIEW now due (3 completed experiments).**
