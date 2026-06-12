@@ -16,6 +16,14 @@ Re-baseline 7/9 rows done; probe launches when the last two land and
 spec §3 freezes. OQ-1 Windows brief awaits your routing. Nothing else
 needs you.
 
+## POD_CASE (standing one-liner — Addendum 5.5, update on every state change)
+
+RIGHT NOW a 27-core pod would unlock: nothing yet decision-grade — the
+H2 probe verdict lands ~17:15 today on this box. **IF the probe PASSES:
+the full 2000-iter league retrain carrying the bbnorm depth organ
+(slate 2b spec in progress) is the immediate case — ~3 h pod vs ~28 h
+Contabo**, plus it frees all 12 local cores for the eval batteries.
+
 ## Open
 
 (none)
