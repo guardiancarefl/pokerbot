@@ -457,3 +457,16 @@ evidence required); the synthetic live-SB twin proves the mechanism.
 dead-SB hands reconstruct — that is the real fix for the AcKc class**
 (bridge-side, candidate for the next build slot). Arming = operator
 call; flag table update for DRYRUN_CHECKLIST queued with it.
+
+## 2026-06-12 ~20:00 — Session-3 pipeline + night shift resumed
+
+- Session `183701` (largest yet: 1519 frames / 194 decisions / 140
+  hands): **tail floor 104 firings, 0 tail-caused argmax changes —
+  third consecutive in-band armed session, now at meaningful n.**
+  2 layer-1 recoveries fired live (first live firings). 83 to-act
+  skips / 6 hands lost / 8 red flags — scraper-suspect class still
+  dominant; full triage at logs/triage_20260612_183701.txt. Ingest
+  queued behind the mtime guard (+H4 update with it).
+- Night shift resumed: ensemble Arm B (cores 0-3, fresh agent with the
+  prior agent's state), ICM tier-1 (cores 4-7, same). P2 build landed
+  earlier (3bf5d3f).
