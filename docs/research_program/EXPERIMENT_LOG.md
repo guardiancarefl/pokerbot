@@ -331,3 +331,18 @@ depth not recorded in the gate artifacts — harness fix documented):
 3. **v2's gate failure was an independent broad-spectrum over-folding
    regression** (folds-facing-action elevated at every depth) — travels
    with the run, not the encoder.
+
+## 2026-06-12 ~14:35 — H2 SPEC FROZEN + PROBE LAUNCHED
+
+§3 filled and frozen (commit aab1f52): killphil −0.0800 ± 0.0223,
+holds ticketmaster +0.5400 / sng +0.8360 / tighttom +0.7780, champion
+M1 0.0867 ± 0.0007, divergence check PASS (59/2000 outcome-differ).
+Derived bars: probe M1 ≤ 0.0650; killphil row ≥ −0.0300 @ ≥2σ_diff.
+Probe launched on freeze: tmux `h2_probe`, 500 iters league-mix
+continuation (train_6max resume, G=8, cores 4-11), run dir
+`runs/h2_probe_league_v1`. First iter reproduces the benchmark
+deterministically (adv 0.5446 / strat 0.7625); 17.5 s/iter under
+contention → ~2.4 h. Watcher armed (completion or Traceback).
+On completion: grade ckpt_2000 on the frozen battery (F-M1), then
+CRN killphil + hold rows + self-anchor (F-M2a/b), verdict per §5.
+e2-record rows (gushansen, millennium) still completing on cores 0-3.
