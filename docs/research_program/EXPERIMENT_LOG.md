@@ -435,3 +435,11 @@ league infra survive as instruments. **H2 is experiment #2 complete
 (H1 #1) — Addendum 1.4 program review triggers after the NEXT completed
 experiment.** Next per operator sequencing: P2 build (task #7), refill
 pass for the experiment queue.
+
+## 2026-06-12 ~19:05 — LIVE SESSION #3 starting — night shift stood down
+
+12 compute processes killed (ICM t1 rollouts, ensemble baseline rows).
+Both are CRN-deterministic per their designs — relaunch reproduces.
+Agents will find the listener on their next check and hold per their
+stand-down rules. P2 build agent (file/tests only) continues. Pipeline
+queues on session end per Addendum 4.6.
