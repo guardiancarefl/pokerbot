@@ -112,6 +112,18 @@ every Shanky profile — panel rows measure profile-as-adapter-plays-it.
 Matters for H2's league realism. Fix cost: ~2–4 h + re-baseline affected
 rows. EVoI: MEDIUM-HIGH before H2's probe (audit first; fix if killphil-class
 profiles depend on it).
+**AUDIT DONE 2026-06-12 (killphil half): KillPhilMTT DOES depend on it** —
+17/629 `when` rules use `stilltoact`, structured as position-tiered
+unopened-push ranges: 9 `>=k` + 3 `=k` rules (early/mid-position TIGHTER
+ranges) are DEAD; the 5 `<=1` rules (late-position LOOSEST ranges) fire
+from EVERY position. Net: adapter-killphil shoves systematically looser
+than real killphil in unopened pots — biases both the −0.174 gate row
+(adapter-killphil is likely WEAKER than real) and any "killphil-optimal"
+probe target. **H2 spec must either fix stilltoact first (derive from
+dealt/folded/acted state — the adapter has the live view) or define
+killphil-optimal against the adapter-as-played semantics explicitly.**
+Heaviest users field-wide: GusHansen 2370 rules, Millennium 253,
+itmstrike A/C ~107 — re-baseline those rows after any fix.
 **e3. Harness seat-bias bound:** self-play calibration marginal-PASS
 (−0.042 ± 0.0223, 1.88σ). Any conclusion under ~0.045/game is inside the
 instrument's noise floor. Standing caveat on every panel verdict.

@@ -222,3 +222,15 @@ were identical in both runs; only the verdict label changed.
 TG4 PASS ⇒ ship recommendation filed (OQ-2). Arming is operator-only;
 flag stays OFF until the operator arms `--tail-floor-tau 0.10`.**
 Evidence: `evals/h1_tail_floor_20260612/tg4/` (+ tg3_24k.json).
+
+## 2026-06-12 ~13:40 — H2 pre-work: e2 stilltoact audit (killphil half) DONE
+
+KillPhilMTT uses `stilltoact` in 17/629 rules — position-tiered
+unopened-push ranges. With the adapter's hardcoded 0: the 9 `>=k` + 3
+`=k` early/mid-position (tighter) tiers are dead; the 5 `<=1`
+late-position (loosest) tiers fire from every seat. Adapter-killphil
+therefore shoves looser than real killphil in unopened pots. Verdict
+for H2: the spec MUST resolve this before defining "killphil-optimal"
+— either fix stilltoact (derive yet-to-act count from the live view)
+and re-baseline, or pre-commit the probe to adapter-as-played
+semantics. Details + field-wide usage ranking in RESEARCH_MAP e2.
