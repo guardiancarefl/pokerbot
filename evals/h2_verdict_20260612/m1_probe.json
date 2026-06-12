@@ -1,0 +1,9 @@
+{
+  "battery": "h2_battery_v1",
+  "ckpt": "runs/h2_probe_league_v1_resume/checkpoints/ckpt_iter_2000.pt",
+  "n_spots_graded": 8112,
+  "m1_mean_ev_loss": 0.13750386075930576,
+  "m1_se": 0.0007615133848270398,
+  "oracle_call_rate": 0.07692307692307693,
+  "policy_call_mass_mean": 0.5209260973014015
+}
