@@ -50,3 +50,18 @@ design (slate 2e) has landed, else 5.
    counterfactual + byte-identity proof obligations). Test fixture:
    session 161347 seq 276 AcKc invariant_fail. Flag-gated OFF; full
    replay gates over ALL raw-record logs; arming = operator line.
+
+
+## CYCLE 2 (2026-06-12 ~21:45, per PROGRAM_REVIEW #1 ranking; operator: Contabo-only, pod stopped/resumable)
+
+| cores | owner | state |
+|---|---|---|
+| 0-3 | f1 ensemble Arm B (agent) | running |
+| 4-9 | slate-2a shove-defense floor probe (agent; M-A→M-B→M-C) | running |
+| 8-9 light | file agents as needed | rolling |
+
+Queue: 1) slate-2a (RUNNING) → 2) ICM correction fit + consumer
+re-price audit (next; design follows c1's MATERIAL actions) → 3) f1
+verdict → cycle-2 refill (H4 freeze on unlock, H2b sequenced after 2a,
+dead-SB replay fix build). POD re-trigger conditions live (review §5):
+surface a POD_CASE the moment any track needs training-scale compute.
