@@ -470,3 +470,10 @@ call; flag table update for DRYRUN_CHECKLIST queued with it.
 - Night shift resumed: ensemble Arm B (cores 0-3, fresh agent with the
   prior agent's state), ICM tier-1 (cores 4-7, same). P2 build landed
   earlier (3bf5d3f).
+
+## 2026-06-12 ~20:20 — session-3 ingested: H4 383/500 (+87 in one session)
+
+140 hands / 411 actions / 87 opp-observed / 9 showdowns (hero-inferred).
+Unlock ~1-2 sessions away — **H4 spec drafting promoted to the refill
+slate** (draft before unlock so the experiment starts the day the
+counter crosses). RESEARCH_MAP d1 updated.
