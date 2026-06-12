@@ -443,3 +443,17 @@ Both are CRN-deterministic per their designs — relaunch reproduces.
 Agents will find the listener on their next check and hold per their
 stand-down rules. P2 build agent (file/tests only) continues. Pipeline
 queues on session end per Addendum 4.6.
+
+## 2026-06-12 ~19:50 — P2 BUILT + GATED (commit 3bf5d3f) — and the AcKc fixture flipped the diagnosis
+
+P2 bet-closure recovery landed flag-gated OFF (requires P1), full gate
+treatment: flag-off byte-identity 6077/6077 frames over all 14 raw
+logs; flag-on diffs are 9 annotation-only refusals; 23/23 new tests.
+**Build finding: seq=276 (AcKc) is NOT a displacement** — dead-SB hand,
+phantom recon BB; recovery would have been a wrong-state decision
+(seq-1363 class). Dead-SB guard added (positive blind-structure
+evidence required); the synthetic live-SB twin proves the mechanism.
+**Root-cause follow-up filed: carry blind structure into replay so
+dead-SB hands reconstruct — that is the real fix for the AcKc class**
+(bridge-side, candidate for the next build slot). Arming = operator
+call; flag table update for DRYRUN_CHECKLIST queued with it.
