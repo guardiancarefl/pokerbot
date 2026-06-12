@@ -346,3 +346,20 @@ contention → ~2.4 h. Watcher armed (completion or Traceback).
 On completion: grade ckpt_2000 on the frozen battery (F-M1), then
 CRN killphil + hold rows + self-anchor (F-M2a/b), verdict per §5.
 e2-record rows (gushansen, millennium) still completing on cores 0-3.
+
+## 2026-06-12 ~15:00 — e2 re-baseline COMPLETE (9 rows); FIELD_DOSSIER landed; b2 launched
+
+- **e2 record complete** (`evals/e2_rebaseline_20260612/REPORT.txt`):
+  killphil −0.0800 (gate, ~54% of old extraction was artifact); all 9
+  post-fix rows tabled. Standing rule: pre-2026-06-12 panel rows are
+  PRE-FIX instrument readings — never mix without the tag.
+- **FIELD_DOSSIER.md (slate 2d):** decision-grade field constants —
+  flat positional VPIP (22.7–24.5% EP→BTN), 2.0x min-raise mode (55%
+  of opens), jam-regime break at 10–15bb, 5–15bb jam rate 8.5%
+  [6.1,11.8]. Timing structurally unextractable (2.5 s frame cadence).
+- **b2 LAUNCHED (cores 0-1, tmux b2_variance):** killphil row at
+  champion ckpt_1300 + ckpt_1400 (2000 games CRN each) — calibrates the
+  gate metric's checkpoint-to-checkpoint swing BEFORE the H2 verdict
+  reads its +0.05 bar against checkpoint noise.
+- Core ledger: 0-1 b2, 2-3 blur map (agent), 4-11 probe (~16:40),
+  slate agents 2b/2c/2e/2f rolling.
