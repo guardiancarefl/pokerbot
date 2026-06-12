@@ -156,7 +156,12 @@ instrument's noise floor. Standing caveat on every panel verdict.
 
 ## (f) Frontier / proprietary
 
-**f1. Shove-defense specialist override region** (hybrid policy): if H2's
+**f1. CLOSED-FALSIFIED at probe (2026-06-12,
+`evals/f1_ensemble_probe_20260612/`):** cheap-organ ensemble dead — no
+existing checkpoint/attacker improves the bubble as a selector target
+(best candidate worsens it z=-2.54 + control harm; K2/K3 fired). A real
+specialist needs dedicated training (pod-class, unqueued absent
+transfer evidence). ORIGINAL ENTRY: (hybrid policy): if H2's
 probe shows a league-trained model fixes 5–15 BB shove-defense but costs EV
 elsewhere, compose champion + specialist gated by (eff_bb ∈ [5,15] ∧ facing
 all-in) — the floor-chain machinery is the natural injection point, and the

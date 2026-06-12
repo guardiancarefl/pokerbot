@@ -521,3 +521,10 @@ the audit's v2 (98682fa). Side finding: actions.seq is unique per
 listener run, not per file — captured_at disambiguates. **Both seat
 conventions reconciled → the Windows Part-A patch (153/158 folds, 0 FP)
 is CLEAR for live deployment.** Dossier hold lifted.
+
+## 2026-06-12 ~22:45 — f1 ensemble probe: FALSIFIED (K2) — frontier item closed at probe cost
+
+All bars in the agent result; headline: no cheap organ improves the
+bubble (best candidate WORSENS it, z=-2.54, plus control harm). f1
+closed; RESEARCH_MAP updated. Cores 0-3 roll to the ICM correction fit
+(spec FROZEN as drafted — gates G1-G3 + validation bars pre-committed).
