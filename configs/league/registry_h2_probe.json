@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "name": "killphilmtt",
+      "path": "data/shanky_profiles/KillPhilMTT.txt",
+      "metadata": {
+        "policy_type": "shanky",
+        "big_blind_chips": 100,
+        "note": "H2 probe league pool — post-a8933ea adapter (stilltoact derived, PPL preflop semantics). big_blind_chips is the context default; chip amounts reach predicates in BB units."
+      },
+      "tags": ["h2", "shanky", "shove-bot"]
+    },
+    {
+      "name": "champion-past-self-1000",
+      "path": "runs/k200_real_ante_20260605_225847/ckpt_iter_1000.pt",
+      "metadata": {
+        "policy_type": "checkpoint",
+        "iter": 1000,
+        "run_dir": "runs/k200_real_ante_20260605_225847",
+        "note": "H2 probe league pool — past self"
+      },
+      "tags": ["h2", "past-self"]
+    },
+    {
+      "name": "champion-past-self-0500",
+      "path": "runs/k200_real_ante_20260605_225847/ckpt_iter_0500.pt",
+      "metadata": {
+        "policy_type": "checkpoint",
+        "iter": 500,
+        "run_dir": "runs/k200_real_ante_20260605_225847",
+        "note": "H2 probe league pool — past self"
+      },
+      "tags": ["h2", "past-self"]
+    }
+  ]
+}

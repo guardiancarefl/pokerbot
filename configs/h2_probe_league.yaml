@@ -1,0 +1,55 @@
+# EXP_H2 probe (spec §4): continued training from the deployed champion
+# (k200_real_ante ckpt_iter_1500, sha b79e82dd…) with the killphil-league
+# override band. Identical to the champion recipe
+# (six_max_phase4f_dcfr_candC_k200.yaml) except: tag, n_iterations
+# (resume target 2000 = 1500 + 500 probe iters), and the league fields.
+#
+# League band (solver6._sample_override_opponent): league_mix=0.30,
+# uniform over registry_h2_probe.json = {killphilmtt (shanky, post-
+# a8933ea adapter), past-self ckpt_1000, past-self ckpt_0500}. Scripted
+# decisions never write to the strategy buffer (non-traverser
+# short-circuit) — the traverser learns RESPONSES only.
+#
+# Use (after H2 spec §3 freeze; benchmark 1 iter first per spec):
+#   python -m scripts.continue_k200_real_ante \
+#       --config configs/h2_probe_league.yaml \
+#       --resume runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt \
+#       --target-iter 2000 --checkpoint-every 100 \
+#       --out runs/h2_probe_league_v1
+
+tag: h2_probe_league
+abstraction_path: runs/abstraction_20260521_223018_retrofit/abstraction.pkl
+
+# Game shape (ignored in tournament mode but required by dataclass).
+starting_stack: 1500
+big_blind: 100
+small_blind: 50
+payout_mode: double_up
+buy_in: 1.0
+first_share: 0.65
+
+# Tournament-aware training (identical to champion recipe).
+tournament_structure_path: configs/ignition_double_up_6max_turbo.yaml
+num_paid: 3
+
+# Training hyperparameters (identical to champion recipe).
+hidden_dim: [256, 256]
+n_iterations: 2000
+traversals_per_iter: 150
+train_steps_per_iter: 200
+batch_size: 64
+learning_rate: 0.001
+buffer_capacity: 500000
+
+cfr_variant: linear
+dcfr_exponent: 1.0
+
+# Encoder + solver behavior (identical).
+bucket_runouts: 30
+max_traversal_depth: 200
+seed: 2026
+
+# H2 league band — THE ONLY FUNCTIONAL DELTA vs the champion recipe.
+league_mix: 0.30
+league_registry_path: configs/league/registry_h2_probe.json
+league_sample_strategy: uniform
