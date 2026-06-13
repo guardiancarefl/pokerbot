@@ -54,6 +54,19 @@ The live-vs-sim gap (#1), capture reliability (#2), and the Stage-2 gate (#3) ar
 + OQ-1 folded-flag) unblocks all three at once — it's the single highest-EV lever in
 the project. **It needs operator routing to a Windows CC session** (flagged up top).
 
+### Contabo-side mitigation? NO — the leak is structural/Windows
+Checked recoverability: the dominant leak (skips) is "table not rendered" (30%) +
+dealer-detection (33%) — uncapturable Linux-side (no felt to read). Safe-folds are a
+minor leak and mostly structural (`replay_error` 67%; only ~8 small-delta
+invariant_fails across 4 sessions, low-volume + delicate to relax the safety valve).
+**No meaningful free-bench mitigation exists — the fix is genuinely Windows-side.**
+
+### → FREE BENCH EXHAUSTED for the operational diagnosis
+The investigation is complete; the next high-value work (Windows scraper) needs your
+routing and runs on Windows. I'm at a clean pause: not inventing low-value Linux work,
+not relaxing the safe-fold safety. Awaiting either the routing (then the Windows CC
+session does the fix) or new direction.
+
 _Live deploy / arm / autoclicker-go = your button. I do free analysis + scoping._
 
 ---
