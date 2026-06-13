@@ -4,6 +4,27 @@ Living document (Addendum 1.3). Per question: evidence state → decisive
 experiment → cost → expected value of information (EVoI). Updated after every
 experiment. Initialized 2026-06-12.
 
+## ★ TOP QUESTION (as of 2026-06-13, post-EXP_H4) ★
+
+**Q0. How do we correctly convert 517 hands of field data into a winning
+policy?** The H4 probe proved global RNR-against-the-synthetic-pool FAILS
+(F-H2 self-anchor collapse −0.18/z−3.7; `reports/EXP_H4_probe_FH2_collapse.md`).
+Root cause = a METHOD bug (no explicit restriction to the frozen champion — the
+self-play "anchor" co-drifts), NOT a data bug. **The data is valid; the
+application method was wrong.** This supersedes the H4 program framing.
+Decisive experiment: a parallel cheap-probe sweep of competing data-application
+methods under the same gates that caught the failure (self-anchor ≈0 AND real
+ΔFIELD trend with FLAT aggression):
+- **C** data-as-targeting (diagnostic only, no gradient) — cheapest/safest;
+- **A** explicit-restriction RNR (real anchor to FROZEN champion, λ-swept) —
+  direct fix for the root cause;
+- **B** exploit residual head (frozen champion + additive correction, zero by
+  construction) — self-anchor-safe by construction;
+- **D** jam-wall-only training (isolates the imperfect-pool factor).
+Cost: ~3–5 h pod burst (5 parallel probes, ~$2–4). EVoI: HIGHEST — decides the
+entire field-exploitation program direction. Most die cheap; the survivor earns
+the full battery.
+
 ## (a) Representation
 
 **a1. Where is the k=200 abstraction ceiling?**

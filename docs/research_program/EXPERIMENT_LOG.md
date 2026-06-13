@@ -996,3 +996,36 @@ construction; free self-play did not), not on wall-clock. Contabo-only, no pod.
 self-anchor on the FULL checkpoint (must read ≈0 / |z|<2 — empirical
 confirmation of the by-construction claim), then assemble the P4 pre-launch
 package and HOLD for operator go. Probe launch remains HELD.
+
+## 2026-06-13 — EXP_H4 VERDICT: FAIL AT PROBE (F-H2 self-anchor collapse) — H4 CLOSED
+
+Full report: `reports/EXP_H4_probe_FH2_collapse.md`. The field-RNR probe (P4,
+league_mix=0.25, weighted pool, resumed the PROVEN bit-identical generate-only
+rebuild) collapsed the self-anchor: −0.080→−0.085→−0.135→−0.180 over checkpoints
+2000–2300 (z −1.6→−1.7→−2.7→−3.7, monotone x4). Killed at iter ~2300 per the
+pre-registered collapse trip-wire. ΔFIELD stayed sub-bar until 2300, where it
+crossed +0.05 (+0.065) ONLY with inflated aggression (Δaggr +0.048) — the
+registered limp-gap ARTIFACT, not a real exploit. Worst quadrant: paid a −0.18
+self-anchor collapse for a fake +0.065 field "gain".
+
+**Root cause (METHOD bug, not data bug):** our "RNR" had NO explicit restriction
+to the frozen champion. The 75% self-play "anchor" anchors to the DRIFTING
+current policy, not b79e82dd — no restoring force, so the policy walked off the
+blueprint. Decisive because the buffer start was PROVEN bit-identical (901,439
+params, max|Δ|=0 on the pod ckpt_full_rebuilt). Contributing: imperfect pool +
+near-zero headroom teaches blunt over-aggression; k=200 can only represent blunt
+shifts.
+
+**Closes the H2 honesty clause (spec §7):** "league training works if buffers
+are handled" is DEAD — buffers were handled (generate-only), the method still
+failed. No future arm resumes global league-mix RNR of the blueprint without an
+explicit blueprint restriction.
+
+**HEADLINE: OUR DATA IS VALID; OUR METHOD OF APPLYING IT WAS WRONG.** Top
+research question is now RESEARCH_MAP Q0 — "how to correctly convert 517 hands of
+field data into a winning policy" — to be answered by a parallel cheap-probe
+sweep of competing data-application methods (C data-as-targeting / A
+explicit-restriction RNR / B exploit residual head / D jam-wall-only), each
+under the gates that caught this failure. POD_CASE_H4 superseded accordingly.
+Instruments that survive: generate-only rebuild, the gate battery + dashboard,
+the frozen field portrait + pool, the proven-faithful pod.

@@ -1,5 +1,19 @@
 # POD_CASE — H4 RNR Field-Exploitation Retrain
 
+**STATUS 2026-06-13 (SUPERSEDED): the H4 probe FAILED at F-H2 (self-anchor
+collapse −0.18/z−3.7; `reports/EXP_H4_probe_FH2_collapse.md`). The global-RNR
+Option-B program described below is NOT triggered.** Root cause = a METHOD bug:
+the "RNR" had no explicit restriction to the frozen champion, so the self-play
+anchor co-drifted and the policy walked off the blueprint. **OUR DATA IS VALID;
+OUR METHOD OF APPLYING IT WAS WRONG.** The pod case is no longer "run the
+global RNR full retrain"; it is now **"probe the competing data-application
+methods (C/A/B/D) and let the survivor earn the program"** — top of RESEARCH_MAP
+(Q0). The buffer-rebuild requirement below stands and is RESOLVED (generate-only;
+see [[EXPERIMENT_LOG]] 2026-06-13). Everything from here down is the original
+(now-superseded) global-RNR case, retained for the record.
+
+---
+
 **Status: POD-RELEVANT, awaiting freeze-complete + operator go.** Written
 2026-06-13 at H4 counter **517/500 (UNLOCKED, ingest committed to
 `data/opponent_db/opponent_db.sqlite`: 23 sessions / 883 hands)**. This is the
