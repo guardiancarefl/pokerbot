@@ -1,0 +1,29 @@
+logs scanned:                 24
+frames with raw_record+action:1233
+
+FLAG-OFF diffs (must be 0):   0
+
+FLAG-ON diffs, exhibit class (raise_to realized_as=check -> withheld no-op): 19
+  live_dryrun_20260609_154557.jsonl seq=85  raise_to 858 -> WITHHELD (neither RAISE nor BET button found in scraper controls)
+  live_dryrun_20260611_163815.jsonl seq=128  raise_to 1575 -> WITHHELD (neither RAISE nor BET button found in scraper controls)
+  live_dryrun_20260611_163815.jsonl seq=129  raise_to 1575 -> WITHHELD (neither RAISE nor BET button found in scraper controls)
+  live_dryrun_20260611_163815.jsonl seq=131  raise_to 330 -> WITHHELD (neither RAISE nor BET button found in scraper controls)
+  live_dryrun_20260611_201230.jsonl seq=641  raise_to 2893 -> WITHHELD (neither RAISE nor BET button found in scraper controls)
+  live_dryrun_20260611_222532.jsonl seq=2377  raise_to 1800 -> WITHHELD (neither RAISE nor BET button found in scraper controls)
+  live_dryrun_20260611_222532.jsonl seq=2626  raise_to 716 -> WITHHELD (neither RAISE nor BET button found in scraper controls)
+  live_dryrun_20260611_222532.jsonl seq=2629  raise_to 716 -> WITHHELD (neither RAISE nor BET button found in scraper controls)
+  live_dryrun_20260611_222532.jsonl seq=2631  raise_to 716 -> WITHHELD (neither RAISE nor BET button found in scraper controls)
+  live_dryrun_20260612_035454.jsonl seq=127  raise_to 400 -> WITHHELD (neither RAISE nor BET button found in scraper controls)
+  live_dryrun_20260612_042058.jsonl seq=497  raise_to 200 -> WITHHELD (neither RAISE nor BET button found in scraper controls)
+  live_dryrun_20260612_183701.jsonl seq=611  raise_to 995 -> WITHHELD (neither RAISE nor BET button found in scraper controls)
+  live_dryrun_20260612_183701.jsonl seq=612  raise_to 995 -> WITHHELD (neither RAISE nor BET button found in scraper controls)
+  live_dryrun_20260612_220101.jsonl seq=68  raise_to 450 -> WITHHELD (neither RAISE nor BET button found in scraper controls)
+  live_dryrun_20260612_220101.jsonl seq=69  raise_to 450 -> WITHHELD (neither RAISE nor BET button found in scraper controls)
+  live_dryrun_20260612_220101.jsonl seq=70  raise_to 700 -> WITHHELD (neither RAISE nor BET button found in scraper controls)
+  live_dryrun_20260612_230149.jsonl seq=194  raise_to 610 -> WITHHELD (neither RAISE nor BET button found in scraper controls)
+  live_dryrun_20260612_230149.jsonl seq=752  raise_to 1584 -> WITHHELD (neither RAISE nor BET button found in scraper controls)
+  live_dryrun_20260612_230149.jsonl seq=1464  raise_to 2732 -> WITHHELD (neither RAISE nor BET button found in scraper controls)
+
+FLAG-ON diffs OUTSIDE exhibit class (must be 0): 0
+
+GATE: GREEN

@@ -1,0 +1,72 @@
+RAISE->CHECK CLICK-PLAN REALIZATION FIX — 2026-06-13 (Stage-2 BLOCKER class)
+=============================================================================
+
+EXHIBITS (both pulled in full from live jsonl)
+  E1: logs/live_dryrun_20260612_230149.jsonl seq=194
+      decision RAISE_TO 610 (no-bet river, 9h9s, pot 655, hero 1295)
+      controls: CHECK(center)+FOLD(left) only; no RAISE/BET; bet_input box
+      present, value=null; slider absent; shortcuts unlabeled.
+      raw action text: "OO CHECK / FOLD  O CHECK"  <- pre-action checkbox
+      panel / mid-render read, NOT real action buttons.
+      old plan: [click CHECK], realized_as="check"
+  E2: logs/live_dryrun_20260611_222532.jsonl seq=2626
+      decision RAISE_TO 716 (no-bet turn, 9h8d, pot 791, hero 824)
+      controls: CHECK+FOLD only; raw text "WHAT WILL YOU DO NEXT TURN?
+      CHECK / FOLD  CHECK" — unambiguously the pre-action panel.
+      old plan: [click CHECK], realized_as="check"
+      (1s later, seq 2627 read the real BET UI and produced the correct
+      typed plan — proof the right move is to WAIT, not to click CHECK.)
+  Sub-case: same log seq=2629/2631 — right slot reads ALLIN(824) because
+      bet_input holds the full stack; intent 716 < 824, no CALL ->
+      old code also fell through to CHECK.
+
+ROOT CAUSE
+  src/nlhe/integration/click_target.py, extended (--extended-click-plans)
+  realization ladder for raise_to with no typed-raise UI (commit a6e23f8
+  lineage). Rung 3 realized the raise intent as CHECK whenever a CHECK
+  button was readable. But a UI where hero can CHECK always permits a
+  bet — a missing RAISE/BET button there is by definition a scraper
+  misread or the site's pre-action checkbox panel, never a real
+  check-only spot. Unlike the spec'd CALL rung (call-only facing-all-in
+  UI, where raise is genuinely impossible and CALL is the closest legal
+  action), the CHECK rung converts a transient read failure into an
+  irreversible forfeit of the betting action. The rung was an
+  over-extension beyond the 2026-06-11 must-land spec ("raise_to at
+  call-only UI -> CALL; ALLIN-button mapping; typed verification") and
+  slipped through the build gate because the completeness criterion was
+  "0 still-empty plans" — 4 raise_to->check realizations are visible in
+  evals/stage2_build_20260611/clickplan_completeness.txt's 29-row list.
+
+FIX (minimal)
+  Removed the CHECK rung from the raise_to ladder. raise_to with no
+  typed path and no CALL now falls through to the existing unexecutable
+  no-op reasons ("neither RAISE nor BET button found..." / "bet_input
+  box missing..."), so the listener retries on the next frame and the
+  fallback watchdog still guarantees action if real controls never
+  appear. The CALL rung, ALLIN-intent rung, typed verify step, and the
+  call->check realization (to_call==0 rendering equivalence) are all
+  unchanged. Default (flag-off) path untouched.
+
+TESTS
+  tests/test_click_target_extended.py: both exhibit frames added as
+  verbatim-controls fixtures (seq194, seq2626) + the seq2629 ALLIN/CHECK
+  sub-case; stale check-realization test rewritten to assert withheld.
+  27 passed (test_click_target.py + test_click_target_extended.py).
+  Live-path adjacent suites (fallback, anchor_sum_floor, session_header,
+  replay_to_decision, session_tracker, decision_cache): green.
+  test_dashboard.py has 5 failures that reproduce identically on stashed
+  HEAD — pre-existing, unrelated (training dashboard).
+
+GATE (gate_plan_diff.py -> gate_plan_diff.txt): GREEN
+  Old (git HEAD) vs new compute_click_target over every frame with
+  raw_record+client_action in ALL 24 logs/live_dryrun_*.jsonl
+  (1233 frames), pure-function replay with live_loop's exact
+  hero_max_commit derivation:
+    flag-off:  0 diffs / 1233  (byte-identical; fix is inside the
+               extended-gated block)
+    flag-on:   19 diffs, ALL in the exhibit class (raise_to
+               realized_as=check -> withheld no-op), including both
+               exhibits and the 2629/2631 sub-case;
+               0 diffs outside the exhibit class.
+
+NOT COMMITTED — manager gates.

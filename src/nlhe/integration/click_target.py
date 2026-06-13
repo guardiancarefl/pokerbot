@@ -68,6 +68,9 @@ class ClickPlan:
     # (e.g. raise_to at a call-only facing-all-in UI -> "call";
     # all-in raise via the ALLIN button -> "allin_button";
     # call with no CALL button but CHECK present -> "check").
+    # A raise_to intent NEVER realizes as "check": no-bet UIs always
+    # offer a bet, so a missing RAISE/BET button is a read failure and
+    # the plan is withheld (unexecutable no-op) instead.
     # None in default mode — plan_as_dict omits the key when None so
     # default-mode serialization is byte-identical to pre-extended code.
     realized_as: str | None = None
@@ -113,8 +116,9 @@ def compute_click_target(
               - an all-in raise_to (chip_amount >= hero_max_commit)
                 with no typed path uses the ALLIN button when present;
               - raise_to with no executable raise UI realizes as CALL
-                (facing-all-in call-only UI; conservative under-commit)
-                or CHECK, in that order;
+                (facing-all-in call-only UI; conservative under-commit);
+                if no CALL either (e.g. a CHECK-only render), the plan
+                is withheld as an unexecutable no-op — never CHECK;
               - call with no CALL button realizes as CHECK when present
                 (to_call==0 rendering variance).
             Realizations are stamped in ClickPlan.realized_as; a
@@ -209,21 +213,25 @@ def compute_click_target(
                     "raise_to", chip_amount,
                     [ClickStep("click", "ALLIN", box=allin_box)],
                     realized_as="allin_button")
-            # 2. CALL: the table offers no raise (facing all-in /
-            #    mid-render). Conservative under-commit of the intent.
+            # 2. CALL: the table offers no raise (facing all-in,
+            #    call-only UI). Conservative under-commit of the intent.
             call_box = _box_for_button("CALL", action_buttons)
             if call_box is not None:
                 return ClickPlan(
                     "raise_to", chip_amount,
                     [ClickStep("click", "CALL", box=call_box)],
                     realized_as="call")
-            # 3. CHECK: free continuation.
-            check_box = _box_for_button("CHECK", action_buttons)
-            if check_box is not None:
-                return ClickPlan(
-                    "raise_to", chip_amount,
-                    [ClickStep("click", "CHECK", box=check_box)],
-                    realized_as="check")
+            # NO CHECK rung. A CHECK-present UI with no readable
+            # RAISE/BET is always a misread or pre-action panel
+            # ("what will you do next turn?" checkboxes) — if hero can
+            # check, hero can also bet, so the raise UI exists and the
+            # scraper simply didn't read it this frame. Clicking CHECK
+            # would irreversibly forfeit the bet (live 20260611_222532
+            # seq 2626 raise-to-716 and 20260612_230149 seq 194
+            # raise-to-610 both emitted CHECK plans here). Fall through
+            # to the unexecutable no-op reasons instead; a later frame
+            # re-reads the real controls and the fallback watchdog
+            # still guarantees action if none ever arrives.
             # fall through to the default-mode no-op reasons
         if bet_input_box_raw is None or len(bet_input_box_raw) != 4:
             return ClickPlan("raise_to", chip_amount, [],
