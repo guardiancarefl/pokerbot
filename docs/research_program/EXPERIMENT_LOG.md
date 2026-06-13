@@ -713,3 +713,286 @@ worse on never-decided RATE (10/70=14.3% vs 8/124=6.5%) and first abort trip
 (8 vs 0) — fully attributable to the capture episode; gate streak 0/5. Despite
 the chaos, hero WON the single game (6975 chips). → OQ-4 filed (window-handle
 capture + felt-collapse auto-pause).
+
+## 2026-06-13 — H4 P1: league-pool registry BUILT + frozen (v1, known-imperfect field)
+
+P1 (spec §2.4) executed Contabo-only, no pod. Three artifacts built:
+`scripts/h4_pool_measure.py` (synthetic-context sweep — ShankyProfilePolicy
+on real OpenSpiel first-in/facing-min-raise states, 169 classes ×
+position × depth-band × level, combo-weighted, the H2-oracle method) →
+per-profile T1–T8 for all 31 profiles (`evals/h4_pool_20260613/`, 627s,
+8 jobs); `scripts/h4_pool_solve.py` (weighted-L1 moment-match + freeze +
+report); plus the dashboard pair (`h4_progress_monitor.py` +
+`h4_dashboard.py`, directive #3).
+
+**STALE-SPEC FINDING (logged):** the spec lists
+`league_sample_strategy: weighted` as an unbuilt ~1h build item ("uniform
+is what exists"). It ALREADY EXISTS in `league_pool.py`
+(`_compute_weights`) and is wired in `solver6.py`. Verified bit-identical
+to uniform at equal weights, **2000/2000 seeds**. No league code written;
+P1 reduced to measurement + solve + freeze + report.
+
+**Moment-match result — clean §2.4 gate FAILS; the failure is diagnostic.**
+The reweighted-league span reproduces the EXPLOITATION-CRITICAL signals
+in-CI under every configuration — T1 VPIP (20.1 vs 20.1), T5 open-jam
+(25–28 vs 25.5), the decision-grade 5–15bb jam wall (T7_jam_5_15 7.8–8.6
+vs 8.4; T7_5-10 in-CI) — but the COHERENT Shanky span cannot JOINTLY
+reproduce the field's full positional shape. Root cause (proven, not
+asserted): the field is *open-seat-flat (EP≈MP≈CO≈BTN, the recreational
+no-widening fingerprint) + normal blind levels (SB 27.9 elevated, BB 9.0
+suppressed, CO bump) + a jam wall*. Position-INVARIANT members
+(GusHansen/Webber/Minestacker, EP=BTN) nail open-seat flatness but play
+SB/BB at that same flat rate; position-AWARE members get blinds but widen
+EP→BTN. No coherent member is both; pushing decision-grade T2 to 15/17
+required DEGENERATE FILLER (Lucky1 1.3%-VPIP rock + a 50%-VPIP limit-HU
+bot averaging to 20%), which violates §2.3(b) "coherent whole players".
+
+**Operator decision (b): coherent jam-wall-faithful v1; BALANCED blend
+chosen (jam-wall fidelity over flatness).** Frozen
+`configs/league/registry_h4_field.json` (NOT committed; operator holds
+launch). Curation: excluded 3 degenerate (Lucky1_6max, beep,
+fixedlimitheadsup); full curated-28 set (NO flat restriction); uniform
+decision-grade objective (provisional T4/T6 weight 0 = registered gap).
+**Blend (8 coherent members):** kamakazi 0.323, WebberMtt 0.181, sng
+0.131, itmstrikeA 0.106, littlegreen2 0.094, TheFixerSNG 0.083,
+littlegreen 0.048, ticketmaster 0.034. Result: **11/17 decision-grade
+in-CI; jam-wall + VPIP 6/6 IN** (T1, T5, T7_jam_5_15, T7_5-10, T7_10-15,
+T8_25-50; SB IN 29.8); open-seat EP→BTN gap +10.8pp; max weight 0.323
+(<0.40). `league_sample_strategy=weighted`, p=0.25.
+
+A flat-restricted variant (6 members, perfect open-seat flatness gap
++0.1pp, 9/17) was BUILT then REJECTED by the operator on a priority
+correction: it bought second-order flatness by losing the first-order
+10-15bb jam sub-band (T7_10-15 OUT) + SB, inverting the v1 thesis (jam
+wall = first-order money, entry/positional style = second-order
+registered limitation). The balanced blend keeps the jam wall (incl.
+10-15bb) + SB at the cost of a wider positional spread (folded into
+limitation 2).
+
+**REGISTERED v1 LIMITATIONS (loud, per operator condition 2 — full text
+in `evals/h4_pool_20260613/REPORT.txt` and the registry):**
+1. **Entry style (T4 min-raise 34 vs 57.8 / T6 limp 37 vs 63.7, BOTH
+   PROVISIONAL):** pool less limpy/min-raise than the field. SECOND-ORDER
+   for exploitation (small deep pots, postflop-dominated, our noisiest
+   data [B1]/[B2]); error direction = UNDER-exploitation (RNR-anchor-safe);
+   §4.4 aggression-inflation caps fence the over-attack-passivity failure
+   mode REGARDLESS. **PROBE READING (binding): if the probe shows
+   aggression inflation, that is THIS GAP BITING — the §4.4 caps need
+   scrutiny, NOT a green light.**
+2. **Positional spread / shape (T2_EP 15.3 / MP 17.0 / CO 19.6 / BB 11.9
+   OUT; BTN 26.1 + SB 29.8 IN):** the pool tightens EP then widens BTN
+   (EP→BTN +10.8pp) where the field is open-seat-FLAT (+1.9pp). The
+   coherent Shanky span cannot jointly carry open-seat flatness AND the
+   blind/CO levels. SECOND-ORDER vs the jam wall (positional read affects
+   steal/defense frequencies); the balanced blend accepts this to keep
+   the jam wall + SB. (The flat-restricted variant inverted it — rejected.)
+3. **Jam-wall fine-structure (T7_15-25 1.5 vs [1.9,5.0]; T8_15-25 8.0 vs
+   [8.8,18.5]):** two narrow misses, both within ~1pp of CI, in the deep
+   15-25bb jam sub-bands. LOW EV; the decision-grade HEADLINE jam metrics
+   (T7_jam_5_15, T5, T7_5-10, T7_10-15) are all IN-CI.
+
+**Overlay (§2.4 step 3) PARKED as v2** — contingent on the v1 probe
+greenlighting the league-teaching mechanism (R3 honesty clause). It only
+partially closes T4/T6 (projection: T6 ~10→49, T4 ~29→44, neither to CI)
+and mandates re-running the §7 fiction attack; not worth its cost until
+the probe proves (i) league teaching works with buffers, (ii) jam-wall
+exploitation transfers.
+
+**Probe interpretation contract (carry to P4/P5; wired into the dashboard).**
+The dashboard (`h4_dashboard.py` over `h4_progress_monitor.py`) now shows
+three legible signals per checkpoint:
+- **NET-EV self-anchor vs champion (PRIMARY, field-INDEPENDENT):** the H2
+  buffer-fragility re-test. GOOD = ≈0, |z|<2, no collapse flag. Does not
+  depend on field fidelity. Collapse-watch is significance-aware (the H2
+  signature was z=−9.9; small-n noise does not flag).
+- **ΔFIELD = candidate − champion net vs the pool (CRN-paired):** the
+  F-B2-shaped exploitation signal. The champion ALREADY beats the weak
+  pool (~+0.8/game cheap proxy), so the absolute is meaningless — the
+  paired DELTA over champion is what matters. A modest positive Δ trending
+  toward the F-B2 +0.05 bar = healthy learning. LEARNING signal, not a
+  ship signal (R4 circularity).
+- **AGGR (mid-depth raise+jam mass) Δ vs champion:** makes ΔFIELD legible
+  vs limitation 1. **BINDING: ΔFIELD up WITH Δaggr inflated = limitation 1
+  biting (over-attacking pool passivity) — the §4.4 caps need scrutiny,
+  NOT a green light.** Dashboard flags Δaggr>0.08.
+Transfer is carried ONLY by the registered gate's F-B2 + ≥2 out-of-pool
+holds + a CLEAN §4.4 — never by ΔFIELD or the in-pool battery alone.
+
+## 2026-06-13 — H4 P3 buffer rebuild: SANITY GATE FAILED — diagnosis (negative result, real info)
+
+**Verdict: the Option-A buffer rebuild FAILED its own pre-registered sanity
+gate (§3: post-rebuild self-anchor |z|<2 BEFORE any field mix). The probe
+(P4) must NOT launch on `ckpt_full_rebuilt.pt`.** This is the clean,
+upstream-of-league re-test the spec asked for — and it answers the H2
+mechanism question more sharply than the probe would have.
+
+### What ran
+- Rebuild: `runs/h4_buffer_rebuild_20260613_061222/` — resume champion
+  `k200_real_ante_.../ckpt_iter_1500.pt` (SLIM, 10.9 MB, no buffers) at
+  `league_mix=0.0`, 400 pure self-play iters (1500→1900), saved
+  `ckpt_full_rebuilt.pt` (1.84 GB, buffers serialized). `rebuild_meta.json`:
+  strat_buffer n_seen 3,176,684; adv buffers ~134k–163k/seat; 62.1 s/iter
+  (note: §6 ESTIMATED 15–17.5 s/iter — 3.5–4× over, oversubscription).
+- Sanity grade: `scripts/h4_progress_monitor --once` on each of
+  ckpt 1600/1700/1800/1900 vs frozen champion, CRN-paired, 400 games.
+  Progress JSONL: `evals/h4_rebuild_monitor_20260613/progress.jsonl`.
+  (Graded the SLIM iter checkpoints, not the full ckpt: self-anchor reads
+  only the policy/strategy net weights, which are bit-identical between
+  slim and full at the same iter — buffers do not touch the policy. Full
+  re-grade skipped as redundant; it returns the same number.)
+
+### The finding (self-anchor net-EV/game vs frozen champion, ±SE, z)
+| iter | net | ±SE | z | rebuild iters in | flags |
+|------|-----|-----|---|------------------|-------|
+| 1600 | −0.185 | 0.049 | −3.8 | ~100 | SELF_ANCHOR_REGRESSION + AGGR_INFLATION(Δ+0.095) |
+| 1700 | −0.215 | 0.049 | −4.4 | ~200 | SELF_ANCHOR_REGRESSION |
+| 1800 | −0.160 | 0.049 | −3.2 | ~300 | SELF_ANCHOR_REGRESSION |
+| 1900 | −0.155 | 0.049 | −3.1 | ~400 (FINAL/gate) | SELF_ANCHOR_REGRESSION |
+
+400 iters of PURE SELF-PLAY off a frozen champion LOST ~0.15/game head-to-head.
+ΔFIELD and Δaggr both settled near champion by 1900 (−0.015, +0.040) — ruling
+OUT "it's just an aggression-drift artifact": aggression normalized, the EV
+regression stuck. No league was ever in the mix here.
+
+### Diagnosis — hypotheses tested against evidence
+
+**H-a (PRIMARY, CONFIRMED): H2 buffer-fragility, manifesting in the rebuild
+itself — upstream of league.** Mechanism, traced through `solver6.py`:
+`load_checkpoint` on a SLIM ckpt loads the adv+strat NET WEIGHTS but leaves
+BOTH reservoirs EMPTY (explicit "slim contract", solver6.py:1137–1139). The
+train loop (solver6.py:131–137) then retrains the advantage net AND the shared
+strategy net every iter. So the rebuild does two things at once: (1) refills
+buffers — the stated goal; (2) RE-TRAINS the nets on a reservoir that just
+restarted from empty — the unstated side effect. The deployed policy IS the
+strategy net; the champion's strat net encoded the average over its full
+original training, but on slim-resume the strategy reservoir holds ONLY
+iters 1501–1900, so the strat net is pulled toward the rebuild's 400-iter
+average. Compounding it: the advantage net retrains from a near-empty buffer
+in the early iters → overfit/noisy advantages → off-equilibrium current
+policies → those get averaged into the fresh strategy reservoir. Net result:
+the deployed policy re-equilibrates to a nearby self-play fixed point that is
+~0.15/game weaker against the specific frozen-champion point. This is exactly
+H2's mechanism (EXP_H2: self-anchor z=−9.9, M1 worsening 1800→2000), here
+MILDER (z≈−3.1 not −9.9) because there is no off-policy league pressure — only
+the buffer discontinuity. **The free-self-play rebuild does not preserve the
+player; it cannot, by construction.**
+
+**H-b (PARTIAL): catastrophic-forgetting / policy drift.** Yes, the policy
+drifts — but it is NOT catastrophic. It plateaus at a floor (does not diverge),
+consistent with mild re-equilibration to a different-but-nearby CFR fixed point,
+not destruction of learned play. The "memory" of WHICH equilibrium the champion
+sat at lived in the (discarded) buffer state; free self-play finds a neighbor.
+
+**H-c (REJECTED): too many iters / wrong LR / rebuild-specific misconfig.**
+LR=0.001 and the full recipe are the champion's own candC recipe (one-delta
+discipline held; only league_mix differs, and it's 0 here). No misconfig. And
+"too many iters" is refuted by the trend: it is not overshooting a zero it
+once hit — it never approached zero.
+
+**H-d (ANSWERED): does the trend look like it would converge to 0 with more
+iters? NO — plateaued.** −3.8 → −4.4 → −3.2 → −3.1. It dipped to its worst at
+iter 1700 then recovered to a FLOOR: net −0.160 (1800) → −0.155 (1900) is a
++0.005 move at SE 0.049 — ~0.1σ, statistically identical. Zero improvement in
+the final 200 iters. It has settled at ≈−0.155/z−3.1, not trending to |z|<2.
+More iters of the same method will not fix it.
+
+### Is free self-play even the right rebuild method? (operator question)
+**No — and that is the core of the finding. The method is the bug.** The goal
+was "refill the buffer WITHOUT changing the player." Free self-play refills the
+buffer AND retrains the nets, so it necessarily changes the player. A
+**policy-preserving rebuild is viable and is the fix:**
+
+- **GENERATE-ONLY buffer population (recommended).** Run the same traversals to
+  COLLECT advantage + strategy samples using the FROZEN champion nets, but SKIP
+  the gradient steps (`_train_advantage_net` / `_train_strategy_net`,
+  solver6.py:131–137) during the rebuild. Buffers fill from on-champion-policy
+  traversals; the nets never move, so the deployed policy is provably
+  unchanged and self-anchor = 0 BY CONSTRUCTION (the |z|<2 precondition becomes
+  trivially satisfiable, cleanly separating buffer-refill from the field-RNR
+  test). Small, well-scoped code change (a populate-only flag gating two lines)
+  and FASTER per iter than the failed run (no backprop). Because a converged
+  champion has near-zero regrets, the advantage buffer fills with the right
+  (near-zero-advantage) samples; the strategy buffer fills with clean champion-
+  policy samples. This is the realizable form of "rebuild from the champion's
+  distribution" — the original training-trajectory buffer is GONE (champion
+  preserved slim; no full ckpt exists anywhere on disk, confirmed), so
+  champion-policy-consistent is the best obtainable, and it is strictly more
+  faithful than free self-play. Honest caveat: it is a continuation buffer, not
+  a bit-continuation of the original — same residual-risk note §3 already
+  carries, but now WITHOUT the policy drift.
+- **Frozen-policy-constrained gentle self-play (KL/trust-region, low LR, fewer
+  iters):** reduces drift but does not eliminate it (still trains the nets).
+  Strictly dominated by generate-only for this goal; only worth it if we later
+  decide the buffer NEEDS on-policy-with-learning content, which the probe does
+  not require at its START.
+
+### What this means for the H2 mechanism question (HONESTY CLAUSE, §7)
+The spec framed the probe as the clean re-test of "league-teaching failure vs
+slim-buffer fragility." We now have a result UPSTREAM of league: with NO league
+at all, reconstructing buffers from a slim champion via free self-play already
+regresses the anchor 0.15/game. This localizes H2's failure decisively to
+buffer handling, not league teaching — and further, to the REBUILD METHOD, not
+merely "slim is fragile." The successor claim "league training works if buffers
+are handled" is NOT dead, but its precondition is sharper than the spec assumed:
+buffers must be handled by a POLICY-PRESERVING reconstruction, not free
+self-play. Feeds POD_CASE_H4 (which was premised on "buffer continuity").
+
+### Recommendation — ranked by EV-per-compute (Contabo-only, no pod)
+1. **FIX THE METHOD, retry Option-A as generate-only (TOP).** ~1–2 h dev for
+   the populate-only flag + a 1–2-iter benchmark, then a rebuild that is faster
+   than the 7 h failed run and passes the self-anchor gate by construction.
+   Highest EV/compute: it directly removes the confound, keeps the deployed
+   champion lineage, and unblocks the probe. Add a generated-buffer assertion
+   (self-anchor z≈0 on the full ckpt) before P4.
+2. **Option-B from-scratch miniature (spec fallback) — LOWER.** Re-rolls the
+   self-play dice at a new seed (may not reproduce champion strength), abandons
+   the deployed champion lineage, 8–12 h Contabo / pod-class. It is the PROGRAM
+   path after a probe PASS, not the right PREP fix. Choose only if generate-only
+   proves non-viable in code (it should not).
+3. **Accept the 0.15/game and probe anyway — REJECTED.** Violates the §3 gate
+   and poisons the self-anchor baseline (the probe could never read ≈0), making
+   F-H2 uninterpretable. The gate did its job; do not override it.
+
+**Next action: design + land the generate-only populate flag in solver6.py /
+train_6max, benchmark 1–2 iters, then re-rebuild. Probe launch stays HELD.**
+
+## 2026-06-13 — H4 P3 buffer rebuild: RESOLUTION — generate-only refill (free-self-play RETIRED)
+
+Resolves the sanity-gate failure above. **The buffer rebuild MUST be
+generate-only; the free-self-play refill is retired for this purpose.**
+
+**Fix (landed):** new `populate_only` flag on `TrainConfig6Max`
+(`src/nlhe/solver6.py`). When True, the training loop COLLECTS advantage +
+strategy samples via traversals using the FROZEN champion nets but SKIPS both
+gradient steps (`_train_advantage_net` / `_train_strategy_net`) — gated in BOTH
+the sequential loop (solver6.py) and the parallel orchestrator
+(`parallel/orchestrator.py`). Default False = byte-identical to normal training
+(the else-branch is the original two calls verbatim; the traversal/collection
+path is untouched — diff is exactly 1 config field + 2 gated call-sites).
+`scripts/h4_buffer_rebuild.py` gains `--populate-only` (records
+`refill_method` in `rebuild_meta.json`; warns if run without it).
+
+**"By construction" claim, PROVEN empirically (not just asserted):** a 2-iter
+generate-only benchmark from champion ckpt_1500 → ckpt_1502, then a param-by-
+param compare of the saved checkpoint against the champion:
+- all 6 advantage nets + the shared strategy net (the deployed policy):
+  **max|Δ| = 0.000e+00 over 901,439 params.**
+- buffers DO fill (adv buf[0]=1361, buf[1]=2343; strat n_seen 5774→14157 over
+  2 iters), and `adv=nan strat=nan` confirms both gradient steps were skipped.
+So the player is provably unchanged and the post-rebuild self-anchor is 0 by
+construction. (The benchmark's own `min(bufs)>0` heuristic prints "NO —
+INVESTIGATE" at 2 iters because only seats 0/1 have traversed yet — a false
+alarm of the heuristic, not a fill failure; all 6 seats fill over 400 iters.)
+
+**Cost (honest):** ~52 s/iter at G=8 in this benchmark → ~5.8 h for 400 iters,
+only ~16% cheaper than the failed free-self-play run (62 s/iter). Traversal, not
+backprop, dominates per-iter cost; the earlier "much faster" framing was wrong.
+The EV-per-compute case stands on the gate (generate-only PASSES by
+construction; free self-play did not), not on wall-clock. Contabo-only, no pod.
+
+**Status:** full generate-only rebuild LAUNCHED
+(`runs/h4_buffer_rebuild_genonly_<ts>`, --iters 400, ends iter 1900 so
+`h4_probe.yaml`'s resume accounting is unchanged). On completion: grade
+self-anchor on the FULL checkpoint (must read ≈0 / |z|<2 — empirical
+confirmation of the by-construction claim), then assemble the P4 pre-launch
+package and HOLD for operator go. Probe launch remains HELD.

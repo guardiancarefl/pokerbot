@@ -83,11 +83,21 @@ a slim (buffer-less) checkpoint with off-policy opponents — that is precisely
 what collapsed H2 (self-anchor z = −9.9). The deployed champion `b79e82dd` IS
 slim (10.9 MB, no reservoirs). So:
 
-- **Probe → Option A:** resume `ckpt_1500`, `league_mix=0`, ~300–500 pure
-  self-play iters to refill the advantage/strategy reservoirs, save a FULL
-  checkpoint, *then* switch the field mix on. Cheapest H2-compliant path and a
-  clean re-test of "does league exposure teach at all" with the buffer confound
-  removed.
+- **Probe → Option A:** resume `ckpt_1500`, refill the advantage/strategy
+  reservoirs, save a FULL checkpoint, *then* switch the field mix on. Cheapest
+  H2-compliant path and a clean re-test of "does league exposure teach at all"
+  with the buffer confound removed.
+  - **REFILL MUST BE GENERATE-ONLY (2026-06-13, binding).** The original
+    free-self-play refill is RETIRED for this purpose: it retrained the nets on
+    a from-empty reservoir, re-averaging the strategy and moving the player —
+    the post-rebuild self-anchor regressed 0.15/game (z=−3.1, plateaued), which
+    is the H2 buffer-fragility mechanism manifesting *in the rebuild itself*,
+    upstream of any league. Use `h4_buffer_rebuild.py --populate-only`: collect
+    samples via FROZEN-net traversals, skip both gradient steps, so the player
+    is provably unchanged (verified bit-identical, 901,439 params, max|Δ|=0) and
+    the self-anchor gate passes by construction. See EXPERIMENT_LOG 2026-06-13.
+    This sharpens the H2 finding: "league training works if buffers are handled"
+    requires buffers reconstructed *policy-preservingly*, not via free self-play.
 - **Full retrain → Option B (the pod job):** Phase 1 = pure self-play from
   iter 0 to ~1500 (champion recipe, k200_real_ante config shape, NEW seed),
   producing own FULL checkpoints; Phase 2 = resume own `ckpt_1500` (buffers
