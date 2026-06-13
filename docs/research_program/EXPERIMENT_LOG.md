@@ -685,3 +685,31 @@ freeze. The EXPERIMENT is a field-RNR retrain = training-scale →
 POD-relevant + H2-fragility-binding (buffer continuity, no slim-ckpt
 fine-tune). Surfaced to POD_CASE. Not auto-launching: freeze first,
 operator decides pod.
+
+## 2026-06-13 — session-6 audit: REAL ingest committed; unlock now actual (was projected)
+
+The 03:24–03:35 freeze docs (commits 2f7a466 / 56edb84) were written against
+a PROJECTED 517 — the freeze-prep recompute ran on a scratch DB while the live
+`opponent_db.sqlite` still held 485 (22 sessions). This session ran the real
+ingest of `logs/live_dryrun_20260613_023826.jsonl`: **DB now 23 sessions / 883
+hands; H4 counter 517/500, committed.** FIELD_REPORT aggregate (689/3426 VPIP,
+82/124 fold-vs-shove) matches the refresh substrate exactly — the frozen
+constants stand against the committed corpus, no re-freeze. Full POD_CASE
+written: `POD_CASE_H4.md`.
+
+**Audit verdict (session-6 "collapse").** Config confirmed: shas
+b79e82dd/0fc20800, all flags ARMED. Failure mode = **CAPTURE (wrong-window),
+environmental** — NOT delivery/tunnel, NOT OCR-code, NOT a fix regression.
+Frames arrived continuously (median 1.49s, max gap 35s, zero >60s;
+arrival-gaps ≡ capture-gaps → no starvation/backlog; one TCP reconnect at
+start). 25 frames captured terminals/console (`felt<0.10`, OCR reads back
+`_read_table.py` / `127.0.0.1:9000` / the listener's own stdout), worsening
+2→9→14 across thirds; felt median held ~0.79 (typical frame fine throughout →
+intermittent, not uniform). The session-5 fix package behaved exactly as
+gated: recovered_fields=0, anchor_refused=0, all 3 invariant_fail/replay
+frames correctly DECLINED recovery (no false recovery), red flags 16→3 vs
+session-5, abort tripped correctly at 3 fallbacks/10 hands. Stage-2 ledger:
+worse on never-decided RATE (10/70=14.3% vs 8/124=6.5%) and first abort trip
+(8 vs 0) — fully attributable to the capture episode; gate streak 0/5. Despite
+the chaos, hero WON the single game (6975 chips). → OQ-4 filed (window-handle
+capture + felt-collapse auto-pause).

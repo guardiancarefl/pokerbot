@@ -23,17 +23,49 @@ D3 also queued your side. (3) F2 stays held until Windows F1.
 
 ## POD_CASE (standing — Addendum 5.5, updated 2026-06-13 ~03:35)
 
-**H4 JUST UNLOCKED (517/500).** Once its registration freezes (cheap
-checklist running now), the H4 field-RNR retrain is a TRAINING-SCALE
-experiment — the first true pod case since H2 failed. Estimate (per
-H4_RNR_FIELD_SPEC cost table): ~6-8 pod-hours vs ~23-31 Contabo-hours,
-and it MUST be H2-fragility-safe (full-buffer or league-from-iter-0, no
-slim-ckpt fine-tune — that's what collapsed H2). NOT yet a launch ask:
-freeze + your go first. The bbnorm-transplant variant (BBNORM_TRANSPLANT
-_SPEC) could ride the same pod run. Lower-tier pod candidate: ICM
-Tier-2 (battery-oracle re-label support, ~3-10 core-h, Contabo-fine).
+**H4 UNLOCKED (517/500) — ingest committed 2026-06-13; spec FROZEN (56edb84).**
+The H4 field-RNR retrain is the first training-scale job since H2 and the pod
+restart trigger. **Full case: `POD_CASE_H4.md`** — pod ask ~6–8 pod-hours
+(4.7–5.8h retrain + ~1.5–2h gates) vs 23–31 Contabo-hours; probe is
+Contabo-only (~9–12h, no pod) and must PASS before any pod spend; operator go
+required. Key decisions now locked: **legacy 236-d encoder, train fresh — NO
+bbnorm organ** (one-delta discipline; bbnorm spec void); **p = 0.25** (OQ-1
+fold data sub-grade); **H2-fragility-safe** (full-buffer / league-from-iter-0,
+no slim-ckpt fine-tune); gate battery is the full unweakened program (PG1–PG4
++ ATT) **plus the shoviest panel** (exploiter must not lose to known
+shovers). The bbnorm-transplant variant could ride a LATER pod run as its own
+registered experiment. Lower-tier pod candidate: ICM Tier-2 (~3–10 core-h,
+Contabo-fine).
 
 ## Open
+
+### OQ-4 (2026-06-13) — Windows scraper: WINDOW-HANDLE capture + felt-collapse auto-pause — URGENT (operator routing)
+- **Root cause, session-6 (proven, not hypothesized).** The "recognition
+  collapse" was NOT a tunnel drop and NOT OCR failure: it was the scraper
+  capturing the **wrong window**. Frames arrived continuously (median 1.49s,
+  max gap 35s, ZERO >60s; arrival-gaps ≡ capture-gaps to 2 decimals → no
+  delivery starvation, no backlog; one TCP reconnect, at the very start).
+  25 frames had `felt_fraction < 0.10` + `table_rendered=False`, and their
+  OCR text reads back the scraper's OWN environment: `"_read_table.py"`,
+  `"127.0.0.1:9000"`, and the Contabo listener's own stdout
+  (`"controls.present=False (not a hero-to-act decision)"`). The capture
+  grabbed terminals/SSH consoles, worsening 2→9→14 across session thirds as
+  the operator interacted with terminals during the network blip. The
+  operator's network event hit the **CC/SSH terminal, not the frame
+  pipeline.** Evidence: this session's audit (`logs/live_dryrun_20260613_023826`).
+- **Fix #1 (the real fix — WGC, now URGENT; tonight is its proof case):**
+  pin capture to the poker-table **window handle** (Windows Graphics Capture
+  / per-HWND capture), NOT foreground/screen-region capture, so operator
+  terminal activity and focus changes can never bleed into frames.
+- **Fix #2 (cheap interim guard before WGC lands):** auto-pause capture /
+  stop sending when `felt_fraction` collapses below threshold for N
+  consecutive frames — stop feeding the bridge terminal screenshots. (felt
+  median stayed ~0.79 on good frames all session, so a low threshold ≈ 0.10
+  cleanly separates table from non-table; pick N≈3.)
+- Operator will route to Windows CC. Independent of OQ-3 (that is OCR on
+  rendered tables; this is wrong-window capture of non-tables) — both needed.
+- **Not a blocker for the H4 probe** (offline/file batteries), but a
+  precondition for trusting any live dry-run of the shipped exploiter.
 
 ### OQ-3 (2026-06-13) — Windows scraper: pointed-seat stack OCR (dealer-burst recurrence) — MUST-LAND
 - Session-5 postmortem: the dealer-burst hand-killer RECURRED with a
