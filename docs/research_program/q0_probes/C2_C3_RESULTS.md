@@ -19,9 +19,29 @@ regime (5–15bb), the pool matches the real field:
 target.** The pool's shoves are real where it matters; the synthetic-artifact risk
 is confined to 15-25bb+ sub-bands that are not C's headroom. Foundation confirmed.
 
-## C2 — reachability / self-anchor-cost map — RUNNING
-Measures the EV price of playing the field-oracle (fold-more) action against the
-CHAMPION'S OWN shove range, vs the +0.0866/spot field headroom. Verdict pending.
-Decision rule (pre-registered): cost << 0.25×headroom ⇒ fold-more nearly free vs
-champion ⇒ B/F safe, proceed. cost ~ or > headroom ⇒ ENTANGLED ⇒ the context gate
-is load-bearing (net value only when gated; un-gated = the H4 trap).
+## C2 — reachability / self-anchor-cost map — VERDICT: GREEN (REACHABLE/CHEAP)
+`evals/c2_reachability_20260613.json`. Field headroom +0.0866/spot (gain vs field)
+vs **self-anchor cost +0.0040/spot (price vs the champion's own shoves) = 4.6% of
+the headroom.** Field-oracle and champ-oracle AGREE on **94.5%** of spots.
+- **Cheapest exactly where the headroom concentrates:** by depth, cost falls
+  0.0080 (5bb) → 0.0025 (11bb) → 0.0017 (15bb); disagreement 10% → 2.4%. C's
+  11–15bb core is the SAFEST place to apply fold-more.
+- BB (59% of the headroom): cost 0.0048 — still cheap.
+
+**⇒ fold-more is nearly FREE vs the champion (4.6% of its field gain), and freest
+at 11–15bb.** Decisive reframe: the champion's BB over-call is a genuine LEAK
+(suboptimal vs ANY reasonable shover, not a champion-calibrated choice) — so
+fixing it helps vs the field AND barely costs vs the champion. **This is why H4
+collapsed: it learned OFFENSIVE over-aggression (which DOES cost), not the
+DEFENSIVE fold-more (which is nearly free).** A method that targets fold-more
+specifically captures ~+0.087 field at ~0.004 self-anchor cost = net hugely
+positive and self-anchor-safe.
+
+## Combined verdict → PROCEED to B (free, no pod)
+- C3: target is REAL (pool shoves faithful at 11–15bb).
+- C2: exploit is REACHABLE and nearly free (cost 4.6% of gain), safest at C's core.
+- The exploit is barely entangled, so MULTIPLE methods should work: **B** (gated,
+  zero self-anchor by construction — cleanest), **F** (un-gated oracle overlay may
+  even pass the self-anchor gate, since fold-more costs only ~0.004/spot), **D**
+  (jam-wall training). Build B's distillation trainer next (free); F is a cheap
+  fallback/baseline. No pod needed for any of these.

@@ -1,0 +1,53 @@
+{
+  "champion": "runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt",
+  "n_spots": 16224,
+  "field_headroom_per_spot": 0.0866,
+  "self_anchor_cost_mean": 0.004010083530310473,
+  "cost_as_frac_of_headroom": 0.046305814437765276,
+  "oracle_disagree_rate": 0.05454881656804734,
+  "by_position": {
+    "BB": {
+      "mean_cost": 0.004786396191834446,
+      "disagree_rate": 0.07018408941485865,
+      "n": 6084
+    },
+    "SB": {
+      "mean_cost": 0.00415536507350411,
+      "disagree_rate": 0.05473372781065089,
+      "n": 4056
+    },
+    "BTN": {
+      "mean_cost": 0.0030122245051759575,
+      "disagree_rate": 0.03994082840236687,
+      "n": 4056
+    },
+    "CO": {
+      "mean_cost": 0.0033863005096203356,
+      "disagree_rate": 0.03648915187376726,
+      "n": 2028
+    }
+  },
+  "by_depth": {
+    "5": {
+      "mean_cost": 0.008018749160089253,
+      "disagree_rate": 0.10428994082840237,
+      "n": 4056
+    },
+    "8": {
+      "mean_cost": 0.003823672943442707,
+      "disagree_rate": 0.05448717948717949,
+      "n": 4056
+    },
+    "11": {
+      "mean_cost": 0.002510775375583575,
+      "disagree_rate": 0.03574950690335306,
+      "n": 4056
+    },
+    "15": {
+      "mean_cost": 0.001687136642126364,
+      "disagree_rate": 0.023668639053254437,
+      "n": 4056
+    }
+  },
+  "verdict": "REACHABLE/CHEAP \u2014 fold-more is nearly free vs champion; B/F safe"
+}
