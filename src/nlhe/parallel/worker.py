@@ -262,6 +262,7 @@ def run_traversals(wi: WorkerInput) -> list[WorkerOutput]:
                 max_depth=wi.max_depth,
                 num_paid=wi.num_paid,
                 dealer_seat=sampled["dealer_seat"],
+                jam_wall_only=wi.jam_wall_only,
             )
         else:
             # Legacy mode: reuse the cached game + WorkerInput's static stacks.
@@ -275,6 +276,7 @@ def run_traversals(wi: WorkerInput) -> list[WorkerOutput]:
                 max_depth=wi.max_depth,
                 num_paid=wi.num_paid,
                 dealer_seat=wi.dealer_seat,
+                jam_wall_only=wi.jam_wall_only,
             )
         traverse_6max(
             state,

@@ -93,6 +93,7 @@ def _build_worker_input(
     archetype_profile_names: Optional[list] = None,
     archetype_mix: float = 0.0,
     tournament_structure_path: Optional[str] = None,
+    jam_wall_only: bool = False,
 ) -> WorkerInput:
     return WorkerInput(
         seed=seed,
@@ -122,6 +123,7 @@ def _build_worker_input(
         archetype_profile_names=archetype_profile_names,
         archetype_mix=archetype_mix,
         tournament_structure_path=tournament_structure_path,
+        jam_wall_only=jam_wall_only,
     )
 
 
@@ -308,6 +310,7 @@ def parallel_train(
                 archetype_profile_names=cfg.archetype_profiles,
                 archetype_mix=cfg.archetype_mix,
                 tournament_structure_path=cfg.tournament_structure_path,
+                jam_wall_only=cfg.jam_wall_only,
             )
             for group in groups
         ]

@@ -93,6 +93,10 @@ class WorkerInput:
     # → legacy fixed-game mode (the existing per-WorkerInput game_str path).
     tournament_structure_path: Optional[str] = None
 
+    # ---- PROBE D: jam-wall-only training (write samples only at facing-shove
+    # infosets). Default False = bit-identical to normal training. ----
+    jam_wall_only: bool = False
+
 
 @dataclass
 class WorkerOutput:

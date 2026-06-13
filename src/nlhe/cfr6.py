@@ -85,6 +85,17 @@ from src.nlhe.fast_view import fast_build_view
 from src.nlhe.icm_returns import icm_adjust_returns
 from src.nlhe.infoset6 import InfosetEncoder6Max, parse_state_6max, parse_state_repeated_6max
 from src.nlhe.networks6 import PlayerNetworks6Max, N_DISCRETE_ACTIONS, NUM_SEATS_6MAX
+
+# PROBE D jam-wall detector: the INTERMEDIATE raise sizes only (BET_33..BET_200,
+# BET_50, BET_150) — i.e. every discrete action EXCEPT fold, call, and allin.
+# Facing an all-in, calling IS all-in so CALL and ALLIN alias the same chip
+# action and both stay legal; what is NOT legal is any partial raise. So a
+# facing-shove (fold/call vs all-in) infoset = a bet to call with none of these
+# intermediate sizes legal. (ALLIN must be excluded here or the predicate never
+# fires — verified against build_facing_shove_spot, legal = {FOLD, CALL, ALLIN}.)
+_INTERMEDIATE_RAISE_IDX = tuple(
+    int(a) for a in DiscreteAction
+    if a not in (DiscreteAction.FOLD, DiscreteAction.CALL, DiscreteAction.ALLIN))
 from src.nlhe.solver import _strategy_from_advantages
 
 
@@ -124,6 +135,13 @@ class CFR6MaxContext:
     # (the inner universal_poker state does not expose dealer_seat()). None in
     # legacy fixed-game mode → archetype in_position falls back to False.
     dealer_seat: Optional[int] = None
+    # PROBE D (jam-wall-only training): when True, training samples are written
+    # to the buffers ONLY at facing-shove (fold/call vs an all-in) infosets — the
+    # spot class where C localized 96% of the field-EV leak (BB, 11-15bb). All
+    # other infosets are still traversed for game continuation but contribute no
+    # learning signal, so the policy off the jam wall stays at the champion.
+    # Default False = bit-identical to normal training.
+    jam_wall_only: bool = False
 
     def __post_init__(self) -> None:
         if len(self.starting_stacks) != NUM_SEATS_6MAX:
@@ -342,6 +360,15 @@ def traverse_6max(
 
     feat = ctx.encoder.encode_from_parsed(parsed, rng=rng)
 
+    # PROBE D gate: at a facing-shove (jam-wall) infoset there is a bet to call
+    # and NO raise/shove is legal -> the decision is fold-or-call vs an all-in
+    # (exactly C's oracle spot class). When jam_wall_only is set, only these
+    # infosets write training samples. Default (False) -> write_samples True
+    # everywhere = bit-identical to normal training.
+    is_jam_wall = (view.to_call > 0) and not any(
+        legal_mask[i] for i in _INTERMEDIATE_RAISE_IDX)
+    write_samples = (not ctx.jam_wall_only) or is_jam_wall
+
     # Current strategy at the acting player: regret-matched (RM+) from
     # their advantage net's output, masked to legal actions.
     adv = ctx.policy_nets.predict_advantages(seat=cp, features=feat)
@@ -372,12 +399,13 @@ def traverse_6max(
         # regrets are already O(1).
         regrets = (values_per_action - ev) * legal_mask
 
-        ctx.policy_nets.buffer_for(traversing_player).add(
-            feat.copy(),
-            regrets.copy(),
-            legal_mask.copy(),
-            ctx.iteration,
-        )
+        if write_samples:
+            ctx.policy_nets.buffer_for(traversing_player).add(
+                feat.copy(),
+                regrets.copy(),
+                legal_mask.copy(),
+                ctx.iteration,
+            )
         return ev
     else:
         # Opponent node: sample ONE action from their current strategy, recurse.
@@ -393,12 +421,13 @@ def traverse_6max(
         # trajectory stays bit-identical. League-override opponents short-circuit
         # at the top of this function and never reach here, so only the bot's
         # own self-play policy is written (DECISIONS.md:207).
-        ctx.policy_nets.strat_buffer.add(
-            feat.copy(),
-            strat.copy(),
-            legal_mask.copy(),
-            ctx.iteration,
-        )
+        if write_samples:
+            ctx.policy_nets.strat_buffer.add(
+                feat.copy(),
+                strat.copy(),
+                legal_mask.copy(),
+                ctx.iteration,
+            )
 
         s = float(strat.sum())
         if s <= 0:

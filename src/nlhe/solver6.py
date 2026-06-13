@@ -264,6 +264,13 @@ class TrainConfig6Max:
     # to normal training (the else-branch is the original two calls verbatim).
     populate_only: bool = False
 
+    # --- PROBE D (jam-wall-only training, 2026-06-13). When True, training
+    # samples are written to the buffers ONLY at facing-shove (fold/call vs
+    # all-in) infosets — the spot class where C localized 96% of the field-EV
+    # leak (BB, 11-15bb). Off-jam-wall play stays at the champion. Default
+    # False = bit-identical to normal training.
+    jam_wall_only: bool = False
+
     # --- C3 retrain bundle. All defaults preserve pre-C3 behavior and let
     # old checkpoints (whose config_dict lacks these keys) reconstruct
     # bit-identically through _load_solver's saved.get(..., default).
@@ -823,6 +830,7 @@ class DeepCFR6MaxSolver:
                     iteration=it,
                     max_depth=self.cfg.max_traversal_depth,
                     num_paid=self.cfg.num_paid,
+                    jam_wall_only=self.cfg.jam_wall_only,
                 )
                 for t in range(self.cfg.traversals_per_iter):
                     rng_t = random.Random(
@@ -891,6 +899,7 @@ class DeepCFR6MaxSolver:
                         max_depth=self.cfg.max_traversal_depth,
                         num_paid=self.cfg.num_paid,
                         dealer_seat=sampled["dealer_seat"],
+                        jam_wall_only=self.cfg.jam_wall_only,
                     )
                     opp_override = self._maybe_sample_league_opponent(rng=rng_override_t)
                     traverse_6max(
