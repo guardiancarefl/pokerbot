@@ -24,17 +24,41 @@ entering a gradient.
 - **G2/G3:** the patched spots must show real field gain with FLAT aggression.
 - **G4:** survivor → ≥2 out-of-pool holds.
 
-## Probe-specific falsifier (the thing that kills C)
-**Do exploitable spots even exist beyond the champion's current play?** If the
-targeting analysis finds NO spot with both (field-exploitability > threshold) AND
-(champion materially deviates from the exploiting line), then **the field is not
-exploitable beyond what the champion already does** — C is an informative
-NEGATIVE that would also cast doubt on A/B/D (there may be nothing to win). This
-is high-value either way.
+## Probe-specific falsifier (the thing that kills C) — OPERATIONAL, pre-registered
+**Metric (already built):** `grade_battery()` — champion mean ICM-EV-loss vs the
+frozen per-spot jam-wall ORACLE (oracle = best of {call, fold} vs the
+pool-as-implemented; the loss = oracle_EV − champion_EV). This IS the BR-gap: EV
+the champion forgoes by not best-responding to the field. It is an UPPER BOUND
+(per-spot best response, field fixed), so a small value is dispositive — "we
+can't find it" cannot be confused with "it isn't there."
+**Threshold (pre-registered, R6 no-go):** `R6_NOGO_EVLOSS = 0.02`/spot.
+- champion `ev_loss_mean < 0.02` (with CI) ⇒ **HALT THE PROGRAM** — field not
+  meaningfully exploitable beyond the champion; reconsider everything before any
+  burst. This is the believable program-level negative.
+- `≥ 0.02` ⇒ headroom exists; proceed to the leak map.
+
+**STATUS: already computed (`evals/h4_field_battery/champion_baselines.json`,
+P2_DONE).** Champion = **0.0866/spot (±0.0006), 16,224 spots, HALT=false — 4.3×
+the threshold.** So the program-negative did NOT fire: **the headroom is real.**
+The headroom is DEFENSIVE (oracle is call/fold vs the field's shoves), while the
+H4 probe collapsed via OFFENSIVE over-aggression — i.e. global-RNR learned the
+wrong adjustment. C therefore pivots from "does headroom exist" (answered: yes)
+to the live deliverable below.
+
+## Live deliverable (given R6 already passed): the leak map + reachability
+Decompose the 0.087/spot champion loss by (position × depth × oracle-direction)
+to find WHERE the headroom concentrates and confirm it is DEFENSIVE
+(call/fold-vs-shove), not offensive. Output ranks the top 2–3 spot-clusters for
+A/B to target. Reachability check: a surgical fix at those clusters must keep
+self-anchor ≈0 (G1) — capturing defensive headroom should NOT require the
+offensive over-aggression that collapsed H4.
 
 ## Kill criterion
-Stop at the read-only stage if no spot clears both thresholds. Report
-"field not exploitable beyond champion" — a program-level finding.
+Program-negative (HALT) if a future re-pool drops champion ev_loss < 0.02. With
+the current pool it is 0.087 (>>0.02), so C proceeds to the leak map. If the leak
+map shows the headroom is UNreachable without self-anchor cost (high-headroom
+spots coincide with high champion-deviation that only over-aggression captures),
+that itself bounds what A/B can achieve.
 
 ## Why first
 Free, safe, and it tells A and B WHERE to focus (or that there's nothing to
