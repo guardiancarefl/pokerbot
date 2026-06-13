@@ -47,6 +47,23 @@ within any `abort_window_hands`-hand window, OR fallbacks in
 `abort_consecutive` consecutive hands. Scraper degradation is bursty —
 session 163815 lost 3 hands in a 4-hand stretch (seqs 346-370), which
 trips the consecutive rule.
+
+Abort bookkeeping counts EVIDENCE HANDS only (2026-06-13 fix, session
+230149 postmortem [2]): a hand enters the abort counters (`_hand_flags`
+/ `hands_seen`) only if at least one of its frames showed a real
+hero-to-act UI (or a fallback fired in it). Hand boundaries are still
+keyed on raw hero-card tuples — but a phantom "hand" (single-frame
+card-flicker segmentation artifact, e.g. the 1-frame ('2c',) read at
+seq 1381 between the TsAc fallback hand and the very next real
+fallback hand) carries no hero-to-act evidence and is now IGNORED by
+the counters instead of inserting a clean entry that resets the
+consecutive rule (fallbacks #6+#7 should have tripped the enforced
+abort; they did not). Mirrors the triage segmentation's pair-less-
+fragment merge rule (scripts/dryrun_triage.py segment_hands): fragments
+without the defining evidence don't stand as hands. Deliberate
+corollary: a real hand in which hero never had a decision (e.g. a BB
+walk — muck-only UI at most) no longer resets the consecutive counter
+either; it carries no evidence the pipeline recovered.
 """
 from __future__ import annotations
 
@@ -157,24 +174,39 @@ class FallbackWatchdog:
         # hand tracking
         self._current_hand: tuple[str, ...] | None = None
         self._current_hand_fallback = False
-        self._hand_flags: list[bool] = []   # closed hands, append order
+        # True iff the CURRENT hand has shown at least one real
+        # hero-to-act frame (or fired a fallback). Hands without this
+        # evidence are phantom/no-decision hands and never enter the
+        # abort counters (see module docstring, 2026-06-13 fix).
+        self._current_hand_evidence = False
+        self._hand_flags: list[bool] = []   # closed EVIDENCE hands, append order
         # session counters
         self.n_fallbacks = 0
-        self.hands_seen = 0
+        self.hands_seen = 0                 # evidence hands only
         self.abort_recommended = False
         self.abort_reason: str | None = None
 
     # ── hand / episode bookkeeping ─────────────────────────────────────
 
     def _close_hand(self) -> None:
-        if self._current_hand is not None:
+        # Phantom-hand guard: a hand with NO hero-to-act evidence (e.g.
+        # a single-frame card-flicker tuple) is dropped from the abort
+        # bookkeeping entirely — appending a clean False here is what
+        # reset the consecutive counter between real fallback hands
+        # (session 230149 seq 1381, fallbacks #6/#7).
+        if self._current_hand is not None and self._current_hand_evidence:
             self._hand_flags.append(self._current_hand_fallback)
         self._current_hand_fallback = False
+        self._current_hand_evidence = False
+
+    def _mark_hand_evidence(self) -> None:
+        if not self._current_hand_evidence:
+            self._current_hand_evidence = True
+            self.hands_seen += 1
 
     def _on_new_hand(self, cards: tuple[str, ...]) -> None:
         self._close_hand()
         self._current_hand = cards
-        self.hands_seen += 1
         self._disarm()
         self._clear_spot()
 
@@ -215,6 +247,11 @@ class FallbackWatchdog:
             self._on_new_hand(cards)
 
         to_act = is_real_to_act(raw_record)
+        if to_act:
+            # A real action UI is the hand's hero-to-act evidence —
+            # marked before the decision-disarm early-return so decided
+            # hands count too.
+            self._mark_hand_evidence()
 
         if status.startswith("decision") and not self.click_confirmation_mode:
             # Pipeline produced/locked an action — the guarantee holds.
@@ -296,6 +333,11 @@ class FallbackWatchdog:
         self._clear_spot()
         self.n_fallbacks += 1
         self._current_hand_fallback = True
+        # A fired fallback is hero-to-act evidence by construction (the
+        # episode armed on a real action UI); poll()-fired plans may
+        # never have routed a to-act frame through observe() for the
+        # current card-tuple, so latch it here too.
+        self._mark_hand_evidence()
         self._check_abort()
         return FallbackPlan(
             action_kind="check" if armed.get("check_available") else "fold",

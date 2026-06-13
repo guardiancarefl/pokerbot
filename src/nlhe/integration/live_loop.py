@@ -622,7 +622,8 @@ def _client_action_for_chip_int(chip_int: int, frame) -> dict:
 
 
 def _attempt_suspect_stack_recovery(record: dict, structure, tracker,
-                                    dead_button_handling: bool = False):
+                                    dead_button_handling: bool = False,
+                                    allin_zero_stack: bool = False):
     """Layer-1 single-field recovery for scraper-suspect frames
     (2026-06-09 blackout postmortem: a stable stuck-digit hero-stack OCR
     suspect-flagged 12 consecutive otherwise-clean frames; 4 hero-to-act
@@ -668,7 +669,8 @@ def _attempt_suspect_stack_recovery(record: dict, structure, tracker,
         return None, None, "suspect_reasons not a single-seat stack jump"
     try:
         frame = parse_frame(record, allow_suspect=True,
-                            dead_button_handling=dead_button_handling)
+                            dead_button_handling=dead_button_handling,
+                            allin_zero_stack=allin_zero_stack)
     except (ScraperParseError, ScraperDataQuality) as e:
         return None, None, (f"suspect frame failed clean parse: "
                             f"{type(e).__name__}")
@@ -1021,6 +1023,7 @@ def make_decision(
     bet_closure_recovery: bool = False,
     dead_button_handling: bool = False,
     commit_reconciliation: bool = False,
+    allin_zero_stack: bool = False,
 ) -> LiveDecision:
     """Process one scraper record. Returns a LiveDecision.
 
@@ -1065,6 +1068,15 @@ def make_decision(
             gated on P1. Runs AFTER bet_closure_recovery when both are
             armed (disjoint classes; P2's re-validation refuses
             mirror-class frames, proven live 2026-06-12).
+        allin_zero_stack: F2 zero-stack all-in handling (see
+            scraper_schema.parse_frame). Default False = OFF (a 0-stack
+            bet-0 seat reads non-alive and a dealer pointing there
+            soft-drops byte-identical to pre-F2). When True, a
+            committed (pot-arithmetic-evidenced) explicit-0 seat is a
+            valid all-in: the frame parses (no dealer-on-dead drop, no
+            dead-button misclassification, counts toward n_alive>=4)
+            and flows through the unchanged anchor + replay + invariant
+            chain, where the busted-mid-hand machinery models it.
 
     Returns:
         A LiveDecision. Never raises; internal errors surface as a
@@ -1088,7 +1100,8 @@ def make_decision(
     # 1. Parse the record. Soft drops surface as skip status.
     try:
         frame = parse_frame(record,
-                            dead_button_handling=dead_button_handling)
+                            dead_button_handling=dead_button_handling,
+                            allin_zero_stack=allin_zero_stack)
     except ScraperSuspect as e:
         # 1b. Layer-1 single-field recovery. A suspect frame whose ONLY
         # flagged problem is one seat's stack jump may be recoverable by
@@ -1098,7 +1111,8 @@ def make_decision(
         # pre-recovery drop, plus an audit note.
         frame, recovered, why = _attempt_suspect_stack_recovery(
             record, structure, tracker,
-            dead_button_handling=dead_button_handling)
+            dead_button_handling=dead_button_handling,
+            allin_zero_stack=allin_zero_stack)
         if frame is None:
             out.status = "skip_data_quality"
             out.skip_reason = (f"{type(e).__name__}: {str(e)[:160]} "
@@ -1134,7 +1148,9 @@ def make_decision(
     out.pot_total = int(frame.pot_total)
     out.hero_stack = int(frame.stack[frame.hero_seat]) \
         if frame.alive[frame.hero_seat] else 0
-    out.n_alive = int(sum(frame.alive))
+    # F2: committed zero-stack all-in seats are in the hand — the READ
+    # summary counts them (flag OFF: allin_seats all-False, identical).
+    out.n_alive = int(sum(frame.alive)) + int(sum(frame.allin_seats))
     out.facing_bet = bool(frame.hero_facing_bet)
     for bl in structure.blind_schedule:
         if (bl.small_blind == frame.blinds.sb
@@ -1255,7 +1271,8 @@ def make_decision(
             out.pot_total = int(frame.pot_total)
             out.hero_stack = int(frame.stack[frame.hero_seat]) \
                 if frame.alive[frame.hero_seat] else 0
-            out.n_alive = int(sum(frame.alive))
+            out.n_alive = (int(sum(frame.alive))
+                           + int(sum(frame.allin_seats)))
             out.facing_bet = bool(frame.hero_facing_bet)
             out.street_idx = int(pack.street_idx)
         else:

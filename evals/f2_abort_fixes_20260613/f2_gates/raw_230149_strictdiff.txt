@@ -1,0 +1,214 @@
+Total frames:                1649
+Identical:                   1630
+Suspect-annotation-only:     0
+BEHAVIORAL CHANGES:          19
+
+[BEHAV] seq=20260612_192202_658
+  status                 'skip_data_quality'
+                         -> 'skip_not_hero_to_act'
+  skip_reason            'ScraperDataQuality: dealer points to seat1 but that seat is empty/non-alive (alive=(False, True, True, True, T'
+                         -> 'controls.present=False (not a hero-to-act decision: hand-start, muck-only UI, or between actions)'
+  hero_stack             'None'
+                         -> '0'
+  pot_total              'None'
+                         -> '185'
+  facing_bet             'None'
+                         -> 'False'
+  click_plan             "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'ScraperDataQuality: dealer points to seat1 but that"
+                         -> "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'controls.present=False (not a hero-to-act decision:"
+
+[BEHAV] seq=20260612_192741_128
+  status                 'skip_data_quality'
+                         -> 'skip_not_hero_to_act'
+  skip_reason            'ScraperDataQuality: dealer points to seat4 but that seat is empty/non-alive (alive=(True, True, False, False, '
+                         -> 'controls.present=False (not a hero-to-act decision: hand-start, muck-only UI, or between actions)'
+  hero_stack             'None'
+                         -> '1042'
+  pot_total              'None'
+                         -> '628'
+  facing_bet             'None'
+                         -> 'False'
+  click_plan             "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'ScraperDataQuality: dealer points to seat4 but that"
+                         -> "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'controls.present=False (not a hero-to-act decision:"
+
+[BEHAV] seq=20260612_194223_528
+  status                 'skip_data_quality'
+                         -> 'skip_not_hero_to_act'
+  skip_reason            "ScraperDataQuality: n_alive=3 < 4; below the trained model's sample_starting_state lower bound (alive_count >="
+                         -> 'controls.present=False (not a hero-to-act decision: hand-start, muck-only UI, or between actions)'
+  hero_stack             'None'
+                         -> '2757'
+  pot_total              'None'
+                         -> '1990'
+  facing_bet             'None'
+                         -> 'False'
+  click_plan             '{\'action_kind\': \'no_plan\', \'chip_amount\': None, \'reason\': "ScraperDataQuality: n_alive=3 < 4; below the traine'
+                         -> "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'controls.present=False (not a hero-to-act decision:"
+
+[BEHAV] seq=20260612_194224_476
+  status                 'skip_data_quality'
+                         -> 'skip_not_hero_to_act'
+  skip_reason            "ScraperDataQuality: n_alive=3 < 4; below the trained model's sample_starting_state lower bound (alive_count >="
+                         -> 'controls.present=False (not a hero-to-act decision: hand-start, muck-only UI, or between actions)'
+  hero_stack             'None'
+                         -> '2757'
+  pot_total              'None'
+                         -> '1990'
+  facing_bet             'None'
+                         -> 'False'
+  click_plan             '{\'action_kind\': \'no_plan\', \'chip_amount\': None, \'reason\': "ScraperDataQuality: n_alive=3 < 4; below the traine'
+                         -> "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'controls.present=False (not a hero-to-act decision:"
+
+[BEHAV] seq=20260612_194225_976
+  status                 'skip_data_quality'
+                         -> 'skip_not_hero_to_act'
+  skip_reason            "ScraperDataQuality: n_alive=3 < 4; below the trained model's sample_starting_state lower bound (alive_count >="
+                         -> 'controls.present=False (not a hero-to-act decision: hand-start, muck-only UI, or between actions)'
+  hero_stack             'None'
+                         -> '2757'
+  pot_total              'None'
+                         -> '1990'
+  facing_bet             'None'
+                         -> 'False'
+  click_plan             '{\'action_kind\': \'no_plan\', \'chip_amount\': None, \'reason\': "ScraperDataQuality: n_alive=3 < 4; below the traine'
+                         -> "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'controls.present=False (not a hero-to-act decision:"
+
+[BEHAV] seq=20260612_194228_683
+  status                 'skip_data_quality'
+                         -> 'skip_not_hero_to_act'
+  skip_reason            "ScraperDataQuality: n_alive=3 < 4; below the trained model's sample_starting_state lower bound (alive_count >="
+                         -> 'controls.present=False (not a hero-to-act decision: hand-start, muck-only UI, or between actions)'
+  hero_stack             'None'
+                         -> '2757'
+  pot_total              'None'
+                         -> '1990'
+  facing_bet             'None'
+                         -> 'False'
+  click_plan             '{\'action_kind\': \'no_plan\', \'chip_amount\': None, \'reason\': "ScraperDataQuality: n_alive=3 < 4; below the traine'
+                         -> "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'controls.present=False (not a hero-to-act decision:"
+
+[BEHAV] seq=20260612_194331_031
+  status                 'skip_data_quality'
+                         -> 'skip_not_hero_to_act'
+  skip_reason            "ScraperDataQuality: n_alive=3 < 4; below the trained model's sample_starting_state lower bound (alive_count >="
+                         -> 'controls.present=False (not a hero-to-act decision: hand-start, muck-only UI, or between actions)'
+  hero_stack             'None'
+                         -> '1167'
+  pot_total              'None'
+                         -> '2830'
+  facing_bet             'None'
+                         -> 'False'
+  click_plan             '{\'action_kind\': \'no_plan\', \'chip_amount\': None, \'reason\': "ScraperDataQuality: n_alive=3 < 4; below the traine'
+                         -> "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'controls.present=False (not a hero-to-act decision:"
+
+[BEHAV] seq=20260612_194332_180
+  status                 'skip_data_quality'
+                         -> 'skip_not_hero_to_act'
+  skip_reason            "ScraperDataQuality: n_alive=3 < 4; below the trained model's sample_starting_state lower bound (alive_count >="
+                         -> 'controls.present=False (not a hero-to-act decision: hand-start, muck-only UI, or between actions)'
+  hero_stack             'None'
+                         -> '1167'
+  pot_total              'None'
+                         -> '2830'
+  facing_bet             'None'
+                         -> 'False'
+  click_plan             '{\'action_kind\': \'no_plan\', \'chip_amount\': None, \'reason\': "ScraperDataQuality: n_alive=3 < 4; below the traine'
+                         -> "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'controls.present=False (not a hero-to-act decision:"
+
+[BEHAV] seq=20260612_194945_059
+  skip_reason            'ScraperSuspect: frame marked suspect by scraper; dropping. captured_at=20260612_194945_059 (recovery declined:'
+                         -> 'ScraperSuspect: frame marked suspect by scraper; dropping. captured_at=20260612_194945_059 (recovery declined:'
+  click_plan             "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'ScraperSuspect: frame marked suspect by scraper; dr"
+                         -> "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'ScraperSuspect: frame marked suspect by scraper; dr"
+
+[BEHAV] seq=20260612_194946_716
+  skip_reason            'ScraperSuspect: frame marked suspect by scraper; dropping. captured_at=20260612_194946_716 (recovery declined:'
+                         -> 'ScraperSuspect: frame marked suspect by scraper; dropping. captured_at=20260612_194946_716 (recovery declined:'
+  click_plan             "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'ScraperSuspect: frame marked suspect by scraper; dr"
+                         -> "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'ScraperSuspect: frame marked suspect by scraper; dr"
+
+[BEHAV] seq=20260612_194948_065
+  skip_reason            'ScraperSuspect: frame marked suspect by scraper; dropping. captured_at=20260612_194948_065 (recovery declined:'
+                         -> 'ScraperSuspect: frame marked suspect by scraper; dropping. captured_at=20260612_194948_065 (recovery declined:'
+  click_plan             "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'ScraperSuspect: frame marked suspect by scraper; dr"
+                         -> "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'ScraperSuspect: frame marked suspect by scraper; dr"
+
+[BEHAV] seq=20260612_195602_788
+  status                 'skip_data_quality'
+                         -> 'skip_not_hero_to_act'
+  skip_reason            'ScraperDataQuality: dealer points to seat4 but that seat is empty/non-alive (alive=(True, True, True, False, T'
+                         -> 'controls.present=False (not a hero-to-act decision: hand-start, muck-only UI, or between actions)'
+  hero_stack             'None'
+                         -> '3505'
+  pot_total              'None'
+                         -> '125'
+  facing_bet             'None'
+                         -> 'False'
+  click_plan             "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'ScraperDataQuality: dealer points to seat4 but that"
+                         -> "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'controls.present=False (not a hero-to-act decision:"
+
+[BEHAV] seq=20260612_195703_460
+  status                 'skip_data_quality'
+                         -> 'skip_not_hero_to_act'
+  skip_reason            'ScraperDataQuality: dealer points to seat1 but that seat is empty/non-alive (alive=(False, True, True, True, T'
+                         -> 'controls.present=False (not a hero-to-act decision: hand-start, muck-only UI, or between actions)'
+  hero_stack             'None'
+                         -> '0'
+  pot_total              'None'
+                         -> '425'
+  facing_bet             'None'
+                         -> 'False'
+  click_plan             "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'ScraperDataQuality: dealer points to seat1 but that"
+                         -> "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'controls.present=False (not a hero-to-act decision:"
+
+[BEHAV] seq=20260612_195956_142
+  status                 'skip_data_quality'
+                         -> 'skip_not_hero_to_act'
+  skip_reason            "ScraperDataQuality: n_alive=3 < 4; below the trained model's sample_starting_state lower bound (alive_count >="
+                         -> 'controls.present=False (not a hero-to-act decision: hand-start, muck-only UI, or between actions)'
+  hero_stack             'None'
+                         -> '0'
+  pot_total              'None'
+                         -> '210'
+  facing_bet             'None'
+                         -> 'False'
+  click_plan             '{\'action_kind\': \'no_plan\', \'chip_amount\': None, \'reason\': "ScraperDataQuality: n_alive=3 < 4; below the traine'
+                         -> "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'controls.present=False (not a hero-to-act decision:"
+
+[BEHAV] seq=20260612_200219_807
+  status                 'skip_data_quality'
+                         -> 'skip_not_hero_to_act'
+  skip_reason            'ScraperDataQuality: dealer points to seat1 but that seat is empty/non-alive (alive=(False, True, True, True, F'
+                         -> 'controls.present=False (not a hero-to-act decision: hand-start, muck-only UI, or between actions)'
+  hero_stack             'None'
+                         -> '0'
+  pot_total              'None'
+                         -> '325'
+  facing_bet             'None'
+                         -> 'False'
+  click_plan             "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'ScraperDataQuality: dealer points to seat1 but that"
+                         -> "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'controls.present=False (not a hero-to-act decision:"
+
+[BEHAV] seq=20260612_200613_783
+  skip_reason            'ScraperSuspect: frame marked suspect by scraper; dropping. captured_at=20260612_200613_783 (recovery declined:'
+                         -> 'ScraperSuspect: frame marked suspect by scraper; dropping. captured_at=20260612_200613_783 (recovery declined:'
+  click_plan             "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'ScraperSuspect: frame marked suspect by scraper; dr"
+                         -> "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'ScraperSuspect: frame marked suspect by scraper; dr"
+
+[BEHAV] seq=20260612_200614_240
+  skip_reason            'ScraperSuspect: frame marked suspect by scraper; dropping. captured_at=20260612_200614_240 (recovery declined:'
+                         -> 'ScraperSuspect: frame marked suspect by scraper; dropping. captured_at=20260612_200614_240 (recovery declined:'
+  click_plan             "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'ScraperSuspect: frame marked suspect by scraper; dr"
+                         -> "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'ScraperSuspect: frame marked suspect by scraper; dr"
+
+[BEHAV] seq=20260612_200615_782
+  skip_reason            'ScraperSuspect: frame marked suspect by scraper; dropping. captured_at=20260612_200615_782 (recovery declined:'
+                         -> 'ScraperSuspect: frame marked suspect by scraper; dropping. captured_at=20260612_200615_782 (recovery declined:'
+  click_plan             "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'ScraperSuspect: frame marked suspect by scraper; dr"
+                         -> "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'ScraperSuspect: frame marked suspect by scraper; dr"
+
+[BEHAV] seq=20260612_200617_797
+  skip_reason            'ScraperSuspect: frame marked suspect by scraper; dropping. captured_at=20260612_200617_797 (recovery declined:'
+                         -> 'ScraperSuspect: frame marked suspect by scraper; dropping. captured_at=20260612_200617_797 (recovery declined:'
+  click_plan             "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'ScraperSuspect: frame marked suspect by scraper; dr"
+                         -> "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'ScraperSuspect: frame marked suspect by scraper; dr"

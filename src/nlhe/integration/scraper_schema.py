@@ -123,6 +123,20 @@ class ScraperFrame:
     # constructor call and pickle byte-compatible.
     dealer_dead: bool = False
 
+    # Zero-stack all-in seats (F2, flag-gated): True for seats whose
+    # stack box EXPLICITLY read 0 (the literal digit — not a None/missing
+    # read) while occupied, un-folded and with no current bet, AND whose
+    # commitment to THIS hand is evidenced by the pot arithmetic — a
+    # VALID all-in display state (Windows root-cause 2026-06-13: all-in
+    # seats genuinely display "0"). These seats stay alive[i]=False —
+    # downstream the busted-mid-hand machinery (anchor-driven all-in
+    # emission + invariant view) already models a committed seat showing
+    # stack=0/bet=0 exactly; what this annotation changes is parse-level
+    # ACCEPTANCE (dealer-validity + n_alive gates). Only ever non-False
+    # when parse_frame ran with allin_zero_stack=True; the default keeps
+    # every pre-F2 constructor call and pickle byte-compatible.
+    allin_seats: tuple = (False,) * NUM_SEATS
+
 
 def _seat_to_idx(name: str) -> int:
     """'seat3' -> 2. Raises ScraperParseError on malformed input."""
@@ -183,7 +197,8 @@ def _seat_dict_to_array(d: dict, default, kind: str) -> tuple:
 
 def parse_frame(record: dict, hero_seat_alias: str = "seat1",
                 allow_suspect: bool = False,
-                dead_button_handling: bool = False) -> ScraperFrame:
+                dead_button_handling: bool = False,
+                allin_zero_stack: bool = False) -> ScraperFrame:
     """Parse a single scraper JSON record into a ScraperFrame.
 
     Args:
@@ -213,6 +228,30 @@ def parse_frame(record: dict, hero_seat_alias: str = "seat1",
             correctness bar — an OCR-drift frame (transient button-move
             capture, the other source of dealer-on-empty reads)
             reconstructs inconsistently and still drops there.
+        allin_zero_stack: F2 zero-stack all-in handling (task #11,
+            operator-routed 2026-06-13; OFF by default). Windows
+            root-caused the session-5 pointed-seat kills: ALL-IN seats
+            genuinely display "0" (an ocr_int truthiness bug — F1,
+            shipped Windows-side — dropped consensus zeros, so the
+            session-5 logs show None where post-F1 frames carry 0).
+            When False: byte-identical to the pre-F2 bridge (a 0-stack
+            bet-0 seat reads non-alive; a dealer pointing there
+            soft-drops / D2-deadens; n_alive excludes it). When True: a
+            seat whose stack EXPLICITLY reads 0 (literal digit, not a
+            None/missing OCR read), occupied (empty=False), un-folded,
+            with no current bet, and whose hand-commitment is evidenced
+            by the pot arithmetic (residual pot after subtracting
+            visible bets covers an ante for it on top of every
+            chips-visible seat's — discriminates a committed all-in
+            from a busted-prior/dead-button leftover that posted
+            nothing) is marked in `allin_seats`: the frame is ACCEPTED
+            for dealer-on-that-seat (NOT a dead-button candidate —
+            coordination with D2) and the seat counts toward the
+            n_alive>=4 gate. `alive[i]` stays False on purpose: the
+            downstream busted-mid-hand machinery (anchor-driven all-in
+            emission, invariant all-in view, closure slack) already
+            models a committed 0/0 seat exactly; decisions still
+            require the anchor + full replay+invariant gate.
 
     Raises:
         ScraperSuspect: if record['suspect'] is True (and allow_suspect is
@@ -284,6 +323,41 @@ def parse_frame(record: dict, hero_seat_alias: str = "seat1",
         for i in range(NUM_SEATS)
     )
 
+    # F2 (flag-gated): zero-stack ALL-IN seats. A seat showing the
+    # literal digit 0 (post-F1 the zero survives OCR consensus; a
+    # busted/vacated seat reads None) while occupied, un-folded and with
+    # no current bet is either (a) all-in THIS hand with its bet already
+    # swept to the pot, or (b) a busted-prior / dead-button leftover
+    # whose box transiently still renders "0". Discriminator = pot
+    # arithmetic: a committed seat's ante (at least) is in the pot, so
+    # the pot net of visible bets must cover one ante per candidate ON
+    # TOP of every chips-visible seat's (preflop this separates the two
+    # exactly — session-5 ground truth: seq 472 seat4 flop all-in passes
+    # at residual 290 >= 25; QdKc seq 909 seat2 fails at residual
+    # 100 < 125 and stays a D2 dead-button candidate; postflop the
+    # threshold is trivially met, which is correct — an uncommitted
+    # seat cannot reach postflop). alive[] deliberately keeps these
+    # seats False: downstream they are EXACTLY the busted-mid-hand
+    # class (full commitment in the pot, 0 behind, 0 in front), which
+    # the anchor-driven all-in emission + invariant view already
+    # handle; promotion here only changes parse-level acceptance.
+    allin_seats = (False,) * NUM_SEATS
+    if allin_zero_stack:
+        candidates = [
+            i for i in range(NUM_SEATS)
+            if not alive[i] and not empty[i] and not folded[i]
+            and stack_raw[i] is not None and int(stack_raw[i]) == 0
+            and bet[i] == 0
+        ]
+        ante = blinds.ante
+        if candidates and ante > 0:
+            residual_pot = pot_total - sum(bet)
+            n_chips_visible = sum(alive)
+            if residual_pot >= ante * (n_chips_visible + len(candidates)):
+                allin_seats = tuple(
+                    i in candidates for i in range(NUM_SEATS)
+                )
+
     # Dealer-on-empty. Two real-world causes:
     #   (a) DEAD BUTTON — standard short-handed rotation: the BB advances
     #       exactly one ACTIVE player per hand; SB and button derive from
@@ -300,11 +374,18 @@ def parse_frame(record: dict, hero_seat_alias: str = "seat1",
     # Windows `dealer_dead` key is preferred when present: an explicit
     # dealer_dead=false against an empty-reading dealer seat is
     # contradictory (drift), so the pre-D2 drop is kept for it.
+    # F2 coordination with D2: a 0-stack seat with COMMITMENT evidence
+    # (allin_seats) is a live all-in player, NOT a dead-button candidate
+    # — the dealer-validity check treats it as occupied-and-in-hand, and
+    # the explicit Windows dealer_dead annotation is ignored for it (a
+    # seat that posted this hand cannot be a dead button; the committed
+    # read is the higher-information source).
     dealer_dead = False
     dealer_dead_reported = record.get("dealer_dead", None)
     if dealer_dead_reported is not None:
         dealer_dead_reported = bool(dealer_dead_reported)
-    if empty[dealer_seat] or not alive[dealer_seat]:
+    if (empty[dealer_seat] or not alive[dealer_seat]) \
+            and not allin_seats[dealer_seat]:
         if not dead_button_handling or dealer_dead_reported is False:
             raise ScraperDataQuality(
                 f"dealer points to seat{dealer_seat+1} but that seat is "
@@ -312,7 +393,8 @@ def parse_frame(record: dict, hero_seat_alias: str = "seat1",
                 f"captured_at={record.get('captured_at', '<missing>')}"
             )
         dealer_dead = True
-    elif dead_button_handling and dealer_dead_reported:
+    elif dead_button_handling and dealer_dead_reported \
+            and not allin_seats[dealer_seat]:
         # Scraper flags a dead button on a seat we read as alive. Trust
         # the explicit marker (it is the higher-information source); for
         # the >= 3-alive states the bridge serves, the SB/BB derivation
@@ -329,7 +411,11 @@ def parse_frame(record: dict, hero_seat_alias: str = "seat1",
     # tournament format mixed into the corpus, or (b) a transient frame
     # captured between bust and the match-end UI update. Either way the
     # resolver should not be asked to decide on it. Soft-drop.
-    n_alive_total = sum(alive)
+    # F2: committed zero-stack all-in seats are IN the hand — they count
+    # toward the playable-range gate (flag OFF: sum(allin_seats) == 0,
+    # byte-identical). Session-5 corollary: the 5hTs "n_alive=3 < 4"
+    # endgame skips were 4-handed states with one all-in seat reading 0.
+    n_alive_total = sum(alive) + sum(allin_seats)
     if n_alive_total < 4:
         raise ScraperDataQuality(
             f"n_alive={n_alive_total} < 4; below the trained model's "
@@ -384,6 +470,7 @@ def parse_frame(record: dict, hero_seat_alias: str = "seat1",
         controls_present=controls_present,
         hero_facing_bet=hero_facing_bet,
         dealer_dead=dealer_dead,
+        allin_seats=allin_seats,
     )
 
 

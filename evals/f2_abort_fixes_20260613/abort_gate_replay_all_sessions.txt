@@ -1,0 +1,130 @@
+========================================================================
+SESSION live_dryrun_20260611_201230.jsonl  config={'fallback_seconds': 7.0, 'watchdog_v2': False, 'abort_enforce': False}
+  recorded fallbacks in log: 4 (live abort_recommended: [False, False, False, False])
+  replayed fires: 4
+   # armed_seq hand         action legacy_abort  evidence_abort  reason
+   1        13 AdAs         fold   False         False           
+   2       295 JdAs         fold   False         False           
+   3       338 Td6c         fold   False         False           
+   4       576 7d2d         fold   False         False           
+  armed_seq lineup  recorded=[13, 295, 338, 576]
+                    replayed=[13, 295, 338, 576]  MATCH
+  VERDICT  legacy abort: False   evidence-hand abort: False   (unchanged)
+  hands_seen  legacy=65  evidence=50
+========================================================================
+SESSION live_dryrun_20260611_204751.jsonl  config={'fallback_seconds': 7.0, 'watchdog_v2': False, 'abort_enforce': False}
+  recorded fallbacks in log: 2 (live abort_recommended: [False, False])
+  replayed fires: 2
+   # armed_seq hand         action legacy_abort  evidence_abort  reason
+   1       840 QhQs         check  False         False           
+   2       901 6cAs         fold   False         False           
+  armed_seq lineup  recorded=[840, 901]
+                    replayed=[840, 901]  MATCH
+  VERDICT  legacy abort: False   evidence-hand abort: False   (unchanged)
+  hands_seen  legacy=83  evidence=64
+========================================================================
+SESSION live_dryrun_20260611_222532.jsonl  config={'fallback_seconds': 7.0, 'watchdog_v2': True, 'abort_enforce': True}
+  recorded fallbacks in log: 4 (live abort_recommended: [False, False, False, False])
+  replayed fires: 4
+   # armed_seq hand         action legacy_abort  evidence_abort  reason
+   1      1813 ThAh         fold   False         False           
+   2      2197 KdTs         check  False         False           
+   3      2204 KdTs         check  False         False           
+   4      2606 Qh5h         fold   False         False           
+  armed_seq lineup  recorded=[1813, 2197, 2204, 2606]
+                    replayed=[1813, 2197, 2204, 2606]  MATCH
+  VERDICT  legacy abort: False   evidence-hand abort: False   (unchanged)
+  hands_seen  legacy=98  evidence=69
+========================================================================
+SESSION live_dryrun_20260612_035454.jsonl  config={'fallback_seconds': 7.0, 'watchdog_v2': True, 'abort_enforce': True}
+  recorded fallbacks in log: 3 (live abort_recommended: [False, False, False])
+  replayed fires: 3
+   # armed_seq hand         action legacy_abort  evidence_abort  reason
+   1      3051 ??           fold   False         False           
+   2      3067 ??           fold   False         False           
+   3       108 AsQc         check  False         False           
+  armed_seq lineup  recorded=[3051, 3067, 108]
+                    replayed=[3051, 3067, 108]  MATCH
+  VERDICT  legacy abort: False   evidence-hand abort: False   (unchanged)
+  hands_seen  legacy=16  evidence=12
+========================================================================
+SESSION live_dryrun_20260612_042058.jsonl  config={'fallback_seconds': 7.0, 'watchdog_v2': True, 'abort_enforce': True}
+  recorded fallbacks in log: 5 (live abort_recommended: [False, False, True, True, True])
+  replayed fires: 5
+   # armed_seq hand         action legacy_abort  evidence_abort  reason
+   1       363 4dKc         fold   False         False           
+   2       437 Jc           fold   False         False           
+   3       440 2c           check  True          True            3 fallback hands in the last 10 hands (threshold 3/10)
+   4       493 2hKc         check  True          True            3 fallback hands in the last 10 hands (threshold 3/10)
+   5       568 7h7c         check  True          True            3 fallback hands in the last 10 hands (threshold 3/10)
+  armed_seq lineup  recorded=[363, 437, 440, 493, 568]
+                    replayed=[363, 437, 440, 493, 568]  MATCH
+  VERDICT  legacy abort: True   evidence-hand abort: True   (unchanged)
+  hands_seen  legacy=57  evidence=26
+========================================================================
+SESSION live_dryrun_20260612_125441.jsonl  config={'fallback_seconds': 7.0, 'watchdog_v2': True, 'abort_enforce': True}
+  recorded fallbacks in log: 3 (live abort_recommended: [False, False, True])
+  replayed fires: 3
+   # armed_seq hand         action legacy_abort  evidence_abort  reason
+   1         4 8s8h         check  False         False           
+   2         9 8s8h         fold   False         False           
+   3        23 TcQs         fold   True          True            fallbacks in 2 consecutive hands
+  armed_seq lineup  recorded=[4, 9, 23]
+                    replayed=[4, 9, 23]  MATCH
+  VERDICT  legacy abort: True   evidence-hand abort: True   (unchanged)
+  hands_seen  legacy=7  evidence=5
+========================================================================
+SESSION live_dryrun_20260612_130846.jsonl  config={'fallback_seconds': 7.0, 'watchdog_v2': True, 'abort_enforce': True}
+  recorded fallbacks in log: 1 (live abort_recommended: [False])
+  replayed fires: 1
+   # armed_seq hand         action legacy_abort  evidence_abort  reason
+   1       288 Jc           fold   False         False           
+  armed_seq lineup  recorded=[288]
+                    replayed=[288]  MATCH
+  VERDICT  legacy abort: False   evidence-hand abort: False   (unchanged)
+  hands_seen  legacy=14  evidence=12
+========================================================================
+SESSION live_dryrun_20260612_161347.jsonl  config={'fallback_seconds': 7.0, 'watchdog_v2': True, 'abort_enforce': True}
+  recorded fallbacks in log: 1 (live abort_recommended: [False])
+  replayed fires: 3
+   # armed_seq hand         action legacy_abort  evidence_abort  reason
+   1       276 AcKc         fold   False         False           
+   2       286 7s5s         fold   False         True            fallbacks in 2 consecutive hands
+   3       297 Jc           check  True          True            3 fallback hands in the last 10 hands (threshold 3/10)
+  armed_seq lineup  recorded=[286]
+                    replayed=[276, 286, 297]  MISMATCH
+  VERDICT  legacy abort: True   evidence-hand abort: True   (unchanged)
+  hands_seen  legacy=50  evidence=23
+========================================================================
+SESSION live_dryrun_20260612_183701.jsonl  config={'fallback_seconds': 7.0, 'watchdog_v2': True, 'abort_enforce': True}
+  recorded fallbacks in log: 7 (live abort_recommended: [False, False, False, False, False, False, False])
+  replayed fires: 7
+   # armed_seq hand         action legacy_abort  evidence_abort  reason
+   1       370 2hQc         fold   False         False           
+   2       697 KhQc         fold   False         False           
+   3       706 KhQc         fold   False         False           
+   4       939 Jc           fold   False         False           
+   5      1083 Kd9c         check  False         False           
+   6      1179 4sTc         fold   False         False           
+   7      1374 6h9s         check  False         False           
+  armed_seq lineup  recorded=[370, 697, 706, 939, 1083, 1179, 1374]
+                    replayed=[370, 697, 706, 939, 1083, 1179, 1374]  MATCH
+  VERDICT  legacy abort: False   evidence-hand abort: False   (unchanged)
+  hands_seen  legacy=161  evidence=113
+========================================================================
+SESSION live_dryrun_20260612_230149.jsonl  config={'fallback_seconds': 7.0, 'watchdog_v2': True, 'abort_enforce': True}
+  recorded fallbacks in log: 8 (live abort_recommended: [False, False, False, False, False, False, False, False])
+  replayed fires: 8
+   # armed_seq hand         action legacy_abort  evidence_abort  reason
+   1       184 9h9s         check  False         False           
+   2       195 9h9s         fold   False         False           
+   3       434 9c9h         fold   False         False           
+   4       780 8c8d         fold   False         False           
+   5       912 QdKc         fold   False         False           
+   6      1366 TsAc         fold   False         False           
+   7      1382 9c           check  False         True            fallbacks in 2 consecutive hands
+   8      1639 5hTs         check  False         True            fallbacks in 2 consecutive hands
+  armed_seq lineup  recorded=[184, 195, 434, 780, 912, 1366, 1382, 1639]
+                    replayed=[184, 195, 434, 780, 912, 1366, 1382, 1639]  MATCH
+  VERDICT  legacy abort: False   evidence-hand abort: True   ** VERDICT CHANGED **
+  hands_seen  legacy=143  evidence=101

@@ -46,6 +46,7 @@ def process(log_path: str, out_path: str, checkpoint: str,
             bet_closure_recovery: bool = False,
             dead_button_handling: bool = False,
             commit_reconciliation: bool = False,
+            allin_zero_stack: bool = False,
             mode: str = "sample"):
     from src.nlhe.abstraction import Abstraction
     from src.nlhe.game_strings import TournamentStructure
@@ -78,7 +79,8 @@ def process(log_path: str, out_path: str, checkpoint: str,
                               decision_cache=cache,
                               bet_closure_recovery=bet_closure_recovery,
                               dead_button_handling=dead_button_handling,
-                              commit_reconciliation=commit_reconciliation)
+                              commit_reconciliation=commit_reconciliation,
+                              allin_zero_stack=allin_zero_stack)
             row = {"seq": seq, "captured_at": d.captured_at}
             row["status"] = d.status
             row["skip_reason"] = d.skip_reason
@@ -194,6 +196,10 @@ def main():
     p1.add_argument("--commit-reconciliation", action="store_true",
                     help="arm CR anchored commit reconciliation (requires "
                          "--anchor-sum-floor; counterfactual runs)")
+    p1.add_argument("--allin-zero-stack", action="store_true",
+                    help="arm F2 zero-stack all-in handling (explicit-0 "
+                         "committed seats parse as valid all-in states; "
+                         "counterfactual runs)")
     p1.add_argument("--mode", default="sample",
                     choices=("sample", "argmax"),
                     help="policy mode for the replayed make_decision. "
@@ -214,6 +220,7 @@ def main():
                 bet_closure_recovery=args.bet_closure_recovery,
                 dead_button_handling=args.dead_button_handling,
                 commit_reconciliation=args.commit_reconciliation,
+                allin_zero_stack=args.allin_zero_stack,
                 mode=args.mode)
     elif args.cmd == "diff":
         n = diff(args.pre, args.post,

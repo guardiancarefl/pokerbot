@@ -1,0 +1,155 @@
+========================================================================
+F2 (zero-stack in-hand all-in) + ABORT-COUNTER fix — GATE SUMMARY
+Written 2026-06-13.  Both fixes live in the working tree, UNCOMMITTED.
+========================================================================
+Code under test (working tree, do NOT commit):
+  src/nlhe/integration/scraper_schema.py  — ScraperFrame.allin_seats;
+      parse_frame(..., allin_zero_stack=) promotion + commitment test
+  src/nlhe/integration/live_loop.py        — allin_zero_stack threading,
+      n_alive counts allin_seats
+  scripts/run_live_dryrun.py, scripts/replay_make_decision_diff.py
+      — --allin-zero-stack flag (default OFF)
+  src/nlhe/integration/fallback.py         — abort-counter fix (separate)
+
+Checkpoint b79e82dd (ckpt_iter_1500), abstraction 0fc20800, seed 42,
+mode=sample.  Replay harness: scripts/replay_make_decision_diff.py.
+
+========================================================================
+PART A — F2 ZERO-STACK ALL-IN  (--allin-zero-stack)
+========================================================================
+
+What F2 does: a seat showing the literal digit 0 (post-F1 the consensus
+zero survives OCR; a busted/vacated seat reads None) while occupied,
+un-folded, and with no current bet is promoted to an ALL-IN seat
+(allin_seats[i]=True) IFF a pot-arithmetic COMMITMENT test passes
+(residual pot net of visible bets covers one ante per candidate on top
+of every chips-visible seat). Promoted seats count toward n_alive and
+are treated as occupied-and-in-hand by the dealer-validity check; they
+stay alive[]=False so the existing busted-mid-hand / anchor machinery
+handles them. Flag OFF -> allin_seats all-False -> byte-identical
+(manager: 9750/9750 frames, 0 changes, 17 logs —
+flag_off_byte_identity_MANAGER.txt).
+
+Unit tests: tests/test_allin_zero_stack.py — 15/15 pass (this run).
+Manager's full suite: 41/41 pass.
+
+------------------------------------------------------------------------
+A.1  FLAG-ON on the RAW session-5 log (live_dryrun_20260612_230149)
+------------------------------------------------------------------------
+  Arms: f2_gates/raw_230149_{OFF,ON}.jsonl   (ON = --allin-zero-stack)
+  Strict diff: f2_gates/raw_230149_strictdiff.txt
+
+  STRICT  : 19 behavioral changes / 1649 frames (1630 identical).
+  NON-STRICT: 12 behavioral + 7 suspect-annotation-only.
+
+  All 19 are in the all-in-zero class (class_other = 0):
+    - 12 HARD recoveries (skip_data_quality -> decidable):
+        * dealer-on-explicit-0 (button on a seat reading literal 0,
+          all-in/just-busted): seq 338, 472, 1284, 1314, 1495
+        * n_alive<4 endgame, a non-dealer seat reads literal 0, F2
+          lifts n_alive 3->4: seq 926-930, 966-967, 1402
+    - 7 suspect-frame annotation deltas (1087-1089, 1621-1624): these
+      stay dropped as ScraperSuspect, but the recovery-decline reason
+      flips ("failed clean parse: ScraperDataQuality" -> "not a
+      hero-to-act frame") because F2 now lets the recovery parse
+      succeed. Audit-trail only; absorbed by the non-strict diff.
+
+  *** LOAD-BEARING HONESTY POINT ***
+  F2 fires on RAW frames ONLY where the seat already reads the literal
+  0. The session-5 seat2/3/5 dealer-burst KILL SET (9c9h, KcQd, AcTs —
+  the KQo/ATo/99 premium folds) reads the pointed seat as stack=None
+  AND empty=True on raw (the Windows ocr_int bug dropped the zero), so
+  F2 does NOT fire there as-is. Verified raw dealer-stack at the kill
+  frames: seq 434 (9c9h) None/empty, seq 912 (KcQd) None/empty, seq
+  1366 (AcTs) None/empty.
+
+------------------------------------------------------------------------
+A.2  POST-F1 SYNTHETIC (the real KQo/ATo test)
+------------------------------------------------------------------------
+  Build: evals/f2_abort_fixes_20260613/build_synthetic_postf1.py
+  Out  : synthetic_postf1_burst_230149.jsonl
+  Transform: for EVERY frame whose DEALER seat reads stack=None on raw,
+  ship the post-F1 shape on that seat — stack None->0, empty True->False
+  (a real consensus 0 on an occupied box). 101 frames patched; the full
+  "dealer points to a None-reading seat" burst class, including all
+  three target hands (9c9h 430-454, KcQd 908-919, AcTs 1360-1384).
+  No other seat/field touched.
+  (NB: synthetic_postf1_230149.jsonl is a prior, INCOMPLETE 6-frame
+  draft — superseded by synthetic_postf1_burst_230149.jsonl; ignore it.)
+
+  Arms: f2_gates/syn_230149_{OFF,F2,F2D2}.jsonl
+    OFF                                   : 225 data-quality drops
+    F2 (--allin-zero-stack)               : 200 drops
+    F2+D2 (--allin-zero-stack
+           --dead-button-handling)        : 165 drops, decisions 114->119
+
+  OFF -> F2 strict diff (syn_OFF_vs_F2_strictdiff.txt):
+    33 behavioral changes, ALL in the all-in-zero class,
+    class_other = 0.  (DIFF CONFINEMENT — requirement met.)
+
+  *** What F2 ALONE rescues vs what it (correctly) does NOT ***
+  The three KQo/ATo/99 hero-to-act kill frames are DEAD BUTTONS — the
+  button sat on a seat that busted the PREVIOUS hand; it posted nothing
+  this hand. F2's commitment test correctly REFUSES to promote them
+  (residual pot < ante*(n_visible+1)):
+      seq 434 (9c9h):  residual 25  < 30   -> refused
+      seq 912 (KcQd):  residual 100 < 125  -> refused
+      seq 1366 (AcTs): residual 60  < 75   -> refused
+  So under F2 alone all three STAY dropped (skip_data_quality
+  unchanged). They become DECIDABLE only with D2 dead-button routing:
+      F2+D2:  seq 434 -> decision raise_to 188
+              seq 912 -> decision fold
+              seq 1366 -> decision fold
+  This is the postmortem [4] coverage matrix confirmed empirically: the
+  seat2/3/5 dealer-burst class is D2's, not F2's. F2's correct role
+  there is to NOT misclassify a dead button as an all-in seat — and it
+  doesn't.
+
+  What F2 ITSELF rescues (post-F1, OFF->F2, beyond the raw set): the
+  genuinely-committed all-in-on-0 frames (e.g. seq 472 seat4 flop
+  all-in, residual 290 >= 25) and the n_alive<4 endgame frames. Note
+  seq 270 (Qh9h) PARSES under F2 (seat6 promoted) but then safe-folds
+  on an unrelated invariant_fail (3 deltas) — F2 recovers parse
+  acceptance, not necessarily a decision.
+
+  (The F2->F2D2 strict diff, syn_F2_vs_F2D2_strictdiff.txt, shows 146
+  changes — 36 dead-button/n_alive-class + 110 downstream SessionTracker
+  cascade once dead-button frames start parsing. That footprint is D2's,
+  not F2's; F2's own confinement is the clean OFF->F2 diff above.)
+
+========================================================================
+PART B — ABORT-COUNTER FIX (fallback.py) — CITED, NOT RE-RUN
+========================================================================
+  This fix is COMPLETE; its evidence pre-exists and was NOT re-run here.
+  - Replay gate: abort_gate_replay_all_sessions.txt
+    Verdict changes on exactly ONE session: live_dryrun_20260612_230149
+    "legacy abort: False -> evidence-hand abort: True ** VERDICT
+    CHANGED **". Root cause (postmortem [2]): fallbacks #6 (TsAc) and #7
+    (next dealt hand) fired in consecutive real hands and SHOULD have
+    tripped the 2-consecutive abort, but a single-frame phantom card
+    tuple ('2c',) at seq 1381 registered as a clean intervening "hand"
+    and reset the counter. The fix ignores phantom/single-card hand
+    tuples in abort bookkeeping; the abort now correctly trips on
+    230149 (seqs 1382, 1639) and on no other session. All other
+    sessions: verdict unchanged.
+  - Flag-off byte-identity (manager): flag_off_byte_identity_MANAGER.txt
+    — 17 logs / 9750 frames / 0 behavioral changes with all new flags
+    OFF (HEAD 4c4e4f9 vs WIP).
+
+========================================================================
+PART C — LIMITATIONS (stated plainly)
+========================================================================
+  1. F2 rescues the seat2/3/5 dealer-burst KQo/ATo/99 class ONLY once
+     Windows F1 ships the REAL consensus zeros AND the seat reads as
+     occupied (empty=False). On the raw pre-F1 logs those seats read
+     None/empty and fall to a different guard, so F2 is a no-op on them.
+  2. Even post-F1, those three kill frames are DEAD BUTTONS, not all-in
+     seats; F2 correctly refuses them and they need D2 to decide. F2's
+     contribution to that class is purely "don't mispromote a dead
+     button." The frames F2 rescues on its own are the genuinely-
+     committed all-in-on-0 frames (seq 472 etc.) and the n_alive<4
+     endgame frames.
+  3. The synthetic is a faithful but SYNTHETIC post-F1 shape (None->0,
+     empty->False on the dealer seat). It is not a live post-F1 capture;
+     the real-world confirmation is gated on the Windows F1 ship.
+========================================================================

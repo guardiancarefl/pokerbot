@@ -539,6 +539,18 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                           "replay+invariant gate is unchanged. Prefers "
                           "the additive Windows `dealer_dead` schema key "
                           "when present. OFF by default.")
+    ap.add_argument("--allin-zero-stack", action="store_true",
+                     help="F2 zero-stack all-in handling (task #11, "
+                          "operator-routed 2026-06-13): a seat whose "
+                          "stack EXPLICITLY reads 0 while occupied, "
+                          "un-folded, bet-free and pot-arithmetic-"
+                          "committed to the hand is a VALID all-in "
+                          "state — frames are accepted (no dealer-on-"
+                          "dead drop, no dead-button misclassification, "
+                          "counts toward n_alive>=4) instead of soft-"
+                          "dropping the whole hand (session-5 pointed-"
+                          "seat kill class, post-F1 world). The replay+"
+                          "invariant gate is unchanged. OFF by default.")
     ap.add_argument("--extended-click-plans", action="store_true",
                      help="Stage-2 click-executor completion (approved "
                           "2026-06-11): typed-raise verify step, ALLIN-button "
@@ -648,6 +660,12 @@ def main() -> int:
         print(_color("[run_live_dryrun] D2 dead-button handling ARMED "
                       "(dealer-on-eliminated-seat frames parse; SB/BB "
                       "post-validated against observed blind posts)",
+                      YELLOW), flush=True)
+    if args.allin_zero_stack:
+        header["allin_zero_stack"] = True
+        print(_color("[run_live_dryrun] F2 zero-stack all-in handling "
+                      "ARMED (explicit-0 committed seats parse as valid "
+                      "all-in states; replay+invariant gate unchanged)",
                       YELLOW), flush=True)
     if args.extended_click_plans:
         header["extended_click_plans"] = True
@@ -791,7 +809,8 @@ def main() -> int:
                                tail_floor_tau=args.tail_floor_tau,
                                bet_closure_recovery=args.bet_closure_recovery,
                                dead_button_handling=args.dead_button_handling,
-                               commit_reconciliation=args.commit_reconciliation)
+                               commit_reconciliation=args.commit_reconciliation,
+                               allin_zero_stack=args.allin_zero_stack)
 
             # Enforced session abort: decisions still computed + logged,
             # but the EXECUTION surface (click plan) is suppressed until

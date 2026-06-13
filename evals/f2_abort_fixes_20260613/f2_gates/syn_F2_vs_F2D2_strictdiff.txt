@@ -1,0 +1,1450 @@
+Total frames:                1649
+Identical:                   1503
+Suspect-annotation-only:     0
+BEHAVIORAL CHANGES:          146
+
+[BEHAV] seq=20260612_192553_969
+  status                 'skip_data_quality'
+                         -> 'skip_not_hero_to_act'
+  skip_reason            'ScraperDataQuality: dealer points to seat3 but that seat is empty/non-alive (alive=(True, True, False, True, T'
+                         -> 'controls.present=False (not a hero-to-act decision: hand-start, muck-only UI, or between actions)'
+  hero_stack             'None'
+                         -> '1485'
+  pot_total              'None'
+                         -> '0'
+  facing_bet             'None'
+                         -> 'False'
+  click_plan             "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'ScraperDataQuality: dealer points to seat3 but that"
+                         -> "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'controls.present=False (not a hero-to-act decision:"
+
+[BEHAV] seq=20260612_192554_952
+  status                 'skip_data_quality'
+                         -> 'skip_not_hero_to_act'
+  skip_reason            'ScraperDataQuality: dealer points to seat3 but that seat is empty/non-alive (alive=(True, True, False, True, T'
+                         -> 'controls.present=False (not a hero-to-act decision: hand-start, muck-only UI, or between actions)'
+  hero_stack             'None'
+                         -> '1485'
+  pot_total              'None'
+                         -> '25'
+  facing_bet             'None'
+                         -> 'False'
+  click_plan             "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'ScraperDataQuality: dealer points to seat3 but that"
+                         -> "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'controls.present=False (not a hero-to-act decision:"
+
+[BEHAV] seq=20260612_192556_248
+  status                 'skip_data_quality'
+                         -> 'skip_not_hero_to_act'
+  skip_reason            'ScraperDataQuality: dealer points to seat3 but that seat is empty/non-alive (alive=(True, True, False, True, T'
+                         -> 'controls.present=False (not a hero-to-act decision: hand-start, muck-only UI, or between actions)'
+  hero_stack             'None'
+                         -> '1485'
+  pot_total              'None'
+                         -> '65'
+  facing_bet             'None'
+                         -> 'True'
+  click_plan             "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'ScraperDataQuality: dealer points to seat3 but that"
+                         -> "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'controls.present=False (not a hero-to-act decision:"
+
+[BEHAV] seq=20260612_192557_456
+  status                 'skip_data_quality'
+                         -> 'skip_not_hero_to_act'
+  skip_reason            'ScraperDataQuality: dealer points to seat3 but that seat is empty/non-alive (alive=(True, True, False, True, T'
+                         -> 'controls.present=False (not a hero-to-act decision: hand-start, muck-only UI, or between actions)'
+  hero_stack             'None'
+                         -> '1485'
+  pot_total              'None'
+                         -> '65'
+  facing_bet             'None'
+                         -> 'True'
+  click_plan             "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'ScraperDataQuality: dealer points to seat3 but that"
+                         -> "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'controls.present=False (not a hero-to-act decision:"
+
+[BEHAV] seq=20260612_192600_026
+  status                 'skip_data_quality'
+                         -> 'decision'
+  skip_reason            'ScraperDataQuality: dealer points to seat3 but that seat is empty/non-alive (alive=(True, True, False, True, T'
+                         -> 'None'
+  hero_stack             'None'
+                         -> '1485'
+  pot_total              'None'
+                         -> '65'
+  pre_hand_override_used 'False'
+                         -> 'True'
+  street_idx             'None'
+                         -> '0'
+  facing_bet             'None'
+                         -> 'True'
+  client_action          'None'
+                         -> "{'kind': 'raise_to', 'chip_amount': 188, 'raw_openspiel_chip_int': 188}"
+  chip_int               'None'
+                         -> '188'
+  decision_identity      'None'
+                         -> "(2, (15, 25, 5), (True, True, False, True, True, True), ('9c', '9h'), (), 0, 25)"
+  click_plan             "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'ScraperDataQuality: dealer points to seat3 but that"
+                         -> "{'action_kind': 'raise_to', 'chip_amount': 188, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_inp"
+
+[BEHAV] seq=20260612_192601_102
+  status                 'skip_data_quality'
+                         -> 'decision_cached'
+  skip_reason            'ScraperDataQuality: dealer points to seat3 but that seat is empty/non-alive (alive=(True, True, False, True, T'
+                         -> 'None'
+  hero_stack             'None'
+                         -> '1485'
+  pot_total              'None'
+                         -> '65'
+  pre_hand_override_used 'False'
+                         -> 'True'
+  street_idx             'None'
+                         -> '0'
+  facing_bet             'None'
+                         -> 'True'
+  client_action          'None'
+                         -> "{'kind': 'raise_to', 'chip_amount': 188, 'raw_openspiel_chip_int': 188}"
+  chip_int               'None'
+                         -> '188'
+  decision_identity      'None'
+                         -> "(2, (15, 25, 5), (True, True, False, True, True, True), ('9c', '9h'), (), 0, 25)"
+  click_plan             "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'ScraperDataQuality: dealer points to seat3 but that"
+                         -> "{'action_kind': 'raise_to', 'chip_amount': 188, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_inp"
+
+[BEHAV] seq=20260612_192610_395
+  status                 'skip_data_quality'
+                         -> 'skip_not_hero_to_act'
+  skip_reason            'ScraperDataQuality: dealer points to seat3 but that seat is empty/non-alive (alive=(True, True, False, True, T'
+                         -> 'controls.present=False (not a hero-to-act decision: hand-start, muck-only UI, or between actions)'
+  hero_stack             'None'
+                         -> '1485'
+  pot_total              'None'
+                         -> '65'
+  facing_bet             'None'
+                         -> 'True'
+  click_plan             "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'ScraperDataQuality: dealer points to seat3 but that"
+                         -> "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'controls.present=False (not a hero-to-act decision:"
+
+[BEHAV] seq=20260612_192611_411
+  status                 'skip_data_quality'
+                         -> 'skip_not_hero_to_act'
+  skip_reason            'ScraperDataQuality: dealer points to seat3 but that seat is empty/non-alive (alive=(True, True, False, True, T'
+                         -> 'controls.present=False (not a hero-to-act decision: hand-start, muck-only UI, or between actions)'
+  hero_stack             'None'
+                         -> '1460'
+  pot_total              'None'
+                         -> '90'
+  facing_bet             'None'
+                         -> 'False'
+  click_plan             "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'ScraperDataQuality: dealer points to seat3 but that"
+                         -> "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'controls.present=False (not a hero-to-act decision:"
+
+[BEHAV] seq=20260612_192614_788
+  status                 'skip_data_quality'
+                         -> 'skip_not_hero_to_act'
+  skip_reason            'ScraperDataQuality: dealer points to seat3 but that seat is empty/non-alive (alive=(True, True, False, True, T'
+                         -> 'controls.present=False (not a hero-to-act decision: hand-start, muck-only UI, or between actions)'
+  hero_stack             'None'
+                         -> '1460'
+  pot_total              'None'
+                         -> '90'
+  facing_bet             'None'
+                         -> 'False'
+  click_plan             "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'ScraperDataQuality: dealer points to seat3 but that"
+                         -> "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'controls.present=False (not a hero-to-act decision:"
+
+[BEHAV] seq=20260612_192616_970
+  status                 'skip_data_quality'
+                         -> 'skip_not_hero_to_act'
+  skip_reason            'ScraperDataQuality: dealer points to seat3 but that seat is empty/non-alive (alive=(True, True, False, True, T'
+                         -> 'controls.present=False (not a hero-to-act decision: hand-start, muck-only UI, or between actions)'
+  hero_stack             'None'
+                         -> '1460'
+  pot_total              'None'
+                         -> '100'
+  facing_bet             'None'
+                         -> 'False'
+  click_plan             "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'ScraperDataQuality: dealer points to seat3 but that"
+                         -> "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'controls.present=False (not a hero-to-act decision:"
+
+[BEHAV] seq=20260612_192635_142
+  status                 'skip_data_quality'
+                         -> 'decision'
+  skip_reason            'ScraperDataQuality: dealer points to seat3 but that seat is empty/non-alive (alive=(True, True, False, True, T'
+                         -> 'None'
+  hero_stack             'None'
+                         -> '1460'
+  pot_total              'None'
+                         -> '200'
+  pre_hand_override_used 'False'
+                         -> 'True'
+  street_idx             'None'
+                         -> '0'
+  facing_bet             'None'
+                         -> 'True'
+  client_action          'None'
+                         -> "{'kind': 'call', 'chip_amount': None, 'raw_openspiel_chip_int': 1}"
+  chip_int               'None'
+                         -> '1'
+  decision_identity      'None'
+                         -> "(2, (15, 25, 5), (True, True, False, True, True, True), ('9c', '9h'), (), 0, 125)"
+  click_plan             "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'ScraperDataQuality: dealer points to seat3 but that"
+                         -> "{'action_kind': 'call', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'CALL', 'bo"
+
+[BEHAV] seq=20260612_192638_097
+  status                 'skip_data_quality'
+                         -> 'skip_not_hero_to_act'
+  skip_reason            'ScraperDataQuality: dealer points to seat3 but that seat is empty/non-alive (alive=(True, True, False, True, T'
+                         -> 'controls.present=False (not a hero-to-act decision: hand-start, muck-only UI, or between actions)'
+  hero_stack             'None'
+                         -> '1460'
+  pot_total              'None'
+                         -> '200'
+  facing_bet             'None'
+                         -> 'True'
+  click_plan             "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'ScraperDataQuality: dealer points to seat3 but that"
+                         -> "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'controls.present=False (not a hero-to-act decision:"
+
+[BEHAV] seq=20260612_192655_342
+  status                 'skip_data_quality'
+                         -> 'skip_not_hero_to_act'
+  skip_reason            'ScraperDataQuality: dealer points to seat3 but that seat is empty/non-alive (alive=(True, True, False, True, T'
+                         -> 'controls.present=False (not a hero-to-act decision: hand-start, muck-only UI, or between actions)'
+  hero_stack             'None'
+                         -> '1460'
+  pot_total              'None'
+                         -> '0'
+  facing_bet             'None'
+                         -> 'False'
+  click_plan             "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'ScraperDataQuality: dealer points to seat3 but that"
+                         -> "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'controls.present=False (not a hero-to-act decision:"
+
+[BEHAV] seq=20260612_192658_679
+  status                 'skip_data_quality'
+                         -> 'skip_not_hero_to_act'
+  skip_reason            'ScraperDataQuality: dealer points to seat3 but that seat is empty/non-alive (alive=(True, True, False, True, T'
+                         -> 'controls.present=False (not a hero-to-act decision: hand-start, muck-only UI, or between actions)'
+  hero_stack             'None'
+                         -> '1460'
+  pot_total              'None'
+                         -> '0'
+  facing_bet             'None'
+                         -> 'False'
+  click_plan             "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'ScraperDataQuality: dealer points to seat3 but that"
+                         -> "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'controls.present=False (not a hero-to-act decision:"
+
+[BEHAV] seq=20260612_192659_286
+  status                 'skip_data_quality'
+                         -> 'skip_not_hero_to_act'
+  skip_reason            'ScraperDataQuality: dealer points to seat3 but that seat is empty/non-alive (alive=(True, True, False, True, T'
+                         -> 'controls.present=False (not a hero-to-act decision: hand-start, muck-only UI, or between actions)'
+  hero_stack             'None'
+                         -> '1460'
+  pot_total              'None'
+                         -> '0'
+  facing_bet             'None'
+                         -> 'False'
+  click_plan             "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'ScraperDataQuality: dealer points to seat3 but that"
+                         -> "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'controls.present=False (not a hero-to-act decision:"
+
+[BEHAV] seq=20260612_192704_723
+  client_action          "{'kind': 'raise_to', 'chip_amount': 75, 'raw_openspiel_chip_int': 75}"
+                         -> "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+  chip_int               '75'
+                         -> '0'
+  click_plan             "{'action_kind': 'raise_to', 'chip_amount': 75, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_inpu"
+                         -> "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"
+
+[BEHAV] seq=20260612_192709_585
+  client_action          "{'kind': 'raise_to', 'chip_amount': 75, 'raw_openspiel_chip_int': 75}"
+                         -> "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+  chip_int               '75'
+                         -> '0'
+  click_plan             "{'action_kind': 'raise_to', 'chip_amount': 75, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_inpu"
+                         -> "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"
+
+[BEHAV] seq=20260612_192724_725
+  client_action          "{'kind': 'raise_to', 'chip_amount': 148, 'raw_openspiel_chip_int': 148}"
+                         -> "{'kind': 'check', 'chip_amount': None, 'raw_openspiel_chip_int': 1}"
+  chip_int               '148'
+                         -> '1'
+  click_plan             "{'action_kind': 'raise_to', 'chip_amount': 148, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_inp"
+                         -> "{'action_kind': 'check', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'CHECK', '"
+
+[BEHAV] seq=20260612_192732_738
+  client_action          "{'kind': 'raise_to', 'chip_amount': 148, 'raw_openspiel_chip_int': 148}"
+                         -> "{'kind': 'check', 'chip_amount': None, 'raw_openspiel_chip_int': 1}"
+  chip_int               '148'
+                         -> '1'
+  click_plan             "{'action_kind': 'raise_to', 'chip_amount': 148, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_inp"
+                         -> "{'action_kind': 'check', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'CHECK', '"
+
+[BEHAV] seq=20260612_192733_266
+  client_action          "{'kind': 'raise_to', 'chip_amount': 148, 'raw_openspiel_chip_int': 148}"
+                         -> "{'kind': 'check', 'chip_amount': None, 'raw_openspiel_chip_int': 1}"
+  chip_int               '148'
+                         -> '1'
+  click_plan             "{'action_kind': 'raise_to', 'chip_amount': 148, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_inp"
+                         -> "{'action_kind': 'check', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'CHECK', '"
+
+[BEHAV] seq=20260612_192815_963
+  client_action          "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+                         -> "{'kind': 'call', 'chip_amount': None, 'raw_openspiel_chip_int': 1}"
+  chip_int               '0'
+                         -> '1'
+  click_plan             "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"
+                         -> "{'action_kind': 'call', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'CALL', 'bo"
+
+[BEHAV] seq=20260612_192841_643
+  client_action          "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+                         -> "{'kind': 'call', 'chip_amount': None, 'raw_openspiel_chip_int': 1}"
+  chip_int               '0'
+                         -> '1'
+  click_plan             "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"
+                         -> "{'action_kind': 'call', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'CALL', 'bo"
+
+[BEHAV] seq=20260612_192846_589
+  client_action          "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+                         -> "{'kind': 'call', 'chip_amount': None, 'raw_openspiel_chip_int': 1}"
+  chip_int               '0'
+                         -> '1'
+  click_plan             "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"
+                         -> "{'action_kind': 'call', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'CALL', 'bo"
+
+[BEHAV] seq=20260612_192847_583
+  client_action          "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+                         -> "{'kind': 'call', 'chip_amount': None, 'raw_openspiel_chip_int': 1}"
+  chip_int               '0'
+                         -> '1'
+  click_plan             "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"
+                         -> "{'action_kind': 'call', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'CALL', 'bo"
+
+[BEHAV] seq=20260612_192906_854
+  client_action          "{'kind': 'raise_to', 'chip_amount': 1632, 'raw_openspiel_chip_int': 1632}"
+                         -> "{'kind': 'raise_to', 'chip_amount': 2903, 'raw_openspiel_chip_int': 3020}"
+  chip_int               '1632'
+                         -> '3020'
+  click_plan             "{'action_kind': 'raise_to', 'chip_amount': 1632, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_in"
+                         -> "{'action_kind': 'raise_to', 'chip_amount': 2903, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_in"
+
+[BEHAV] seq=20260612_192914_859
+  client_action          "{'kind': 'raise_to', 'chip_amount': 539, 'raw_openspiel_chip_int': 539}"
+                         -> "{'kind': 'check', 'chip_amount': None, 'raw_openspiel_chip_int': 1}"
+  chip_int               '539'
+                         -> '1'
+  click_plan             "{'action_kind': 'raise_to', 'chip_amount': 539, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_inp"
+                         -> "{'action_kind': 'check', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'CHECK', '"
+
+[BEHAV] seq=20260612_192921_804
+  client_action          "{'kind': 'raise_to', 'chip_amount': 539, 'raw_openspiel_chip_int': 539}"
+                         -> "{'kind': 'check', 'chip_amount': None, 'raw_openspiel_chip_int': 1}"
+  chip_int               '539'
+                         -> '1'
+  click_plan             "{'action_kind': 'raise_to', 'chip_amount': 539, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_inp"
+                         -> "{'action_kind': 'check', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'CHECK', '"
+
+[BEHAV] seq=20260612_192922_906
+  client_action          "{'kind': 'raise_to', 'chip_amount': 539, 'raw_openspiel_chip_int': 539}"
+                         -> "{'kind': 'raise_to', 'chip_amount': 1224, 'raw_openspiel_chip_int': 1224}"
+  chip_int               '539'
+                         -> '1224'
+  click_plan             "{'action_kind': 'raise_to', 'chip_amount': 539, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_inp"
+                         -> "{'action_kind': 'raise_to', 'chip_amount': 1224, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_in"
+
+[BEHAV] seq=20260612_192927_575
+  client_action          "{'kind': 'raise_to', 'chip_amount': 539, 'raw_openspiel_chip_int': 539}"
+                         -> "{'kind': 'raise_to', 'chip_amount': 1224, 'raw_openspiel_chip_int': 1224}"
+  chip_int               '539'
+                         -> '1224'
+  click_plan             "{'action_kind': 'raise_to', 'chip_amount': 539, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_inp"
+                         -> "{'action_kind': 'raise_to', 'chip_amount': 1224, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_in"
+
+[BEHAV] seq=20260612_192928_601
+  client_action          "{'kind': 'raise_to', 'chip_amount': 539, 'raw_openspiel_chip_int': 539}"
+                         -> "{'kind': 'raise_to', 'chip_amount': 1224, 'raw_openspiel_chip_int': 1224}"
+  chip_int               '539'
+                         -> '1224'
+  click_plan             "{'action_kind': 'raise_to', 'chip_amount': 539, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_inp"
+                         -> "{'action_kind': 'raise_to', 'chip_amount': 1224, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_in"
+
+[BEHAV] seq=20260612_193001_449
+  client_action          "{'kind': 'raise_to', 'chip_amount': 125, 'raw_openspiel_chip_int': 125}"
+                         -> "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+  chip_int               '125'
+                         -> '0'
+  click_plan             "{'action_kind': 'raise_to', 'chip_amount': 125, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_inp"
+                         -> "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"
+
+[BEHAV] seq=20260612_193027_881
+  client_action          "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+                         -> "{'kind': 'call', 'chip_amount': None, 'raw_openspiel_chip_int': 1}"
+  chip_int               '0'
+                         -> '1'
+  click_plan             "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"
+                         -> "{'action_kind': 'call', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'CALL', 'bo"
+
+[BEHAV] seq=20260612_193138_206
+  client_action          "{'kind': 'call', 'chip_amount': None, 'raw_openspiel_chip_int': 1}"
+                         -> "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+  chip_int               '1'
+                         -> '0'
+  click_plan             "{'action_kind': 'call', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'CALL', 'bo"
+                         -> "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"
+
+[BEHAV] seq=20260612_193156_602
+  client_action          "{'kind': 'call', 'chip_amount': None, 'raw_openspiel_chip_int': 1}"
+                         -> "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+  chip_int               '1'
+                         -> '0'
+  click_plan             "{'action_kind': 'call', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'CALL', 'bo"
+                         -> "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"
+
+[BEHAV] seq=20260612_193157_692
+  client_action          "{'kind': 'call', 'chip_amount': None, 'raw_openspiel_chip_int': 1}"
+                         -> "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+  chip_int               '1'
+                         -> '0'
+  click_plan             "{'action_kind': 'call', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'CALL', 'bo"
+                         -> "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"
+
+[BEHAV] seq=20260612_193233_972
+  client_action          "{'kind': 'call', 'chip_amount': None, 'raw_openspiel_chip_int': 1}"
+                         -> "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+  chip_int               '1'
+                         -> '0'
+  click_plan             "{'action_kind': 'call', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'CALL', 'bo"
+                         -> "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"
+
+[BEHAV] seq=20260612_193308_802
+  client_action          "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+                         -> "{'kind': 'call', 'chip_amount': None, 'raw_openspiel_chip_int': 1}"
+  chip_int               '0'
+                         -> '1'
+  click_plan             "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"
+                         -> "{'action_kind': 'call', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'CALL', 'bo"
+
+[BEHAV] seq=20260612_193312_721
+  client_action          "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+                         -> "{'kind': 'call', 'chip_amount': None, 'raw_openspiel_chip_int': 1}"
+  chip_int               '0'
+                         -> '1'
+  click_plan             "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"
+                         -> "{'action_kind': 'call', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'CALL', 'bo"
+
+[BEHAV] seq=20260612_193602_387
+  client_action          "{'kind': 'raise_to', 'chip_amount': 1600, 'raw_openspiel_chip_int': 1600}"
+                         -> "{'kind': 'raise_to', 'chip_amount': 800, 'raw_openspiel_chip_int': 800}"
+  chip_int               '1600'
+                         -> '800'
+  click_plan             "{'action_kind': 'raise_to', 'chip_amount': 1600, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_in"
+                         -> "{'action_kind': 'raise_to', 'chip_amount': 800, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_inp"
+
+[BEHAV] seq=20260612_193606_827
+  client_action          "{'kind': 'raise_to', 'chip_amount': 1600, 'raw_openspiel_chip_int': 1600}"
+                         -> "{'kind': 'raise_to', 'chip_amount': 800, 'raw_openspiel_chip_int': 800}"
+  chip_int               '1600'
+                         -> '800'
+  click_plan             "{'action_kind': 'raise_to', 'chip_amount': 1600, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_in"
+                         -> "{'action_kind': 'raise_to', 'chip_amount': 800, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_inp"
+
+[BEHAV] seq=20260612_193607_421
+  client_action          "{'kind': 'raise_to', 'chip_amount': 1600, 'raw_openspiel_chip_int': 1600}"
+                         -> "{'kind': 'raise_to', 'chip_amount': 800, 'raw_openspiel_chip_int': 800}"
+  chip_int               '1600'
+                         -> '800'
+  click_plan             "{'action_kind': 'raise_to', 'chip_amount': 1600, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_in"
+                         -> "{'action_kind': 'raise_to', 'chip_amount': 800, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_inp"
+
+[BEHAV] seq=20260612_193608_044
+  client_action          "{'kind': 'raise_to', 'chip_amount': 1600, 'raw_openspiel_chip_int': 1600}"
+                         -> "{'kind': 'raise_to', 'chip_amount': 800, 'raw_openspiel_chip_int': 800}"
+  chip_int               '1600'
+                         -> '800'
+  click_plan             "{'action_kind': 'raise_to', 'chip_amount': 1600, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_in"
+                         -> "{'action_kind': 'raise_to', 'chip_amount': 800, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_inp"
+
+[BEHAV] seq=20260612_193609_061
+  client_action          "{'kind': 'raise_to', 'chip_amount': 1600, 'raw_openspiel_chip_int': 1600}"
+                         -> "{'kind': 'raise_to', 'chip_amount': 800, 'raw_openspiel_chip_int': 800}"
+  chip_int               '1600'
+                         -> '800'
+  click_plan             "{'action_kind': 'raise_to', 'chip_amount': 1600, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_in"
+                         -> "{'action_kind': 'raise_to', 'chip_amount': 800, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_inp"
+
+[BEHAV] seq=20260612_193614_461
+  client_action          "{'kind': 'check', 'chip_amount': None, 'raw_openspiel_chip_int': 1}"
+                         -> "{'kind': 'raise_to', 'chip_amount': 2433, 'raw_openspiel_chip_int': 3600}"
+  chip_int               '1'
+                         -> '3600'
+  click_plan             "{'action_kind': 'check', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'CHECK', '"
+                         -> "{'action_kind': 'raise_to', 'chip_amount': 2433, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_in"
+
+[BEHAV] seq=20260612_193619_430
+  client_action          "{'kind': 'check', 'chip_amount': None, 'raw_openspiel_chip_int': 1}"
+                         -> "{'kind': 'raise_to', 'chip_amount': 2433, 'raw_openspiel_chip_int': 3600}"
+  chip_int               '1'
+                         -> '3600'
+  click_plan             "{'action_kind': 'check', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'CHECK', '"
+                         -> "{'action_kind': 'raise_to', 'chip_amount': 2433, 'reason': 'neither RAISE nor BET button found in scraper cont"
+
+[BEHAV] seq=20260612_193639_870
+  client_action          "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+                         -> "{'kind': 'raise_to', 'chip_amount': 2298, 'raw_openspiel_chip_int': 2313}"
+  chip_int               '0'
+                         -> '2313'
+  click_plan             "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"
+                         -> "{'action_kind': 'raise_to', 'chip_amount': 2298, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_in"
+
+[BEHAV] seq=20260612_193640_957
+  client_action          "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+                         -> "{'kind': 'raise_to', 'chip_amount': 2298, 'raw_openspiel_chip_int': 2313}"
+  chip_int               '0'
+                         -> '2313'
+  click_plan             "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"
+                         -> "{'action_kind': 'raise_to', 'chip_amount': 2298, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_in"
+
+[BEHAV] seq=20260612_193655_682
+  client_action          "{'kind': 'raise_to', 'chip_amount': 250, 'raw_openspiel_chip_int': 250}"
+                         -> "{'kind': 'raise_to', 'chip_amount': 330, 'raw_openspiel_chip_int': 330}"
+  chip_int               '250'
+                         -> '330'
+  click_plan             "{'action_kind': 'raise_to', 'chip_amount': 250, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_inp"
+                         -> "{'action_kind': 'raise_to', 'chip_amount': 330, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_inp"
+
+[BEHAV] seq=20260612_193724_718
+  client_action          "{'kind': 'raise_to', 'chip_amount': 2393, 'raw_openspiel_chip_int': 2408}"
+                         -> "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+  chip_int               '2408'
+                         -> '0'
+  click_plan             "{'action_kind': 'raise_to', 'chip_amount': 2393, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_in"
+                         -> "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"
+
+[BEHAV] seq=20260612_193733_833
+  client_action          "{'kind': 'raise_to', 'chip_amount': 2393, 'raw_openspiel_chip_int': 2408}"
+                         -> "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+  chip_int               '2408'
+                         -> '0'
+  click_plan             "{'action_kind': 'raise_to', 'chip_amount': 2393, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_in"
+                         -> "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"
+
+[BEHAV] seq=20260612_193734_827
+  client_action          "{'kind': 'raise_to', 'chip_amount': 2393, 'raw_openspiel_chip_int': 2408}"
+                         -> "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+  chip_int               '2408'
+                         -> '0'
+  click_plan             "{'action_kind': 'raise_to', 'chip_amount': 2393, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_in"
+                         -> "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"
+
+[BEHAV] seq=20260612_193805_886
+  client_action          "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+                         -> "{'kind': 'call', 'chip_amount': None, 'raw_openspiel_chip_int': 1}"
+  chip_int               '0'
+                         -> '1'
+  click_plan             "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"
+                         -> "{'action_kind': 'call', 'chip_amount': None, 'reason': 'CALL button not found in scraper controls', 'steps': ["
+
+[BEHAV] seq=20260612_193807_025
+  client_action          "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+                         -> "{'kind': 'call', 'chip_amount': None, 'raw_openspiel_chip_int': 1}"
+  chip_int               '0'
+                         -> '1'
+  click_plan             "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"
+                         -> "{'action_kind': 'call', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'CALL', 'bo"
+
+[BEHAV] seq=20260612_193839_837
+  client_action          "{'kind': 'call', 'chip_amount': None, 'raw_openspiel_chip_int': 1}"
+                         -> "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+  chip_int               '1'
+                         -> '0'
+  click_plan             "{'action_kind': 'call', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'CALL', 'bo"
+                         -> "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"
+
+[BEHAV] seq=20260612_193855_563
+  client_action          "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+                         -> "{'kind': 'raise_to', 'chip_amount': 250, 'raw_openspiel_chip_int': 250}"
+  chip_int               '0'
+                         -> '250'
+  click_plan             "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"
+                         -> "{'action_kind': 'raise_to', 'chip_amount': 250, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_inp"
+
+[BEHAV] seq=20260612_193924_128
+  client_action          "{'kind': 'call', 'chip_amount': None, 'raw_openspiel_chip_int': 1}"
+                         -> "{'kind': 'raise_to', 'chip_amount': 600, 'raw_openspiel_chip_int': 600}"
+  chip_int               '1'
+                         -> '600'
+  click_plan             "{'action_kind': 'call', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'CALL', 'bo"
+                         -> "{'action_kind': 'raise_to', 'chip_amount': 600, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_inp"
+
+[BEHAV] seq=20260612_193929_101
+  client_action          "{'kind': 'raise_to', 'chip_amount': 900, 'raw_openspiel_chip_int': 900}"
+                         -> "{'kind': 'call', 'chip_amount': None, 'raw_openspiel_chip_int': 1}"
+  chip_int               '900'
+                         -> '1'
+  click_plan             "{'action_kind': 'raise_to', 'chip_amount': 900, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_inp"
+                         -> "{'action_kind': 'call', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'CALL', 'bo"
+
+[BEHAV] seq=20260612_193929_606
+  client_action          "{'kind': 'raise_to', 'chip_amount': 900, 'raw_openspiel_chip_int': 900}"
+                         -> "{'kind': 'call', 'chip_amount': None, 'raw_openspiel_chip_int': 1}"
+  chip_int               '900'
+                         -> '1'
+  click_plan             "{'action_kind': 'raise_to', 'chip_amount': 900, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_inp"
+                         -> "{'action_kind': 'call', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'CALL', 'bo"
+
+[BEHAV] seq=20260612_193930_108
+  client_action          "{'kind': 'raise_to', 'chip_amount': 900, 'raw_openspiel_chip_int': 900}"
+                         -> "{'kind': 'call', 'chip_amount': None, 'raw_openspiel_chip_int': 1}"
+  chip_int               '900'
+                         -> '1'
+  click_plan             "{'action_kind': 'raise_to', 'chip_amount': 900, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_inp"
+                         -> "{'action_kind': 'call', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'CALL', 'bo"
+
+[BEHAV] seq=20260612_193931_130
+  client_action          "{'kind': 'raise_to', 'chip_amount': 900, 'raw_openspiel_chip_int': 900}"
+                         -> "{'kind': 'call', 'chip_amount': None, 'raw_openspiel_chip_int': 1}"
+  chip_int               '900'
+                         -> '1'
+  click_plan             "{'action_kind': 'raise_to', 'chip_amount': 900, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_inp"
+                         -> "{'action_kind': 'call', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'CALL', 'bo"
+
+[BEHAV] seq=20260612_194052_126
+  client_action          "{'kind': 'raise_to', 'chip_amount': 2907, 'raw_openspiel_chip_int': 2932}"
+                         -> "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+  chip_int               '2932'
+                         -> '0'
+  click_plan             "{'action_kind': 'raise_to', 'chip_amount': 2907, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_in"
+                         -> "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"
+
+[BEHAV] seq=20260612_194121_069
+  client_action          "{'kind': 'raise_to', 'chip_amount': 600, 'raw_openspiel_chip_int': 600}"
+                         -> "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+  chip_int               '600'
+                         -> '0'
+  click_plan             "{'action_kind': 'raise_to', 'chip_amount': 600, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_inp"
+                         -> "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"
+
+[BEHAV] seq=20260612_194129_414
+  status                 'skip_data_quality'
+                         -> 'skip_not_hero_to_act'
+  skip_reason            'ScraperDataQuality: dealer points to seat2 but that seat is empty/non-alive (alive=(True, False, False, True, '
+                         -> 'controls.present=False (not a hero-to-act decision: hand-start, muck-only UI, or between actions)'
+  hero_stack             'None'
+                         -> '2782'
+  pot_total              'None'
+                         -> '0'
+  facing_bet             'None'
+                         -> 'False'
+  click_plan             "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'ScraperDataQuality: dealer points to seat2 but that"
+                         -> "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'controls.present=False (not a hero-to-act decision:"
+
+[BEHAV] seq=20260612_194129_743
+  status                 'skip_data_quality'
+                         -> 'skip_not_hero_to_act'
+  skip_reason            'ScraperDataQuality: dealer points to seat2 but that seat is empty/non-alive (alive=(True, False, False, True, '
+                         -> 'controls.present=False (not a hero-to-act decision: hand-start, muck-only UI, or between actions)'
+  hero_stack             'None'
+                         -> '2782'
+  pot_total              'None'
+                         -> '100'
+  facing_bet             'None'
+                         -> 'False'
+  click_plan             "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'ScraperDataQuality: dealer points to seat2 but that"
+                         -> "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'controls.present=False (not a hero-to-act decision:"
+
+[BEHAV] seq=20260612_194131_491
+  status                 'skip_data_quality'
+                         -> 'skip_not_hero_to_act'
+  skip_reason            'ScraperDataQuality: dealer points to seat2 but that seat is empty/non-alive (alive=(True, False, False, True, '
+                         -> 'controls.present=False (not a hero-to-act decision: hand-start, muck-only UI, or between actions)'
+  hero_stack             'None'
+                         -> '2782'
+  pot_total              'None'
+                         -> '175'
+  facing_bet             'None'
+                         -> 'True'
+  click_plan             "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'ScraperDataQuality: dealer points to seat2 but that"
+                         -> "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'controls.present=False (not a hero-to-act decision:"
+
+[BEHAV] seq=20260612_194134_938
+  status                 'skip_data_quality'
+                         -> 'decision'
+  skip_reason            'ScraperDataQuality: dealer points to seat2 but that seat is empty/non-alive (alive=(True, False, False, True, '
+                         -> 'None'
+  hero_stack             'None'
+                         -> '2782'
+  pot_total              'None'
+                         -> '325'
+  pre_hand_override_used 'False'
+                         -> 'True'
+  street_idx             'None'
+                         -> '0'
+  facing_bet             'None'
+                         -> 'True'
+  client_action          'None'
+                         -> "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+  chip_int               'None'
+                         -> '0'
+  decision_identity      'None'
+                         -> "(1, (75, 150, 25), (True, False, False, True, True, True), ('Qd', 'Kc'), (), 0, 150)"
+  click_plan             "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'ScraperDataQuality: dealer points to seat2 but that"
+                         -> "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"
+
+[BEHAV] seq=20260612_194147_125
+  status                 'skip_data_quality'
+                         -> 'skip_not_hero_to_act'
+  skip_reason            'ScraperDataQuality: dealer points to seat2 but that seat is empty/non-alive (alive=(True, False, False, True, '
+                         -> 'controls.present=False (not a hero-to-act decision: hand-start, muck-only UI, or between actions)'
+  hero_stack             'None'
+                         -> '2782'
+  pot_total              'None'
+                         -> '325'
+  facing_bet             'None'
+                         -> 'True'
+  click_plan             "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'ScraperDataQuality: dealer points to seat2 but that"
+                         -> "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'controls.present=False (not a hero-to-act decision:"
+
+[BEHAV] seq=20260612_194302_418
+  client_action          "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+                         -> "{'kind': 'raise_to', 'chip_amount': 750, 'raw_openspiel_chip_int': 750}"
+  chip_int               '0'
+                         -> '750'
+  click_plan             "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"
+                         -> "{'action_kind': 'raise_to', 'chip_amount': 750, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_inp"
+
+[BEHAV] seq=20260612_194316_475
+  client_action          "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+                         -> "{'kind': 'raise_to', 'chip_amount': 375, 'raw_openspiel_chip_int': 375}"
+  chip_int               '0'
+                         -> '375'
+  click_plan             "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"
+                         -> "{'action_kind': 'raise_to', 'chip_amount': 375, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_inp"
+
+[BEHAV] seq=20260612_194317_667
+  client_action          "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+                         -> "{'kind': 'raise_to', 'chip_amount': 375, 'raw_openspiel_chip_int': 375}"
+  chip_int               '0'
+                         -> '375'
+  click_plan             "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"
+                         -> "{'action_kind': 'raise_to', 'chip_amount': 375, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_inp"
+
+[BEHAV] seq=20260612_194321_191
+  client_action          "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+                         -> "{'kind': 'raise_to', 'chip_amount': 375, 'raw_openspiel_chip_int': 375}"
+  chip_int               '0'
+                         -> '375'
+  click_plan             "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"
+                         -> "{'action_kind': 'raise_to', 'chip_amount': 375, 'reason': 'neither RAISE nor BET button found in scraper contr"
+
+[BEHAV] seq=20260612_194648_507
+  client_action          "{'kind': 'raise_to', 'chip_amount': 1470, 'raw_openspiel_chip_int': 1500}"
+                         -> "{'kind': 'raise_to', 'chip_amount': 50, 'raw_openspiel_chip_int': 50}"
+  chip_int               '1500'
+                         -> '50'
+  click_plan             "{'action_kind': 'raise_to', 'chip_amount': 1470, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_in"
+                         -> "{'action_kind': 'raise_to', 'chip_amount': 50, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_inpu"
+
+[BEHAV] seq=20260612_194653_864
+  client_action          "{'kind': 'raise_to', 'chip_amount': 1470, 'raw_openspiel_chip_int': 1500}"
+                         -> "{'kind': 'raise_to', 'chip_amount': 50, 'raw_openspiel_chip_int': 50}"
+  chip_int               '1500'
+                         -> '50'
+  click_plan             "{'action_kind': 'raise_to', 'chip_amount': 1470, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_in"
+                         -> "{'action_kind': 'raise_to', 'chip_amount': 50, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_inpu"
+
+[BEHAV] seq=20260612_194701_886
+  client_action          "{'kind': 'raise_to', 'chip_amount': 274, 'raw_openspiel_chip_int': 274}"
+                         -> "{'kind': 'raise_to', 'chip_amount': 181, 'raw_openspiel_chip_int': 181}"
+  chip_int               '274'
+                         -> '181'
+  click_plan             "{'action_kind': 'raise_to', 'chip_amount': 274, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_inp"
+                         -> "{'action_kind': 'raise_to', 'chip_amount': 181, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_inp"
+
+[BEHAV] seq=20260612_194705_445
+  client_action          "{'kind': 'raise_to', 'chip_amount': 274, 'raw_openspiel_chip_int': 274}"
+                         -> "{'kind': 'raise_to', 'chip_amount': 181, 'raw_openspiel_chip_int': 181}"
+  chip_int               '274'
+                         -> '181'
+  click_plan             "{'action_kind': 'raise_to', 'chip_amount': 274, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_inp"
+                         -> "{'action_kind': 'raise_to', 'chip_amount': 181, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_inp"
+
+[BEHAV] seq=20260612_194705_962
+  client_action          "{'kind': 'raise_to', 'chip_amount': 274, 'raw_openspiel_chip_int': 274}"
+                         -> "{'kind': 'raise_to', 'chip_amount': 181, 'raw_openspiel_chip_int': 181}"
+  chip_int               '274'
+                         -> '181'
+  click_plan             "{'action_kind': 'raise_to', 'chip_amount': 274, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_inp"
+                         -> "{'action_kind': 'raise_to', 'chip_amount': 181, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_inp"
+
+[BEHAV] seq=20260612_194720_041
+  client_action          "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+                         -> "{'kind': 'raise_to', 'chip_amount': 50, 'raw_openspiel_chip_int': 50}"
+  chip_int               '0'
+                         -> '50'
+  click_plan             "{'action_kind': 'fold', 'chip_amount': None, 'reason': 'FOLD button not found in scraper controls', 'steps': ["
+                         -> "{'action_kind': 'raise_to', 'chip_amount': 50, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_inpu"
+
+[BEHAV] seq=20260612_194721_349
+  client_action          "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+                         -> "{'kind': 'raise_to', 'chip_amount': 50, 'raw_openspiel_chip_int': 50}"
+  chip_int               '0'
+                         -> '50'
+  click_plan             "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"
+                         -> "{'action_kind': 'raise_to', 'chip_amount': 50, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_inpu"
+
+[BEHAV] seq=20260612_194837_707
+  client_action          "{'kind': 'raise_to', 'chip_amount': 100, 'raw_openspiel_chip_int': 99}"
+                         -> "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+  chip_int               '99'
+                         -> '0'
+  click_plan             "{'action_kind': 'raise_to', 'chip_amount': 100, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_inp"
+                         -> "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"
+
+[BEHAV] seq=20260612_194923_462
+  client_action          "{'kind': 'raise_to', 'chip_amount': 1000, 'raw_openspiel_chip_int': 1000}"
+                         -> "{'kind': 'raise_to', 'chip_amount': 1637, 'raw_openspiel_chip_int': 1642}"
+  chip_int               '1000'
+                         -> '1642'
+  click_plan             "{'action_kind': 'raise_to', 'chip_amount': 1000, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_in"
+                         -> "{'action_kind': 'raise_to', 'chip_amount': 1637, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_in"
+
+[BEHAV] seq=20260612_194926_865
+  client_action          "{'kind': 'raise_to', 'chip_amount': 1000, 'raw_openspiel_chip_int': 1000}"
+                         -> "{'kind': 'raise_to', 'chip_amount': 1637, 'raw_openspiel_chip_int': 1642}"
+  chip_int               '1000'
+                         -> '1642'
+  click_plan             "{'action_kind': 'raise_to', 'chip_amount': 1000, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_in"
+                         -> "{'action_kind': 'raise_to', 'chip_amount': 1637, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_in"
+
+[BEHAV] seq=20260612_194927_870
+  client_action          "{'kind': 'raise_to', 'chip_amount': 1000, 'raw_openspiel_chip_int': 1000}"
+                         -> "{'kind': 'raise_to', 'chip_amount': 1637, 'raw_openspiel_chip_int': 1642}"
+  chip_int               '1000'
+                         -> '1642'
+  click_plan             "{'action_kind': 'raise_to', 'chip_amount': 1000, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_in"
+                         -> "{'action_kind': 'raise_to', 'chip_amount': 1637, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_in"
+
+[BEHAV] seq=20260612_194928_413
+  client_action          "{'kind': 'raise_to', 'chip_amount': 1000, 'raw_openspiel_chip_int': 1000}"
+                         -> "{'kind': 'raise_to', 'chip_amount': 1637, 'raw_openspiel_chip_int': 1642}"
+  chip_int               '1000'
+                         -> '1642'
+  click_plan             "{'action_kind': 'raise_to', 'chip_amount': 1000, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_in"
+                         -> "{'action_kind': 'raise_to', 'chip_amount': 1637, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_in"
+
+[BEHAV] seq=20260612_194928_943
+  client_action          "{'kind': 'raise_to', 'chip_amount': 1000, 'raw_openspiel_chip_int': 1000}"
+                         -> "{'kind': 'raise_to', 'chip_amount': 1637, 'raw_openspiel_chip_int': 1642}"
+  chip_int               '1000'
+                         -> '1642'
+  click_plan             "{'action_kind': 'raise_to', 'chip_amount': 1000, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_in"
+                         -> "{'action_kind': 'raise_to', 'chip_amount': 1637, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_in"
+
+[BEHAV] seq=20260612_194929_468
+  client_action          "{'kind': 'raise_to', 'chip_amount': 1000, 'raw_openspiel_chip_int': 1000}"
+                         -> "{'kind': 'raise_to', 'chip_amount': 1637, 'raw_openspiel_chip_int': 1642}"
+  chip_int               '1000'
+                         -> '1642'
+  click_plan             "{'action_kind': 'raise_to', 'chip_amount': 1000, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_in"
+                         -> "{'action_kind': 'raise_to', 'chip_amount': 1637, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_in"
+
+[BEHAV] seq=20260612_194929_973
+  client_action          "{'kind': 'raise_to', 'chip_amount': 1000, 'raw_openspiel_chip_int': 1000}"
+                         -> "{'kind': 'raise_to', 'chip_amount': 1637, 'raw_openspiel_chip_int': 1642}"
+  chip_int               '1000'
+                         -> '1642'
+  click_plan             "{'action_kind': 'raise_to', 'chip_amount': 1000, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_in"
+                         -> "{'action_kind': 'raise_to', 'chip_amount': 1637, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_in"
+
+[BEHAV] seq=20260612_194930_485
+  client_action          "{'kind': 'raise_to', 'chip_amount': 1000, 'raw_openspiel_chip_int': 1000}"
+                         -> "{'kind': 'raise_to', 'chip_amount': 1637, 'raw_openspiel_chip_int': 1642}"
+  chip_int               '1000'
+                         -> '1642'
+  click_plan             "{'action_kind': 'raise_to', 'chip_amount': 1000, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_in"
+                         -> "{'action_kind': 'raise_to', 'chip_amount': 1637, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_in"
+
+[BEHAV] seq=20260612_194931_011
+  client_action          "{'kind': 'raise_to', 'chip_amount': 1000, 'raw_openspiel_chip_int': 1000}"
+                         -> "{'kind': 'raise_to', 'chip_amount': 1637, 'raw_openspiel_chip_int': 1642}"
+  chip_int               '1000'
+                         -> '1642'
+  click_plan             "{'action_kind': 'raise_to', 'chip_amount': 1000, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_in"
+                         -> "{'action_kind': 'raise_to', 'chip_amount': 1637, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_in"
+
+[BEHAV] seq=20260612_194932_536
+  client_action          "{'kind': 'raise_to', 'chip_amount': 1000, 'raw_openspiel_chip_int': 1000}"
+                         -> "{'kind': 'raise_to', 'chip_amount': 1637, 'raw_openspiel_chip_int': 1642}"
+  chip_int               '1000'
+                         -> '1642'
+  click_plan             "{'action_kind': 'raise_to', 'chip_amount': 1000, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_in"
+                         -> "{'action_kind': 'raise_to', 'chip_amount': 1637, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_in"
+
+[BEHAV] seq=20260612_194950_730
+  skip_reason            'ScraperSuspect: frame marked suspect by scraper; dropping. captured_at=20260612_194950_730 (recovery declined:'
+                         -> 'ScraperSuspect: frame marked suspect by scraper; dropping. captured_at=20260612_194950_730 (recovery declined:'
+  click_plan             "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'ScraperSuspect: frame marked suspect by scraper; dr"
+                         -> "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'ScraperSuspect: frame marked suspect by scraper; dr"
+
+[BEHAV] seq=20260612_194951_587
+  status                 'skip_data_quality'
+                         -> 'skip_not_hero_to_act'
+  skip_reason            'ScraperDataQuality: dealer points to seat6 but that seat is empty/non-alive (alive=(True, True, True, True, Tr'
+                         -> 'controls.present=False (not a hero-to-act decision: hand-start, muck-only UI, or between actions)'
+  hero_stack             'None'
+                         -> '3330'
+  pot_total              'None'
+                         -> '0'
+  facing_bet             'None'
+                         -> 'False'
+  click_plan             "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'ScraperDataQuality: dealer points to seat6 but that"
+                         -> "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'controls.present=False (not a hero-to-act decision:"
+
+[BEHAV] seq=20260612_194952_403
+  status                 'skip_data_quality'
+                         -> 'skip_not_hero_to_act'
+  skip_reason            'ScraperDataQuality: dealer points to seat6 but that seat is empty/non-alive (alive=(True, True, True, True, Tr'
+                         -> 'controls.present=False (not a hero-to-act decision: hand-start, muck-only UI, or between actions)'
+  hero_stack             'None'
+                         -> '3330'
+  pot_total              'None'
+                         -> '0'
+  facing_bet             'None'
+                         -> 'False'
+  click_plan             "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'ScraperDataQuality: dealer points to seat6 but that"
+                         -> "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'controls.present=False (not a hero-to-act decision:"
+
+[BEHAV] seq=20260612_195045_954
+  client_action          "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+                         -> "{'kind': 'raise_to', 'chip_amount': 50, 'raw_openspiel_chip_int': 50}"
+  chip_int               '0'
+                         -> '50'
+  click_plan             "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"
+                         -> "{'action_kind': 'raise_to', 'chip_amount': 50, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_inpu"
+
+[BEHAV] seq=20260612_195151_356
+  client_action          "{'kind': 'call', 'chip_amount': None, 'raw_openspiel_chip_int': 1}"
+                         -> "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+  chip_int               '1'
+                         -> '0'
+  click_plan             "{'action_kind': 'call', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'CALL', 'bo"
+                         -> "{'action_kind': 'fold', 'chip_amount': None, 'reason': 'FOLD button not found in scraper controls', 'steps': ["
+
+[BEHAV] seq=20260612_195152_402
+  client_action          "{'kind': 'call', 'chip_amount': None, 'raw_openspiel_chip_int': 1}"
+                         -> "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+  chip_int               '1'
+                         -> '0'
+  click_plan             "{'action_kind': 'call', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'CALL', 'bo"
+                         -> "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"
+
+[BEHAV] seq=20260612_195208_481
+  client_action          "{'kind': 'raise_to', 'chip_amount': 300, 'raw_openspiel_chip_int': 300}"
+                         -> "{'kind': 'raise_to', 'chip_amount': 225, 'raw_openspiel_chip_int': 225}"
+  chip_int               '300'
+                         -> '225'
+  click_plan             "{'action_kind': 'raise_to', 'chip_amount': 300, 'reason': 'neither RAISE nor BET button found in scraper contr"
+                         -> "{'action_kind': 'raise_to', 'chip_amount': 225, 'reason': 'neither RAISE nor BET button found in scraper contr"
+
+[BEHAV] seq=20260612_195209_692
+  client_action          "{'kind': 'raise_to', 'chip_amount': 300, 'raw_openspiel_chip_int': 300}"
+                         -> "{'kind': 'raise_to', 'chip_amount': 225, 'raw_openspiel_chip_int': 225}"
+  chip_int               '300'
+                         -> '225'
+  click_plan             "{'action_kind': 'raise_to', 'chip_amount': 300, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_inp"
+                         -> "{'action_kind': 'raise_to', 'chip_amount': 225, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_inp"
+
+[BEHAV] seq=20260612_195228_054
+  client_action          "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+                         -> "{'kind': 'call', 'chip_amount': None, 'raw_openspiel_chip_int': 1}"
+  chip_int               '0'
+                         -> '1'
+  click_plan             "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"
+                         -> "{'action_kind': 'call', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'CALL', 'bo"
+
+[BEHAV] seq=20260612_195231_689
+  client_action          "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+                         -> "{'kind': 'call', 'chip_amount': None, 'raw_openspiel_chip_int': 1}"
+  chip_int               '0'
+                         -> '1'
+  click_plan             "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"
+                         -> "{'action_kind': 'call', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'CALL', 'bo"
+
+[BEHAV] seq=20260612_195324_873
+  client_action          "{'kind': 'raise_to', 'chip_amount': 450, 'raw_openspiel_chip_int': 450}"
+                         -> "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+  chip_int               '450'
+                         -> '0'
+  click_plan             "{'action_kind': 'raise_to', 'chip_amount': 450, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_inp"
+                         -> "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"
+
+[BEHAV] seq=20260612_195441_258
+  client_action          "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+                         -> "{'kind': 'call', 'chip_amount': None, 'raw_openspiel_chip_int': 1}"
+  chip_int               '0'
+                         -> '1'
+  click_plan             "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"
+                         -> "{'action_kind': 'call', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'CALL', 'bo"
+
+[BEHAV] seq=20260612_195446_543
+  client_action          "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+                         -> "{'kind': 'call', 'chip_amount': None, 'raw_openspiel_chip_int': 1}"
+  chip_int               '0'
+                         -> '1'
+  click_plan             "{'action_kind': 'fold', 'chip_amount': None, 'reason': 'FOLD button not found in scraper controls', 'steps': ["
+                         -> "{'action_kind': 'call', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'CALL', 'bo"
+
+[BEHAV] seq=20260612_195453_196
+  client_action          "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+                         -> "{'kind': 'raise_to', 'chip_amount': 3300, 'raw_openspiel_chip_int': 3310}"
+  chip_int               '0'
+                         -> '3310'
+  click_plan             "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"
+                         -> "{'action_kind': 'raise_to', 'chip_amount': 3300, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_in"
+
+[BEHAV] seq=20260612_195454_262
+  client_action          "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+                         -> "{'kind': 'raise_to', 'chip_amount': 3300, 'raw_openspiel_chip_int': 3310}"
+  chip_int               '0'
+                         -> '3310'
+  click_plan             "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"
+                         -> "{'action_kind': 'raise_to', 'chip_amount': 3300, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_in"
+
+[BEHAV] seq=20260612_195500_601
+  client_action          "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+                         -> "{'kind': 'raise_to', 'chip_amount': 3300, 'raw_openspiel_chip_int': 3310}"
+  chip_int               '0'
+                         -> '3310'
+  click_plan             "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"
+                         -> "{'action_kind': 'raise_to', 'chip_amount': 3300, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_in"
+
+[BEHAV] seq=20260612_195656_880
+  client_action          "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+                         -> "{'kind': 'raise_to', 'chip_amount': 1200, 'raw_openspiel_chip_int': 1200}"
+  chip_int               '0'
+                         -> '1200'
+  click_plan             "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"
+                         -> "{'action_kind': 'raise_to', 'chip_amount': 1200, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_in"
+
+[BEHAV] seq=20260612_195702_373
+  client_action          "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+                         -> "{'kind': 'raise_to', 'chip_amount': 1200, 'raw_openspiel_chip_int': 1200}"
+  chip_int               '0'
+                         -> '1200'
+  click_plan             "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"
+                         -> "{'action_kind': 'raise_to', 'chip_amount': 1200, 'reason': 'neither RAISE nor BET button found in scraper cont"
+
+[BEHAV] seq=20260612_195734_096
+  client_action          "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+                         -> "{'kind': 'raise_to', 'chip_amount': 2350, 'raw_openspiel_chip_int': 2365}"
+  chip_int               '0'
+                         -> '2365'
+  click_plan             "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"
+                         -> "{'action_kind': 'raise_to', 'chip_amount': 2350, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_in"
+
+[BEHAV] seq=20260612_195805_311
+  client_action          "{'kind': 'raise_to', 'chip_amount': 2360, 'raw_openspiel_chip_int': 2350}"
+                         -> "{'kind': 'call', 'chip_amount': None, 'raw_openspiel_chip_int': 1}"
+  chip_int               '2350'
+                         -> '1'
+  click_plan             "{'action_kind': 'raise_to', 'chip_amount': 2360, 'reason': 'neither RAISE nor BET button found in scraper cont"
+                         -> "{'action_kind': 'call', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'CALL', 'bo"
+
+[BEHAV] seq=20260612_195820_984
+  status                 'skip_data_quality'
+                         -> 'skip_not_hero_to_act'
+  skip_reason            'ScraperDataQuality: dealer points to seat5 but that seat is empty/non-alive (alive=(True, True, True, True, Fa'
+                         -> 'controls.present=False (not a hero-to-act decision: hand-start, muck-only UI, or between actions)'
+  hero_stack             'None'
+                         -> '3590'
+  pot_total              'None'
+                         -> '0'
+  facing_bet             'None'
+                         -> 'False'
+  click_plan             "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'ScraperDataQuality: dealer points to seat5 but that"
+                         -> "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'controls.present=False (not a hero-to-act decision:"
+
+[BEHAV] seq=20260612_195821_695
+  status                 'skip_data_quality'
+                         -> 'skip_not_hero_to_act'
+  skip_reason            'ScraperDataQuality: dealer points to seat5 but that seat is empty/non-alive (alive=(True, True, True, True, Fa'
+                         -> 'controls.present=False (not a hero-to-act decision: hand-start, muck-only UI, or between actions)'
+  hero_stack             'None'
+                         -> '3575'
+  pot_total              'None'
+                         -> '60'
+  facing_bet             'None'
+                         -> 'False'
+  click_plan             "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'ScraperDataQuality: dealer points to seat5 but that"
+                         -> "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'controls.present=False (not a hero-to-act decision:"
+
+[BEHAV] seq=20260612_195822_785
+  status                 'skip_data_quality'
+                         -> 'skip_not_hero_to_act'
+  skip_reason            'ScraperDataQuality: dealer points to seat5 but that seat is empty/non-alive (alive=(True, True, True, True, Fa'
+                         -> 'controls.present=False (not a hero-to-act decision: hand-start, muck-only UI, or between actions)'
+  hero_stack             'None'
+                         -> '3525'
+  pot_total              'None'
+                         -> '60'
+  facing_bet             'None'
+                         -> 'False'
+  click_plan             "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'ScraperDataQuality: dealer points to seat5 but that"
+                         -> "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'controls.present=False (not a hero-to-act decision:"
+
+[BEHAV] seq=20260612_195823_752
+  status                 'skip_data_quality'
+                         -> 'skip_not_hero_to_act'
+  skip_reason            'ScraperDataQuality: dealer points to seat5 but that seat is empty/non-alive (alive=(True, True, True, True, Fa'
+                         -> 'controls.present=False (not a hero-to-act decision: hand-start, muck-only UI, or between actions)'
+  hero_stack             'None'
+                         -> '3525'
+  pot_total              'None'
+                         -> '210'
+  facing_bet             'None'
+                         -> 'True'
+  click_plan             "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'ScraperDataQuality: dealer points to seat5 but that"
+                         -> "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'controls.present=False (not a hero-to-act decision:"
+
+[BEHAV] seq=20260612_195824_919
+  status                 'skip_data_quality'
+                         -> 'skip_not_hero_to_act'
+  skip_reason            'ScraperDataQuality: dealer points to seat5 but that seat is empty/non-alive (alive=(True, True, True, True, Fa'
+                         -> 'controls.present=False (not a hero-to-act decision: hand-start, muck-only UI, or between actions)'
+  hero_stack             'None'
+                         -> '3525'
+  pot_total              'None'
+                         -> '210'
+  facing_bet             'None'
+                         -> 'True'
+  click_plan             "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'ScraperDataQuality: dealer points to seat5 but that"
+                         -> "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'controls.present=False (not a hero-to-act decision:"
+
+[BEHAV] seq=20260612_195825_528
+  status                 'skip_data_quality'
+                         -> 'skip_not_hero_to_act'
+  skip_reason            'ScraperDataQuality: dealer points to seat5 but that seat is empty/non-alive (alive=(True, True, True, True, Fa'
+                         -> 'controls.present=False (not a hero-to-act decision: hand-start, muck-only UI, or between actions)'
+  hero_stack             'None'
+                         -> '3525'
+  pot_total              'None'
+                         -> '210'
+  facing_bet             'None'
+                         -> 'True'
+  click_plan             "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'ScraperDataQuality: dealer points to seat5 but that"
+                         -> "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'controls.present=False (not a hero-to-act decision:"
+
+[BEHAV] seq=20260612_195829_395
+  status                 'skip_data_quality'
+                         -> 'decision'
+  skip_reason            'ScraperDataQuality: dealer points to seat5 but that seat is empty/non-alive (alive=(True, True, True, True, Fa'
+                         -> 'None'
+  hero_stack             'None'
+                         -> '3525'
+  pot_total              'None'
+                         -> '210'
+  pre_hand_override_used 'False'
+                         -> 'True'
+  street_idx             'None'
+                         -> '0'
+  facing_bet             'None'
+                         -> 'True'
+  client_action          'None'
+                         -> "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+  chip_int               'None'
+                         -> '0'
+  decision_identity      'None'
+                         -> "(4, (50, 100, 15), (True, True, True, True, False, False), ('Ts', 'Ac'), (), 0, 100)"
+  click_plan             "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'ScraperDataQuality: dealer points to seat5 but that"
+                         -> "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"
+
+[BEHAV] seq=20260612_195830_463
+  status                 'skip_data_quality'
+                         -> 'decision_cached'
+  skip_reason            'ScraperDataQuality: dealer points to seat5 but that seat is empty/non-alive (alive=(True, True, True, True, Fa'
+                         -> 'None'
+  hero_stack             'None'
+                         -> '3525'
+  pot_total              'None'
+                         -> '210'
+  pre_hand_override_used 'False'
+                         -> 'True'
+  street_idx             'None'
+                         -> '0'
+  facing_bet             'None'
+                         -> 'True'
+  client_action          'None'
+                         -> "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+  chip_int               'None'
+                         -> '0'
+  decision_identity      'None'
+                         -> "(4, (50, 100, 15), (True, True, True, True, False, False), ('Ts', 'Ac'), (), 0, 100)"
+  click_plan             "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'ScraperDataQuality: dealer points to seat5 but that"
+                         -> "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"
+
+[BEHAV] seq=20260612_195837_576
+  status                 'skip_data_quality'
+                         -> 'skip_not_hero_to_act'
+  skip_reason            'ScraperDataQuality: dealer points to seat5 but that seat is empty/non-alive (alive=(True, True, True, True, Fa'
+                         -> 'controls.present=False (not a hero-to-act decision: hand-start, muck-only UI, or between actions)'
+  hero_stack             'None'
+                         -> '3475'
+  pot_total              'None'
+                         -> '260'
+  facing_bet             'None'
+                         -> 'False'
+  click_plan             "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'ScraperDataQuality: dealer points to seat5 but that"
+                         -> "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'controls.present=False (not a hero-to-act decision:"
+
+[BEHAV] seq=20260612_195840_391
+  status                 'skip_data_quality'
+                         -> 'skip_not_hero_to_act'
+  skip_reason            'ScraperDataQuality: dealer points to seat5 but that seat is empty/non-alive (alive=(True, True, True, True, Fa'
+                         -> 'controls.present=False (not a hero-to-act decision: hand-start, muck-only UI, or between actions)'
+  hero_stack             'None'
+                         -> '3475'
+  pot_total              'None'
+                         -> '260'
+  facing_bet             'None'
+                         -> 'False'
+  click_plan             "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'ScraperDataQuality: dealer points to seat5 but that"
+                         -> "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'controls.present=False (not a hero-to-act decision:"
+
+[BEHAV] seq=20260612_195841_066
+  status                 'skip_data_quality'
+                         -> 'decision'
+  skip_reason            'ScraperDataQuality: dealer points to seat5 but that seat is empty/non-alive (alive=(True, True, True, True, Fa'
+                         -> 'None'
+  hero_stack             'None'
+                         -> '3475'
+  pot_total              'None'
+                         -> '1168'
+  pre_hand_override_used 'False'
+                         -> 'True'
+  street_idx             'None'
+                         -> '0'
+  facing_bet             'None'
+                         -> 'True'
+  client_action          'None'
+                         -> "{'kind': 'raise_to', 'chip_amount': 3575, 'raw_openspiel_chip_int': 3590}"
+  chip_int               'None'
+                         -> '3590'
+  decision_identity      'None'
+                         -> "(4, (50, 100, 15), (True, True, True, True, False, False), ('Ts', 'Ac'), (), 0, 1008)"
+  click_plan             "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'ScraperDataQuality: dealer points to seat5 but that"
+                         -> "{'action_kind': 'raise_to', 'chip_amount': 3575, 'reason': 'neither RAISE nor BET button found in scraper cont"
+
+[BEHAV] seq=20260612_195846_241
+  status                 'skip_data_quality'
+                         -> 'skip_not_hero_to_act'
+  skip_reason            'ScraperDataQuality: dealer points to seat5 but that seat is empty/non-alive (alive=(True, True, True, True, Fa'
+                         -> 'controls.present=False (not a hero-to-act decision: hand-start, muck-only UI, or between actions)'
+  hero_stack             'None'
+                         -> '2567'
+  pot_total              'None'
+                         -> '1168'
+  facing_bet             'None'
+                         -> 'True'
+  click_plan             "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'ScraperDataQuality: dealer points to seat5 but that"
+                         -> "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'controls.present=False (not a hero-to-act decision:"
+
+[BEHAV] seq=20260612_195853_982
+  status                 'skip_data_quality'
+                         -> 'skip_not_hero_to_act'
+  skip_reason            'ScraperDataQuality: dealer points to seat5 but that seat is empty/non-alive (alive=(True, True, True, True, Fa'
+                         -> 'controls.present=False (not a hero-to-act decision: hand-start, muck-only UI, or between actions)'
+  hero_stack             'None'
+                         -> '2567'
+  pot_total              'None'
+                         -> '0'
+  facing_bet             'None'
+                         -> 'False'
+  click_plan             "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'ScraperDataQuality: dealer points to seat5 but that"
+                         -> "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'controls.present=False (not a hero-to-act decision:"
+
+[BEHAV] seq=20260612_195952_032
+  client_action          "{'kind': 'raise_to', 'chip_amount': 600, 'raw_openspiel_chip_int': 600}"
+                         -> "{'kind': 'raise_to', 'chip_amount': 2537, 'raw_openspiel_chip_int': 2552}"
+  chip_int               '600'
+                         -> '2552'
+  click_plan             "{'action_kind': 'raise_to', 'chip_amount': 600, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_inp"
+                         -> "{'action_kind': 'raise_to', 'chip_amount': 2537, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_in"
+
+[BEHAV] seq=20260612_195955_076
+  client_action          "{'kind': 'raise_to', 'chip_amount': 600, 'raw_openspiel_chip_int': 600}"
+                         -> "{'kind': 'raise_to', 'chip_amount': 2537, 'raw_openspiel_chip_int': 2552}"
+  chip_int               '600'
+                         -> '2552'
+  click_plan             "{'action_kind': 'raise_to', 'chip_amount': 600, 'reason': 'neither RAISE nor BET button found in scraper contr"
+                         -> "{'action_kind': 'raise_to', 'chip_amount': 2537, 'reason': 'neither RAISE nor BET button found in scraper cont"
+
+[BEHAV] seq=20260612_200015_979
+  client_action          "{'kind': 'raise_to', 'chip_amount': 2732, 'raw_openspiel_chip_int': 2747}"
+                         -> "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+  chip_int               '2747'
+                         -> '0'
+  click_plan             "{'action_kind': 'raise_to', 'chip_amount': 2732, 'reason': 'neither RAISE nor BET button found in scraper cont"
+                         -> "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"
+
+[BEHAV] seq=20260612_200017_029
+  client_action          "{'kind': 'raise_to', 'chip_amount': 2732, 'raw_openspiel_chip_int': 2747}"
+                         -> "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+  chip_int               '2747'
+                         -> '0'
+  click_plan             "{'action_kind': 'raise_to', 'chip_amount': 2732, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_in"
+                         -> "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"
+
+[BEHAV] seq=20260612_200031_340
+  client_action          "{'kind': 'raise_to', 'chip_amount': 400, 'raw_openspiel_chip_int': 400}"
+                         -> "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+  chip_int               '400'
+                         -> '0'
+  click_plan             "{'action_kind': 'raise_to', 'chip_amount': 400, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_inp"
+                         -> "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"
+
+[BEHAV] seq=20260612_200032_374
+  client_action          "{'kind': 'raise_to', 'chip_amount': 400, 'raw_openspiel_chip_int': 400}"
+                         -> "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+  chip_int               '400'
+                         -> '0'
+  click_plan             "{'action_kind': 'raise_to', 'chip_amount': 400, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_inp"
+                         -> "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"
+
+[BEHAV] seq=20260612_200034_408
+  client_action          "{'kind': 'raise_to', 'chip_amount': 400, 'raw_openspiel_chip_int': 400}"
+                         -> "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+  chip_int               '400'
+                         -> '0'
+  click_plan             "{'action_kind': 'raise_to', 'chip_amount': 400, 'reason': 'neither RAISE nor BET button found in scraper contr"
+                         -> "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"
+
+[BEHAV] seq=20260612_200049_670
+  client_action          "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+                         -> "{'kind': 'call', 'chip_amount': None, 'raw_openspiel_chip_int': 1}"
+  chip_int               '0'
+                         -> '1'
+  click_plan             "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"
+                         -> "{'action_kind': 'call', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'CALL', 'bo"
+
+[BEHAV] seq=20260612_200124_610
+  client_action          "{'kind': 'call', 'chip_amount': None, 'raw_openspiel_chip_int': 1}"
+                         -> "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+  chip_int               '1'
+                         -> '0'
+  click_plan             "{'action_kind': 'call', 'chip_amount': None, 'reason': 'CALL button not found in scraper controls', 'steps': ["
+                         -> "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"
+
+[BEHAV] seq=20260612_200125_699
+  client_action          "{'kind': 'call', 'chip_amount': None, 'raw_openspiel_chip_int': 1}"
+                         -> "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+  chip_int               '1'
+                         -> '0'
+  click_plan             "{'action_kind': 'call', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'CALL', 'bo"
+                         -> "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"
+
+[BEHAV] seq=20260612_200128_458
+  client_action          "{'kind': 'call', 'chip_amount': None, 'raw_openspiel_chip_int': 1}"
+                         -> "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+  chip_int               '1'
+                         -> '0'
+  click_plan             "{'action_kind': 'call', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'CALL', 'bo"
+                         -> "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"
+
+[BEHAV] seq=20260612_200200_816
+  client_action          "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+                         -> "{'kind': 'raise_to', 'chip_amount': 3732, 'raw_openspiel_chip_int': 3142}"
+  chip_int               '0'
+                         -> '3142'
+  click_plan             "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"
+                         -> "{'action_kind': 'raise_to', 'chip_amount': 3732, 'reason': 'neither RAISE nor BET button found in scraper cont"
+
+[BEHAV] seq=20260612_200215_209
+  client_action          "{'kind': 'raise_to', 'chip_amount': 900, 'raw_openspiel_chip_int': 900}"
+                         -> "{'kind': 'raise_to', 'chip_amount': 2942, 'raw_openspiel_chip_int': 2967}"
+  chip_int               '900'
+                         -> '2967'
+  click_plan             "{'action_kind': 'raise_to', 'chip_amount': 900, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_inp"
+                         -> "{'action_kind': 'raise_to', 'chip_amount': 2942, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_in"
+
+[BEHAV] seq=20260612_200218_734
+  client_action          "{'kind': 'raise_to', 'chip_amount': 900, 'raw_openspiel_chip_int': 900}"
+                         -> "{'kind': 'raise_to', 'chip_amount': 2942, 'raw_openspiel_chip_int': 2967}"
+  chip_int               '900'
+                         -> '2967'
+  click_plan             "{'action_kind': 'raise_to', 'chip_amount': 900, 'reason': 'neither RAISE nor BET button found in scraper contr"
+                         -> "{'action_kind': 'raise_to', 'chip_amount': 2942, 'reason': 'neither RAISE nor BET button found in scraper cont"
+
+[BEHAV] seq=20260612_200236_945
+  client_action          "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+                         -> "{'kind': 'call', 'chip_amount': None, 'raw_openspiel_chip_int': 1}"
+  chip_int               '0'
+                         -> '1'
+  click_plan             "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"
+                         -> "{'action_kind': 'call', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'CALL', 'bo"
+
+[BEHAV] seq=20260612_200240_801
+  client_action          "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+                         -> "{'kind': 'call', 'chip_amount': None, 'raw_openspiel_chip_int': 1}"
+  chip_int               '0'
+                         -> '1'
+  click_plan             "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"
+                         -> "{'action_kind': 'call', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'CALL', 'bo"
+
+[BEHAV] seq=20260612_200241_339
+  client_action          "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+                         -> "{'kind': 'call', 'chip_amount': None, 'raw_openspiel_chip_int': 1}"
+  chip_int               '0'
+                         -> '1'
+  click_plan             "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"
+                         -> "{'action_kind': 'call', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'CALL', 'bo"
+
+[BEHAV] seq=20260612_200241_861
+  client_action          "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+                         -> "{'kind': 'call', 'chip_amount': None, 'raw_openspiel_chip_int': 1}"
+  chip_int               '0'
+                         -> '1'
+  click_plan             "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"
+                         -> "{'action_kind': 'call', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'CALL', 'bo"
+
+[BEHAV] seq=20260612_200448_916
+  client_action          "{'kind': 'call', 'chip_amount': None, 'raw_openspiel_chip_int': 1}"
+                         -> "{'kind': 'raise_to', 'chip_amount': 600, 'raw_openspiel_chip_int': 600}"
+  chip_int               '1'
+                         -> '600'
+  click_plan             "{'action_kind': 'call', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'CALL', 'bo"
+                         -> "{'action_kind': 'raise_to', 'chip_amount': 600, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_inp"
+
+[BEHAV] seq=20260612_200450_031
+  client_action          "{'kind': 'call', 'chip_amount': None, 'raw_openspiel_chip_int': 1}"
+                         -> "{'kind': 'raise_to', 'chip_amount': 600, 'raw_openspiel_chip_int': 600}"
+  chip_int               '1'
+                         -> '600'
+  click_plan             "{'action_kind': 'call', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'CALL', 'bo"
+                         -> "{'action_kind': 'raise_to', 'chip_amount': 600, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_inp"
+
+[BEHAV] seq=20260612_200524_324
+  client_action          "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+                         -> "{'kind': 'call', 'chip_amount': None, 'raw_openspiel_chip_int': 1}"
+  chip_int               '0'
+                         -> '1'
+  click_plan             "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"
+                         -> "{'action_kind': 'call', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'CALL', 'bo"
+
+[BEHAV] seq=20260612_200536_964
+  client_action          "{'kind': 'raise_to', 'chip_amount': 450, 'raw_openspiel_chip_int': 450}"
+                         -> "{'kind': 'check', 'chip_amount': None, 'raw_openspiel_chip_int': 1}"
+  chip_int               '450'
+                         -> '1'
+  click_plan             "{'action_kind': 'raise_to', 'chip_amount': 450, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_inp"
+                         -> "{'action_kind': 'check', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'CHECK', '"
+
+[BEHAV] seq=20260612_200543_523
+  client_action          "{'kind': 'raise_to', 'chip_amount': 450, 'raw_openspiel_chip_int': 450}"
+                         -> "{'kind': 'check', 'chip_amount': None, 'raw_openspiel_chip_int': 1}"
+  chip_int               '450'
+                         -> '1'
+  click_plan             "{'action_kind': 'raise_to', 'chip_amount': 450, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_inp"
+                         -> "{'action_kind': 'check', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'CHECK', '"
+
+[BEHAV] seq=20260612_200601_559
+  client_action          "{'kind': 'raise_to', 'chip_amount': 1800, 'raw_openspiel_chip_int': 1800}"
+                         -> "{'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0}"
+  chip_int               '1800'
+                         -> '0'
+  click_plan             "{'action_kind': 'raise_to', 'chip_amount': 1800, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_in"
+                         -> "{'action_kind': 'fold', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'FOLD', 'bo"

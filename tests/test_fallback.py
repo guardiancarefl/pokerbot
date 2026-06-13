@@ -177,6 +177,78 @@ def test_abort_on_window_count():
     assert "fallback hands in the last" in fired[2].abort_reason
 
 
+def test_phantom_single_card_hand_does_not_reset_consecutive():
+    """Session 230149 regression (postmortem [2], fix 2026-06-13):
+    fallbacks #6 (TsAc) and #7 (the very next dealt hand) fired in
+    CONSECUTIVE real hands, but a single-frame phantom read ('2c',) at
+    seq 1381 — a card-flicker segmentation artifact with NO hero-to-act
+    evidence — registered as a separate clean 'hand' between them and
+    reset the consecutive counter. The enforced abort never tripped.
+    With the evidence-hand bookkeeping it must trip at hand #7."""
+    w = FallbackWatchdog(7.0, abort_consecutive=2)
+    # Hand #6 (TsAc): armed + fired.
+    w.observe(raw(cards=("Ts", "Ac")), "skip_data_quality", seq=1366, now=0.0)
+    p6 = w.observe(raw(cards=("Ts", "Ac")), "skip_data_quality",
+                   seq=1370, now=8.0)
+    assert p6 is not None and not p6.abort_recommended
+    # Phantom single-card flicker frame: suspect, NO action buttons.
+    w.observe(raw(cards=("2c",), buttons=()), "skip_data_quality",
+              seq=1381, now=10.0)
+    # Hand #7 (cards never resolve past one card): armed + fired.
+    w.observe(raw(cards=("9c",)), "skip_data_quality", seq=1382, now=11.0)
+    p7 = w.poll(now=18.8)
+    assert p7 is not None
+    assert p7.abort_recommended
+    assert "consecutive" in p7.abort_reason
+
+
+def test_phantom_hand_does_not_inflate_hands_seen():
+    w = FallbackWatchdog(7.0)
+    w.observe(raw(cards=("Ts", "Ac")), "skip_data_quality", seq=1, now=0.0)
+    w.observe(raw(cards=("2c",), buttons=()), "skip_data_quality",
+              seq=2, now=1.0)
+    w.observe(raw(cards=("9c", "9d")), "skip_data_quality", seq=3, now=2.0)
+    # Two evidence hands; the phantom never counted.
+    assert w.hands_seen == 2
+
+
+def test_real_evidence_hand_still_resets_consecutive():
+    """A genuine intervening hand WITH hero-to-act evidence (decided or
+    not) must keep resetting the consecutive rule — the fix narrows the
+    reset to evidence hands only, it does not remove it."""
+    w = FallbackWatchdog(1.0, abort_consecutive=2)
+    w.observe(raw(cards=("Ah", "Kd")), "skip_data_quality", seq=1, now=0.0)
+    p1 = w.observe(raw(cards=("Ah", "Kd")), "skip_data_quality",
+                   seq=2, now=2.0)
+    assert p1 is not None and not p1.abort_recommended
+    # Intervening hand: hero to-act AND decided (evidence, no fallback).
+    w.observe(raw(cards=("Th", "Tc")), "decision", seq=3, now=10.0)
+    # Next hand fallbacks — only 1 consecutive evidence-fallback-hand.
+    w.observe(raw(cards=("2c", "7d")), "skip_data_quality", seq=4, now=20.0)
+    p2 = w.observe(raw(cards=("2c", "7d")), "skip_data_quality",
+                   seq=5, now=22.0)
+    assert p2 is not None and not p2.abort_recommended
+
+
+def test_no_decision_hand_without_buttons_does_not_reset_consecutive():
+    """Deliberate corollary (documented in the module docstring): a real
+    hand in which hero never had a real action UI (e.g. a BB walk with
+    muck-only frames) carries no evidence the pipeline recovered and no
+    longer resets the consecutive counter."""
+    w = FallbackWatchdog(1.0, abort_consecutive=2)
+    w.observe(raw(cards=("Ah", "Kd")), "skip_data_quality", seq=1, now=0.0)
+    p1 = w.observe(raw(cards=("Ah", "Kd")), "skip_data_quality",
+                   seq=2, now=2.0)
+    assert p1 is not None and not p1.abort_recommended
+    # Walk hand: frames exist, but FOLD-only muck UI at most.
+    w.observe(raw(cards=("Th", "Tc"), buttons=("FOLD",)),
+              "skip_not_hero_to_act", seq=3, now=10.0)
+    w.observe(raw(cards=("2c", "7d")), "skip_data_quality", seq=4, now=20.0)
+    p2 = w.observe(raw(cards=("2c", "7d")), "skip_data_quality",
+                   seq=5, now=22.0)
+    assert p2 is not None and p2.abort_recommended
+
+
 def test_log_record_invisible_to_existing_tooling():
     w = FallbackWatchdog(1.0)
     w.observe(raw(), "skip_data_quality", seq=1, now=0.0)
