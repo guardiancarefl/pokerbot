@@ -1,0 +1,20 @@
+{
+  "n_games": 1500,
+  "override_rate": 0.3092477756807765,
+  "n_jam_spots": 11127,
+  "n_overrides": 3441,
+  "self_anchor": {
+    "net": -0.064,
+    "se": 0.025766955582683805,
+    "z": -2.4838013864164066,
+    "pass": false
+  },
+  "delta_field": {
+    "F_net": 0.7613333333333333,
+    "champ_baseline": 0.746,
+    "delta": 0.01533333333333331,
+    "pass": false
+  },
+  "aggression": "flat by construction (F only changes fold/call, adds no raises)",
+  "verdict": "F FAILS a gate \u2014 self-anchor \u0394FIELD (case for B's gated head)"
+}
