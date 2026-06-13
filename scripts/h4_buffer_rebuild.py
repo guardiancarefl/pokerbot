@@ -138,7 +138,26 @@ def main():
              f"{[solver.policy_nets.buffer_for(i).n_seen for i in range(6)]}")
 
     t0 = time.time()
-    solver.train(checkpoint_dir=out_dir, checkpoint_every=args.checkpoint_every)
+    if cfg.parallel_groups > 0:
+        # Parallelize the traversal phase across G workers (the dominant cost
+        # under populate_only, which does no training). SAFE for generate-only:
+        # the nets are frozen, so worker-threading differences change only which
+        # champion-policy samples land in the buffers, never the player. (Was a
+        # latent no-op before — solver.train() ignored parallel_groups.)
+        from src.nlhe.parallel.orchestrator import parallel_train
+        game_str = PokerGameConfig(
+            num_players=6, starting_stack=cfg.starting_stack,
+            big_blind=cfg.big_blind, small_blind=cfg.small_blind
+        ).to_universal_poker_string()
+        log.info(f"parallel mode: G={cfg.parallel_groups} "
+                 f"use_processes={cfg.parallel_use_processes}")
+        parallel_train(
+            solver, game_str=game_str, abstraction_path=abstraction_path,
+            n_workers=cfg.parallel_groups, use_processes=cfg.parallel_use_processes,
+            checkpoint_dir=out_dir, checkpoint_every=args.checkpoint_every,
+        )
+    else:
+        solver.train(checkpoint_dir=out_dir, checkpoint_every=args.checkpoint_every)
     elapsed = time.time() - t0
     n_done = solver.iteration - resume_iter
     per_iter = elapsed / max(n_done, 1)
