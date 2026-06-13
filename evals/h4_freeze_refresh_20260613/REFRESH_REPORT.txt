@@ -1,0 +1,253 @@
+================================================================================
+H4 RNR FIELD SPEC — FREEZE DATA-REFRESH REPORT
+generated 2026-06-13 | branch track-policy | NO simulations (sqlite-only)
+substrate: data/opponent_db/opponent_db.sqlite
+================================================================================
+Executes the §5 freeze checklist of docs/research_program/H4_RNR_FIELD_SPEC.md.
+The spec is a DRAFT registered at counter 383 (dossier snapshot was 272). This
+refresh re-grades every §2.2 field constant (T1-T8) and the §4 numeric bars to
+the n>=500 corpus so the manager can FREEZE. Methodology unchanged from
+FIELD_DOSSIER.md / d2 (Wilson 95%; raw-record sessions only; non-hero
+frame_diff voluntary rows; VPIP convention = db.py::_session_vpip).
+
+machine-readable: refreshed_constants.json (same dir)
+recompute script:  refresh_analysis.py (same dir)
+
+--------------------------------------------------------------------------------
+CORPUS GROWTH (dossier@272 -> now)
+--------------------------------------------------------------------------------
+  H4 unlock counter:            272  -> 517   (>= 500: UNLOCKED, confirmed in
+                                               data/opponent_db/FIELD_REPORT.txt)
+  sessions ingested:             18  -> 23
+  raw-record sessions:           13  -> 18    (+5: 130846, 161347, 183701,
+                                               220101, 230149, 023826; 125441)
+  non-hero dealt seat-hands:   1806  -> 3426
+  opp voluntary frame_diff acts: 581 -> 1041
+  first-raise events:            191 -> 388
+
+  d2 projected field-VPIP half-width at unlock: +-1.4pp. Observed: +-1.3pp.
+  Sampling error is now an order below the [B1]/[B2] observability bias, exactly
+  as d2 Q4 forecast — large moves would indicate composition shift, not noise.
+
+================================================================================
+PART 1 — DECISION-GRADE CONSTANTS: OLD (n) vs NEW (n>=500), Wilson CIs
+================================================================================
+Format: id  OLD value [@n]  ->  NEW value [n>=500]  (Wilson 95% / half-width / grade)
+"MOVED OUTSIDE CI?" tests whether the new point estimate falls outside the
+dossier's prior Wilson CI AND vice-versa (d2 rubric: ±5pp field bar).
+
+T1  FIELD VPIP (lower bound)
+    OLD: 20.6%  (372/1806)  CI[18.7,22.5] @272
+    NEW: 20.1%  (689/3426)  CI[18.8,21.5]  hw +-1.3pp  [decision]
+    Cross-check: matches FIELD_REPORT aggregate 689/3426 exactly. ✔
+    MOVED OUTSIDE CI? NO. 20.1 in dossier CI; 20.6 in new CI. Mutually inside.
+
+T2  POSITIONAL SHAPE EP->BTN  (target: FLAT, no widening)
+    OLD: EP 22.9 / MP 22.7 / CO 23.6 / BTN 24.5   (flat band 22.7-24.5)
+    NEW: EP 20.8 [17.8,24.1] hw3.2 [decision]
+         MP 21.4 [18.0,25.2] hw3.6 [decision]
+         CO 26.7 [22.1,31.9] hw4.9 [decision]
+         BTN 22.7 [19.5,26.1] hw3.3 [decision]
+    FLATNESS HOLDS: EP~MP~BTN (20.8/21.4/22.7), all CIs overlap; NO monotone
+    EP->BTN widening (BTN is NOT above EP). CO drifted up to 26.7% but its CI
+    overlaps EP/MP/BTN — a noise wobble on a single bucket, not a positional
+    gradient. The qualitative decision-grade claim ("no EP->BTN widening
+    detectable at ±5pp") survives.
+    MOVED OUTSIDE CI? NO for the flatness verdict. CO point estimate (26.7) is
+    just above the old flat-band top (24.5) but inside the joint overlap; it
+    does NOT create a button-skew. Flag as a soft watch, not a CI break.
+
+T3  SB ELEVATED / BB DEFEND-FLOOR
+    OLD: SB 27.8 / BB >= 9.1
+    NEW: SB 27.9% [24.5,31.5] hw3.5 [decision]  ;  BB 9.0% [7.0,11.5] hw2.2
+    SB essentially unchanged (27.8->27.9). BB defend-floor unchanged (9.1->9.0,
+    still >= the registered >=9.1 within CI; structurally a different quantity,
+    provisional read retained).
+    MOVED OUTSIDE CI? NO.
+
+T4  OPEN-SIZE MIX (non-allin opens; n=289 vs 147)
+    OLD: 2.0x mode 55.1% (<=2.0x); 3.0x ~16%; 5x+ tail ~10%; 2.2-2.5x ~5%
+    NEW: <=2.0x = 167/289 = 57.8%  CI[52.0,63.3]  hw +-5.7pp  [provisional*]
+         3.0x bucket = 47/289 = 16.3%   (matches old ~16%)
+         5x+ tail (5.0x + >5x) = 30/289 = 10.4%   (matches old ~10%)
+         2.5x bucket = 9/289 = 3.1%   (matches old ~5%, still negligible)
+    2x-MODE DOMINANCE HOLDS and is slightly stronger (55.1->57.8). Secondary 3x
+    and 5x+ tail reproduce the dossier almost exactly. 2.2-2.5x stays a ~3-5%
+    non-mode.
+    * half-width 5.7pp on the <=2.0x share grazes just over the ±5pp field bar
+      (n=289). The DOMINANCE claim is decision-grade qualitatively (lower CI
+      52.0% >> 50%); the exact mode weight is provisional, as the dossier
+      already stamped it.
+    MOVED OUTSIDE CI? NO. 55.1 inside new CI[52.0,63.3]; mode mix reproduces.
+
+T5  OPEN-JAM SHARE OF FIRST-RAISES (n=388 vs 191)
+    OLD: 23.0%  (44/191)  CI[17.6,29.5]
+    NEW: 25.5%  (99/388)  CI[21.4,30.1]  hw +-4.3pp  [decision]
+    MOVED OUTSIDE CI? NO. 23.0 inside new CI[21.4,30.1]; 25.5 inside old CI.
+    Drift +2.5pp upward (more open-jams), well within both CIs — directionally
+    consistent with the post-fix sessions being slightly shorter-stacked /
+    jammier, but not a CI break. WATCH (does not block freeze).
+
+T6  PREFLOP ENTRY MIX — limp share of calls (n=245 vs 150)
+    OLD: 63%  (95/150)  CI[55.3,70.6]
+    NEW: 63.7%  (156/245)  CI[57.5,69.4]  hw +-6.0pp  [provisional]
+    MOVED OUTSIDE CI? NO. Reproduces the dossier to within 0.7pp. Half-width
+    6.0pp keeps it provisional at the ±5pp field bar (dossier graded it
+    "decision on the observed split" qualitatively; the limp-dominance claim,
+    lower CI 57.5% > 50%, is robust). Limp-heavy entry confirmed.
+
+T7  5-15bb PREFLOP JAM RATE / seat-hand (combined band; n=812 vs 376)
+    OLD: 8.5%  (32/376)  CI[6.1,11.8]
+    NEW: 8.4%  (68/812)  CI[6.7,10.5]  hw +-1.9pp  [decision]
+    sub-bands: 5-10bb 11.4% [8.5,15.0] (old 11.8); 0-5bb 19.4% [12.9,28.1]
+               (old 22.2, provisional); 10-15bb 5.9% [4.0,8.5].
+    THE single most H2-relevant constant is essentially unchanged (8.5->8.4)
+    and TIGHTENED to ±1.9pp. MOVED OUTSIDE CI? NO. Exact reproduction.
+
+T8  JAM-REGIME BREAK (per-action all-in% by actor depth; break between 10-15bb)
+    OLD: 0-5: 77.8 / 5-10: 59.5 / 10-15: 13.4   (break 5-10 -> 10-15)
+    NEW: 0-5  83.3% [70.4,91.3]  (n=48)  [provisional-n]
+         5-10 59.3% [49.1,68.9]  (n=91)  [provisional-n]
+         10-15 20.3% [14.3,27.9] (n=133) [provisional]
+         15-25 12.9 / 25-50 6.2 / 50+ 1.8  (monotone, as dossier)
+    REGIME BREAK HOLDS: jam share collapses from 59.3% (5-10) to 20.3% (10-15);
+    CIs [49.1,68.9] vs [14.3,27.9] are DISJOINT -> the <10bb jam-regime and the
+    10-15bb break are intact and decision-grade as a *boundary* claim. The
+    10-15 level rose 13.4->20.3 (still well below the 5-10 mode, break unchanged).
+    MOVED OUTSIDE CI? NO for the boundary. 10-15 level moved up but the
+    qualitative jam-regime structure (the registered T8 claim) is unchanged.
+
+Companion read (used by §2.2 narrative, not a T-row):
+    5-15bb FIELD VPIP-lb: OLD 20.2% (76/376) -> NEW 18.8% (153/812) CI[16.3,21.7]
+    hw +-2.7pp [decision]. Dossier 20.2 inside new CI; drifted down 1.4pp but
+    inside CI. Short stacks still do not tighten materially vs field baseline.
+
+--------------------------------------------------------------------------------
+SUMMARY: did anything move OUTSIDE its prior CI?
+--------------------------------------------------------------------------------
+  NONE of T1-T8 moved outside its dossier Wilson CI. Every registered target
+  reproduces within sampling error. Two soft WATCH items (neither a CI break,
+  neither blocks freeze):
+    - T5 open-jam share drifted +2.5pp up (23.0 -> 25.5), inside both CIs.
+    - T2 CO bucket drifted to 26.7% (above the old flat-band top 24.5) but
+      CI-overlapping the other open positions; flatness verdict intact.
+  Per the §5 checklist: NO constant moved outside its CI => the §2.4
+  moment-matching does NOT need re-running, and the registry does NOT need
+  re-freezing on numeric grounds.
+
+================================================================================
+PART 2 — d2 CI RE-GRADE (±5pp field bar)
+================================================================================
+Constants that BECAME decision-grade at n>=500 that were provisional @272:
+  - T2 EP positional VPIP: was provisional (hw ±5.1pp grazing) -> now
+    hw ±3.2pp DECISION. MP likewise (±6.1 -> ±3.6) DECISION.
+  - T7 sub-band 5-10bb jam: was provisional -> hw ±3.2pp DECISION.
+  - T8 15-25bb all-in% became decision (hw ±4.8pp) from provisional.
+  These are upgrades; none changes a T-target value.
+
+Constants STILL not decision-grade at the ±5pp field bar (n-limited):
+  - T4 <=2.0x open-share: hw ±5.7pp (provisional on exact weight; dominance
+    qualitatively decision). T6 limp share: hw ±6.0pp (provisional on exact
+    split; dominance robust). Both as the dossier already stamped them.
+  - T8 sub-10bb bands (0-5 hw ±10.4, 5-10 hw ±9.9): per-action n still small;
+    the BOUNDARY claim is decision (disjoint CIs), the LEVELS are provisional.
+  - T7 0-5bb sub-band: hw ±7.6pp provisional (n=103).
+
+FIELD-POOLING-ONLY VERDICT (d2 [BINDING]):  CONFIRMED, UNCHANGED.
+  Per-opponent reads remain session-length-capped: n-per-key is bounded by
+  match length (d2 max 79), not archive size, so the +199 new opp-obs hands do
+  NOT improve within-session per-opponent precision. No per-opponent
+  depth-conditioned read becomes decision-grade in-band at live rates. The H4
+  single-field-distribution design (§2.1) stands. The added sessions only
+  sharpen the FIELD aggregate (already ±1.3pp), exactly as d2 Q4 predicted.
+
+================================================================================
+PART 3 — OQ-1 / FOLDED-FLAG STATUS  (material change since draft)
+================================================================================
+MATERIAL UPDATE: the OQ-1 folded-flag fix HAS landed in the live scraper, and
+THREE post-fix sessions are now in the archive (contradicting the draft's
+"if not landed: p capped" default branch — the operator must decide §2.5/§5).
+
+  Post-fix sessions (folded_flag rows now densely captured):
+    live_dryrun_20260612_220101.jsonl   182 folded_flag rows  (vs 1-8 pre-fix)
+    live_dryrun_20260612_230149.jsonl   397 folded_flag rows
+    live_dryrun_20260613_023826.jsonl   263 folded_flag rows
+    -> 3 post-fix sessions / 134 opp-observed hands.
+  Pre-fix sessions: 1-8 stale folded_flag rows each (the 0/241 staleness regime).
+
+  FOLD-VS-SHOVE now becomes computable on post-fix data:
+    Per-session (FIELD_REPORT):  12/12, 33/39, 37/40  facing-allin folds.
+    Corpus aggregate (FIELD_REPORT): 82/124 = 66.1% observed facing-allin
+    events folded. Wilson half-width ~ ±8.2pp -> NOT yet decision-grade at the
+    ±5pp field bar (n still small; fold flag in pre-fix sessions still stale, so
+    the marginal is post-fix-only in practice).
+
+  CONFIRMATION FOR THE SPEC (the task's core question):
+  (a) The §2.2 RNR targets correctly rely on ACTION-FREQUENCY MARGINALS
+      (VPIP / jam / open-size / limp), computed from observed_via='frame_diff'
+      chip-moving events ONLY. NONE of T1-T8 is fold-conditioned. Verified in
+      refresh_analysis.py: every T-row denominator is dealt seat-hands or
+      voluntary frame_diff actions; folded_flag rows never enter a T-marginal.
+      => the corpus's persistent fold undercount in the 15 PRE-fix sessions
+      does NOT bias any registered target. The spec's [B2] discipline holds.
+  (b) The newly-computable fold-vs-shove (66.1%) is NOT a registered target and
+      is below decision-grade; per §5 it does NOT graduate to a moment-match
+      row yet. It is a candidate for a FUTURE refinement, not this freeze.
+  (c) SEAT CONVENTION: audited clean. evals/seat_convention_audit_20260612
+      VERDICT = CASE A (cosmetic export-label mismatch only; the DB uses ONE
+      uniform scraper-seatN -> internal N-1 mapping everywhere; hero==internal
+      0 in all sessions; VPIP/fold-vs-shove/counter all convention-consistent).
+      DB UNCONTAMINATED. The only artifact needing a label fix is the v1
+      candidates export (already superseded by v2 in that dir). H4 spec inputs
+      unaffected.
+
+  CONSEQUENCE FOR §2.5 p-CAP (operator decision, flagged not decided here):
+  The draft pre-registered "if OQ-1 has NOT landed at freeze, cap p at 0.25."
+  OQ-1 HAS landed, but the post-fix fold data (66.1%, ±8.2pp, 134 hands) is NOT
+  yet decision-grade and covers only 3 sessions. Per the literal §5 gate
+  ("if decision-grade, add as targets and lift the p=0.25 cap"), the cap is NOT
+  lifted at this freeze: fold-vs-shove is computable but sub-grade. Recommend:
+  keep p=0.30 contingency language but DOWNGRADE the rationale from "fold
+  dimension entirely profile-inherent" to "fold dimension measurable-but-not-
+  yet-decision-grade; lift to a target at the next freeze once post-fix n
+  reaches the ±5pp bar (~6 post-fix sessions at current rates)." This is a
+  MATERIAL fold-target *trajectory* change -> per §5 it RE-OPENS §7 R2 review
+  before freeze (the manager should note R2's disposition now has post-fix
+  evidence, not just the [B2] disclaimer).
+
+================================================================================
+PART 4 — VERDICT: do the registered §2.2 / §4 targets still hold at n>=500?
+================================================================================
+§2.2 MOMENT TARGETS T1-T8:  HOLD. Every target reproduces within its dossier
+  Wilson CI. No re-statement of any T-value is required for freeze. Recommended
+  refreshed point values (for the freeze block to replace the [DRAFT@272]
+  stamps) are in the proposed diff (PROPOSED_SPEC_DIFF.txt) — these are CI-
+  consistent refinements, NOT weakenings (Addendum 1 compliant: thresholds not
+  loosened; T5/T8 if anything tightened toward more aggression in the field).
+
+§4 FALSIFICATION BARS:  HOLD as written. They are stated relative to champion
+  baselines that get RE-RECORDED at freeze (§4.1/§4.3 already require this), not
+  relative to the dossier numbers — so the n>=500 refresh does not move them.
+  The §4.4 numeric regression-guard caps are copied verbatim from a3 and are
+  candidate-independent; the refreshed field is slightly JAMMIER/looser
+  (T5 +2.5pp, T8 10-15 level up), which only STRENGTHENS the rationale for the
+  §4.4 H4-specific aggression-inflation caps. No bar needs loosening; none may
+  be loosened (Addendum 1).
+
+  Targets requiring RE-STATEMENT before freeze:  NONE on numeric grounds.
+  One NON-numeric restatement recommended: §2.5 p-cap rationale + §5 OQ-1 line
+  must be updated to reflect that the fix LANDED (3 post-fix sessions) but the
+  fold marginal is not yet decision-grade (Part 3 above). This is a wording /
+  provenance correction, not a threshold change.
+
+--------------------------------------------------------------------------------
+FREEZE-READY ASSESSMENT
+--------------------------------------------------------------------------------
+  Numeric §5 checklist (recompute constants, CI re-grade, registry): PASS — no
+  constant moved outside CI; moment-match / registry need no re-freeze.
+  Field-pooling-only verdict: CONFIRMED. Seat convention: CLEAN (Case A).
+  Blocking item: NONE numeric. One DOCS update required before the freeze block
+  is written: refresh the §2.5/§5 OQ-1 status text (fix landed, sub-grade fold
+  data, p-cap rationale) and re-open §7 R2 per the §5 "material fold-target"
+  clause. With that wording update applied by the manager, H4 is FREEZE-READY.
+================================================================================

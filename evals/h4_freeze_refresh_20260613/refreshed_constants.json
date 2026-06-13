@@ -1,0 +1,303 @@
+{
+  "T1_field_vpip": {
+    "num": 689,
+    "den": 3426,
+    "pct": 20.1,
+    "ci": [
+      18.8,
+      21.5
+    ],
+    "hw_pp": 1.3,
+    "grade": "decision",
+    "dossier": "20.6% (372/1806) [B1]"
+  },
+  "T2_positional": {
+    "EP": {
+      "num": 131,
+      "den": 630,
+      "pct": 20.8,
+      "ci": [
+        17.8,
+        24.1
+      ],
+      "hw_pp": 3.2,
+      "grade": "decision"
+    },
+    "MP": {
+      "num": 106,
+      "den": 495,
+      "pct": 21.4,
+      "ci": [
+        18.0,
+        25.2
+      ],
+      "hw_pp": 3.6,
+      "grade": "decision"
+    },
+    "CO": {
+      "num": 82,
+      "den": 307,
+      "pct": 26.7,
+      "ci": [
+        22.1,
+        31.9
+      ],
+      "hw_pp": 4.9,
+      "grade": "decision"
+    },
+    "BTN": {
+      "num": 140,
+      "den": 618,
+      "pct": 22.7,
+      "ci": [
+        19.5,
+        26.1
+      ],
+      "hw_pp": 3.3,
+      "grade": "decision"
+    },
+    "SB": {
+      "num": 172,
+      "den": 617,
+      "pct": 27.9,
+      "ci": [
+        24.5,
+        31.5
+      ],
+      "hw_pp": 3.5,
+      "grade": "decision"
+    },
+    "BB": {
+      "num": 56,
+      "den": 625,
+      "pct": 9.0,
+      "ci": [
+        7.0,
+        11.5
+      ],
+      "hw_pp": 2.2,
+      "grade": "decision"
+    },
+    "unclassifiable": 134
+  },
+  "T5_openjam_share": {
+    "num": 99,
+    "den": 388,
+    "pct": 25.5,
+    "ci": [
+      21.4,
+      30.1
+    ],
+    "hw_pp": 4.3,
+    "grade": "decision",
+    "dossier": "23.0% (44/191) [B1]"
+  },
+  "T4_open_size_mix": {
+    "n_nonallin": 289,
+    "bins": {
+      "3.0x": 47,
+      "4.0x": 26,
+      "2.0x": 159,
+      "tail>5x": 5,
+      "2.5x": 9,
+      "3.5x": 10,
+      "5.0x": 25,
+      "sub_min<=1.5": 8
+    },
+    "le2x_share": {
+      "num": 167,
+      "den": 289,
+      "pct": 57.8,
+      "ci": [
+        52.0,
+        63.3
+      ],
+      "hw_pp": 5.7,
+      "grade": "provisional"
+    },
+    "mode_3x_count": 47,
+    "tail5plus_count": 30,
+    "band_2_2_2_5_count": 9,
+    "dossier": "2.0x mode 55.1% (<=2.0x=81/147); 3.0x ~16%; 5x+ ~10%; 2.2-2.5x ~5%"
+  },
+  "T6_limp_share": {
+    "num": 156,
+    "den": 245,
+    "pct": 63.7,
+    "ci": [
+      57.5,
+      69.4
+    ],
+    "hw_pp": 6.0,
+    "grade": "provisional",
+    "dossier": "63% (95/150) [B1]"
+  },
+  "T7_jam_by_band": {
+    "0-5": {
+      "num": 20,
+      "den": 103,
+      "pct": 19.4,
+      "ci": [
+        12.9,
+        28.1
+      ],
+      "hw_pp": 7.6,
+      "grade": "provisional"
+    },
+    "5-10": {
+      "num": 42,
+      "den": 369,
+      "pct": 11.4,
+      "ci": [
+        8.5,
+        15.0
+      ],
+      "hw_pp": 3.2,
+      "grade": "decision"
+    },
+    "10-15": {
+      "num": 26,
+      "den": 443,
+      "pct": 5.9,
+      "ci": [
+        4.0,
+        8.5
+      ],
+      "hw_pp": 2.2,
+      "grade": "decision"
+    },
+    "15-25": {
+      "num": 15,
+      "den": 492,
+      "pct": 3.0,
+      "ci": [
+        1.9,
+        5.0
+      ],
+      "hw_pp": 1.6,
+      "grade": "decision"
+    },
+    "25-50": {
+      "num": 9,
+      "den": 617,
+      "pct": 1.5,
+      "ci": [
+        0.8,
+        2.7
+      ],
+      "hw_pp": 1.0,
+      "grade": "decision"
+    },
+    "50+": {
+      "num": 3,
+      "den": 707,
+      "pct": 0.4,
+      "ci": [
+        0.1,
+        1.2
+      ],
+      "hw_pp": 0.5,
+      "grade": "decision"
+    }
+  },
+  "T7_jam_5_15_combined": {
+    "num": 68,
+    "den": 812,
+    "pct": 8.4,
+    "ci": [
+      6.7,
+      10.5
+    ],
+    "hw_pp": 1.9,
+    "grade": "decision",
+    "dossier": "8.5% (32/376) [B1] decision"
+  },
+  "T_vpip_5_15_combined": {
+    "num": 153,
+    "den": 812,
+    "pct": 18.8,
+    "ci": [
+      16.3,
+      21.7
+    ],
+    "hw_pp": 2.7,
+    "grade": "decision",
+    "dossier": "20.2% (76/376) [B1] decision"
+  },
+  "T8_allin_by_actiondepth": {
+    "0-5": {
+      "num": 40,
+      "den": 48,
+      "pct": 83.3,
+      "ci": [
+        70.4,
+        91.3
+      ],
+      "hw_pp": 10.4,
+      "grade": "provisional"
+    },
+    "5-10": {
+      "num": 54,
+      "den": 91,
+      "pct": 59.3,
+      "ci": [
+        49.1,
+        68.9
+      ],
+      "hw_pp": 9.9,
+      "grade": "provisional"
+    },
+    "10-15": {
+      "num": 27,
+      "den": 133,
+      "pct": 20.3,
+      "ci": [
+        14.3,
+        27.9
+      ],
+      "hw_pp": 6.8,
+      "grade": "provisional"
+    },
+    "15-25": {
+      "num": 24,
+      "den": 186,
+      "pct": 12.9,
+      "ci": [
+        8.8,
+        18.5
+      ],
+      "hw_pp": 4.8,
+      "grade": "decision"
+    },
+    "25-50": {
+      "num": 16,
+      "den": 256,
+      "pct": 6.2,
+      "ci": [
+        3.9,
+        9.9
+      ],
+      "hw_pp": 3.0,
+      "grade": "decision"
+    },
+    "50+": {
+      "num": 6,
+      "den": 327,
+      "pct": 1.8,
+      "ci": [
+        0.8,
+        3.9
+      ],
+      "hw_pp": 1.6,
+      "grade": "decision"
+    }
+  },
+  "_meta": {
+    "raw_sessions": 18,
+    "total_sessions": 23,
+    "h4_counter": 517,
+    "nonhero_dealt_seathands": 3426,
+    "opp_vol_frame_diff_actions": 1041,
+    "first_raises": 388
+  }
+}

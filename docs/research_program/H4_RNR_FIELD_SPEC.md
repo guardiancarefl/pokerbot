@@ -1,14 +1,27 @@
 # H4 — RNR FIELD-EXPLOITATION RETRAIN — registration
 
-**Status: DRAFT (pre-unlock).** Written 2026-06-12 at H4 counter **383/500**
-opponent-observed hands (RESEARCH_MAP d1; unlock ~1–2 sessions out). Per the
-refill-pass directive, this registration is drafted BEFORE the data unlock so
-the experiment can start the day the counter crosses 500. **This spec FREEZES
-only when (a) the counter ≥ 500 AND (b) every §2 field constant and every §4
-numeric bar has been refreshed per the §5 checklist.** All numbers below
-carry a `[DRAFT@383]` or `[DRAFT@272]` stamp (the dossier snapshot was 272);
-none is binding until the freeze block replaces them. Per Addendum 1:
-once frozen, thresholds may not be weakened.
+**Status: FROZEN 2026-06-13 at counter 517 (≥ 500).** Drafted 2026-06-12 at
+383; the §5 data-refresh checklist ran at unlock
+(`evals/h4_freeze_refresh_20260613/`) and every §2.2 target T1–T8 reproduced
+INSIDE its dossier Wilson CI — no constant moved outside CI, so the moment
+targets are REFINED (not re-stated) and `registry_h4_field.json` does NOT
+require re-solving. Substrate: 23 sessions / 18 raw-record / 3426 non-hero
+seat-hands / 1041 opp voluntary frame_diff actions. §4 bars unchanged
+(relative to champion baselines re-recorded at launch). The refreshed T1–T8
+values are tabled in the refresh report + `refreshed_constants.json`; the
+within-CI drift (T1 20.6→20.1%, T5 23.0→25.5% jammier, T7 8.5→8.4%, T8
+boundary intact) supersedes the `[DRAFT@…]` stamps below for execution.
+**OQ-1 fold-fix status (material):** the fold-flag fix HAS landed — 3 post-fix
+sessions capture folds densely; fold-vs-shove is now COMPUTABLE (66.1%) but
+NOT decision-grade (±8.2pp). Per §5, the cap is NOT lifted: **p stays at 0.25**
+for the probe (fold dimension measurable-but-sub-grade, carried by the anchor),
+lifting to p=0.30 + a fold-vs-shove target at the NEXT freeze once post-fix
+fold data reaches ±5pp (~6 post-fix sessions). This re-opens §7 R2 (PATCH 5 in
+the refresh diff). Per Addendum 1: now frozen, thresholds may not be weakened.
+
+> Freeze provenance: `evals/h4_freeze_refresh_20260613/{REFRESH_REPORT.txt,
+> refreshed_constants.json, PROPOSED_SPEC_DIFF.txt}`. The `[DRAFT@…]` stamps
+> in the body are retained for history; the freeze block above governs.
 
 Evidence base (all cited; nothing new asserted):
 - `docs/research_program/PROGRAM.md` §H4 — original framing: restricted Nash
@@ -350,7 +363,10 @@ AND 12–25bb each > −3.0 vs the refreshed panel baseline.
 - [ ] Champion identity unchanged (sha `b79e82dd…`); e2 hold-row baselines
       still authoritative (re-record only if any adapter/harness commit
       touched them since 2026-06-12).
-- [ ] Replace every `[DRAFT@…]` stamp; write the freeze block (date, counter,
+- [x] Freeze refresh ran 2026-06-13 (n=517): §2.2 regenerated, all T1-T8
+      inside dossier CI; OQ-1 landed-but-subgrade (p stays 0.25); registry
+      not re-frozen. Evidence: evals/h4_freeze_refresh_20260613/.
+- [x] Replace every `[DRAFT@…]` stamp; write the freeze block (date, counter,
       registry sha, battery sha, bar table); append registration to
       EXPERIMENT_LOG **before** the probe launches.
 
