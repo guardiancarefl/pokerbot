@@ -34,10 +34,11 @@ frames 56% (capture/OQ-4) + dealer-button detection 33% + reconstruction failure
 **Fix = Windows scraper reliability (OQ-4 + OQ-1).** Worth far more than any model
 tweak. → needs operator routing (flag above).
 
-### #2 capture reliability (OQ-4) — same root cause; scoping next
-The wrong-window capture (session-6) IS the dominant skip cause (suspect frames).
-Next free-bench step: read the OQ-4 brief + session-6 audit, sharpen the Windows
-brief with the triage frame-evidence so the Windows session has exact targets.
+### ✅ #2 capture reliability (OQ-4) — Windows brief SHARPENED (`docs/OQ4_SCRAPER_EVIDENCE.md`)
+Suspect-reason histogram extracted (3 sessions, 246 suspect frames): #1 cause is
+**"table not rendered" (30%)** = the wrong-window capture (OQ-4 core); rest is OCR
+robustness (stacks/cards/board/pot). Plus dealer-detection 33% of skips. Prioritized
+fix list + frame-evidence pointers packaged for the Windows CC session. Ready to route.
 
 ### ✅ #3 Stage-2 autoclicker readiness — MAPPED: 0/5, blocked by same root cause
 N=5 gate THRESHOLD confirmed by operator, but **0 of 22 sessions are gate-clean**
