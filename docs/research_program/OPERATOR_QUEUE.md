@@ -4,23 +4,22 @@ Rule (Addendum 2): a track that hits an operator boundary parks its request
 HERE and the program continues elsewhere. Check for stale entries at every
 resume; move resolved entries to the Resolved section with the decision.
 
-## Status (morning read — updated 2026-06-12 ~21:30)
+## Status (morning read — updated 2026-06-13 ~03:30)
 
-**Cycle 1 closed; PROGRAM_REVIEW.md #1 is the read.** Three experiments
-in ~18 h: H1 PASS (tail floor armed; 3 live sessions in-band, 0
-tail-caused argmax changes incl. 104 firings in your 140-hand session);
-H2 FAIL at probe (league fine-tune collapsed — mechanism confounded by
-the slim checkpoint; H2b possible later, sequenced after cheaper
-items); c1 MATERIAL (MH ICM underprices short-stack survival +0.065
-below 5bb in high-dispersion bubble states — correction fit + consumer
-re-price audit queued). P2 is BUILT+GATED-OFF and your AcKc turned out
-to be a dead-SB reconstruction failure, not a displacement — the real
-fix (carry blind structure into replay) is specced for the next build
-slot. H4 at 383/500 with the spec pre-drafted. **Seat off-by-one: CASE A — cosmetic export bug, DB clean, dossier
-uncontaminated; conventions reconciled → your Windows Part-A patch
-(153/158 folds, 0 FP) is CLEAR to deploy. Decisions needed: P2 arming;
-Part-A deployment go; Part-B (showdown capture) when Windows CC
-resumes. No pod case stands.**
+**UNLOCK WON** (hero 6975 double-up; all-time 27 played, 10W/13L).
+First fully-armed session: the session-5 package WORKED — its target
+classes (dealer-burst, commit-recon) were absent or correctly declined;
+0 floor-gaps. **Strategic shift: the binding deployment constraint is
+now the Windows scraper SanityChecker (OCR-suspect frames) — 9 of 10
+lost hands this session were OCR gaps, not bridge logic.** Tail floor:
+6 armed sessions, still 0 argmax changes. Stage-2 gate streak 0/5
+(scraper quality, not bridge, is what's gating it now).
+
+YOUR OPEN ITEMS: (1) shove-floor live-wiring is building its gates incl.
+the p99-latency check — I'll bring it for arming only when green; you've
+already approved the floor itself. (2) Windows: P1/P2 SanityChecker is
+now top-priority (it's THE Stage-2 blocker); OQ-1 Part-B, OQ-3 F1,
+D3 also queued your side. (3) F2 stays held until Windows F1.
 
 ## POD_CASE (standing one-liner — Addendum 5.5, update on every state change)
 
