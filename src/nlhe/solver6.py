@@ -253,6 +253,17 @@ class TrainConfig6Max:
     parallel_groups: int = 0                # 0 = sequential (legacy); >0 = orchestrator at G groups
     parallel_use_processes: bool = True     # True = mp.fork workers; False = serial in-process (debug only)
 
+    # --- Generate-only buffer rebuild (H4-probe-prep resolution, 2026-06-13).
+    # When True, the training loop COLLECTS samples via frozen-net traversals
+    # but SKIPS both gradient steps (_train_advantage_net / _train_strategy_net),
+    # so the policy/strategy nets never move: the player is provably unchanged
+    # and a post-rebuild self-anchor is 0 BY CONSTRUCTION. Used to refill the
+    # reservoirs of a slim champion checkpoint WITHOUT the policy drift that
+    # free self-play causes (EXPERIMENT_LOG 2026-06-13: free-self-play rebuild
+    # regressed the anchor 0.15/game / z=-3.1). Default False = byte-identical
+    # to normal training (the else-branch is the original two calls verbatim).
+    populate_only: bool = False
+
     # --- C3 retrain bundle. All defaults preserve pre-C3 behavior and let
     # old checkpoints (whose config_dict lacks these keys) reconstruct
     # bit-identically through _load_solver's saved.get(..., default).
@@ -890,13 +901,19 @@ class DeepCFR6MaxSolver:
                         opponent_policy_override=opp_override,
                     )
 
-            # Train the traverser's advantage net.
-            adv_loss = self._train_advantage_net(traverser)
-
-            # Train the single shared strategy net on the shared strategy
-            # buffer (samples written at opp nodes during the traversals above).
-            # Mirrors HUNL ordering: strategy training follows advantage training.
-            strat_loss = self._train_strategy_net()
+            # Train the traverser's advantage net, then the single shared
+            # strategy net on the shared strategy buffer (samples written at
+            # opp nodes during the traversals above). Mirrors HUNL ordering:
+            # strategy training follows advantage training.
+            #
+            # populate_only (generate-only buffer rebuild): skip BOTH gradient
+            # steps so the nets never move. The buffers still fill from the
+            # frozen-policy traversals above; the player is provably unchanged.
+            if self.cfg.populate_only:
+                adv_loss = strat_loss = float("nan")
+            else:
+                adv_loss = self._train_advantage_net(traverser)
+                strat_loss = self._train_strategy_net()
 
             elapsed = time.time() - t_it
             metrics["iter"].append(it)

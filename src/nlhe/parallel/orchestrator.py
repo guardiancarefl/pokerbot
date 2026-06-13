@@ -322,8 +322,14 @@ def parallel_train(
         )
 
         # ---- Steps 8-14: identical to solver6.train() ----
-        adv_loss = solver._train_advantage_net(traverser)
-        strat_loss = solver._train_strategy_net()
+        # populate_only (generate-only buffer rebuild): skip BOTH gradient
+        # steps so the nets never move (collection at _merge_outputs_into_buffers
+        # above still ran). Mirrors the sequential train() gate verbatim.
+        if cfg.populate_only:
+            adv_loss = strat_loss = float("nan")
+        else:
+            adv_loss = solver._train_advantage_net(traverser)
+            strat_loss = solver._train_strategy_net()
 
         elapsed = time.time() - t_it
         metrics["iter"].append(it)

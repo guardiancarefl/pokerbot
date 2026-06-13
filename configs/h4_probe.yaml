@@ -1,0 +1,80 @@
+# H4 P4 — field-RNR probe (spec §4). Continued training from the
+# BUFFER-REBUILT champion (P3 ckpt_full_rebuilt.pt, iter 1900) with the
+# frozen H4 field pool mixed in. This is the Contabo-only buffer-fragility
+# + jam-wall-transfer re-test (NOT the pod).
+#
+# Recipe = the deployed champion candC k200 recipe (236-d legacy encoder,
+# six_max_phase4f_dcfr_candC_k200.yaml) — UNCHANGED except the three league
+# deltas below + n_iterations. One-delta discipline: the 236-d encoder is
+# the champion's, so the P3 full checkpoint (which carries rebuilt buffers)
+# loads bit-compatibly. Do NOT switch to the C3 237-d eff_bb encoder here.
+#
+# Iteration accounting (train_6max: n_iterations is the ABSOLUTE cap, resume
+# continues solver.iteration): resume from ckpt_full_rebuilt.pt @ iter 1900
+# -> n_iterations 2400 = 500 probe iters. Checkpoints every 100 ->
+# 2000/2100/2200/2300/2400 under runs/h4_probe_<ts>/checkpoints/.
+#
+# League band (the ONLY functional delta vs the champion recipe):
+#   league_mix=0.25, weighted sampling over registry_h4_field.json (8
+#   coherent Shanky members, max weight 0.323, p=0.25 per OQ-1 sub-grade).
+#   Scripted league opponents never write to the strategy buffer (non-
+#   traverser short-circuit) — the traverser learns RESPONSES only.
+#
+# Use (after P3 buffer rebuild + a PASSING self-anchor gate |z|<2):
+#   python -m scripts.train_6max --config configs/h4_probe.yaml \
+#       --resume runs/h4_buffer_rebuild_<ts>/ckpt_full_rebuilt.pt \
+#       --out runs/h4_probe_<ts>
+
+tag: h4_probe
+abstraction_path: runs/abstraction_20260521_223018_retrofit/abstraction.pkl
+
+# Game shape (ignored in tournament mode but required by dataclass).
+starting_stack: 1500
+big_blind: 100
+small_blind: 50
+payout_mode: double_up
+buy_in: 1.0
+first_share: 0.65
+
+# Tournament-aware training (identical to champion recipe).
+tournament_structure_path: configs/ignition_double_up_6max_turbo.yaml
+num_paid: 3
+
+# Training hyperparameters (identical to champion candC recipe).
+hidden_dim: [256, 256]
+n_iterations: 2400
+traversals_per_iter: 150
+train_steps_per_iter: 200
+batch_size: 64
+learning_rate: 0.001
+buffer_capacity: 500000
+
+cfr_variant: linear
+dcfr_exponent: 1.0
+
+# Encoder + solver behavior (identical — 236-d legacy, eff_bb OFF).
+bucket_runouts: 30
+max_traversal_depth: 200
+seed: 2026
+
+# H4 league band — THE ONLY FUNCTIONAL DELTA vs the champion recipe.
+# Weights are the moment-matched §2.4 sampling weights from
+# registry_h4_field.json (h4_pool.weights / each entry's metadata.weight).
+# LeaguePool normalizes; they need not sum to 1.
+league_mix: 0.25
+league_registry_path: configs/league/registry_h4_field.json
+league_sample_strategy: weighted
+league_weights:
+  kamakazi: 0.3228
+  WebberMtt: 0.1806
+  sng: 0.1314
+  itmstrikeA: 0.1062
+  littlegreen2: 0.0939
+  TheFixerSNG: 0.0833
+  littlegreen: 0.0483
+  ticketmaster: 0.0335
+
+# Parallel traversal: G=8 (production path; 4 cores left for main + monitor).
+parallel_groups: 8
+parallel_use_processes: true
+checkpoint_every: 100

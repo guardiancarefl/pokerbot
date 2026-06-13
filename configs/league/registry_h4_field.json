@@ -1,0 +1,193 @@
+{
+ "version": 1,
+ "h4_pool": {
+  "weights": {
+   "TheFixerSNG": 0.0833,
+   "WebberMtt": 0.1806,
+   "itmstrikeA": 0.1062,
+   "kamakazi": 0.3228,
+   "littlegreen": 0.0483,
+   "littlegreen2": 0.0939,
+   "sng": 0.1314,
+   "ticketmaster": 0.0335
+  },
+  "pool_aggregate": {
+   "T1_vpip_pct": 19.93,
+   "T2_pos_vpip_pct": {
+    "UTG": 15.31,
+    "MP": 16.99,
+    "CO": 19.55,
+    "BTN": 26.08,
+    "SB": 29.77,
+    "BB": 11.89
+   },
+   "T4_le2x_pct": 35.04,
+   "T5_openjam_pct": 24.75,
+   "T6_limp_pct": 29.49,
+   "T7_jam_5_15_pct": 8.49,
+   "T7_jam_by_band_pct": {
+    "0-5": 28.39,
+    "5-10": 12.45,
+    "10-15": 4.53,
+    "15-25": 1.49,
+    "25-50": 0.88,
+    "50+": 0.64
+   },
+   "T8_jamshare_by_band_pct": {
+    "0-5": 71.71,
+    "5-10": 54.53,
+    "10-15": 25.17,
+    "15-25": 7.99,
+    "25-50": 4.84,
+    "50+": 3.36
+   }
+  },
+  "carriers": {
+   "limp": "WebberMtt",
+   "minraise": "ticketmaster",
+   "jam": "WebberMtt"
+  },
+  "disposition": "v1-accepted-imperfect",
+  "decision_grade_in_ci": "11/17",
+  "openseat_ep_btn_gap_pp": 10.77,
+  "registered_limitations": [
+   "ENTRY STYLE (T4 min-raise 35% vs 57.8 / T6 limp 29% vs 63.7, BOTH PROVISIONAL grade): pool is less limpy / min-raise-heavy than the field. SECOND-ORDER for exploitation (small deep pots, postflop-dominated, our noisiest data [B1] lower-bounds / [B2] folds-unseen). Error direction = UNDER-exploitation (RNR-anchor-safe). The \u00a74.4 aggression-inflation caps fence the over-attack-passivity failure mode REGARDLESS of T4/T6 exactness. PROBE READING: if the probe shows aggression inflation, that is THIS GAP BITING and the \u00a74.4 caps need scrutiny \u2014 NOT a green light.",
+   "POSITIONAL SPREAD / SHAPE (T2_EP,T2_MP,T2_CO,T2_BB): EP 15 / MP 17 / CO 20 / BTN 26 / SB 30 / BB 12 (field 20.8/21.4/26.7/22.7/27.9/9.0; EP->BTN gap +10.8pp vs field +1.9 flat). The coherent Shanky span cannot jointly reproduce the field's open-seat flatness AND its blind/CO levels (position-aware members widen EP->BTN; position-flat members botch the blinds). SECOND-ORDER vs the jam wall; positional read affects steal/defense frequencies. The balanced v1 keeps SB + the jam sub-bands at the cost of a wider open-seat spread.",
+   "JAM-WALL FINE-STRUCTURE (T7_15-25,T8_15-25): narrow misses in the 15-50bb jam sub-bands (pool jams marginally less than the field there). The DECISION-GRADE HEADLINE jam metrics (T7_jam_5_15 combined, T5 open-jam share, T7_5-10, T7_10-15) are IN-CI; the high-EV 5-15bb jam wall is intact. LOW EV (1-13% rates, sub-bands within ~1pp of CI)."
+  ],
+  "league_sample_strategy": "weighted",
+  "league_mix_p": 0.25,
+  "source": "scripts/h4_pool_solve.py over evals/h4_pool_20260613",
+  "targets_sha": "b2e3d57e30a715324140b389023635a33cb65672a2ada2b2c6cb6d872a231c5a"
+ },
+ "entries": [
+  {
+   "name": "kamakazi",
+   "path": "/home/quant/pokerbot/data/shanky_profiles/kamakazi.txt",
+   "metadata": {
+    "policy_type": "shanky",
+    "big_blind_chips": 100,
+    "weight": 0.3228,
+    "sha256": "79c4f76f8b3fdf442aefd8b96897b1934ddd7dc3770546544ae59c38f97c30f3",
+    "note": "H4 field RNR pool \u2014 post-a8933ea adapter; weight is the moment-matched \u00a72.4 sampling weight (use with league_sample_strategy=weighted)"
+   },
+   "tags": [
+    "h4",
+    "shanky",
+    "field"
+   ]
+  },
+  {
+   "name": "WebberMtt",
+   "path": "/home/quant/pokerbot/data/shanky_profiles/WebberMtt.txt",
+   "metadata": {
+    "policy_type": "shanky",
+    "big_blind_chips": 100,
+    "weight": 0.1806,
+    "sha256": "0d3adb2cd53e6ff7628d9de7f8133d91710d5f41cd27d5259313779dfa3fa10c",
+    "note": "H4 field RNR pool \u2014 post-a8933ea adapter; weight is the moment-matched \u00a72.4 sampling weight (use with league_sample_strategy=weighted)"
+   },
+   "tags": [
+    "h4",
+    "shanky",
+    "field"
+   ]
+  },
+  {
+   "name": "sng",
+   "path": "/home/quant/pokerbot/data/shanky_profiles/sng.txt",
+   "metadata": {
+    "policy_type": "shanky",
+    "big_blind_chips": 100,
+    "weight": 0.1314,
+    "sha256": "87608fb69d49c539b55e4916b28cbef239362bb772954f26b023b4817c137e33",
+    "note": "H4 field RNR pool \u2014 post-a8933ea adapter; weight is the moment-matched \u00a72.4 sampling weight (use with league_sample_strategy=weighted)"
+   },
+   "tags": [
+    "h4",
+    "shanky",
+    "field"
+   ]
+  },
+  {
+   "name": "itmstrikeA",
+   "path": "/home/quant/pokerbot/data/shanky_profiles/itmstrikeA.txt",
+   "metadata": {
+    "policy_type": "shanky",
+    "big_blind_chips": 100,
+    "weight": 0.1062,
+    "sha256": "be255e5d22e13094c3afe20643e7895b9a321ddea0472a44554c2ebc3ef93ccc",
+    "note": "H4 field RNR pool \u2014 post-a8933ea adapter; weight is the moment-matched \u00a72.4 sampling weight (use with league_sample_strategy=weighted)"
+   },
+   "tags": [
+    "h4",
+    "shanky",
+    "field"
+   ]
+  },
+  {
+   "name": "littlegreen2",
+   "path": "/home/quant/pokerbot/data/shanky_profiles/littlegreen2.txt",
+   "metadata": {
+    "policy_type": "shanky",
+    "big_blind_chips": 100,
+    "weight": 0.0939,
+    "sha256": "7e8b1524fccf867548424b71801ffa5d31c63741a8b347b96d3cae75fea3931e",
+    "note": "H4 field RNR pool \u2014 post-a8933ea adapter; weight is the moment-matched \u00a72.4 sampling weight (use with league_sample_strategy=weighted)"
+   },
+   "tags": [
+    "h4",
+    "shanky",
+    "field"
+   ]
+  },
+  {
+   "name": "TheFixerSNG",
+   "path": "/home/quant/pokerbot/data/shanky_profiles/TheFixerSNG.txt",
+   "metadata": {
+    "policy_type": "shanky",
+    "big_blind_chips": 100,
+    "weight": 0.0833,
+    "sha256": "714a106b5e9a2360c83cb8f4051166baf98894184577deab1904cc66badac316",
+    "note": "H4 field RNR pool \u2014 post-a8933ea adapter; weight is the moment-matched \u00a72.4 sampling weight (use with league_sample_strategy=weighted)"
+   },
+   "tags": [
+    "h4",
+    "shanky",
+    "field"
+   ]
+  },
+  {
+   "name": "littlegreen",
+   "path": "/home/quant/pokerbot/data/shanky_profiles/littlegreen.txt",
+   "metadata": {
+    "policy_type": "shanky",
+    "big_blind_chips": 100,
+    "weight": 0.0483,
+    "sha256": "68229c2977c8274dd8277b0a264c8e66c981baa87dc684b72ee704a2cc6ac5f3",
+    "note": "H4 field RNR pool \u2014 post-a8933ea adapter; weight is the moment-matched \u00a72.4 sampling weight (use with league_sample_strategy=weighted)"
+   },
+   "tags": [
+    "h4",
+    "shanky",
+    "field"
+   ]
+  },
+  {
+   "name": "ticketmaster",
+   "path": "/home/quant/pokerbot/data/shanky_profiles/ticketmaster.txt",
+   "metadata": {
+    "policy_type": "shanky",
+    "big_blind_chips": 100,
+    "weight": 0.0335,
+    "sha256": "500485b5ee5ad6f7f18bb30cc735e49f0510c768f084ec459825720f4f9d911f",
+    "note": "H4 field RNR pool \u2014 post-a8933ea adapter; weight is the moment-matched \u00a72.4 sampling weight (use with league_sample_strategy=weighted)"
+   },
+   "tags": [
+    "h4",
+    "shanky",
+    "field"
+   ]
+  }
+ ]
+}
