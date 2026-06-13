@@ -63,7 +63,7 @@
  "entries": [
   {
    "name": "kamakazi",
-   "path": "/home/quant/pokerbot/data/shanky_profiles/kamakazi.txt",
+   "path": "data/shanky_profiles/kamakazi.txt",
    "metadata": {
     "policy_type": "shanky",
     "big_blind_chips": 100,
@@ -79,7 +79,7 @@
   },
   {
    "name": "WebberMtt",
-   "path": "/home/quant/pokerbot/data/shanky_profiles/WebberMtt.txt",
+   "path": "data/shanky_profiles/WebberMtt.txt",
    "metadata": {
     "policy_type": "shanky",
     "big_blind_chips": 100,
@@ -95,7 +95,7 @@
   },
   {
    "name": "sng",
-   "path": "/home/quant/pokerbot/data/shanky_profiles/sng.txt",
+   "path": "data/shanky_profiles/sng.txt",
    "metadata": {
     "policy_type": "shanky",
     "big_blind_chips": 100,
@@ -111,7 +111,7 @@
   },
   {
    "name": "itmstrikeA",
-   "path": "/home/quant/pokerbot/data/shanky_profiles/itmstrikeA.txt",
+   "path": "data/shanky_profiles/itmstrikeA.txt",
    "metadata": {
     "policy_type": "shanky",
     "big_blind_chips": 100,
@@ -127,7 +127,7 @@
   },
   {
    "name": "littlegreen2",
-   "path": "/home/quant/pokerbot/data/shanky_profiles/littlegreen2.txt",
+   "path": "data/shanky_profiles/littlegreen2.txt",
    "metadata": {
     "policy_type": "shanky",
     "big_blind_chips": 100,
@@ -143,7 +143,7 @@
   },
   {
    "name": "TheFixerSNG",
-   "path": "/home/quant/pokerbot/data/shanky_profiles/TheFixerSNG.txt",
+   "path": "data/shanky_profiles/TheFixerSNG.txt",
    "metadata": {
     "policy_type": "shanky",
     "big_blind_chips": 100,
@@ -159,7 +159,7 @@
   },
   {
    "name": "littlegreen",
-   "path": "/home/quant/pokerbot/data/shanky_profiles/littlegreen.txt",
+   "path": "data/shanky_profiles/littlegreen.txt",
    "metadata": {
     "policy_type": "shanky",
     "big_blind_chips": 100,
@@ -175,7 +175,7 @@
   },
   {
    "name": "ticketmaster",
-   "path": "/home/quant/pokerbot/data/shanky_profiles/ticketmaster.txt",
+   "path": "data/shanky_profiles/ticketmaster.txt",
    "metadata": {
     "policy_type": "shanky",
     "big_blind_chips": 100,
