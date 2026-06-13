@@ -672,3 +672,16 @@ consensus zeros. Windows ships F1 (ocr_int, replay-gated). Bridge F2
 sequenced after D2 (same scraper_schema region, avoid agent
 collision); counterfactual targets = session-5 KQo/ATo 54-frame set.
 OQ-3 updated: mechanism resolved, F1 Windows-side + F2 bridge-side.
+
+## 2026-06-13 ~03:35 — H4 UNLOCKED (517/500) + unlock-session WIN
+
+Session 023826 (70 hands, +32 opp-observed) crossed the H4 threshold.
+The H3/H4 pipeline's gating goal is met. H4_RNR_FIELD_SPEC (drafted at
+383) now enters its freeze checklist: (1) recompute FIELD_DOSSIER
+constants at n≥500 + d2 CI re-grade (running, file-only); (2) OQ-1
+folded-flag check (Windows Part-A proven but not yet in the archive —
+fold-vs-shove still undercounted, dossier must flag it); (3) registration
+freeze. The EXPERIMENT is a field-RNR retrain = training-scale →
+POD-relevant + H2-fragility-binding (buffer continuity, no slim-ckpt
+fine-tune). Surfaced to POD_CASE. Not auto-launching: freeze first,
+operator decides pod.
