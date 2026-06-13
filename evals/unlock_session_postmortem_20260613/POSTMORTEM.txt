@@ -1,0 +1,156 @@
+========================================================================
+UNLOCK-SESSION POSTMORTEM — live dry-run 20260613_023826 (FIRST FULLY-ARMED SESSION)
+Written 2026-06-13.  Inputs: logs/live_dryrun_20260613_023826.jsonl
++ .stdout + logs/triage_20260613_023826.txt.  No commits.
+========================================================================
+
+[0] SESSION SNAPSHOT
+  ckpt b79e82dd... (deployed), git 80abbbe dirty=True, mode=sample, seed=2026.
+  floors (model): aa_kk, check_when_free, short_stack 6bb, tail_floor tau=0.1.
+  ARMED deployment package (session-header confirms all True):
+    anchor_sum_floor, bet_closure_recovery (P2), commit_reconciliation (CR),
+    dead_button_handling (D2), extended_click_plans, abort_enforce,
+    watchdog_v2, fallback_seconds=7.0.
+  789 frames / 70 hands / 83 decisions (fresh 50 / cached 33 / recovered 0)
+  / 3 safe-folds / 10 hands lost (never-decided) / 53 hero-to-act frames
+  skipped / 9 fallback fires / 3 red flags.  Hero = seat1.
+
+========================================================================
+[1] FLOOR EFFICACY — first live measurement of D2 / CR / P2
+========================================================================
+This is the headline finding: the three newly-armed floors had almost NO
+in-class frames to act on this session. The dominant kill class (scraper-
+suspect frames) is NOT in any of their signatures.
+
+  ARMED FLOOR        FIRED  RECOVERED  DECLINED  WHY DECLINED
+  D2 dead-button       0        0         0      No dealer-on-eliminated-
+                                                 seat frame occurred. The
+                                                 12 "dealer field missing"
+                                                 skips are TOTAL OCR gaps
+                                                 (dealer AND n_alive both
+                                                 None) — out of D2's class
+                                                 (D2 needs a READABLE dealer
+                                                 sitting on an empty seat).
+  CR commit-reconcil   1        0         1      seq 175: hero implied commit
+                                                 150 != visible bet 0 — hero
+                                                 state is never swept, not
+                                                 this class. PRINCIPLED.
+  P2 bet-closure       1        0         1      seq 175: closure would touch
+                                                 2 seats' bet/stack pairs;
+                                                 only single-seat displacement
+                                                 is recoverable. PRINCIPLED.
+
+  TOTAL armed-floor recoveries to a decision: 0.  (recovered=0 in frame
+  accounting corroborates — no frame status flipped to decision_recovered
+  and recovered_fields is null on every frame.)
+
+  Context — the recovery path that DID dominate (NOT an armed D2/CR/P2 floor):
+    98 ScraperSuspect frames offered to the single-seat-stack-jump recovery
+    (P1-class) and DECLINED ("suspect_reasons not a single-seat stack jump")
+    + 7 more declined as "not a hero-to-act frame" / "failed clean parse".
+    These are Windows-side OCR coverage problems, the P1 SanityChecker /
+    scraper-stability territory — none of D2, CR, P2 are designed to catch
+    them.
+
+  VERDICT: the armed floors did NOT help and did NOT hurt this session —
+  they correctly stayed out of every frame that wasn't theirs (2 principled
+  declines, both on the single multi-seat invariant_fail frame seq 175), and
+  no frame this session matched their recovery signature. Efficacy is
+  UNMEASURED-IN-THE-POSITIVE: zero true-positive recoveries because zero
+  in-class opportunities arose, not because the floors failed. The session's
+  loss class moved entirely to the scraper/OCR layer (see [2]).
+
+========================================================================
+[2] THE 10 LOST (NEVER-DECIDED) HANDS — enumeration + taxonomy
+========================================================================
+Taxonomy: (a) floor-gap (armed floor declined a would-be-saveable frame),
+(b) D2/dead-button class D2 should have caught, (c) all-in-zero/F2 (held,
+needs Windows F1), (d) scraper-suspect/OCR (Windows P1/P2 SanityChecker),
+(e) new/unclassified.
+
+  seq 328-340  hero 7d8c  : scraper-suspect x1                  -> (d) OCR
+  seq 417-428  hero 4h9h  : scraper-suspect x1                  -> (d) OCR
+  seq 429-442  hero 3d4s  : scraper-suspect x4 + safe_fold x1   -> (d) OCR
+        (safe_fold seq 435 = invariant_fail 2 deltas, but the deltas are a
+         pot self-consistency mismatch [delta scraper_self_consistency:pot
+         375 vs 1500] with seat5 reading 0 — NOT a single-seat bet-closure
+         or hero-commit signature; neither P2 nor CR is in-class. The 4
+         scraper-suspect frames are the actual killer.)
+  seq 528-541  hero 5c6h  : scraper-suspect x1                  -> (d) OCR
+  seq 574-584  hero JcKd  : scraper-suspect x1                  -> (d) OCR
+  seq 637-641  hero 6dKc  : scraper-suspect x1                  -> (d) OCR
+  seq 677-686  hero 2dTc  : scraper-suspect x2                  -> (d) OCR
+  seq 717-727  hero QdTd  : scraper-suspect x4 + n_alive<range x2 -> (d) OCR
+        (n_alive-below-range is a downstream symptom of the same OCR gap.)
+  seq 739-748  hero 6s9s  : safe_fold x1                        -> (c) F2-class
+        (safe_fold seq 743 = replay_error: short-stack forced money — seat1
+         pre-hand 415 < BB+ante 460; player posts all-in for less and the
+         replay can't reconstruct that path. This is the all-in-for-less /
+         forced-money class, HELD as expected; needs the Windows-side F1
+         forced-all-in handling, NOT a D2/CR/P2 floor. Matches the seq-743
+         red flag.)
+  seq 767-775  hero 5d8h  : scraper-suspect x1                  -> (d) OCR
+
+  CLASS TOTALS:
+    (d) scraper-suspect / OCR ....... 9 of 10   (Windows P1/P2 SanityChecker)
+    (c) all-in-zero / F2 forced-money 1 of 10   (seq 743; needs Windows F1)
+    (a) floor-gap (declined save) ... 0 of 10
+    (b) D2 dead-button miss ......... 0 of 10
+    (e) new / unclassified .......... 0 of 10
+
+  CROSS-REF to session-5 (230149) known classes: session-5's losses were
+  dominated by dealer-burst (dead-button) and preflop-commit-remainder
+  replay_errors. THIS session shows NONE of the dealer-burst class — D2
+  being armed plausibly explains its absence, but we cannot prove it
+  (D2 fired 0 times, so the absence may equally be that no dealer-on-empty
+  frame arose). The loss class has shifted wholesale to raw ScraperSuspect /
+  OCR coverage gaps, which is the SAME family flagged session-5 (Windows
+  P1/P2 SanityChecker) but is now the SOLE killer rather than one of several.
+  The seq-743 forced-money replay_error is the lone non-OCR loss.
+
+========================================================================
+[3] HAND-LOSS RATE vs SESSION 230149 (the unarmed-bridge session)
+========================================================================
+Both turbo (Double-Up Turbo), same deployed ckpt b79e82dd.
+
+  session            frames  hands  lost  lost/hands   decisions/hand
+  230149 (unarmed)    1649    124    8      6.5%          1.73
+  023826 (armed)       789     70   10     14.3%          1.19
+
+  HONEST VERDICT: the hand-loss RATE went UP, not down — 14.3% vs 6.5%,
+  ~2.2x worse. The armed floors did not reduce never-decided hands because
+  this session's losses were almost entirely scraper/OCR-suspect frames
+  (9/10), a class outside D2/CR/P2's reach. The decisions-per-hand also
+  fell (1.19 vs 1.73), consistent with a noisier scraper feed this session
+  (105 scraper-suspect skips / 789 frames = 13.3%, vs 230149's profile).
+  This is a SCRAPER-QUALITY regression session, not a floor regression: the
+  floors stayed correctly inert. The right read is "armed floors neutral;
+  Windows-side OCR is now the binding constraint on hand-loss," not
+  "arming the floors made things worse."
+
+  Caveat: small samples (70 vs 124 hands) + per-session scraper-quality
+  variance make the rate delta noisy; the class shift (dealer-burst gone,
+  OCR-suspect dominant) is the more reliable signal than the raw rate.
+
+========================================================================
+[4] STAGE-2 LEDGER
+========================================================================
+Ran scripts/stage2_ledger.py; it picked up logs/triage_20260613_023826.txt
+and appended the row:
+
+  | 20260613_023826 | 789 | 70 | 83 | 10 | 53 | 9 | 8 | 3 (2x invariant_fail;
+    1x replay_error) | unknown(interv.) | 3 fallbacks | no |
+
+  never-decided (this session) = 10.
+  GATE STREAK: 0 / 5 — RESETS / does not advance, CONFIRMED.
+    Gate requires 5 consecutive zero-never-decided + zero-intervention
+    sessions. This session has 10 never-decided hands AND 53 to_act_skipped
+    AND intervention=unknown (no operator pin list filed yet), so it fails
+    the streak on multiple counts. Streak remains 0/5.
+  Games segmenter: this session = 1 game, hero final 6975 = WIN (G1
+  seqs 1666-788, bb400). All-time totals now 27 tournaments (10 W / 13 L
+  / 4 unknown).
+
+========================================================================
+END POSTMORTEM 20260613_023826
+========================================================================

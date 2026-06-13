@@ -1,6 +1,6 @@
 # STAGE-2 READINESS LEDGER
 
-Generated 2026-06-13 00:29 UTC by `python scripts/stage2_ledger.py` (re-runnable; the post-session pipeline regenerates this file in full — do not hand-edit rows).
+Generated 2026-06-13 03:15 UTC by `python scripts/stage2_ledger.py` (re-runnable; the post-session pipeline regenerates this file in full — do not hand-edit rows).
 
 ## Pre-registered STAGE-2 GATE
 
@@ -37,13 +37,14 @@ Generated 2026-06-13 00:29 UTC by `python scripts/stage2_ledger.py` (re-runnable
 | 20260612_183701 |  | 1519 | 140 | 194 | 6 | 83 | 7 | 0 | 6 (2x invariant_fail; 2x replay terminal-before-hero; 2x replay-derivation) | unknown | 8 | no |
 | 20260612_220101 |  | 505 | 36 | 53 | 0 | 10 | 0 | 0 | 1 (1x replay_error) | unknown | 1 | no (interv. unknown) |
 | 20260612_230149 | op-session 5 | 1649 | 124 | 215 | 8 | 86 | 8 | 0 | 14 (4x invariant_fail; 4x replay terminal-before-hero; 6x replay-derivation) | 1 | 16 | no |
+| 20260613_023826 |  | 789 | 70 | 83 | 10 | 53 | 9 | 8 | 3 (2x invariant_fail; 1x replay_error) | unknown | 3 | no |
 | verify1_20260609_202137 |  | 90 | 6 | 14 | 0 | 10 | 0 | 0 | 0 (0) | unknown | 1 | no (interv. unknown) |
 
 ## Trend
 
-- Sessions on record: 21 (+2 empty logs).
-- Never-decided hands per session (chronological): [0, 0, 0, 0, 1, 14, 2, 4, 0, 3, 1, 4, 0, 5, 3, 0, 3, 6, 0, 8, 0] — latest = 0.
-- Fallback fires (sessions with stdout): [0, 0, 0, 4, 2, 4, 3, 5, 3, 1, 1, 7, 0, 8, 0].
+- Sessions on record: 22 (+2 empty logs).
+- Never-decided hands per session (chronological): [0, 0, 0, 0, 1, 14, 2, 4, 0, 3, 1, 4, 0, 5, 3, 0, 3, 6, 0, 8, 10, 0] — latest = 0.
+- Fallback fires (sessions with stdout): [0, 0, 0, 4, 2, 4, 3, 5, 3, 1, 1, 7, 0, 8, 9, 0].
 - **Current gate streak: 0 / 5.** No session yet combines zero never-decided hands with a recorded zero-intervention pin list.
 
 ## Games played (all-time, detector + operator reconciliation)
@@ -68,9 +69,10 @@ Game boundary = stack reset to ~1500 for >=5 seats at L1 blinds (15/25) after th
 | 20260612_183701 | 3 | 1 | 1 | 1 | G1 1-395 bb200 hero=4785 W; G2 395-941 bb200 hero=0 L; G3 941-1519 bb300 hero=4477 ? |
 | 20260612_220101 | 1 | 0 | 1 | 0 | G1 8-512 bb200 hero=0 L |
 | 20260612_230149 | 4 | 1 | 3 | 0 | G1 3-173 bb50 hero=0 L; G2 173-383 bb50 hero=0 L; G3 383-976 bb150 hero=3997 L*; G4 976-1651 bb150 hero=3617 W |
+| 20260613_023826 | 1 | 1 | 0 | 0 | G1 1666-788 bb400 hero=6975 W |
 | verify1_20260609_202137 | 1 | 0 | 0 | 1 | G1 8-97 bb0 hero=0 ? |
 
-**All-time totals: 26 tournaments — 9 W / 13 L / 4 unknown.**  (`*` = outcome set by operator statement, see OPERATOR_GAME_OVERRIDES.)
+**All-time totals: 27 tournaments — 10 W / 13 L / 4 unknown.**  (`*` = outcome set by operator statement, see OPERATOR_GAME_OVERRIDES.)
 
 ### Calibration / reconciliation notes
 
