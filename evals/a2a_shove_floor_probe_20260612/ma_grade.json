@@ -1,0 +1,139 @@
+{
+  "measurement": "M-A",
+  "registration": "slate-2a shove-defense floor probe (BLUR_MAP_REPORT)",
+  "battery": "h2_battery_v1",
+  "ckpt": "runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt",
+  "tau": 0.0,
+  "n_spots_graded": 8112,
+  "m1_mean_ev_loss": 0.0034626375416427495,
+  "m1_se": 0.00018801856519809192,
+  "oracle_call_rate": 0.07692307692307693,
+  "policy_call_mass_mean": 0.050692285607671715,
+  "baseline_m1": 0.08673686258402144,
+  "baseline_call_mass": 0.3591451695208801,
+  "m1_reduction_frac": 0.960078824175955,
+  "floor": {
+    "n_fired": 7497,
+    "stats": {
+      "n_calls": 8112,
+      "n_qualify": 8112,
+      "n_fired": 7497
+    },
+    "cells_qualified_fired": {
+      "UTG|5|3": [
+        507,
+        437
+      ],
+      "SB|5|3": [
+        169,
+        140
+      ],
+      "UTG|8|3": [
+        507,
+        478
+      ],
+      "SB|8|3": [
+        169,
+        159
+      ],
+      "UTG|11|3": [
+        507,
+        482
+      ],
+      "SB|11|3": [
+        169,
+        160
+      ],
+      "UTG|15|3": [
+        507,
+        483
+      ],
+      "SB|15|3": [
+        169,
+        160
+      ],
+      "UTG|5|5": [
+        507,
+        437
+      ],
+      "SB|5|5": [
+        169,
+        140
+      ],
+      "UTG|8|5": [
+        507,
+        478
+      ],
+      "SB|8|5": [
+        169,
+        159
+      ],
+      "UTG|11|5": [
+        507,
+        482
+      ],
+      "SB|11|5": [
+        169,
+        160
+      ],
+      "UTG|15|5": [
+        507,
+        483
+      ],
+      "SB|15|5": [
+        169,
+        160
+      ],
+      "UTG|5|7": [
+        507,
+        437
+      ],
+      "SB|5|7": [
+        169,
+        140
+      ],
+      "UTG|8|7": [
+        507,
+        478
+      ],
+      "SB|8|7": [
+        169,
+        159
+      ],
+      "UTG|11|7": [
+        507,
+        482
+      ],
+      "SB|11|7": [
+        169,
+        160
+      ],
+      "UTG|15|7": [
+        507,
+        483
+      ],
+      "SB|15|7": [
+        169,
+        160
+      ]
+    },
+    "confusion_vs_oracle": {
+      "fired_oracle_fold": 7464,
+      "fired_oracle_call": 33,
+      "nofire_oracle_fold": 24,
+      "nofire_oracle_call": 591,
+      "not_qualified": 0
+    }
+  },
+  "bars": {
+    "F1_pass": true,
+    "F1_m1_bar": 0.0434,
+    "F1_call_mass_window": [
+      0.05,
+      0.15
+    ],
+    "FALSIFIED_m1_gt_0.065": false,
+    "FALSIFIED_call_mass_gt_0.20": false
+  },
+  "elapsed_s": 174.49259567260742
+}

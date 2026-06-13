@@ -1,0 +1,42 @@
+{
+  "panel": "a2a shoviest-rows (registered supplement \u00a72)",
+  "profile": "itmstrikea",
+  "config": {
+    "games_requested": 2000,
+    "shards": 2,
+    "shard": 0,
+    "master_seed": 2026,
+    "seed_schedule": "2026 + 7919*g (identical both arms)",
+    "checkpoint": "runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt",
+    "abstraction": "runs/abstraction_20260521_223018_retrofit/abstraction.pkl",
+    "arm_T": "chain(short_stack_threshold_bb=6.0, tail_floor_tau=0.1)",
+    "arm_TS": "arm_T + shove_defense_floor(tau=0) after chain"
+  },
+  "games_completed": 1000,
+  "n_tainted_pairs_excluded": 0,
+  "paired_delta": {
+    "n": 1000,
+    "mean": 0.028,
+    "se": 0.010164611124844831,
+    "z": 2.754655309100911
+  },
+  "nonzero_delta": {
+    "n": 26,
+    "mean": 1.0769230769230769,
+    "se": 0.33706003538779455,
+    "z": 3.1950482521134687
+  },
+  "n_nonzero": 26,
+  "arm_means": {
+    "t_net": 0.322,
+    "ts_net": 0.35
+  },
+  "firing": {
+    "t_chain_fired": 28621,
+    "ts_chain_fired": 28940,
+    "ts_shove_qualified": 668,
+    "ts_shove_fired": 625,
+    "games_with_shove_fire": 384
+  },
+  "elapsed_s": 997.8213889598846
+}

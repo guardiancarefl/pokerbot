@@ -1,0 +1,188 @@
+{
+  "panel": "a2a shoviest-rows (registered supplement \u00a72 + \u00a73)",
+  "registration": "EXPERIMENT_LOG 2026-06-12 ~23:05 / ~23:15 / ~23:40",
+  "rows": {
+    "lionmttv.10": {
+      "panel": "a2a shoviest-rows (registered supplement \u00a72)",
+      "profile": "lionmttv.10",
+      "config": {
+        "games_requested": 2000,
+        "shards": 1,
+        "shard": 0,
+        "master_seed": 2026,
+        "seed_schedule": "2026 + 7919*g (identical both arms)",
+        "checkpoint": "runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt",
+        "abstraction": "runs/abstraction_20260521_223018_retrofit/abstraction.pkl",
+        "arm_T": "chain(short_stack_threshold_bb=6.0, tail_floor_tau=0.1)",
+        "arm_TS": "arm_T + shove_defense_floor(tau=0) after chain"
+      },
+      "games_completed": 2000,
+      "n_tainted_pairs_excluded": 0,
+      "paired_delta": {
+        "n": 2000,
+        "mean": 0.009,
+        "se": 0.003311341494205275,
+        "z": 2.7179316949791095
+      },
+      "nonzero_delta": {
+        "n": 11,
+        "mean": 1.6363636363636365,
+        "se": 0.36363636363636365,
+        "z": 4.5
+      },
+      "n_nonzero": 11,
+      "arm_means": {
+        "t_net": 0.395,
+        "ts_net": 0.404
+      },
+      "firing": {
+        "t_chain_fired": 65037,
+        "ts_chain_fired": 65363,
+        "ts_shove_qualified": 307,
+        "ts_shove_fired": 253,
+        "games_with_shove_fire": 196
+      }
+    },
+    "modernmikemtt": {
+      "panel": "a2a shoviest-rows (registered supplement \u00a72)",
+      "profile": "modernmikemtt",
+      "config": {
+        "games_requested": 2000,
+        "shards": 1,
+        "shard": 0,
+        "master_seed": 2026,
+        "seed_schedule": "2026 + 7919*g (identical both arms)",
+        "checkpoint": "runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt",
+        "abstraction": "runs/abstraction_20260521_223018_retrofit/abstraction.pkl",
+        "arm_T": "chain(short_stack_threshold_bb=6.0, tail_floor_tau=0.1)",
+        "arm_TS": "arm_T + shove_defense_floor(tau=0) after chain"
+      },
+      "games_completed": 2000,
+      "n_tainted_pairs_excluded": 0,
+      "paired_delta": {
+        "n": 2000,
+        "mean": 0.003,
+        "se": 0.0026455622275330963,
+        "z": 1.1339744606186815
+      },
+      "nonzero_delta": {
+        "n": 7,
+        "mean": 0.8571428571428571,
+        "se": 0.7377111135633175,
+        "z": 1.1618950038622249
+      },
+      "n_nonzero": 7,
+      "arm_means": {
+        "t_net": 0.499,
+        "ts_net": 0.502
+      },
+      "firing": {
+        "t_chain_fired": 60273,
+        "ts_chain_fired": 60417,
+        "ts_shove_qualified": 304,
+        "ts_shove_fired": 271,
+        "games_with_shove_fire": 233
+      }
+    },
+    "itmstrikea": {
+      "panel": "a2a shoviest-rows (registered supplement \u00a72)",
+      "profile": "itmstrikea",
+      "config": {
+        "games_requested": 2000,
+        "shards": 1,
+        "shard": 0,
+        "master_seed": 2026,
+        "seed_schedule": "2026 + 7919*g (identical both arms)",
+        "checkpoint": "runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt",
+        "abstraction": "runs/abstraction_20260521_223018_retrofit/abstraction.pkl",
+        "arm_T": "chain(short_stack_threshold_bb=6.0, tail_floor_tau=0.1)",
+        "arm_TS": "arm_T + shove_defense_floor(tau=0) after chain"
+      },
+      "games_completed": 2000,
+      "n_tainted_pairs_excluded": 0,
+      "paired_delta": {
+        "n": 2000,
+        "mean": 0.025,
+        "se": 0.006834534031498699,
+        "z": 3.657893849790067
+      },
+      "nonzero_delta": {
+        "n": 47,
+        "mean": 1.0638297872340425,
+        "se": 0.24970705374731528,
+        "z": 4.260311317879543
+      },
+      "n_nonzero": 47,
+      "arm_means": {
+        "t_net": 0.339,
+        "ts_net": 0.364
+      },
+      "firing": {
+        "t_chain_fired": 57555,
+        "ts_chain_fired": 58239,
+        "ts_shove_qualified": 1469,
+        "ts_shove_fired": 1353,
+        "games_with_shove_fire": 805
+      }
+    },
+    "minestackermttv.7.3": {
+      "panel": "a2a shoviest-rows (registered supplement \u00a72)",
+      "profile": "minestackermttv.7.3",
+      "config": {
+        "games_requested": 2000,
+        "shards": 1,
+        "shard": 0,
+        "master_seed": 2026,
+        "seed_schedule": "2026 + 7919*g (identical both arms)",
+        "checkpoint": "runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt",
+        "abstraction": "runs/abstraction_20260521_223018_retrofit/abstraction.pkl",
+        "arm_T": "chain(short_stack_threshold_bb=6.0, tail_floor_tau=0.1)",
+        "arm_TS": "arm_T + shove_defense_floor(tau=0) after chain"
+      },
+      "games_completed": 2000,
+      "n_tainted_pairs_excluded": 0,
+      "paired_delta": {
+        "n": 2000,
+        "mean": 0.006,
+        "se": 0.004241579363603712,
+        "z": 1.4145674253993699
+      },
+      "nonzero_delta": {
+        "n": 18,
+        "mean": 0.6666666666666666,
+        "se": 0.4573295603800236,
+        "z": 1.457737973711325
+      },
+      "n_nonzero": 18,
+      "arm_means": {
+        "t_net": 0.532,
+        "ts_net": 0.538
+      },
+      "firing": {
+        "t_chain_fired": 64137,
+        "ts_chain_fired": 64462,
+        "ts_shove_qualified": 397,
+        "ts_shove_fired": 354,
+        "games_with_shove_fire": 278
+      }
+    }
+  },
+  "pooled_delta": {
+    "n": 8000,
+    "mean": 0.01075,
+    "se": 0.002274577191518244,
+    "z": 4.7261530802674345
+  },
+  "bars": {
+    "no_row_z_le_minus2": true,
+    "row_z": {
+      "lionmttv.10": 2.7179316949791095,
+      "modernmikemtt": 1.1339744606186815,
+      "itmstrikea": 3.657893849790067,
+      "minestackermttv.7.3": 1.4145674253993699
+    },
+    "pooled_ge_0_within_noise": true,
+    "gray_zone_note": "z in (-2,0) = registered PASS (supplement \u00a73)"
+  },
+  "verdict": "PASS"
+}

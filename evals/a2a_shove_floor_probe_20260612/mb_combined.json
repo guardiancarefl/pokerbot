@@ -1,0 +1,47 @@
+{
+  "measurement": "M-B",
+  "harness": "shove_defense_probe (tail_floor_ab CRN pattern)",
+  "config": {
+    "tau": 0.0,
+    "games_requested": 4000,
+    "seed_schedule": "2026 + 7919*g",
+    "shards": 1,
+    "shard": 0,
+    "checkpoint": "runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt",
+    "deployed_chain": "make_live_policy_filter(short_stack_threshold_bb=6.0, tail_floor_tau=None) BOTH arms"
+  },
+  "games_completed": 4000,
+  "all_games": {
+    "n": 4000,
+    "mean": 0.0165,
+    "se": 0.004710359261361365,
+    "z": 3.5029175237965293
+  },
+  "diverged_only": {
+    "n": 154,
+    "mean": 0.42857142857142855,
+    "se": 0.11793470117198969,
+    "z": 3.6339722262612324
+  },
+  "n_diverged": 154,
+  "firing": {
+    "v1_hero_decisions": 72957,
+    "v1_probe_qualified": 1273,
+    "v1_probe_fired": 1120,
+    "games_with_probe_fire": 778
+  },
+  "bars": {
+    "F2_pass": true,
+    "FALSIFIED_delta": false
+  },
+  "elapsed_s": 0.0,
+  "sec_per_paired_game": 0.0,
+  "combined_from": [
+    "evals/a2a_shove_floor_probe_20260612/mb_shard0.json.games.jsonl",
+    "evals/a2a_shove_floor_probe_20260612/mb_shard1.json.games.jsonl",
+    "evals/a2a_shove_floor_probe_20260612/mb_shard2.json.games.jsonl",
+    "evals/a2a_shove_floor_probe_20260612/mb_shard3.json.games.jsonl",
+    "evals/a2a_shove_floor_probe_20260612/mb_shard4.json.games.jsonl",
+    "evals/a2a_shove_floor_probe_20260612/mb_shard5.json.games.jsonl"
+  ]
+}

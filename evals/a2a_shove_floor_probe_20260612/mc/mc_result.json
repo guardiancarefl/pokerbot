@@ -1,0 +1,122 @@
+{
+  "measurement": "M-C",
+  "instrument": "scripts/sng_baseline.py killphilmtt row (hero = raw ckpt + probe floor; floor is the only delta vs the e2 post-fix baseline row)",
+  "ckpt": "runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt",
+  "tau": 0.0,
+  "games": 2000,
+  "master_seed": 2026,
+  "result": {
+    "n_games": 2000,
+    "n_scored": 2000,
+    "n_tainted": 0,
+    "n_capped": 0,
+    "hero_net_per_game": -0.03,
+    "stderr": 0.02235061520406094,
+    "mean_hands_per_game": 32.9715,
+    "elapsed_s": 1339.4844043254852
+  },
+  "floor_stats": {
+    "n_calls": 50151,
+    "n_qualify": 3410,
+    "n_fired": 3134
+  },
+  "floor_cells": {
+    "SB|11|3": [
+      117,
+      102
+    ],
+    "UTG|11|3": [
+      610,
+      585
+    ],
+    "UTG|8|3": [
+      614,
+      578
+    ],
+    "UTG|8|5": [
+      403,
+      393
+    ],
+    "SB|15|3": [
+      74,
+      62
+    ],
+    "UTG|5|3": [
+      199,
+      144
+    ],
+    "UTG|15|3": [
+      533,
+      506
+    ],
+    "UTG|5|7": [
+      58,
+      57
+    ],
+    "SB|5|5": [
+      54,
+      36
+    ],
+    "UTG|11|5": [
+      117,
+      117
+    ],
+    "UTG|5|5": [
+      359,
+      327
+    ],
+    "SB|8|5": [
+      70,
+      64
+    ],
+    "SB|11|5": [
+      22,
+      22
+    ],
+    "SB|5|3": [
+      36,
+      16
+    ],
+    "SB|8|3": [
+      85,
+      67
+    ],
+    "UTG|8|7": [
+      16,
+      16
+    ],
+    "SB|5|7": [
+      15,
+      14
+    ],
+    "SB|15|5": [
+      3,
+      3
+    ],
+    "SB|8|7": [
+      7,
+      7
+    ],
+    "UTG|11|7": [
+      1,
+      1
+    ],
+    "UTG|15|5": [
+      17,
+      17
+    ]
+  },
+  "killphil_extraction_per_game": 0.03,
+  "baselines": {
+    "registration_standing_0.174_PREFIX": 0.174,
+    "post_fix_e2_rebaseline_hero_net": -0.08,
+    "post_fix_e2_rebaseline_extraction": 0.08,
+    "post_fix_e2_rebaseline_se": 0.0223,
+    "note": "registration's 0.174 is the PRE-adapter-fix row; the post-fix e2 row (-0.0800\u00b10.0223 hero net) is authoritative (evals/e2_rebaseline_20260612)."
+  },
+  "bars": {
+    "F3_pass_vs_registration_0.174": true,
+    "F3_pass_vs_postfix_0.0800": true,
+    "F3_blocking": false
+  }
+}

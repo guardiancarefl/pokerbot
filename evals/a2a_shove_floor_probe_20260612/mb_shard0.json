@@ -1,0 +1,39 @@
+{
+  "measurement": "M-B",
+  "harness": "shove_defense_probe (tail_floor_ab CRN pattern)",
+  "config": {
+    "tau": 0.0,
+    "games_requested": 4000,
+    "seed_schedule": "2026 + 7919*g",
+    "shards": 6,
+    "shard": 0,
+    "checkpoint": "runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt",
+    "deployed_chain": "make_live_policy_filter(short_stack_threshold_bb=6.0, tail_floor_tau=None) BOTH arms"
+  },
+  "games_completed": 667,
+  "all_games": {
+    "n": 667,
+    "mean": 0.03298350824587706,
+    "se": 0.010743606777878239,
+    "z": 3.070059145667187
+  },
+  "diverged_only": {
+    "n": 27,
+    "mean": 0.8148148148148148,
+    "se": 0.22031470004764903,
+    "z": 3.698413290799883
+  },
+  "n_diverged": 27,
+  "firing": {
+    "v1_hero_decisions": 12604,
+    "v1_probe_qualified": 199,
+    "v1_probe_fired": 180,
+    "games_with_probe_fire": 132
+  },
+  "bars": {
+    "F2_pass": true,
+    "FALSIFIED_delta": false
+  },
+  "elapsed_s": 326.5486180782318,
+  "sec_per_paired_game": 0.48957813804832356
+}

@@ -1,0 +1,42 @@
+{
+  "panel": "a2a shoviest-rows (registered supplement \u00a72)",
+  "profile": "lionmttv.10",
+  "config": {
+    "games_requested": 2000,
+    "shards": 2,
+    "shard": 1,
+    "master_seed": 2026,
+    "seed_schedule": "2026 + 7919*g (identical both arms)",
+    "checkpoint": "runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt",
+    "abstraction": "runs/abstraction_20260521_223018_retrofit/abstraction.pkl",
+    "arm_T": "chain(short_stack_threshold_bb=6.0, tail_floor_tau=0.1)",
+    "arm_TS": "arm_T + shove_defense_floor(tau=0) after chain"
+  },
+  "games_completed": 1000,
+  "n_tainted_pairs_excluded": 0,
+  "paired_delta": {
+    "n": 1000,
+    "mean": 0.006,
+    "se": 0.00447034495134145,
+    "z": 1.3421783028621839
+  },
+  "nonzero_delta": {
+    "n": 5,
+    "mean": 1.2,
+    "se": 0.8,
+    "z": 1.4999999999999998
+  },
+  "n_nonzero": 5,
+  "arm_means": {
+    "t_net": 0.388,
+    "ts_net": 0.394
+  },
+  "firing": {
+    "t_chain_fired": 32697,
+    "ts_chain_fired": 32839,
+    "ts_shove_qualified": 152,
+    "ts_shove_fired": 123,
+    "games_with_shove_fire": 96
+  },
+  "elapsed_s": 1535.636992931366
+}
