@@ -37,11 +37,32 @@ TS=$(date +%Y%m%d_%H%M%S)
     --listen-port 9000 \
     --checkpoint runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt \
     --abstraction runs/abstraction_20260521_223018_retrofit/abstraction.pkl \
+    --anchor-sum-floor \
+    --extended-click-plans \
     --fallback-seconds 7.0 \
+    --watchdog-v2 \
+    --abort-enforce \
+    --bet-closure-recovery \
+    --dead-button-handling \
+    --commit-reconciliation \
     --tail-floor-tau 0.10 \
     --out logs/live_dryrun_${TS}.jsonl \
     |& tee logs/live_dryrun_${TS}.stdout
 ```
+
+**FULL ARMED LINE as of 2026-06-13 (session-5 package, operator-approved
+arming).** Smoke-verified to boot with all banners; session header
+stamps every flag; shas `b79e82dd…`/`0fc20800…`. The startup banner must
+show, in order: P1 anchor sum-floor ARMED · P2 bet-closure recovery
+ARMED · CR commit reconciliation ARMED · D2 dead-button handling ARMED ·
+extended click plans ARMED · H1 tail floor ARMED tau=0.100 ·
+session-abort ENFORCED · fallback ARMED v2. The session-5 fixes ride
+inside existing flags: the **click-plan RAISE→CHECK fix** is in
+`--extended-click-plans`; the **abort-counter phantom-reset fix** is in
+`--abort-enforce`. NOT in this line (intentionally): `--shove-defense-floor`
+(EV floor — not yet wired into the live filter; gated build in progress,
+fast-follow) and `--allin-zero-stack` (F2 — held downstream of Windows
+F1, no-op until F1 ships real zeros).
 
 `--tail-floor-tau 0.10` is **STANDARD CONFIG as of 2026-06-12** (operator
 approval: OQ-2). It arms the H1 commitment-scaled tail floor, last in
@@ -72,6 +93,9 @@ zero false fires).
 | `--extended-click-plans` | typed-raise verify step; ALLIN-button mapping for all-in intents; raise_to at call-only UI realizes as CALL (29/301 previously-unexecutable plans now executable) |
 | `--watchdog-v2` | fallback deadline anchors per spot (hand+board), survives button flicker — closes the 9cAd gap; needs `--fallback-seconds` |
 | `--abort-enforce` | abort criterion becomes enforced: click plans SUPPRESSED + SIT OUT NOW banner until `touch logs/ABORT_RESET`; needs `--fallback-seconds` |
+| `--bet-closure-recovery` | P2: recovers displacement-signature misrender frames via anchor chip-conservation (requires `--anchor-sum-floor`). Session-5: armed |
+| `--dead-button-handling` | D2: admits correctly-scraped dead buttons (button on eliminated seat); SB/BB post-validated. The #1 session-5 hand-killer. Armed |
+| `--commit-reconciliation` | CR: recovers frames that conserve vs the anchor but whose recon under-counts a non-hero commit (swept blind / limp-fold) — tonight's 8c8d/AcAh/5hTs class (requires `--anchor-sum-floor`). Armed |
 
 PASS — all four of these appear before any frame:
 
