@@ -1,0 +1,246 @@
+========================================================================
+SESSION-5 POSTMORTEM — live dry-run 20260612_230149 (op-session 5)
+Written 2026-06-13.  Inputs: logs/live_dryrun_20260612_230149.jsonl
++ .stdout + logs/triage_20260612_230149.txt + operator pin list.
+========================================================================
+
+[0] SESSION SNAPSHOT
+  listener 23:01:51 UTC -> ~00:07 UTC (local 19:01 -> 20:07).
+  ckpt b79e82dd... (deployed), git 3f7c887 clean, mode=sample.
+  floors: aa_kk, check_when_free, short_stack 6bb, tail_floor tau=0.1.
+  watchdog v2 armed (7.0 s per-spot deadline), abort ENFORCED
+  (3 fallbacks / 10 hands OR 2 consecutive hands).
+  1649 frames / 124 hands / 215 decisions / 14 safe-folds /
+  8 hands lost (never-decided) / 86 hero-to-act frames skipped /
+  8 fallback fires / 0 aborts tripped / 1 manual intervention.
+  Hero = seat1 throughout.
+
+========================================================================
+[1] OPERATOR PIN CROSS-REFERENCE  (all 7 pins located; seqs exact or
+    within the +/-5 window; two pins need corrections of substance)
+========================================================================
+
+PIN 1  ~19:16  "pre-193/193/194/195 — 9h9s preflop never read;
+        downstream remainder + terminal errors; RAISE/CHECK mismatch at 194"
+  VERDICT: CONFIRMED with one correction.
+  - Seqs: safe-folds at 184/185/186 and 192/193 = replay_error
+    "pre-hand derivation failed: simple-model preflop_commit remainder 1"
+    (residual 475 then 625, n_anf=3). Safe-folds at 195/196/197/200 =
+    replay_error "state went terminal before hero's decision"
+    (facing seat2's 1328 river all-in). 9 safe-folds total in the hand.
+  - CORRECTION — "preflop never read": hero's preflop WAS read and
+    decided (seq 173 fresh RAISE_TO 100, cached 175/176). What failed is
+    the postflop PRE-HAND DERIVATION of the preflop action history.
+    Numeric fingerprint: residual minus the folded SB+BB remnants
+    (15+25=40) is divisible by n_anf in both frames (475-40=435=3x145;
+    625-40=585=3x195) -> the uniform-commit simple model choked on
+    posted-blind remnants. This is exactly the class the FILED-UNBUILT
+    "carry blind structure into replay" fix (the dead-SB/AcKc root fix,
+    EXPERIMENT_LOG 2026-06-12 ~19:50) targets.
+  - seq 194 RAISE/CHECK mismatch: CONFIRMED and explained. Frame 194
+    (river, invariant PASS) decided RAISE TO 610; the click plan emitted
+    "click CHECK" — the extended click-plan executor downgrades a
+    raise_to when no RAISE/BET control is readable in the frame
+    (by-design realization rule from the 2026-06-11 click-executor
+    build), it is NOT a decision bug. Worth an operator-facing banner
+    when decision-kind != click-kind, though: silent downgrade of a
+    24.4xBB river raise to CHECK is a real EV event.
+  - Fallbacks #1 (CHECK, armed seq 184) and #2 (FOLD, armed 195) both
+    fired inside this hand.
+  - Mitigations: dead-SB/blind-structure replay fix (filed, unbuilt)
+    ADDRESSES the 184-193 class (evidence above). The terminal-before-
+    hero errors at 195-200 are downstream of the same derivation; same
+    fix family. P2 does NOT apply (replay_error, not invariant_fail).
+    Windows SanityChecker does not apply.
+
+PIN 2  ~19:27  "seq 473 — 8s5c preflop never derived, dealer burst (seat2)"
+  VERDICT: SEQ CONFIRMED, two corrections.
+  - seq 473 exact: safe-fold, flop Jd 8h 8d, facing seat4's 2780
+    all-in; reason = preflop_commit remainder (residual 225, n_anf=2;
+    225-15 SB remnant = 210 = 2x105 — same blind-remnant fingerprint
+    as pin 1 -> same filed replay fix addresses it).
+  - CORRECTION (hand conflation): 8s5c was NOT "never derived"
+    wholesale — it got live decisions preflop (seq 457 RAISE_TO 75) and
+    on the flop (seq 466 RAISE_TO 338, trips!). The hand that WAS fully
+    lost in this time window is 9c9h (seqs 430-454), killed by a
+    20-frame dealer burst, which fired fallback #3 (FOLD, armed seq 434).
+  - CORRECTION (seat): the dealer burst here pointed at seat3 (9c9h
+    hand, seqs 430-454) and briefly seat4 (seqs 472-473, seat4 reading
+    stack 0 while all-in). The seat2 bursts came later (seqs 624/778/
+    908). Operator's "2,2,5" is actually 3,2,5 (+6,4,1 minor).
+
+PIN 3  ~19:37  "seq 780 — 8c8d P2-class -> fallback FOLD #4"
+  VERDICT: CONFIRMED, with a P2-coverage caveat.
+  - seq 780 exact: invariant_fail, 3 deltas (pot -150, stack[seat4]
+    +50, stack[seat5] +100 — un-closed blind posts), fallback #4 FOLD.
+  - CAVEAT: P2 as built requires deltas confined to EXACTLY ONE seat
+    (live_loop.py gate 1). seq 780 is a TWO-seat displacement -> P2
+    would REFUSE this frame even if armed. "P2-class" in spirit
+    (bet-closure family), not in P2's actual signature.
+  - Also note dealer=seat2 with stack=None here (seat2 alive — its 692
+    bet is visible) — the dealer-burst class was active in this hand too.
+
+PIN 4  ~19:41  "seq 912 — QdKc whole hand unread, dealer burst (seat2)
+        -> fallback #5"
+  VERDICT: CONFIRMED in full. Hand seqs 908-914 (triage logs it as
+  KcQd), zero decisions, killed by "dealer points to seat2 / seat2
+  stack reads None" burst (10 frames); fallback #5 FOLD armed seq 912.
+
+PIN 5  ~19:49  "seq 1086 — AcAh P2-class, manually rescued, won with set"
+  VERDICT: CONFIRMED in full.
+  - Preflop decided fine (AA/KK floor: RAISE_TO 1000, seqs 1071-1080).
+  - seq 1086 exact: facing seat6's 1613 all-in with 637 behind,
+    invariant_fail 2 deltas (pot 2693 vs 2668, stack[seat3] 1677 vs
+    1702 — a single 25-chip closure on ONE seat). Pipeline output =
+    safe-fold; operator manually called; hero won (seat1 3330 by 1091).
+  - This IS P2's exact signature (single-seat, single-transfer
+    closure). Armed P1+P2 would plausibly have recovered the frame and
+    decided normally (subject to anchor + dead-SB gates 2-6) — the
+    strongest single argument tonight for arming P1+P2.
+  - Manual intervention #1 (the session's only known one).
+
+PIN 6  ~19:58  "seq 1366 — TsAc unread, dealer burst (seat5) -> fallback #6"
+  VERDICT: CONFIRMED in full. Hand seqs 1357-1375 (AcTs), zero
+  decisions, 16-frame "dealer points to seat5 / seat5 stack None"
+  burst; fallback #6 FOLD armed seq 1366.
+
+PIN 7  ~20:06  "seq 1635/1639 — 5hTs P2-class -> fallback CHECK #8"
+  VERDICT: CONFIRMED, with a class correction.
+  - seq 1635 exact: invariant_fail 3 deltas (pot/stack[seat3]/
+    bet[seat3], all 25); fallback #8 CHECK armed seq 1639.
+  - Class: triage's RECON-SIGNATURE tags this as the seq-170
+    "raise-under-reconstructed / min-raise-as-call" class, NOT the
+    bet-closure displacement. Deltas are single-seat so P2's gate-1
+    signature matches mechanically, but the root cause is a recon
+    modeling limit; P2 gates 4-5 (chip conservation + replay) would
+    decide. Needs the P2 counterfactual harness, do not assume covered.
+  - The hand also lost frames to "n_alive=3 < 4" skips (4-handed
+    endgame with a None-reading seat) — a second, independent killer.
+
+UNPINNED EXTRA — fallback #7 (CHECK, armed seq 1382, ~19:59, hand read
+  only as "9c"): a real hero-to-act hand immediately AFTER the TsAc
+  hand whose cards never resolved (suspect frames read 2c/9c/9s/Jc
+  flicker). Zero decisions, not in the operator pin list — and it is
+  the hand that exposes the abort-counter bug below.
+
+========================================================================
+[2] FALLBACK TABULATION + ABORT CRITERION
+========================================================================
+  #  armed_seq  hand   action  waited  cause of starvation
+  1    184      9h9s   CHECK   7.3s   replay derivation (remainder)
+  2    195      9h9s   FOLD    7.1s   replay terminal-before-hero
+  3    434      9c9h   FOLD    7.2s   dealer burst seat3
+  4    780      8c8d   FOLD    7.5s   invariant_fail (2-seat closure)
+  5    912      QdKc   FOLD    8.0s   dealer burst seat2
+  6   1366      TsAc   FOLD    7.9s   dealer burst seat5
+  7   1382      9c??   CHECK   7.8s   card-OCR flicker (suspect frames)
+  8   1639      5hTs   CHECK   7.4s   invariant_fail (seq-170 recon)
+
+  All 8 fired via frameless poll at the 7 s deadline (watchdog v2
+  working as designed). Premium-hand cost: 99, 99, AK-offsuit-class
+  KQo, ATo all folded/checked by the safety net.
+
+  ABORT: never tripped — all 8 fallback records log
+  abort_recommended=false; the enforced AbortGate never suppressed a
+  click plan; the listener kept running (consistent with its computed
+  state).
+  *** FINDING (watchdog gap): fallbacks #6 and #7 fired in CONSECUTIVE
+  real hands (TsAc, then the very next dealt hand) — the 2-consecutive
+  rule SHOULD have tripped. It did not because the watchdog keys hands
+  on raw hero-card tuples: a single-frame phantom read ('2c',) at seq
+  1381 registered as a separate "hand" with no fallback, inserting a
+  clean entry between the two fallback hands and resetting the
+  consecutive counter (fallback.py _on_new_hand / _check_abort).
+  Phantom card-tuples also inflate hands_seen, diluting the
+  3-in-10-hands window. Fix candidates: require >=2 distinct cards or
+  2 consecutive frames to open a new hand; ignore single-card tuples.
+  The 3/10 window itself was genuinely never met on a true-hand count
+  (max 2 fallback hands in any real 10-hand window).
+
+========================================================================
+[3] DEALER BURSTS — RECURRENCE VERDICT
+========================================================================
+  "dealer points to non-alive/empty seat" = 54 frames tonight (top
+  data-quality sub-cause after scraper-suspect). By pointed seat:
+  seat3 x20, seat5 x16, seat2 x10, seat6 x3, seat1 x3, seat4 x2.
+  Burst starts: 270(s6) 338(s1) 430(s3) 472(s4) 624(s2) 778(s2)
+  908(s2) 1091(s6) 1284(s4) 1314(s1) 1360(s5) 1495(s1) 1616(s2).
+
+  VERDICT: YES — this is a RECURRENCE of dealer-OCR as the dominant
+  hand-killer (4 of tonight's 8 lost hands: 9hQh, 9c9h, KcQd, AcTs),
+  but via a DIFFERENT mechanism than the historical class:
+  - Historical (fixed Windows-side 2026-06-09): the dealer BUTTON
+    never parsed at hero's seat (seat1) — hero-button hands lost;
+    skips collapsed 24.0% -> 2.2% after the fix. That fix still holds:
+    tonight's seat1 hits are 3 frames, all hero-bust/all-in terminal
+    states (the known-benign class).
+  - Tonight: the dealer parses fine but the POINTED SEAT's stack box
+    reads None/0 mid-hand — frequently a seat that is demonstrably
+    alive (seat2 bet 692 visible at seq 780; seat2 bet 34 at 1635) or
+    all-in (seat4 stack 0 + 2780 in front at 472) — so the validator
+    concludes "dealer on a dead seat" and rejects every frame of the
+    hand. It is a SEAT-OCCUPANCY/STACK-OCR failure interacting with the
+    dealer check, hitting non-hero seats (2/3/5), and it killed whole
+    hands incl. premiums.
+  RE-PRIORITIZATION: supported. This class was triaged CAN-RIDE on
+  2026-06-11 ("dealer-OCR hardening — fallback covers"); tonight the
+  fallback "coverage" meant auto-folding KQo/ATo/99 and nearly the
+  9h9s set hand. The Windows-side P1/P2 SanityChecker + seat-occupancy
+  routing work should move back into the MUST-LAND set. Bridge-side
+  cheap mitigation worth filing: treat dealer-on-(stack=None-but-
+  bet-visible) and dealer-on-(stack=0-all-in) seats as alive for the
+  dealer validity check.
+
+========================================================================
+[4] MITIGATION COVERAGE MATRIX (built-but-unarmed / filed / pending)
+========================================================================
+                                   pin1   pin2   pin3   pin4  pin5  pin6  pin7
+  failure class                    remn+term remn  inv2seat dealer inv1 dealer s170
+  P2 bet-closure (BUILT, gated OFF)  no     no    REFUSES*  no   YES** no   maybe**
+  dead-SB/blind-structure replay
+   fix (FILED, unbuilt)             YES    YES     no       no    no   no    no
+  Windows P1/P2 SanityChecker
+   (PENDING, Windows-side)          no     partial(burst) no YES   no   YES  partial
+  watchdog fallback (ARMED)         fired  fired  fired   fired  n/a  fired fired
+   * multi-seat deltas -> P2 gate-1 refuses by design.
+   ** single-seat closure signature; gates 2-6 (anchor, dead-SB
+     evidence, conservation, replay) decide — run the P2 counterfactual
+     harness on seqs 1086 and 1635 before claiming coverage.
+  Not covered by anything built/filed: card-OCR flicker hand (#7),
+  n_alive<4 endgame skips (5hTs hand), decision-vs-clickplan downgrade
+  banner (seq 194).
+
+========================================================================
+[5] GAMES TONIGHT (detector, reconciled vs operator)
+========================================================================
+  Operator: "3 games, won the last." Detector: FOUR stack-reset games,
+  hero decisions in all four:
+    G1 seqs 1-172    L1->L2, hero bust (seat1=0 @160-162)        LOSS
+    G2 seqs 173-382  the 9h9s game; bust on 9sAd shove @361-370  LOSS
+    G3 seqs 383-975  bust hidden in transition OCR; last reliable
+                     read 1167 — operator result pins it          LOSS
+    G4 seqs 976-1651 the AcAh-rescue game; hero ~3617 at L4       WIN
+  The extra game is G1 (~19:02-19:15 local, 7 decision spots:
+  8h6d/2cQc/9dAc/Qh8d/6h9s/Qc8s/3cQh) — evidence says the operator
+  count omitted the first quick bust-out. AWAITING OPERATOR CONFIRM
+  (flagged in STAGE2_LEDGER.md). Outcome pattern (all losses before a
+  final win) agrees with the pin list either way.
+
+========================================================================
+[6] ACTION ITEMS (proposed, operator-gated)
+========================================================================
+  1. Watchdog: ignore single-card/phantom hand tuples in the abort
+     bookkeeping (consecutive rule was defeated tonight; #6+#7 should
+     have tripped the enforced abort).
+  2. Re-prioritize Windows seat-occupancy/dealer routing (P1/P2
+     SanityChecker) from CAN-RIDE to MUST-LAND — 4 hands incl. KQo/ATo
+     lost to the seat2/3/5 dealer-burst class.
+  3. Build the filed blind-structure replay fix — it addresses BOTH
+     tonight's remainder safe-folds (pins 1+2, 11 of 14 safe-folds are
+     its class or downstream of it).
+  4. Run the P2 counterfactual harness on seqs 1086/1635; if 1086
+     recovers, that is the arming argument (an AcAh safe-fold needed a
+     human save).
+  5. Add a loud banner when decision action-kind != click-plan kind
+     (seq 194 RAISE->CHECK downgrade).
+========================================================================
