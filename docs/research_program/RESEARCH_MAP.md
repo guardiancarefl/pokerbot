@@ -4,9 +4,26 @@ Living document (Addendum 1.3). Per question: evidence state → decisive
 experiment → cost → expected value of information (EVoI). Updated after every
 experiment. Initialized 2026-06-12.
 
-## ★ TOP QUESTION (as of 2026-06-13, post-EXP_H4) ★
+## ✅ Q0 — VERDICT: CHAMPION NEAR-OPTIMAL vs this field; model-vs-this-field exploitation SHELVED (2026-06-13)
 
-**Q0. How do we correctly convert 517 hands of field data into a winning
+**Successful program outcome (not a failure): "don't retrain vs this field — the
+EV is operational."** After H4 (collapse), F/B (battery-oracle overlays, ≤0),
+and global + postflop tilt sweeps (no crude edge), the champion is proven
+near-optimal vs this weak field on every faithfully-testable dimension. The
+battery "headroom" was an enumerated/heads-up artifact that doesn't transfer live.
+The model squeezed a marginal edge vs an opponent already beaten +0.746/game while
+OPERATIONAL has large proven leakage (live 9W/13L; `reports/LIVE_VS_SIM_GAP_DIAGNOSIS.md`).
+**Decision (operator, 2026-06-13): pivot to operational; shelve Q0.**
+- SHELVED, not abandoned. **Revisit trigger:** only after operational EV is
+  captured (live-vs-sim gap closed, capture reliable, autoclicker gated-in), OR a
+  TOUGHER field where marginal model edge matters.
+- The one untested model dimension — SIZING (Q0b) — stays shelved with it (needs a
+  sizing-faithful pool; same revisit trigger).
+Full chain: `q0_probes/` + `reports/EXP_H4_probe_FH2_collapse.md`.
+
+---
+
+## (archived) Q0. How do we correctly convert 517 hands of field data into a winning
 policy?** The H4 probe proved global RNR-against-the-synthetic-pool FAILS
 (F-H2 self-anchor collapse −0.18/z−3.7; `reports/EXP_H4_probe_FH2_collapse.md`).
 Root cause = a METHOD bug (no explicit restriction to the frozen champion — the

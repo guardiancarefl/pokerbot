@@ -6,49 +6,45 @@ never weakened, negatives fully reported, verify-don't-assume._
 
 ---
 
-## ⚠️ NEEDS NICK — PROGRAM PIVOT (model bench PAUSED, awaiting your fork)
+## ⚠️ NEEDS NICK — one coordination action (not a hard block)
 
-**Three independent "no live edge" signals are now in. I've paused the model-
-exploitation queue and the fork is yours:**
-1. Jam-wall: 4 methods ≤0 (battery headroom = artifact).
-2. Global tilt sweep: no crude direction beats champion.
-3. Postflop tilt sweep: no crude postflop direction beats champion.
+**Route the Windows scraper briefs (OQ-4 capture / OQ-1 folded-flag) to a Windows
+CC session.** The live-vs-sim gap is diagnosed (below) as ~entirely scraper data
+quality, and the dominant fixes are Windows-side — which this Contabo bench can't
+touch. The briefs are already written and awaiting your routing. This is the
+single highest-EV action right now. (Not pod/arm/deploy — a coordination call.)
 
-→ The champion is near-optimal vs THIS WEAK FIELD on every dimension we can
-faithfully test. No live model edge found. (Caveat held: this is "testable
-dimensions" — a subtle state-conditioned edge or the data-gated SIZING dimension
-remain genuinely untested.)
+_Hard buttons that pause+flag: pod-spend (≥3 pod-ready methods); any arm/deploy to
+live; another genuine strategic fork; gate-can't-decide ambiguity._
 
-**THE FORK (your call — I won't pick it):**
-- **Option 1 — PIVOT TO OPERATIONAL** (my rec by EV). Stop model-vs-this-field
-  exploitation; actualize the proven +0.746 edge — autoclicker/capture reliability
-  (the session-6 wrong-window failure is a direct EV leak), volume, live-vs-sim gap.
-  Free code/analysis is within my autonomy; live deploy/arm is your button.
-- **Option 2 — BUILD A SIZING-FAITHFUL POOL** (the one untested model dimension).
-  Real data effort to replicate the field's limp/min-raise (T4/T6) → unlocks sizing,
-  where the field actually reveals itself. Bigger build, likely pod-scale eventually.
-- **Option 3 — BANK "champion near-optimal vs this field" as the Q0 verdict** (a
-  successful outcome: "don't retrain vs this field"), decide operational vs sizing later.
-
-My honest recommendation: **Option 1 now (highest realized-EV), Option 2 as the
-parallel model track if you want a model iron in the fire.** But it's your strategic call.
-
-_Other buttons that pause+flag: pod-spend (≥3 pod-ready methods); any arm/deploy;
-gate-can't-decide ambiguity._
+## DECISION (operator, 2026-06-13): Q0 SHELVED → pivot to OPERATIONAL
+Q0 banked as a SUCCESSFUL outcome ("champion near-optimal vs this field; don't
+retrain"). Sizing (Q0b) shelved with it. Revisit only after operational EV is
+captured, or vs a tougher field. Now full-focus operational.
 
 ---
 
-## RUNNING NOW
-- **PAUSED** — model-exploitation queue stopped pending the program-pivot fork above.
-  No probe running; no pod; no live anything.
+## OPERATIONAL TRACK (active focus)
 
-## QUEUE (resumes per your fork)
-- Option 1 (operational): free analysis tracks (capture-failure root-cause, live-vs-sim
-  gap) are within my autonomy; live deploy/arm is your button.
-- Option 2 (sizing pool): a real data build — I'd scope it, you approve.
-- Strong-opponent robustness: a free probe, but needs a strong opponent set we don't
-  have (would build one first).
-- Frontier tier (bbnorm/novel-obj/MoE): premature until a target is located.
+### ✅ #1 live-vs-sim gap — DIAGNOSED (`reports/LIVE_VS_SIM_GAP_DIAGNOSIS.md`)
+A near-optimal bot goes 9W/13L live because **it's the SCRAPER, not the model.**
+~30% of hero-to-act moments are lost to scraper data quality (skipped/force-folded
+incl. **pocket aces folded on invariant_fail**). Dominant causes: scraper-suspect
+frames 56% (capture/OQ-4) + dealer-button detection 33% + reconstruction failures.
+**Fix = Windows scraper reliability (OQ-4 + OQ-1).** Worth far more than any model
+tweak. → needs operator routing (flag above).
+
+### #2 capture reliability (OQ-4) — same root cause; scoping next
+The wrong-window capture (session-6) IS the dominant skip cause (suspect frames).
+Next free-bench step: read the OQ-4 brief + session-6 audit, sharpen the Windows
+brief with the triage frame-evidence so the Windows session has exact targets.
+
+### #3 Stage-2 autoclicker readiness — mapping next
+N=5 clean-sessions gate reportedly CONFIRMED (OPERATOR_QUEUE). Next: read
+STAGE2_LEDGER + DEPLOYMENT_PACKAGE to map what's gated-in vs blocking, and confirm
+the SanityChecker (binding Stage-2 constraint) status against the live evidence.
+
+_Live deploy / arm / autoclicker-go = your button. I do free analysis + scoping._
 
 ---
 
