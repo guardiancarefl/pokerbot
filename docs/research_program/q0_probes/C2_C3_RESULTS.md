@@ -45,3 +45,28 @@ positive and self-anchor-safe.
   even pass the self-anchor gate, since fold-more costs only ~0.004/spot), **D**
   (jam-wall training). Build B's distillation trainer next (free); F is a cheap
   fallback/baseline. No pod needed for any of these.
+
+## DISPOSITION (2026-06-13) — jam-wall edge EXHAUSTED; binding constraint = pool fidelity
+F + B (broad → calling-all-in → heads-up) settle the oracle-transfer question:
+- broad jam-wall ΔFIELD −0.077; + calling-all-in −0.054; + heads-up (exact battery
+  domain) **−0.011 ≈ 0**. Narrowing removes the over-application HARM but reveals
+  NO positive edge — the battery's 0.087/spot headroom yields ~0/game applied
+  perfectly in-domain. (`evals/probe_B_{tightened,headsup}_20260613.json`.)
+- Four methods now ≤0 on the jam wall: H4 league-RNR (collapse), F overlay
+  (−0.015), B-broad (−0.077), B-heads-up (−0.011). **Jam-wall is exhausted.**
+
+**Program-level reframe (honest):** C/C2/C3/R6's "0.087/spot headroom" was a
+BATTERY artifact (enumerated, heads-up, ICM-modeled) that does NOT realize as a
+live per-game edge. We have NO live evidence the field is exploitable beyond the
+champion (which already wins +0.746 vs the pool). The faithfully-modelable
+dimensions (jam-wall, VPIP) are near-optimal; the dimension where tells might live
+(SIZING: limp/min-raise) is exactly the pool's registered IMPERFECTION (T4/T6
+OUT), so any edge found there vs this pool would be a pool artifact (the H4 trap).
+
+**Binding constraint = POOL fidelity, not method.** A on the current pool is caught
+between empty (faithful dims) and artifact (unfaithful dims). The honest fork:
+  (1) invest in a sizing-faithful pool / real-field data → then test sizing properly; OR
+  (2) PIVOT to operational EV (volume + Stage-2 autoclicker) — the champion is
+      near-optimal vs the field we can faithfully model. Per the program's own rule,
+      "champion near-optimal vs field" is a SUCCESSFUL outcome ("don't retrain").
+Probe-before-program saved 4+ builds (and any pod spend) by settling this free.

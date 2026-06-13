@@ -1,0 +1,19 @@
+{
+  "n_games": 1200,
+  "field_override_rate": 0.9989361702127659,
+  "self_anchor": {
+    "net": -0.085,
+    "se": 0.028763040520779437,
+    "z": -2.955181318143087,
+    "pass": false,
+    "note": "gate=0 vs champion -> composed==champion; ~0 by construction"
+  },
+  "delta_field": {
+    "B_net": 0.6916666666666667,
+    "champ_baseline": 0.746,
+    "delta": -0.054333333333333345,
+    "pass": false
+  },
+  "vs_F": "F (marginalized) got \u0394FIELD ~+0.014; B is position-aware",
+  "verdict": "B short of gate \u2014 self-anchor \u0394FIELD<+0.05"
+}

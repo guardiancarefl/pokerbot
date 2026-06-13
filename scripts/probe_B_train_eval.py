@@ -110,7 +110,21 @@ class BHeadPolicy:
             if da is not None:
                 lm[int(da)] = 1.0
         is_jam = (view.to_call > 0) and not any(lm[i] for i in _INTERMEDIATE_RAISE_IDX)
-        if is_jam:
+        # TIGHTEN to the battery's actual domain: a TRUE facing-shove = calling
+        # commits (nearly) the whole stack. The broad jam-wall predicate over-fires
+        # on facing-large-non-all-in bets / multiway, applying the head out of its
+        # training distribution (first-cut ΔFIELD -0.077). The battery only covers
+        # facing-an-all-in at 5-15bb.
+        cp = parsed["current_player"]
+        hero_remaining = parsed["money"][cp]
+        calling_is_allin = view.to_call >= 0.9 * max(hero_remaining, 1)
+        # HEADS-UP decider: the battery is heads-up to the shove (others folded).
+        # active = num_players - folds (folds are 'f' in the betting sequence).
+        # Only override when heads-up == the battery's actual domain, to settle
+        # whether the oracle transfers in-domain or fundamentally doesn't.
+        n_active = parsed["num_players"] - str(parsed.get("sequences", "")).count("f")
+        heads_up = (n_active == 2)
+        if is_jam and calling_is_allin and heads_up:
             self.n_jam += 1
             feat = self.champ.solver.encoder.encode_from_parsed(parsed, rng=rng)
             with torch.no_grad():
