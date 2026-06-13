@@ -1,0 +1,8 @@
+GATE 2 companion — shove-defense floor stats over all 17 logs
+n_calls   (apply hook invoked) : 749
+n_qualify (passed scope guards) : 1
+n_fired   (equity < break-even) : 0
+per-cell [qualify, fired]:
+  UTG|8|5        [1, 0]
+
+Interpretation: the apply hook ran on every decision; the corpus contained 1 node(s) inside the facing-single-all-in / 5-15bb scope. Fired only where ICM-break-even failed.

@@ -523,22 +523,287 @@ def apply_commitment_tail_floor(policy, legal_mask, parsed, state,
 
 
 # --------------------------------------------------------------------------
+# Slate-2a shove-defense floor (deployment-only policy patch, flag-OFF)
+# --------------------------------------------------------------------------
+#
+# Ported VERBATIM from scripts/shove_defense_probe.make_shove_defense_floor
+# (the probe-only harness; src/nlhe/integration/live_loop.py was untouched
+# at probe time). M-A re-grade (evals/a2a_shove_floor_probe_20260612):
+# m1=0.00346 vs 0.0867 baseline (96% loss reduction), call-mass 0.051,
+# 7497/8112 spots fired, confusion fired_oracle_fold=7464 / fired_oracle_call=33.
+# M-B CRN-paired self-play A/B was non-negative (z=+4.7 pooled, slate-2a).
+#
+# THE FLOOR (registered tau=0, the pure break-even gate): at a preflop
+# facing-all-in node with hero eff-stack in [5,15] BB and exactly ONE
+# all-in raiser (call commits hero's whole stack), compute hero hand-class
+# equity vs the FROZEN killphil shove range of the NEAREST battery cell
+# (evals/h2_battery/battery_v1.json "ranges") and the Malmuth-Harville ICM
+# break-even call equity. If equity < break-even + tau, move all non-FOLD
+# legal mass (== CALL/ALLIN mass at these nodes) to FOLD; else identity.
+#
+# CELL MAPPING for off-grid nodes (verbatim from the probe registration):
+#   depth  = hero hand-start stack in BB = (hero money + hero contribution)
+#            / real BB; gated to [5,15]; nearest of {5,8,11,15} (ties->lower).
+#   level  = blind level from the structure schedule; nearest of {3,5,7}
+#            (ties->lower; levels 1-2 -> 3, levels >= 8 -> 7).
+#   shover = "SB" when the shover seat posted a blind this hand (SB or BB
+#            seat per the game-string blind array), else "UTG". The battery
+#            froze only UTG and SB shover cells; UTG is the nearest
+#            (tightest) cell for any non-blind open-shover.
+#
+# SCOPE GUARDS (strict no-op unless ALL hold): street==preflop; real BB
+# known; to_call > 0; to_call >= hero remaining stack; exactly one opponent
+# at max contribution and that opponent is ALL-IN (money == 0); every other
+# non-hero seat's contribution <= BB + max ante; hero hole cards visible;
+# FOLD legal.
+#
+# Wiring is flag-gated OFF: make_live_policy_filter only invokes this floor
+# when shove_defense_floor is not None, so the OFF chain is byte-identical
+# to the pre-slate-2a build (Gate 1).
+
+_SHOVE_DEPTH_GRID = (5, 8, 11, 15)
+_SHOVE_LEVEL_GRID = (3, 5, 7)
+_SHOVE_DEFAULT_TAU = 0.0
+_SHOVE_PAYOUTS = (2.0, 2.0, 2.0)
+_SHOVE_DEFAULT_RANGE_TABLE = "evals/h2_battery/battery_v1.json"
+
+
+def _shove_nearest_grid(x: float, grid) -> int:
+    """Nearest grid point; ties resolve to the LOWER value. Verbatim from
+    scripts/shove_defense_probe._nearest_grid."""
+    return min(grid, key=lambda g: (abs(g - x), g))
+
+
+def _shove_blind_info(state):
+    """(sb_seat, bb_seat, ante_max) from the game-string params. Verbatim
+    from scripts/shove_defense_probe._blind_info."""
+    try:
+        params = state.get_game().get_parameters()
+        blind_str = str(params.get("blind", ""))
+        vals = [int(x) for x in blind_str.split()]
+    except Exception:
+        return None, None, 0
+    if not vals or max(vals) <= 0:
+        return None, None, 0
+    bb = max(vals)
+    bb_seat = vals.index(bb)
+    sub = [(v, i) for i, v in enumerate(vals) if 0 < v < bb]
+    sb_seat = sub[0][1] if len(sub) == 1 else None
+    ante_max = 0
+    try:
+        ante_str = str(params.get("ante", ""))
+        avals = [int(x) for x in ante_str.split()]
+        if avals:
+            ante_max = max(avals)
+    except Exception:
+        ante_max = 0
+    return sb_seat, bb_seat, ante_max
+
+
+def _shove_icm_for(stacks, hero):
+    """Hero ICM equity. Verbatim from scripts/shove_defense_probe._icm_for."""
+    from src.nlhe.icm import icm_equity
+    eligible = [i for i in range(len(stacks)) if stacks[i] > 0]
+    if hero not in eligible:
+        return 0.0
+    return float(icm_equity(stacks, list(_SHOVE_PAYOUTS), eligible=eligible)[hero])
+
+
+def _shove_qualify(parsed, state, bb_to_level):
+    """Return (cell_key, hero_cards, ev_fold, ev_win, ev_lose, depth_bb) if
+    the node qualifies for the shove-defense floor, else None. Ported
+    verbatim from scripts/shove_defense_probe._qualify (the fold/win/lose
+    ICM arithmetic mirrors fold_vs_shove_battery.oracle_ev)."""
+    if int(parsed.get("street_idx", -1)) != 0:
+        return None
+    bb = int(parsed.get("big_blind", 0))
+    if bb <= 0:
+        return None
+    cp = parsed.get("current_player")
+    m = parsed.get("money") or []
+    c = parsed.get("contribution") or []
+    n = len(m)
+    if cp is None or n == 0 or len(c) != n:
+        return None
+    mx = max(c)
+    to_call = mx - c[cp]
+    if to_call <= 0 or m[cp] <= 0 or to_call < m[cp]:
+        return None                          # call must commit hero's stack
+    shovers = [j for j in range(n) if j != cp and c[j] == mx]
+    if len(shovers) != 1:
+        return None
+    j = shovers[0]
+    if m[j] != 0:
+        return None                           # the raiser must be all-in
+    sb_seat, bb_seat, ante_max = _shove_blind_info(state)
+    for k in range(n):
+        if k in (cp, j):
+            continue
+        if c[k] > bb + ante_max:
+            return None                       # caller behind -> disqualify
+    depth_bb = float(m[cp] + c[cp]) / bb
+    if not (5.0 <= depth_bb <= 15.0):
+        return None                           # registration window
+    lvl_actual = bb_to_level.get(bb)
+    if lvl_actual is None:
+        return None
+    d = _shove_nearest_grid(depth_bb, _SHOVE_DEPTH_GRID)
+    lvl = _shove_nearest_grid(lvl_actual, _SHOVE_LEVEL_GRID)
+    pos = "SB" if (j == sb_seat or j == bb_seat) else "UTG"
+    cell_key = f"{pos}|{d}|{lvl}"
+    priv = parsed.get("private_cards", "") or ""
+    if len(priv) != 4:
+        return None
+    hero_cards = (priv[0:2], priv[2:4])
+
+    # Scenario stacks. Busted-seat placeholders (stack<=1, no post) -> 0.
+    base = [0 if (m[k] + c[k]) <= 1 else int(m[k]) for k in range(n)]
+    pot = int(sum(c))
+    hero_total = int(c[cp] + m[cp])
+    dead = int(sum(c[k] for k in range(n) if k not in (cp, j)))
+    stacks_fold = list(base)
+    stacks_fold[cp] = int(m[cp])
+    stacks_fold[j] = pot                      # m[j] == 0; shover scoops
+    stacks_win = list(base)
+    stacks_win[cp] = 2 * hero_total + dead
+    stacks_win[j] = int(c[j]) - hero_total    # refund (c[j] >= hero_total)
+    stacks_lose = list(base)
+    stacks_lose[cp] = 0
+    stacks_lose[j] = int(c[j]) + hero_total + dead
+    ev_fold = _shove_icm_for(stacks_fold, cp)
+    ev_win = _shove_icm_for(stacks_win, cp)
+    ev_lose = _shove_icm_for(stacks_lose, cp)
+    return cell_key, hero_cards, ev_fold, ev_win, ev_lose, depth_bb
+
+
+class ShoveDefenseFloor:
+    """Loaded-once shove-defense floor state + the apply hook.
+
+    The range table (evals/h2_battery/battery_v1.json "ranges") and the
+    BB->level map are loaded ONCE at construction (filter-build time), never
+    per-decision. The equity-vs-range Monte Carlo is memoized per
+    (hero_cards, cell_key) in `eq_cache` exactly as the probe does.
+
+    `apply(...)` is the deployment hook: same identity short-circuit
+    contract as every other floor (returns the SAME `policy` reference when
+    the gate doesn't fire)."""
+
+    def __init__(self, structure, ranges: dict, tau: float = _SHOVE_DEFAULT_TAU,
+                 *, range_table_path: str | None = None,
+                 stats: dict | None = None, eq_cache: dict | None = None):
+        self.ranges = ranges
+        self.tau = float(tau)
+        self.range_table_path = range_table_path
+        self.bb_to_level = {int(bl.big_blind): int(bl.level)
+                            for bl in structure.blind_schedule}
+        if stats is None:
+            stats = {}
+        for k in ("n_calls", "n_qualify", "n_fired"):
+            stats.setdefault(k, 0)
+        stats.setdefault("cells", {})
+        self.stats = stats
+        self.eq_cache = {} if eq_cache is None else eq_cache
+
+    def apply(self, policy, legal_mask, parsed, state, discrete_to_chip=None):
+        import numpy as np
+        from src.nlhe.actions import DiscreteAction
+        from scripts.fold_vs_shove_battery import _equity_vs_labels
+
+        self.stats["n_calls"] += 1
+        q = _shove_qualify(parsed, state, self.bb_to_level)
+        if q is None:
+            return policy
+        cell_key, hero_cards, ev_fold, ev_win, ev_lose, _depth = q
+        labels = self.ranges.get(cell_key)
+        if not labels:
+            return policy
+        cstat = self.stats["cells"].setdefault(cell_key, [0, 0])
+        cstat[0] += 1                         # qualify-count for this cell
+        self.stats["n_qualify"] += 1
+        denom = ev_win - ev_lose
+        if denom <= 1e-12:
+            return policy
+        eq_star = (ev_fold - ev_lose) / denom
+        ck = (hero_cards, cell_key)
+        eq = self.eq_cache.get(ck)
+        if eq is None:
+            eq = _equity_vs_labels(hero_cards, set(labels))
+            self.eq_cache[ck] = eq
+        if eq >= eq_star + self.tau:
+            return policy                     # equity clears the gate
+        a_fold = int(DiscreteAction.FOLD)
+        if legal_mask[a_fold] <= 0:
+            return policy
+        # Move ALL non-FOLD legal mass (== CALL/ALLIN at these nodes) to FOLD.
+        legal_mass = float(sum(float(policy[i]) for i in range(len(policy))
+                               if legal_mask[i] > 0))
+        if legal_mass <= 0:
+            return policy
+        new = np.zeros_like(np.asarray(policy, dtype=np.float64))
+        new[a_fold] = 1.0
+        self.stats["n_fired"] += 1
+        cstat[1] += 1
+        return new.astype(np.asarray(policy).dtype)
+
+
+def load_shove_defense_floor(range_table_path: str = _SHOVE_DEFAULT_RANGE_TABLE,
+                             tau: float = _SHOVE_DEFAULT_TAU,
+                             structure=None) -> ShoveDefenseFloor:
+    """Build a ShoveDefenseFloor from the battery range table on disk.
+
+    The table is read ONCE here (filter-construction time). Refuses with a
+    clear error if the table is missing or carries no "ranges" key. When
+    `structure` is None the battery's own structure YAML is loaded so the
+    BB->level map matches the frozen cells exactly."""
+    from pathlib import Path
+    import json
+    from src.nlhe.actions import DiscreteAction  # noqa: F401 (import parity)
+
+    p = Path(range_table_path)
+    if not p.exists():
+        raise FileNotFoundError(
+            f"shove-defense range table not found: {range_table_path} "
+            f"(the frozen killphil shove battery; expected at "
+            f"{_SHOVE_DEFAULT_RANGE_TABLE})")
+    table = json.loads(p.read_text())
+    ranges = table.get("ranges")
+    if not ranges:
+        raise ValueError(
+            f"shove-defense range table {range_table_path} has no non-empty "
+            f"'ranges' key — refusing to arm a no-op floor")
+    if structure is None:
+        from src.nlhe.game_strings import TournamentStructure
+        structure = TournamentStructure.from_yaml(table["structure"])
+    return ShoveDefenseFloor(structure, ranges, tau=tau,
+                             range_table_path=range_table_path)
+
+
+# --------------------------------------------------------------------------
 # Live policy filter — composes all deployment-time floors with logging
 # --------------------------------------------------------------------------
 
 def make_live_policy_filter(short_stack_threshold_bb: float = _DEFAULT_SHORT_STACK_FLOOR_BB,
                              *, log_prefix: str = "[FLOOR]",
-                             tail_floor_tau: "float | None" = None):
+                             tail_floor_tau: "float | None" = None,
+                             shove_defense_floor: "ShoveDefenseFloor | None" = None):
     """Build the composed deployment-only policy filter.
 
-    Order: AA/KK preflop → check-when-free → short-stack → tail floor.
-    Each filter is identity-short-circuited when its gate doesn't fire
-    (returns the same `policy` reference), so the chain's net cost when
-    nothing fires is a few reference-equality checks.
+    Order: AA/KK preflop → check-when-free → short-stack → shove-defense
+    → tail floor. Each filter is identity-short-circuited when its gate
+    doesn't fire (returns the same `policy` reference), so the chain's net
+    cost when nothing fires is a few reference-equality checks.
+
+    The slate-2a shove-defense floor runs AFTER short-stack and ONLY when
+    `shove_defense_floor` is not None (a loaded ShoveDefenseFloor). It
+    composes with the H1 tail floor — both can fire on the same decision
+    (shove-defense moves CALL/ALLIN mass to FOLD; the tail floor then
+    sees the post-shove-defense distribution).
 
     The H1 commitment-scaled tail floor runs LAST and ONLY when
     `tail_floor_tau` is not None — the default OFF chain never calls it
-    and is byte-identical to the pre-H1 build.
+    and is byte-identical to the pre-H1 build. The default OFF chain
+    (shove_defense_floor=None, tail_floor_tau=None) is byte-identical to
+    the pre-slate-2a build (Gate 1).
 
     Logs to stdout each time any floor changes the action distribution.
     """
@@ -555,19 +820,27 @@ def make_live_policy_filter(short_stack_threshold_bb: float = _DEFAULT_SHORT_STA
             p2, legal_mask, parsed, state,
             threshold_bb=short_stack_threshold_bb)
         ss_fired = (p3 is not p2)
-        if tail_floor_tau is not None:
-            p4 = apply_commitment_tail_floor(
-                p3, legal_mask, parsed, state, tau_max=tail_floor_tau,
+        if shove_defense_floor is not None:
+            p3b = shove_defense_floor.apply(
+                p3, legal_mask, parsed, state,
                 discrete_to_chip=discrete_to_chip)
         else:
-            p4 = p3
-        tail_fired = (p4 is not p3)
+            p3b = p3
+        shove_fired = (p3b is not p3)
+        if tail_floor_tau is not None:
+            p4 = apply_commitment_tail_floor(
+                p3b, legal_mask, parsed, state, tau_max=tail_floor_tau,
+                discrete_to_chip=discrete_to_chip)
+        else:
+            p4 = p3b
+        tail_fired = (p4 is not p3b)
 
-        if aa_kk_fired or check_free_fired or ss_fired or tail_fired:
+        if aa_kk_fired or check_free_fired or ss_fired or shove_fired or tail_fired:
             fires = []
             if aa_kk_fired: fires.append("AA/KK")
             if check_free_fired: fires.append("check-free")
             if ss_fired: fires.append("short-stack")
+            if shove_fired: fires.append("shove-defense")
             if tail_fired: fires.append("tail")
             eff_bb, _ = _hero_eff_bb_from_parsed(parsed)
             cp = parsed.get("current_player", -1)
@@ -581,9 +854,9 @@ def make_live_policy_filter(short_stack_threshold_bb: float = _DEFAULT_SHORT_STA
             street = parsed.get("street_idx", -1)
             tail_note = ""
             if tail_fired:
-                pruned = [f"{DiscreteAction(i).name}:{float(p3[i]):.4f}"
-                          for i in range(len(p3))
-                          if float(p3[i]) > 0.0 and float(p4[i]) == 0.0]
+                pruned = [f"{DiscreteAction(i).name}:{float(p3b[i]):.4f}"
+                          for i in range(len(p3b))
+                          if float(p3b[i]) > 0.0 and float(p4[i]) == 0.0]
                 tail_note = f"  tail_pruned=[{','.join(pruned)}]"
             print(f"{log_prefix} fired=[{','.join(fires)}]  "
                   f"eff_bb={eff_bb:.2f}  cp={cp}  street={street}  "
@@ -1020,6 +1293,7 @@ def make_decision(
     short_stack_floor_bb: float = _DEFAULT_SHORT_STACK_FLOOR_BB,
     extended_click_plans: bool = False,
     tail_floor_tau: "float | None" = None,
+    shove_defense_floor: "ShoveDefenseFloor | None" = None,
     bet_closure_recovery: bool = False,
     dead_button_handling: bool = False,
     commit_reconciliation: bool = False,
@@ -1047,6 +1321,14 @@ def make_decision(
         tail_floor_tau: H1 commitment-scaled tail floor tau_max. Default
             None = OFF (the composed policy filter never calls the tail
             floor; live path byte-identical to pre-H1).
+        shove_defense_floor: slate-2a shove-defense floor — a loaded
+            ShoveDefenseFloor (range table + tau, built ONCE via
+            load_shove_defense_floor) or None. Default None = OFF (the
+            composed policy filter never calls it; live path byte-identical
+            to pre-slate-2a). Runs after short-stack and composes with the
+            tail floor (both can fire). At a facing-all-in 5-15bb node,
+            moves CALL/ALLIN mass to FOLD when hero equity vs the frozen
+            killphil shove range is below the ICM break-even + tau.
         bet_closure_recovery: P2 displacement-signature recovery on
             invariant-failed frames (see _attempt_bet_closure_recovery).
             Default False = OFF (invariant_fail drops byte-identical to
@@ -1311,7 +1593,8 @@ def make_decision(
                 solver, parsed, pack.state, rng, mode=mode,
                 policy_filter=make_live_policy_filter(
                     short_stack_threshold_bb=short_stack_floor_bb,
-                    tail_floor_tau=tail_floor_tau),
+                    tail_floor_tau=tail_floor_tau,
+                    shove_defense_floor=shove_defense_floor),
             )
         except Exception as e:  # pragma: no cover (defensive)
             out.status = "safe_fold"

@@ -1,0 +1,12 @@
+GATE 3 — per-decision latency (ShoveDefenseFloor.apply)
+battery               : /home/quant/pokerbot/evals/h2_battery/battery_v1.json
+spots timed           : 400  (fired: 339)
+cold MC decisions     : 169
+
+path           n      p50_ms      p99_ms      max_ms     mean_ms
+COLD         169      34.450      68.268      93.316      36.666
+WARM         400       0.468       1.039       2.222       0.507
+
+GATE (cold p99 < 1000 ms / 1 s live budget):
+  cold p50 = 34.450 ms   cold p99 = 68.268 ms
+GATE 3 PASS: cold p99 = 68.268 ms < 1000 ms.

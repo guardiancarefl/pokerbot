@@ -579,6 +579,27 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                           "(commit/stack), renormalize. Runs LAST in the "
                           "floor chain. Default None = OFF; the OFF path "
                           "never calls the tail floor (TG1 byte-identity).")
+    ap.add_argument("--shove-defense-floor", action="store_true",
+                     help="slate-2a shove-defense floor (operator-approved "
+                          "arming, slate-2a complete): at a preflop "
+                          "facing-all-in node with hero eff-stack in [5,15] "
+                          "BB, compute hero hand-class equity vs the frozen "
+                          "killphil shove range of the nearest battery cell "
+                          "and the Malmuth-Harville ICM break-even; if equity "
+                          "< break-even + tau (registered tau=0), move "
+                          "CALL/ALLIN mass to FOLD. Range table loaded ONCE "
+                          "at startup from --shove-defense-range-table. Runs "
+                          "after short-stack, composes with the tail floor. "
+                          "OFF by default (chain byte-identical to "
+                          "pre-slate-2a).")
+    ap.add_argument("--shove-defense-range-table",
+                     default="evals/h2_battery/battery_v1.json",
+                     help="Frozen killphil shove-range battery for the "
+                          "shove-defense floor ('ranges' key). Default "
+                          "evals/h2_battery/battery_v1.json.")
+    ap.add_argument("--shove-defense-tau", type=float, default=0.0,
+                     help="Shove-defense gate margin tau (registered=0.0, "
+                          "the pure ICM break-even gate).")
     ap.add_argument("--watchdog-v2", action="store_true",
                      help="Watchdog v2 (approved 2026-06-11): the fallback "
                           "deadline anchors per SPOT (hand+board) and "
@@ -676,6 +697,34 @@ def main() -> int:
         print(_color(f"[run_live_dryrun] H1 commitment-scaled tail floor "
                       f"ARMED: tau_max={args.tail_floor_tau:.3f}",
                       YELLOW), flush=True)
+
+    # slate-2a shove-defense floor — loaded ONCE here, never per-decision.
+    shove_defense = None
+    if args.shove_defense_floor:
+        from src.nlhe.integration.live_loop import load_shove_defense_floor
+        rt = Path(args.shove_defense_range_table)
+        if not rt.exists():
+            print(_color(f"[run_live_dryrun] FATAL: shove-defense range "
+                          f"table not found: {rt}", RED), flush=True)
+            return 2
+        rt_sha = _sha256_of_file(rt)
+        shove_defense = load_shove_defense_floor(
+            range_table_path=str(rt), tau=args.shove_defense_tau,
+            structure=structure)
+        header["shove_defense_floor"] = {
+            "range_table": str(rt.resolve()),
+            "range_table_sha256": rt_sha,
+            "tau": float(args.shove_defense_tau),
+            "n_cells": len(shove_defense.ranges),
+        }
+        print(_color(
+            f"[run_live_dryrun] slate-2a SHOVE-DEFENSE FLOOR ARMED: "
+            f"tau={args.shove_defense_tau:.3f}  "
+            f"cells={len(shove_defense.ranges)}  "
+            f"table={rt} sha256={rt_sha[:12]}…  "
+            f"(facing-all-in 5-15bb: equity vs frozen killphil range < ICM "
+            f"break-even → FOLD; runs after short-stack, composes with tail)",
+            YELLOW), flush=True)
 
     abort_gate = None
     if args.abort_enforce:
@@ -807,6 +856,7 @@ def main() -> int:
                                decision_cache=decision_cache,
                                extended_click_plans=args.extended_click_plans,
                                tail_floor_tau=args.tail_floor_tau,
+                               shove_defense_floor=shove_defense,
                                bet_closure_recovery=args.bet_closure_recovery,
                                dead_button_handling=args.dead_button_handling,
                                commit_reconciliation=args.commit_reconciliation,

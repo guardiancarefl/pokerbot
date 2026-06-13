@@ -47,10 +47,14 @@ def process(log_path: str, out_path: str, checkpoint: str,
             dead_button_handling: bool = False,
             commit_reconciliation: bool = False,
             allin_zero_stack: bool = False,
+            shove_defense_floor: bool = False,
+            shove_defense_range_table: str = "evals/h2_battery/battery_v1.json",
+            shove_defense_tau: float = 0.0,
             mode: str = "sample"):
     from src.nlhe.abstraction import Abstraction
     from src.nlhe.game_strings import TournamentStructure
-    from src.nlhe.integration.live_loop import DecisionCache, make_decision
+    from src.nlhe.integration.live_loop import (
+        DecisionCache, make_decision, load_shove_defense_floor)
     from src.nlhe.integration.scraper_schema import SessionTracker
     from src.nlhe.integration.click_target import plan_as_dict
     from scripts.eval_6max_self_play import _load_solver
@@ -62,6 +66,12 @@ def process(log_path: str, out_path: str, checkpoint: str,
                              bet_closure_recovery=bet_closure_recovery)
     cache = DecisionCache()
     rng = random.Random(seed)
+
+    shove_floor = None
+    if shove_defense_floor:
+        shove_floor = load_shove_defense_floor(
+            range_table_path=shove_defense_range_table,
+            tau=shove_defense_tau, structure=structure)
 
     rows = []
     with open(log_path) as f:
@@ -77,6 +87,7 @@ def process(log_path: str, out_path: str, checkpoint: str,
             d = make_decision(raw, structure, solver, tracker, rng,
                               mode=mode, seq=seq,
                               decision_cache=cache,
+                              shove_defense_floor=shove_floor,
                               bet_closure_recovery=bet_closure_recovery,
                               dead_button_handling=dead_button_handling,
                               commit_reconciliation=commit_reconciliation,
@@ -200,6 +211,15 @@ def main():
                     help="arm F2 zero-stack all-in handling (explicit-0 "
                          "committed seats parse as valid all-in states; "
                          "counterfactual runs)")
+    p1.add_argument("--shove-defense-floor", action="store_true",
+                    help="arm the slate-2a shove-defense floor (facing-all-in "
+                         "5-15bb: equity vs frozen killphil range < ICM "
+                         "break-even -> FOLD; counterfactual runs)")
+    p1.add_argument("--shove-defense-range-table",
+                    default="evals/h2_battery/battery_v1.json",
+                    help="range table for the shove-defense floor")
+    p1.add_argument("--shove-defense-tau", type=float, default=0.0,
+                    help="shove-defense gate margin tau (registered=0.0)")
     p1.add_argument("--mode", default="sample",
                     choices=("sample", "argmax"),
                     help="policy mode for the replayed make_decision. "
@@ -221,6 +241,9 @@ def main():
                 dead_button_handling=args.dead_button_handling,
                 commit_reconciliation=args.commit_reconciliation,
                 allin_zero_stack=args.allin_zero_stack,
+                shove_defense_floor=args.shove_defense_floor,
+                shove_defense_range_table=args.shove_defense_range_table,
+                shove_defense_tau=args.shove_defense_tau,
                 mode=args.mode)
     elif args.cmd == "diff":
         n = diff(args.pre, args.post,

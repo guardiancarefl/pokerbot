@@ -1,0 +1,9 @@
+GATE 4 — live floor vs probe floor (M-A logic) equivalence
+battery               : /home/quant/pokerbot/evals/h2_battery/battery_v1.json
+spots graded          : 8112
+fired (live)          : 7497
+fired (probe M-A)     : 7497
+output mismatches     : 0
+live fire => FOLD=1.0 : verified by allclose to probe + FOLD-collapse contract
+
+GATE 4 PASS: all 8112 spots bit-identical between the live floor and the probe's batch floor; 7497 fired (FOLD collapse) and matched.

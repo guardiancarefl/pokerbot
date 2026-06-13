@@ -1,0 +1,112 @@
+================================================================================
+SLATE-2A SHOVE-DEFENSE FLOOR — LIVE-FILTER WIRING GATES
+evals/shove_floor_wiring_20260613/   (task #12, 5 pre-registered gates)
+Generated 2026-06-13.  WIP IS UNCOMMITTED (do not commit).
+================================================================================
+
+WHAT WAS GATED
+  The slate-2a shove-defense floor wired into the live decision filter:
+    src/nlhe/integration/live_loop.py
+       - load_shove_defense_floor() / ShoveDefenseFloor / ShoveDefenseFloor.apply
+       - make_live_policy_filter(shove_defense_floor=) kwarg, OFF branch is a
+         literal `p3b = p3` passthrough (off-safe)
+       - make_decision(shove_defense_floor=) kwarg, threaded to the filter
+    scripts/run_live_dryrun.py            --shove-defense-floor flag
+    scripts/replay_make_decision_diff.py  run --shove-defense-floor flag
+    tests/test_shove_defense_floor.py     (new)
+
+  Floor logic ported VERBATIM from scripts/shove_defense_probe.make_shove_
+  defense_floor (the M-A probe). At a preflop facing-all-in node, hero eff
+  5-15bb, single all-in raiser whose call commits hero's whole stack: compute
+  hero hand-class equity vs the frozen killphil shove range of the nearest
+  battery cell and the Malmuth-Harville ICM break-even; if equity < break-even
+  + tau (registered tau=0), move CALL/ALLIN mass to FOLD; else identity.
+
+REPLAY HARNESS (gates 1, 2)
+  checkpoint  runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt
+  abstraction runs/abstraction_20260521_223018_retrofit/abstraction.pkl
+  range table evals/h2_battery/battery_v1.json   mode sample   seed 42
+  17 raw-record logs (logs/live_dryrun_*.jsonl), keyed by captured_at.
+
+--------------------------------------------------------------------------------
+GATE 1 — flag-OFF byte-identity                                          PASS
+--------------------------------------------------------------------------------
+  pre  = HEAD-clean tree (WIP git-stashed: the 3 tracked files + new test
+         stashed → snapshot is byte-for-byte the pre-slate-2a build).
+  post = WIP working tree.
+  Both arms ALL flags off (no --shove-defense-floor; tail-floor matched off).
+  STRICT diff (no skip-ignore), all 17 logs.
+  RESULT: 0 BEHAVIORAL CHANGES across all 17 logs (frame counts identical;
+          per-log breakdown in gate1_flag_off_byte_identity.txt).
+  -> The OFF chain is byte-identical to pre-slate-2a. The passthrough is safe.
+
+--------------------------------------------------------------------------------
+GATE 2 — flag-ON confinement                                            PASS
+--------------------------------------------------------------------------------
+  ON arm = post tree with --shove-defense-floor --shove-defense-tau 0.0,
+  diffed against the flag-OFF post arm (g1_post). gate2_confine.py classifies
+  every behavioral change.
+  RESULT: behavioral changes total = 0   class_shove_fold = 0   class_other = 0
+  Positive firing-path audit (gate2_floor_stats.py, shared floor over all 17
+  logs): apply hook n_calls = 749, n_qualify = 1 (cell UTG|8|5), n_fired = 0.
+  -> The floor was invoked on every fresh sample (749), the live corpus held
+     exactly ONE in-scope facing-all-in 5-15bb node, and that node's hand
+     cleared the ICM break-even so it did not fire. Zero out-of-scope change
+     (class_other = 0). The firing path itself is exercised in Gate 4.
+
+--------------------------------------------------------------------------------
+GATE 3 — per-decision latency  *** GATES LIVE USE ***                   PASS
+--------------------------------------------------------------------------------
+  gate3_latency.py times ShoveDefenseFloor.apply (qualify + ICM + equity MC +
+  collapse) on 400 real battery facing-shove nodes; 339 fired (firing path
+  covered). COLD = first apply per (hero_cards, cell) = uncached equity MC
+  (live worst case); WARM = memoized repeat.
+
+    path     n     p50_ms    p99_ms    max_ms   mean_ms
+    COLD   169     34.450    68.268    93.316    36.666
+    WARM   400      0.468     1.039     2.222     0.507
+
+  GATE (cold p99 < 1000 ms live budget):  cold p99 = 68.268 ms  ->  PASS
+  -> A cache-miss decision clears the live click deadline with >14x headroom;
+     a warmed cell is ~0.5 ms.
+
+--------------------------------------------------------------------------------
+GATE 4 — equivalence: live floor == probe batch floor (M-A)            PASS
+--------------------------------------------------------------------------------
+  gate4_equivalence.py drives every battery_v1 spot through BOTH the live
+  ShoveDefenseFloor.apply and scripts.shove_defense_probe.make_shove_defense_
+  floor (the M-A logic of evals/a2a_shove_floor_probe_20260612), same input
+  policy/mask, same real OpenSpiel facing-shove states.
+  RESULT: spots = 8112   fired(live) = 7497   fired(probe) = 7497
+          output mismatches = 0   (bit-identical every spot)
+  -> The 7497 fired count matches the probe's M-A grade exactly; the live
+     fold decision is identical to the probe's batch floor on every fired
+     frame.
+
+--------------------------------------------------------------------------------
+GATE 5 — unit tests                                                    PASS
+--------------------------------------------------------------------------------
+  tests/test_shove_defense_floor.py :: 13 passed in 4.57s
+  Covers: nearest-cell mapping (depth + level grids, tie->lower, off-grid),
+  shover SB-cell mapping, fires-on-weak-fold-hand (CALL/ALLIN -> FOLD),
+  no-fire-on-strong-call-hand (identity short-circuit), no-fire off-scope
+  (deep stack / postflop), composes-with-tail-floor, off-chain identity when
+  floor=None, range-table-missing refusal (FileNotFoundError), empty-ranges
+  refusal (ValueError). Coverage is complete for the pre-registered cases —
+  no thin areas required new cases.
+
+================================================================================
+ARM-READY:  YES
+  Gate 1 byte-identical OFF; Gate 2 class_other=0 (confined, firing path clean
+  with 1 in-scope corpus node clearing break-even); Gate 3 cold p99 = 68.3 ms
+  << 1 s live budget; Gate 4 bit-identical to the M-A probe on 7497 fires;
+  Gate 5 13/13 tests pass. WIP remains uncommitted.
+
+EVIDENCE FILES
+  gate1_flag_off_byte_identity.txt   g1_pre/  g1_post/   run_g1_arm.sh
+  gate2_confinement.txt  gate2_confine.py  gate2_floor_stats.txt
+    gate2_floor_stats.py  g2_on/  run_g2_on.sh
+  gate3_latency.txt  gate3_latency.py
+  gate4_equivalence.txt  gate4_equivalence.py
+  (Gate 5 reproduce: python -m pytest tests/test_shove_defense_floor.py -v)
+================================================================================
