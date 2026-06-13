@@ -662,3 +662,13 @@ for the operator: shove floor arming + P2 arming + click-plan fix
 session-5 set. Caveat carried: oracle is killphil-range-specific and
 MH-based at 6-alive equal-stack cells (ICM Tier-2 will bound it);
 self-play and panel evidence is the load-bearing EV case.
+
+## 2026-06-13 ~03:20 — OQ-3 root-caused (Windows): all-in zeros, not button overlap — F2 routed
+
+Windows causal test DISPROVED button overlap; the pointed-seat kills
+were ALL-IN seats displaying "0" + an ocr_int truthiness bug dropping
+consensus zeros. Windows ships F1 (ocr_int, replay-gated). Bridge F2
+(0-stack in-hand seat = ALL-IN, valid state) registered as task #11,
+sequenced after D2 (same scraper_schema region, avoid agent
+collision); counterfactual targets = session-5 KQo/ATo 54-frame set.
+OQ-3 updated: mechanism resolved, F1 Windows-side + F2 bridge-side.
