@@ -29,9 +29,14 @@ class TiltPolicy:
         self.n_fire = 0
         import random as _r; self._rng = _r.Random(rng_seed)
 
+    streets = "all"  # "all" | "postflop" | "preflop" — set on the class per run
+
     def select_action(self, parsed, state, rng, mode="sample") -> int:
         a = int(self.champ.select_action(parsed, state, rng, mode=mode))
         if self._rng.random() >= self.delta:
+            return a
+        st = parsed.get("street_idx", 0)
+        if (self.streets == "postflop" and st == 0) or (self.streets == "preflop" and st != 0):
             return a
         view = _build_view_6max(state, parsed)
         d2c = discretize_legal_actions(list(state.legal_actions()), view)
@@ -63,6 +68,7 @@ def main():
     ap.add_argument("--registry", default="configs/league/registry_h4_field.json")
     ap.add_argument("--games", type=int, default=800)
     ap.add_argument("--delta", type=float, default=0.5)
+    ap.add_argument("--streets", default="all", choices=["all","postflop","preflop"])
     ap.add_argument("--out", default="evals/tilt_sweep_20260613.json")
     args = ap.parse_args()
 
@@ -77,6 +83,7 @@ def main():
     champ = CheckpointPolicy("champion", args.champion, abstr, structure)
     CHAMP = 0.746
 
+    TiltPolicy.streets = args.streets
     rows = []
     for d in ["aggro_more", "call_more", "fold_more", "aggro_less", "tight_pre"]:
         pol = TiltPolicy(f"tilt_{d}", champ, d, args.delta)
