@@ -1,0 +1,60 @@
+G4 — P2 gate-2 displacement-family frames under armB (P1+P2+CR), frame-by-frame
+================================================================
+
+--- mode=sample ---
+live_dryrun_20260611_163815 seq=429 cap=20260611_130121_831
+  status=safe_fold
+  skip_reason=invariant_fail (4 deltas) (bet-closure recovery declined: closure would touch 2 seats' bet/stack pairs (only single-seat displacement is recoverable)) (commit reconciliation declined: hero implied commit 150 != visible bet 0 (hero state is never swept — not this class))
+live_dryrun_20260611_201230 seq=13 cap=20260611_161937_746
+  status=safe_fold
+  skip_reason=invariant_fail (2 deltas) (bet-closure recovery declined: deltas do not close under a single bet/stack transfer (stack -53, bet +0, pot +53)) (commit reconciliation declined: live seat5 implied commit 53 != visible bet 0 (mid-collection capture or another class))
+live_dryrun_20260611_201230 seq=14 cap=20260611_161939_102
+  status=safe_fold
+  skip_reason=invariant_fail (2 deltas) (bet-closure recovery declined: deltas do not close under a single bet/stack transfer (stack -53, bet +0, pot +53)) (commit reconciliation declined: live seat5 implied commit 53 != visible bet 0 (mid-collection capture or another class))
+live_dryrun_20260611_222532 seq=1891 cap=20260611_183517_645
+  status=safe_fold
+  skip_reason=invariant_fail (4 deltas) (bet-closure recovery declined: closure would touch 2 seats' bet/stack pairs (only single-seat displacement is recoverable)) (commit reconciliation declined: hero implied commit 300 != visible bet 0 (hero state is never swept — not this class))
+live_dryrun_20260611_222532 seq=2097 cap=20260611_184658_780
+  status=safe_fold
+  skip_reason=invariant_fail (6 deltas) (bet-closure recovery declined: closure would touch 4 seats' bet/stack pairs (only single-seat displacement is recoverable)) (commit reconciliation declined: hero implied commit 25 != visible bet 0 (hero state is never swept — not this class))
+live_dryrun_20260611_222532 seq=2679 cap=20260611_204408_252
+  status=safe_fold
+  skip_reason=invariant_fail (5 deltas) (bet-closure recovery declined: closure would touch 2 seats' bet/stack pairs (only single-seat displacement is recoverable)) (commit reconciliation declined: no clean REGULAR hand-start anchor for this hand-key — the regular anchor is also the positive blind-structure evidence (both blinds seen posted at hand start); refused/absent anchors and dead-SB-family hands stop here)
+live_dryrun_20260611_222532 seq=2681 cap=20260611_204412_697
+  status=safe_fold
+  skip_reason=invariant_fail (5 deltas) (bet-closure recovery declined: closure would touch 2 seats' bet/stack pairs (only single-seat displacement is recoverable)) (commit reconciliation declined: no clean REGULAR hand-start anchor for this hand-key — the regular anchor is also the positive blind-structure evidence (both blinds seen posted at hand start); refused/absent anchors and dead-SB-family hands stop here)
+live_dryrun_20260612_035454 seq=153 cap=20260612_000213_894
+  status=safe_fold
+  skip_reason=invariant_fail (5 deltas) (bet-closure recovery declined: closure would touch 3 seats' bet/stack pairs (only single-seat displacement is recoverable)) (commit reconciliation declined: hero implied commit 50 != visible bet 0 (hero state is never swept — not this class))
+live_dryrun_20260612_161347 seq=276 cap=20260612_122700_038
+  status=safe_fold
+  skip_reason=invariant_fail (3 deltas) (bet-closure recovery declined: hand shows BB-only posting (dead-SB hand or displaced SB) — the reconstruction's blind assignment is unverifiable and the deltas may be a phantom-BB artifact) (commit reconciliation declined: no clean REGULAR hand-start anchor for this hand-key — the regular anchor is also the positive blind-structure evidence (both blinds seen posted at hand start); refused/absent anchors and dead-SB-family hands stop here)
+
+--- mode=argmax ---
+live_dryrun_20260611_163815 seq=429 cap=20260611_130121_831
+  status=safe_fold
+  skip_reason=invariant_fail (4 deltas) (bet-closure recovery declined: closure would touch 2 seats' bet/stack pairs (only single-seat displacement is recoverable)) (commit reconciliation declined: hero implied commit 150 != visible bet 0 (hero state is never swept — not this class))
+live_dryrun_20260611_201230 seq=13 cap=20260611_161937_746
+  status=safe_fold
+  skip_reason=invariant_fail (2 deltas) (bet-closure recovery declined: deltas do not close under a single bet/stack transfer (stack -53, bet +0, pot +53)) (commit reconciliation declined: live seat5 implied commit 53 != visible bet 0 (mid-collection capture or another class))
+live_dryrun_20260611_201230 seq=14 cap=20260611_161939_102
+  status=safe_fold
+  skip_reason=invariant_fail (2 deltas) (bet-closure recovery declined: deltas do not close under a single bet/stack transfer (stack -53, bet +0, pot +53)) (commit reconciliation declined: live seat5 implied commit 53 != visible bet 0 (mid-collection capture or another class))
+live_dryrun_20260611_222532 seq=1891 cap=20260611_183517_645
+  status=safe_fold
+  skip_reason=invariant_fail (4 deltas) (bet-closure recovery declined: closure would touch 2 seats' bet/stack pairs (only single-seat displacement is recoverable)) (commit reconciliation declined: hero implied commit 300 != visible bet 0 (hero state is never swept — not this class))
+live_dryrun_20260611_222532 seq=2097 cap=20260611_184658_780
+  status=safe_fold
+  skip_reason=invariant_fail (6 deltas) (bet-closure recovery declined: closure would touch 4 seats' bet/stack pairs (only single-seat displacement is recoverable)) (commit reconciliation declined: hero implied commit 25 != visible bet 0 (hero state is never swept — not this class))
+live_dryrun_20260611_222532 seq=2679 cap=20260611_204408_252
+  status=safe_fold
+  skip_reason=invariant_fail (5 deltas) (bet-closure recovery declined: closure would touch 2 seats' bet/stack pairs (only single-seat displacement is recoverable)) (commit reconciliation declined: no clean REGULAR hand-start anchor for this hand-key — the regular anchor is also the positive blind-structure evidence (both blinds seen posted at hand start); refused/absent anchors and dead-SB-family hands stop here)
+live_dryrun_20260611_222532 seq=2681 cap=20260611_204412_697
+  status=safe_fold
+  skip_reason=invariant_fail (5 deltas) (bet-closure recovery declined: closure would touch 2 seats' bet/stack pairs (only single-seat displacement is recoverable)) (commit reconciliation declined: no clean REGULAR hand-start anchor for this hand-key — the regular anchor is also the positive blind-structure evidence (both blinds seen posted at hand start); refused/absent anchors and dead-SB-family hands stop here)
+live_dryrun_20260612_035454 seq=153 cap=20260612_000213_894
+  status=safe_fold
+  skip_reason=invariant_fail (5 deltas) (bet-closure recovery declined: closure would touch 3 seats' bet/stack pairs (only single-seat displacement is recoverable)) (commit reconciliation declined: hero implied commit 50 != visible bet 0 (hero state is never swept — not this class))
+live_dryrun_20260612_161347 seq=276 cap=20260612_122700_038
+  status=safe_fold
+  skip_reason=invariant_fail (3 deltas) (bet-closure recovery declined: hand shows BB-only posting (dead-SB hand or displaced SB) — the reconstruction's blind assignment is unverifiable and the deltas may be a phantom-BB artifact) (commit reconciliation declined: no clean REGULAR hand-start anchor for this hand-key — the regular anchor is also the positive blind-structure evidence (both blinds seen posted at hand start); refused/absent anchors and dead-SB-family hands stop here)

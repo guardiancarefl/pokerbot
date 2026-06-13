@@ -1,0 +1,30 @@
+FAILED tests/test_solver6.py::test_v1_solver_load_succeeds - AttributeError: ...
+FAILED tests/test_subgame_leaf.py::TestBlueprintProviderRealSolver::test_real_solver_satisfies_protocol
+ERROR tests/test_ablation_decision_level.py::TestStageGIntegration::test_filter_excludes_fold_shove
+ERROR tests/test_ablation_decision_level.py::TestStageGIntegration::test_reproducibility_same_seed
+ERROR tests/test_ablation_decision_level.py::TestStageGIntegration::test_single_root_cost_sane
+ERROR tests/test_dashboard_self_anchor.py::test_lift_log_exists - RuntimeErro...
+ERROR tests/test_dashboard_self_anchor.py::test_lift_log_lines_match_expected_format
+ERROR tests/test_dashboard_self_anchor.py::test_first_cycle_emits_self_anchor_placeholder
+ERROR tests/test_dashboard_self_anchor.py::test_subsequent_cycles_emit_real_self_anchor_numbers
+ERROR tests/test_dashboard_self_anchor.py::test_metrics_mini_eval_records_correct_iters
+ERROR tests/test_dashboard_self_anchor.py::test_metrics_mini_eval_records_include_self_anchor_after_first_cycle
+ERROR tests/test_subgame_leaf.py::TestProfileSampleMode::test_biases_produce_different_rollouts
+ERROR tests/test_subgame_leaf.py::TestProfileSampleMode::test_budget_guard_degrades_and_respects_clock
+ERROR tests/test_subgame_leaf.py::TestProfileSampleMode::test_conservation_sum_zero
+ERROR tests/test_subgame_leaf.py::TestProfileSampleMode::test_evaluate_leaves_budget_respected
+ERROR tests/test_subgame_leaf.py::TestProfileSampleMode::test_evaluate_leaves_matches_evaluate_leaf_sequentially
+ERROR tests/test_subgame_leaf.py::TestProfileSampleMode::test_evaluate_leaves_mutates_in_place
+ERROR tests/test_subgame_leaf.py::TestProfileSampleMode::test_itm_short_circuit_equivalence
+ERROR tests/test_subgame_leaf.py::TestProfileSampleMode::test_itm_short_circuit_realistic
+ERROR tests/test_subgame_leaf.py::TestProfileSampleMode::test_nan_blueprint_degrades_no_raise
+ERROR tests/test_subgame_leaf.py::TestProfileSampleMode::test_pointmass_blueprint_matches_unbiased
+ERROR tests/test_subgame_leaf.py::TestProfileSampleMode::test_reproducible_same_seed
+ERROR tests/test_subgame_leaf.py::TestProfileSampleMode::test_symmetric_prior_seed_consistency
+ERROR tests/test_subgame_leaf.py::TestBestResponseMode::test_br_hero_value_le_uniform_2p
+ERROR tests/test_subgame_leaf.py::TestBestResponseMode::test_br_mechanism_opponent_value_ge_uniform
+ERROR tests/test_subgame_leaf.py::TestBestResponseMode::test_br_tie_break_deterministic
+ERROR tests/test_subgame_leaf.py::TestBestResponseMode::test_chance_leaf_bias_values_computed
+ERROR tests/test_subgame_leaf.py::TestBestResponseMode::test_chance_leaf_evaluates_finite_no_crash
+ERROR tests/test_subgame_leaf.py::TestBestResponseMode::test_chance_leaf_uses_blueprint_only_skips_br
+33 failed, 1111 passed, 5 skipped, 1 warning, 27 errors in 697.88s (0:11:37)

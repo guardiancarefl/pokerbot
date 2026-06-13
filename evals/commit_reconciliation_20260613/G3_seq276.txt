@@ -1,0 +1,10 @@
+G3 — seq-276 dead-SB fixture must STILL refuse
+================================================================
+
+--- mode=sample ---
+status=safe_fold  [OK]
+skip_reason=invariant_fail (3 deltas) (bet-closure recovery declined: hand shows BB-only posting (dead-SB hand or displaced SB) — the reconstruction's blind assignment is unverifiable and the deltas may be a phantom-BB artifact) (commit reconciliation declined: no clean REGULAR hand-start anchor for this hand-key — the regular anchor is also the positive blind-structure evidence (both blinds seen posted at hand start); refused/absent anchors and dead-SB-family hands stop here)
+
+--- mode=argmax ---
+status=safe_fold  [OK]
+skip_reason=invariant_fail (3 deltas) (bet-closure recovery declined: hand shows BB-only posting (dead-SB hand or displaced SB) — the reconstruction's blind assignment is unverifiable and the deltas may be a phantom-BB artifact) (commit reconciliation declined: no clean REGULAR hand-start anchor for this hand-key — the regular anchor is also the positive blind-structure evidence (both blinds seen posted at hand start); refused/absent anchors and dead-SB-family hands stop here)

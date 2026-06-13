@@ -1,0 +1,52 @@
+Bonus CR recovery — 183701 seq 697 (KhQc) ground-truth verdict
+===============================================================
+Not a registered pin. armB recovered one additional frame across the
+whole 17-log corpus; this file is its individual verdict (the same bar
+the pins got in PER_PIN_ANALYSIS.txt).
+
+Frame (log live_dryrun_20260612_183701.jsonl, captured_at
+20260612_151624_215): blinds 50/100/15, dealer seat4, hero seat1 = BB
+(KhQc, bet 100) facing 200; seat3 and seat5 have each called/raised to
+200; seat4 all-in for 89 (= 104 pre-hand - 15 ante); seat2 checked-
+behind 0; seat6 busted.
+  scraper stacks (1308, 2480, 1454, 0, 3094, 0)
+  scraper bets   ( 100,    0,  200,  89,  200, 0)   pot 664
+armA (P1+P2): safe_fold, invariant_fail (5 deltas)
+  [pot 664 vs 634], [stack3 1454 vs 1469], [bet3 200 vs 185],
+  [stack5 3094 vs 3109], [bet5 200 vs 185]
+  P2 refused: 2-seat closure.
+armB (P1+P2+CR): decision_recovered, ZERO seats restored
+  (recovered_fields = ["replay=rebuilt_from_anchor_commits
+   (commit_reconciliation:0 seats restored)"]).
+
+VERDICT: scraper RIGHT, recon-view WRONG — the seq-1635 ante-bookkeeping
+sub-class, with TWO poisoned callers instead of one.
+  1. Clean regular anchor seq 693: (1423, 2495, 1669, 104, 3309, 0),
+     sum 9000. Conservation at the pin: 8336 visible + 664 pot = 9000.
+  2. Implied commits equal EVERY visible bet exactly:
+     hero 1423-1308-15 = 100; seat2 2495-2480-15 = 0;
+     seat3 1669-1454-15 = 200; seat4 104-0-15 = 89 (all-in-for-less);
+     seat5 3309-3094-15 = 200. Nothing swept, nothing missing — the
+     scraper frame is arithmetically exact against the anchor.
+  3. The recon deltas are the matched_all_in over-trigger signature,
+     mechanically: seat4's all-in is a CALL-for-less (89 < 200), its
+     pre-hand 104 enters the gate's heuristic list, and both 200-chip
+     callers (contrib 200 >= 104) get routed through the
+     no-ante-subtract branch: stack +15, bet -15 each, pot -30. The
+     recon's "bet 185" is not even a legal commit in this hand (185 =
+     200 - 15 is the ante artifact; no action sequence produces it).
+     This is the identical mechanism empirically proven on seq 1635
+     (G2_seq1635_gate_heuristic_proof.txt) where the replayed OpenSpiel
+     chips were exact and only the view branch was wrong.
+  4. Chain corroboration: the next hand-start (seq 716-717, dealer
+     advanced to seat5) shows stacks (1193, 2465, 1339, 0, 3943) with
+     pot 60 = 4 x 15 antes -> pre-hand sum 9000 exactly; the
+     intervening frames are suspect/data-quality drops, so the chain
+     confirms chip conservation (both universes are sum-invariant);
+     the per-seat arbitration rests on (2)-(3), which are exact
+     identities, not probabilistic reads.
+
+Risk note: the recovered decision (sample seed 42) was a raise_to 1200
+with KhQc at ~13 BB facing 200 — a policy choice on a now-correct
+believed state, same caveat as the seq-1635 ALLIN (SUMMARY deviations
+item 2).

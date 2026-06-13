@@ -1,0 +1,246 @@
+DeepCFR6MaxSolver  device=cpu  feature_dim=236  payout_mode=double_up  payouts=[2.0, 2.0, 2.0]
+[FLOOR] fired=[check-free]  eff_bb=58.20  cp=0  street=0  pre_argmax=FOLD  post_argmax=CALL
+[FLOOR] fired=[AA/KK]  eff_bb=27.50  cp=0  street=0  pre_argmax=BET_50  post_argmax=BET_50
+[FLOOR] fired=[short-stack]  eff_bb=5.20  cp=0  street=2  pre_argmax=CALL  post_argmax=CALL
+Replayed 200 frames -> evals/commit_reconciliation_20260613/g2_armB_argmax/live_dryrun_20260608_152756.jsonl
+  skip_not_hero_to_act           126
+  skip_data_quality               41
+  decision                        19
+  decision_cached                 14
+DeepCFR6MaxSolver  device=cpu  feature_dim=236  payout_mode=double_up  payouts=[2.0, 2.0, 2.0]
+[ANCHOR-REFUSED] hand-start anchor fails chips-in-play ceiling (9000): seat6 pre_hand=9927  captured_at=20260609_115039_013
+[FLOOR] fired=[short-stack]  eff_bb=4.48  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD
+[FLOOR] fired=[short-stack]  eff_bb=4.33  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD
+[FLOOR] fired=[short-stack]  eff_bb=3.18  cp=0  street=0  pre_argmax=CALL  post_argmax=CALL
+[OOD-WARN] live out-of-training-support: level=3 hero_stack=96 (1.0 BB) captured_at=20260609_115900_891
+[ANCHOR-REFUSED] hand-start anchor fails chips-in-play ceiling (9000): seat6 pre_hand=9932  captured_at=20260609_120518_206
+[OOD-WARN] live out-of-training-support: level=5 hero_stack=281 (1.4 BB) captured_at=20260609_120828_250
+[OOD-WARN] live out-of-training-support: level=5 hero_stack=281 (1.4 BB) captured_at=20260609_120829_005
+[OOD-WARN] live out-of-training-support: level=5 hero_stack=281 (1.4 BB) captured_at=20260609_120836_220
+[OOD-WARN] live out-of-training-support: level=5 hero_stack=281 (1.4 BB) captured_at=20260609_120836_877
+[FLOOR] fired=[short-stack]  eff_bb=1.55  cp=0  street=0  pre_argmax=CALL  post_argmax=CALL
+Replayed 571 frames -> evals/commit_reconciliation_20260613/g2_armB_argmax/live_dryrun_20260609_154557.jsonl
+  skip_not_hero_to_act           263
+  skip_data_quality              241
+  decision                        32
+  decision_cached                 29
+  decision_recovered               5
+  decision_recovered_cached        1
+DeepCFR6MaxSolver  device=cpu  feature_dim=236  payout_mode=double_up  payouts=[2.0, 2.0, 2.0]
+[FLOOR] fired=[check-free]  eff_bb=18.00  cp=0  street=0  pre_argmax=FOLD  post_argmax=CALL
+Replayed 402 frames -> evals/commit_reconciliation_20260613/g2_armB_argmax/live_dryrun_20260609_192543.jsonl
+  skip_not_hero_to_act           262
+  skip_data_quality               74
+  decision                        41
+  decision_cached                 25
+DeepCFR6MaxSolver  device=cpu  feature_dim=236  payout_mode=double_up  payouts=[2.0, 2.0, 2.0]
+[FLOOR] fired=[check-free]  eff_bb=58.00  cp=0  street=0  pre_argmax=FOLD  post_argmax=CALL
+[FLOOR] fired=[AA/KK]  eff_bb=11.20  cp=0  street=0  pre_argmax=CALL  post_argmax=CALL
+[FLOOR] fired=[AA/KK]  eff_bb=6.35  cp=0  street=0  pre_argmax=CALL  post_argmax=CALL
+[OOD-WARN] live out-of-training-support: level=3 hero_stack=178 (1.8 BB) captured_at=20260611_125158_712
+[OOD-WARN] live out-of-training-support: level=3 hero_stack=178 (1.8 BB) captured_at=20260611_125159_645
+[OOD-WARN] live out-of-training-support: level=3 hero_stack=178 (1.8 BB) captured_at=20260611_125201_019
+[OOD-WARN] live out-of-training-support: level=3 hero_stack=178 (1.8 BB) captured_at=20260611_125202_354
+[OOD-WARN] live out-of-training-support: level=3 hero_stack=178 (1.8 BB) captured_at=20260611_125205_143
+Replayed 486 frames -> evals/commit_reconciliation_20260613/g2_armB_argmax/live_dryrun_20260611_163815.jsonl
+  skip_not_hero_to_act           375
+  skip_data_quality               46
+  decision                        37
+  decision_cached                 24
+  safe_fold                        4
+DeepCFR6MaxSolver  device=cpu  feature_dim=236  payout_mode=double_up  payouts=[2.0, 2.0, 2.0]
+Replayed 54 frames -> evals/commit_reconciliation_20260613/g2_armB_argmax/live_dryrun_20260611_181249.jsonl
+  skip_not_hero_to_act            32
+  skip_data_quality               15
+  decision                         4
+  decision_cached                  3
+DeepCFR6MaxSolver  device=cpu  feature_dim=236  payout_mode=double_up  payouts=[2.0, 2.0, 2.0]
+[ANCHOR-REFUSED] pre-blind hand-start anchor fails sum-floor guard: sum(pre_hand)=8975 != chips-in-play 9000 with all 6 seats alive (no mis-alive seat to hide chips) captured_at=20260611_162527_428
+[FLOOR] fired=[AA/KK]  eff_bb=45.60  cp=0  street=0  pre_argmax=ALLIN  post_argmax=ALLIN
+[ANCHOR-REFUSED] hand-start anchor fails chips-in-play ceiling (9000): sum(pre_hand)=9022  captured_at=20260611_162701_886
+[ANCHOR-REFUSED] hand-start anchor fails chips-in-play ceiling (9000): sum(pre_hand)=9022  captured_at=20260611_162710_848
+[ANCHOR-REFUSED] hand-start anchor fails chips-in-play ceiling (9000): sum(pre_hand)=9022  captured_at=20260611_162711_914
+[ANCHOR-REFUSED] hand-start anchor fails chips-in-play ceiling (9000): sum(pre_hand)=9022  captured_at=20260611_162713_729
+[ANCHOR-REFUSED] hand-start anchor fails chips-in-play ceiling (9000): sum(pre_hand)=9022  captured_at=20260611_162714_564
+[ANCHOR-REFUSED] pre-blind hand-start anchor fails sum-floor guard: sum(pre_hand)=8975 != chips-in-play 9000 with all 6 seats alive (no mis-alive seat to hide chips) captured_at=20260611_162727_336
+[ANCHOR-REFUSED] pre-blind hand-start anchor fails chips-in-play ceiling (9000): sum(pre_hand)=9607  captured_at=20260611_162808_683
+[FLOOR] fired=[check-free]  eff_bb=9.03  cp=0  street=0  pre_argmax=FOLD  post_argmax=CALL
+[FLOOR] fired=[check-free]  eff_bb=12.25  cp=0  street=0  pre_argmax=ALLIN  post_argmax=ALLIN
+[FLOOR] fired=[short-stack]  eff_bb=5.96  cp=0  street=0  pre_argmax=ALLIN  post_argmax=ALLIN
+Replayed 733 frames -> evals/commit_reconciliation_20260613/g2_armB_argmax/live_dryrun_20260611_201230.jsonl
+  skip_not_hero_to_act           544
+  skip_data_quality               92
+  decision                        56
+  decision_cached                 36
+  safe_fold                        5
+DeepCFR6MaxSolver  device=cpu  feature_dim=236  payout_mode=double_up  payouts=[2.0, 2.0, 2.0]
+[ANCHOR-REFUSED] hand-start anchor fails sum-floor guard: sum(pre_hand)=8200 != chips-in-play 9000 with all 6 seats alive (no mis-alive seat to hide chips) captured_at=20260611_165241_267
+[ANCHOR-REFUSED] hand-start anchor fails sum-floor guard: sum(pre_hand)=8125 != chips-in-play 9000 with all 6 seats alive (no mis-alive seat to hide chips) captured_at=20260611_165245_507
+[ANCHOR-REFUSED] hand-start anchor fails sum-floor guard: sum(pre_hand)=8200 != chips-in-play 9000 with all 6 seats alive (no mis-alive seat to hide chips) captured_at=20260611_171520_931
+[ANCHOR-REFUSED] pre-blind hand-start anchor fails sum-floor guard: sum(pre_hand)=8950 != chips-in-play 9000 with all 6 seats alive (no mis-alive seat to hide chips) captured_at=20260611_171613_034
+[ANCHOR-REFUSED] pre-blind hand-start anchor fails sum-floor guard: sum(pre_hand)=8950 != chips-in-play 9000 with all 6 seats alive (no mis-alive seat to hide chips) captured_at=20260611_171652_129
+[ANCHOR-REFUSED] pre-blind hand-start anchor fails sum-floor guard: sum(pre_hand)=8925 != chips-in-play 9000 with all 6 seats alive (no mis-alive seat to hide chips) captured_at=20260611_171954_718
+[ANCHOR-REFUSED] pre-blind hand-start anchor fails chips-in-play ceiling (9000): sum(pre_hand)=15000  captured_at=20260611_172242_619
+[FLOOR] fired=[short-stack]  eff_bb=5.59  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD
+[OOD-WARN] live out-of-training-support: level=6 hero_stack=189 (0.6 BB) captured_at=20260611_173057_372
+[FLOOR] fired=[short-stack]  eff_bb=5.70  cp=0  street=0  pre_argmax=ALLIN  post_argmax=ALLIN
+[FLOOR] fired=[short-stack]  eff_bb=5.70  cp=0  street=1  pre_argmax=ALLIN  post_argmax=ALLIN
+Replayed 973 frames -> evals/commit_reconciliation_20260613/g2_armB_argmax/live_dryrun_20260611_204751.jsonl
+  skip_not_hero_to_act           664
+  skip_data_quality              168
+  decision                        77
+  decision_cached                 59
+  decision_recovered               2
+  decision_recovered_cached        2
+  safe_fold                        1
+DeepCFR6MaxSolver  device=cpu  feature_dim=236  payout_mode=double_up  payouts=[2.0, 2.0, 2.0]
+[ANCHOR-REFUSED] pre-blind hand-start anchor fails sum-floor guard: sum(pre_hand)=8975 != chips-in-play 9000 with all 6 seats alive (no mis-alive seat to hide chips) captured_at=20260611_183319_647
+[ANCHOR-REFUSED] pre-blind hand-start anchor fails sum-floor guard: sum(pre_hand)=8975 != chips-in-play 9000 with all 6 seats alive (no mis-alive seat to hide chips) captured_at=20260611_183543_087
+[ANCHOR-REFUSED] pre-blind hand-start anchor fails sum-floor guard: sum(pre_hand)=8950 != chips-in-play 9000 with all 6 seats alive (no mis-alive seat to hide chips) captured_at=20260611_183855_384
+[ANCHOR-REFUSED] pre-blind hand-start anchor fails sum-floor guard: sum(pre_hand)=8975 != chips-in-play 9000 with all 6 seats alive (no mis-alive seat to hide chips) captured_at=20260611_184939_635
+[ANCHOR-REFUSED] hand-start anchor fails sum-floor guard: sum(pre_hand)=8200 != chips-in-play 9000 with all 6 seats alive (no mis-alive seat to hide chips) captured_at=20260611_185150_201
+[FLOOR] fired=[AA/KK]  eff_bb=21.05  cp=0  street=0  pre_argmax=ALLIN  post_argmax=ALLIN
+[ANCHOR-REFUSED] hand-start anchor fails sum-floor guard: sum(pre_hand)=8975 != chips-in-play 9000 with all 6 seats alive (no mis-alive seat to hide chips) captured_at=20260611_204507_643
+[ANCHOR-REFUSED] hand-start anchor fails sum-floor guard: sum(pre_hand)=8200 != chips-in-play 9000 with all 6 seats alive (no mis-alive seat to hide chips) captured_at=20260611_205031_032
+[ANCHOR-REFUSED] pre-blind hand-start anchor fails sum-floor guard: sum(pre_hand)=8975 != chips-in-play 9000 with all 6 seats alive (no mis-alive seat to hide chips) captured_at=20260611_205104_939
+Replayed 1326 frames -> evals/commit_reconciliation_20260613/g2_armB_argmax/live_dryrun_20260611_222532.jsonl
+  skip_not_hero_to_act           885
+  skip_data_quality              280
+  decision                        88
+  decision_cached                 65
+  safe_fold                        6
+  decision_recovered_cached        2
+DeepCFR6MaxSolver  device=cpu  feature_dim=236  payout_mode=double_up  payouts=[2.0, 2.0, 2.0]
+[FLOOR] fired=[check-free]  eff_bb=35.10  cp=0  street=0  pre_argmax=FOLD  post_argmax=CALL
+[FLOOR] fired=[short-stack]  eff_bb=5.90  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD
+[FLOOR] fired=[short-stack]  eff_bb=5.60  cp=0  street=1  pre_argmax=BET_100  post_argmax=CALL
+Replayed 218 frames -> evals/commit_reconciliation_20260613/g2_armB_argmax/live_dryrun_20260612_035454.jsonl
+  skip_not_hero_to_act           140
+  skip_data_quality               50
+  decision                        15
+  decision_cached                 12
+  safe_fold                        1
+DeepCFR6MaxSolver  device=cpu  feature_dim=236  payout_mode=double_up  payouts=[2.0, 2.0, 2.0]
+[ANCHOR-REFUSED] pre-blind hand-start anchor fails sum-floor guard: sum(pre_hand)=8985 != chips-in-play 9000 with all 6 seats alive (no mis-alive seat to hide chips) captured_at=20260612_002337_209
+[FLOOR] fired=[AA/KK]  eff_bb=22.70  cp=0  street=0  pre_argmax=ALLIN  post_argmax=ALLIN
+Replayed 316 frames -> evals/commit_reconciliation_20260613/g2_armB_argmax/live_dryrun_20260612_042058.jsonl
+  skip_not_hero_to_act           188
+  skip_data_quality               74
+  decision                        21
+  decision_cached                 21
+  safe_fold                       11
+  decision_recovered               1
+DeepCFR6MaxSolver  device=cpu  feature_dim=236  payout_mode=double_up  payouts=[2.0, 2.0, 2.0]
+Replayed 84 frames -> evals/commit_reconciliation_20260613/g2_armB_argmax/live_dryrun_20260612_125441.jsonl
+  skip_not_hero_to_act            45
+  skip_data_quality               29
+  safe_fold                        7
+  decision                         2
+  decision_cached                  1
+DeepCFR6MaxSolver  device=cpu  feature_dim=236  payout_mode=double_up  payouts=[2.0, 2.0, 2.0]
+[FLOOR] fired=[check-free]  eff_bb=13.20  cp=0  street=0  pre_argmax=FOLD  post_argmax=CALL
+Replayed 233 frames -> evals/commit_reconciliation_20260613/g2_armB_argmax/live_dryrun_20260612_130846.jsonl
+  skip_not_hero_to_act           166
+  skip_data_quality               45
+  decision                        12
+  decision_cached                 10
+DeepCFR6MaxSolver  device=cpu  feature_dim=236  payout_mode=double_up  payouts=[2.0, 2.0, 2.0]
+[OOD-WARN] live out-of-training-support: level=1 hero_stack=15 (0.6 BB) captured_at=20260612_121657_085
+[OOD-WARN] live out-of-training-support: level=1 hero_stack=15 (0.6 BB) captured_at=20260612_121658_673
+[FLOOR] fired=[check-free]  eff_bb=60.80  cp=0  street=0  pre_argmax=FOLD  post_argmax=CALL
+[FLOOR] fired=[check-free]  eff_bb=18.65  cp=0  street=0  pre_argmax=FOLD  post_argmax=CALL
+Replayed 391 frames -> evals/commit_reconciliation_20260613/g2_armB_argmax/live_dryrun_20260612_161347.jsonl
+  skip_not_hero_to_act           265
+  skip_data_quality               74
+  decision                        29
+  decision_cached                 22
+  safe_fold                        1
+DeepCFR6MaxSolver  device=cpu  feature_dim=236  payout_mode=double_up  payouts=[2.0, 2.0, 2.0]
+[ANCHOR-REFUSED] pre-blind hand-start anchor fails sum-floor guard: sum(pre_hand)=8985 != chips-in-play 9000 with all 6 seats alive (no mis-alive seat to hide chips) captured_at=20260609_162442_987
+Replayed 90 frames -> evals/commit_reconciliation_20260613/g2_armB_argmax/live_dryrun_verify1_20260609_202137.jsonl
+  skip_not_hero_to_act            57
+  skip_data_quality               16
+  decision                        10
+  decision_cached                  4
+  decision_recovered               3
+DeepCFR6MaxSolver  device=cpu  feature_dim=236  payout_mode=double_up  payouts=[2.0, 2.0, 2.0]
+[FLOOR] fired=[AA/KK]  eff_bb=13.10  cp=0  street=0  pre_argmax=ALLIN  post_argmax=ALLIN
+[ANCHOR-REFUSED] pre-blind hand-start anchor fails sum-floor guard: sum(pre_hand)=8985 != chips-in-play 9000 with all 6 seats alive (no mis-alive seat to hide chips) captured_at=20260612_150525_165
+[FLOOR] fired=[short-stack]  eff_bb=5.29  cp=0  street=1  pre_argmax=ALLIN  post_argmax=ALLIN
+[FLOOR] fired=[short-stack]  eff_bb=5.29  cp=0  street=2  pre_argmax=CALL  post_argmax=CALL
+[FLOOR] fired=[short-stack]  eff_bb=5.29  cp=0  street=3  pre_argmax=CALL  post_argmax=CALL
+[FLOOR] fired=[short-stack]  eff_bb=5.96  cp=0  street=1  pre_argmax=ALLIN  post_argmax=ALLIN
+[FLOOR] fired=[short-stack]  eff_bb=5.51  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD
+[ANCHOR-REFUSED] pre-blind hand-start anchor fails sum-floor guard: sum(pre_hand)=8975 != chips-in-play 9000 with all 6 seats alive (no mis-alive seat to hide chips) captured_at=20260612_153336_240
+[ANCHOR-REFUSED] pre-blind hand-start anchor fails sum-floor guard: sum(pre_hand)=8950 != chips-in-play 9000 with all 6 seats alive (no mis-alive seat to hide chips) captured_at=20260612_154109_084
+[FLOOR] fired=[short-stack]  eff_bb=5.31  cp=0  street=0  pre_argmax=CALL  post_argmax=CALL
+[FLOOR] fired=[short-stack]  eff_bb=4.46  cp=0  street=1  pre_argmax=CALL  post_argmax=CALL
+[FLOOR] fired=[short-stack]  eff_bb=5.26  cp=0  street=1  pre_argmax=ALLIN  post_argmax=ALLIN
+[FLOOR] fired=[short-stack]  eff_bb=5.31  cp=0  street=0  pre_argmax=CALL  post_argmax=CALL
+[FLOOR] fired=[short-stack]  eff_bb=3.33  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD
+[FLOOR] fired=[short-stack]  eff_bb=3.18  cp=0  street=0  pre_argmax=ALLIN  post_argmax=ALLIN
+Replayed 1519 frames -> evals/commit_reconciliation_20260613/g2_armB_argmax/live_dryrun_20260612_183701.jsonl
+  skip_not_hero_to_act          1135
+  skip_data_quality              184
+  decision                       138
+  decision_cached                 54
+  safe_fold                        5
+  decision_recovered               2
+  decision_recovered_cached        1
+DeepCFR6MaxSolver  device=cpu  feature_dim=236  payout_mode=double_up  payouts=[2.0, 2.0, 2.0]
+[ANCHOR-REFUSED] pre-blind hand-start anchor fails sum-floor guard: sum(pre_hand)=8985 != chips-in-play 9000 with all 6 seats alive (no mis-alive seat to hide chips) captured_at=20260612_180131_279
+[ANCHOR-REFUSED] pre-blind hand-start anchor fails sum-floor guard: sum(pre_hand)=8975 != chips-in-play 9000 with all 6 seats alive (no mis-alive seat to hide chips) captured_at=20260612_180712_972
+[ANCHOR-REFUSED] pre-blind hand-start anchor fails sum-floor guard: sum(pre_hand)=8975 != chips-in-play 9000 with all 6 seats alive (no mis-alive seat to hide chips) captured_at=20260612_180940_849
+[ANCHOR-REFUSED] pre-blind hand-start anchor fails sum-floor guard: sum(pre_hand)=8950 != chips-in-play 9000 with all 6 seats alive (no mis-alive seat to hide chips) captured_at=20260612_181446_318
+[FLOOR] fired=[short-stack]  eff_bb=5.53  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD
+[FLOOR] fired=[short-stack]  eff_bb=5.37  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD
+[FLOOR] fired=[short-stack]  eff_bb=5.20  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD
+[ANCHOR-REFUSED] pre-blind hand-start anchor fails sum-floor guard: sum(pre_hand)=8925 != chips-in-play 9000 with all 6 seats alive (no mis-alive seat to hide chips) captured_at=20260612_182037_258
+[FLOOR] fired=[short-stack]  eff_bb=4.03  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD
+[FLOOR] fired=[short-stack]  eff_bb=2.23  cp=0  street=0  pre_argmax=ALLIN  post_argmax=ALLIN
+[FLOOR] fired=[short-stack]  eff_bb=2.08  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD
+[OOD-WARN] live out-of-training-support: level=5 hero_stack=385 (1.9 BB) captured_at=20260612_182248_495
+[OOD-WARN] live out-of-training-support: level=5 hero_stack=385 (1.9 BB) captured_at=20260612_182249_593
+[OOD-WARN] live out-of-training-support: level=5 hero_stack=385 (1.9 BB) captured_at=20260612_182251_551
+[OOD-WARN] live out-of-training-support: level=5 hero_stack=385 (1.9 BB) captured_at=20260612_182252_820
+[OOD-WARN] live out-of-training-support: level=5 hero_stack=385 (1.9 BB) captured_at=20260612_182254_079
+[FLOOR] fired=[short-stack]  eff_bb=1.93  cp=0  street=0  pre_argmax=CALL  post_argmax=CALL
+[OOD-WARN] live out-of-training-support: level=5 hero_stack=385 (1.9 BB) captured_at=20260612_182300_774
+[OOD-WARN] live out-of-training-support: level=5 hero_stack=185 (0.9 BB) captured_at=20260612_182302_414
+[OOD-WARN] live out-of-training-support: level=5 hero_stack=185 (0.9 BB) captured_at=20260612_182303_560
+[OOD-WARN] live out-of-training-support: level=5 hero_stack=185 (0.9 BB) captured_at=20260612_182309_288
+[OOD-WARN] live out-of-training-support: level=5 hero_stack=185 (0.9 BB) captured_at=20260612_182310_826
+Replayed 505 frames -> evals/commit_reconciliation_20260613/g2_armB_argmax/live_dryrun_20260612_220101.jsonl
+  skip_not_hero_to_act           428
+  decision                        38
+  skip_data_quality               23
+  decision_cached                 15
+  safe_fold                        1
+DeepCFR6MaxSolver  device=cpu  feature_dim=236  payout_mode=double_up  payouts=[2.0, 2.0, 2.0]
+[ANCHOR-REFUSED] pre-blind hand-start anchor fails sum-floor guard: sum(pre_hand)=8920 != chips-in-play 9000 with all 6 seats alive (no mis-alive seat to hide chips) captured_at=20260612_190540_391
+[OOD-WARN] live out-of-training-support: level=1 hero_stack=5 (0.2 BB) captured_at=20260612_190540_391
+[FLOOR] fired=[short-stack]  eff_bb=2.80  cp=0  street=0  pre_argmax=CALL  post_argmax=CALL
+[FLOOR] fired=[short-stack]  eff_bb=2.60  cp=0  street=0  pre_argmax=ALLIN  post_argmax=ALLIN
+[OOD-WARN] live out-of-training-support: level=2 hero_stack=65 (1.3 BB) captured_at=20260612_190722_597
+[OOD-WARN] live out-of-training-support: level=2 hero_stack=55 (1.1 BB) captured_at=20260612_190724_210
+[OOD-WARN] live out-of-training-support: level=2 hero_stack=55 (1.1 BB) captured_at=20260612_190725_681
+[OOD-WARN] live out-of-training-support: level=2 hero_stack=55 (1.1 BB) captured_at=20260612_190726_743
+[OOD-WARN] live out-of-training-support: level=2 hero_stack=55 (1.1 BB) captured_at=20260612_190733_638
+[FLOOR] fired=[short-stack]  eff_bb=1.10  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD
+[OOD-WARN] live out-of-training-support: level=2 hero_stack=55 (1.1 BB) captured_at=20260612_190734_296
+[OOD-WARN] live out-of-training-support: level=2 hero_stack=55 (1.1 BB) captured_at=20260612_190741_078
+[FLOOR] fired=[check-free]  eff_bb=30.40  cp=0  street=0  pre_argmax=FOLD  post_argmax=CALL
+[FLOOR] fired=[short-stack]  eff_bb=5.77  cp=0  street=1  pre_argmax=ALLIN  post_argmax=ALLIN
+[FLOOR] fired=[short-stack]  eff_bb=5.77  cp=0  street=1  pre_argmax=ALLIN  post_argmax=ALLIN
+[FLOOR] fired=[AA/KK]  eff_bb=64.88  cp=0  street=0  pre_argmax=ALLIN  post_argmax=ALLIN
+[FLOOR] fired=[AA/KK]  eff_bb=25.68  cp=0  street=0  pre_argmax=CALL  post_argmax=CALL
+[FLOOR] fired=[check-free]  eff_bb=22.09  cp=0  street=0  pre_argmax=FOLD  post_argmax=ALLIN
+Replayed 1649 frames -> evals/commit_reconciliation_20260613/g2_armB_argmax/live_dryrun_20260612_230149.jsonl
+  skip_not_hero_to_act          1195
+  skip_data_quality              225
+  decision                       114
+  decision_cached                 98
+  safe_fold                       11
+  decision_recovered               5
+  decision_recovered_cached        1
+ARM DONE -> evals/commit_reconciliation_20260613/g2_armB_argmax

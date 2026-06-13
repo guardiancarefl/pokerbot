@@ -1,0 +1,39 @@
+GATE 4 — new tests (tests/test_dead_button.py: exhibit fixtures + synthetic dead-button/dead-SB/double-elimination rotation + BB-advances-one-active invariant) and the pre-existing bridge suites.
+
+platform linux -- Python 3.10.20, pytest-9.0.3, pluggy-1.6.0 -- /home/quant/pokerbot/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: /home/quant/pokerbot
+plugins: timeout-2.4.0
+collecting ... collected 24 items
+
+tests/test_dead_button.py::test_flag_off_drops_both_exhibits PASSED      [  4%]
+tests/test_dead_button.py::test_flag_off_ignores_additive_dealer_dead_key PASSED [  8%]
+tests/test_dead_button.py::test_flag_off_alive_dealer_unchanged PASSED   [ 12%]
+tests/test_dead_button.py::test_flag_on_parses_qdkc PASSED               [ 16%]
+tests/test_dead_button.py::test_flag_on_parses_tsac PASSED               [ 20%]
+tests/test_dead_button.py::test_additive_key_preferred_true PASSED       [ 25%]
+tests/test_dead_button.py::test_additive_key_false_contradiction_drops PASSED [ 29%]
+tests/test_dead_button.py::test_additive_key_absent_derives_from_seat PASSED [ 33%]
+tests/test_dead_button.py::test_additive_key_true_on_alive_dealer_is_annotation_only PASSED [ 37%]
+tests/test_dead_button.py::test_qdkc_blinds_match_observed_posts PASSED  [ 41%]
+tests/test_dead_button.py::test_tsac_blinds_match_observed_posts PASSED  [ 45%]
+tests/test_dead_button.py::test_dead_button_single_elimination_rotation PASSED [ 50%]
+tests/test_dead_button.py::test_dead_sb_rotation PASSED                  [ 54%]
+tests/test_dead_button.py::test_double_elimination_dead_button_and_dead_sb PASSED [ 58%]
+tests/test_dead_button.py::test_bb_advances_one_active_across_exhibit_hands PASSED [ 62%]
+tests/test_dead_button.py::test_qdkc_replays_to_hero_invariant_pass PASSED [ 66%]
+tests/test_dead_button.py::test_tsac_replays_to_hero_invariant_pass PASSED [ 70%]
+tests/test_dead_button.py::test_hand_start_anchor_on_dead_button_hand PASSED [ 75%]
+tests/test_dead_button.py::test_make_decision_flag_off_unchanged PASSED  [ 79%]
+tests/test_dead_button.py::test_make_decision_qdkc_counterfactual PASSED [ 83%]
+tests/test_dead_button.py::test_make_decision_tsac_counterfactual PASSED [ 87%]
+tests/test_dead_button.py::test_make_decision_tsac_reraise_counterfactual PASSED [ 91%]
+tests/test_dead_button.py::test_qdkc_action_sequence PASSED              [ 95%]
+tests/test_dead_button.py::test_tsac_action_sequence PASSED              [100%]
+
+============================== 24 passed in 4.30s ==============================
+
+── pre-existing bridge suites (unchanged) ──
+........................................................................ [ 90%]
+.......................                                                  [100%]
+239 passed in 6.28s

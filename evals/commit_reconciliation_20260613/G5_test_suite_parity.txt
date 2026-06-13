@@ -1,0 +1,26 @@
+CR — Gate 5: full test-suite parity (2026-06-13)
+=================================================
+Main tree (D2 working-tree changes + CR build), python -m pytest tests/ -q:
+  33 failed, 1111 passed, 5 skipped, 1 warning, 27 errors  (11m26s)
+All 27 new CR tests (tests/test_commit_reconciliation.py) pass; the P1/P2/
+bridge suites (test_anchor_sum_floor, test_bet_closure_recovery,
+test_integration_mid_hand_invariant, test_integration_replay_to_decision)
+pass.
+
+ATTRIBUTION — every FAILED/ERROR is pre-existing at committed HEAD
+(9a2bf5d), proven two-sided in a clean worktree (/tmp/cr_g5_baseline,
+runs/ symlinked so artifact-gated tests actually run instead of skipping):
+  families test_solver6 / test_subgame_leaf / test_dashboard_self_anchor /
+  test_ablation_decision_level: 46 failure ids — IDENTICAL sets worktree
+  vs main (diff empty).
+  families test_dashboard / test_eval_pool_ablation /
+  test_parallel_orchestrator: 14 failure ids — IDENTICAL sets worktree vs
+  main (diff empty).
+  46 + 14 = 60 = 33 FAILED + 27 ERROR: fully accounted for; none touch the
+  integration bridge (typical signature: solver6 test-stub drift,
+  '_StubAbstraction' object has no attribute 'streets').
+Registration note: the registered count "1054 pass" predates tests added
+since (D2 fixtures, CR's 27, etc.); the binding clause "same pre-existing
+failures" holds exactly.
+
+Failure id lists: g5_failed_ids_main.txt (this dir).

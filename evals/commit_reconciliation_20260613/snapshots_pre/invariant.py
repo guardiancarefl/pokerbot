@@ -407,45 +407,6 @@ def check_hand_start_invariant(frame: ScraperFrame,
     )
 
 
-@dataclass(frozen=True)
-class ReconciledEmission:
-    """Exact emission knowledge for check_mid_hand_invariant, supplied
-    ONLY by the anchored commit-reconciliation rebuild (live_loop.
-    _attempt_commit_reconciliation, 2026-06-13). Default-None callers are
-    byte-identical to the pre-CR gate.
-
-    The gate's per-field checks (exact stack/bet/pot/current_player/
-    street/cards equality) are UNCHANGED. What this replaces is the
-    gate's two HEURISTICS for the library's ante-bookkeeping quirk —
-    heuristics that guess, from the frame alone, which convention each
-    seat's OpenSpiel `spent` used. The rebuilder KNOWS, because it
-    emitted the sequence and can read the resulting state:
-
-      all_in_raise_chip_ints — chip ints of pre-hand-convention all-in
-        RAISES actually present in the replayed state (emitted raise
-        whose post-replay money == 0, i.e. the chip_int=pre_hand
-        convention incl. replay.py's Class B fallback). Replaces the
-        frame-side heuristic that lists EVERY all-in seat's pre-hand —
-        which over-triggers on an all-in CALL-for-less: a call never
-        moves maxSpent, so nobody "matched" it, yet the heuristic's
-        `contrib >= max` test reroutes every normally-committed seat
-        through the no-ante-subtract branch (live 2026-06-12 seq 1635:
-        seat2's 59-chip call-for-less mis-rendered seat3's correct
-        175-lifetime call as stack 3314 / bet 125 / pot 484 against the
-        true 3289 / 150 / 509).
-      preflop_delayed_fold_seats — seats whose PREFLOP voluntary action
-        (limp/call/raise) was emitted before their fold. Their ante was
-        absorbed (credited back to money) at the voluntary action and
-        the scraper sweeps their bet display to 0 on fold; the default
-        mask/view never models this on preflop because the pre-CR
-        derivation never emitted preflop limp-then-fold (a folded
-        seat's preflop commit read 0 off the swept bet field — the
-        exact under-count CR exists to fix; live seq 1086).
-    """
-    all_in_raise_chip_ints: tuple[int, ...] = ()
-    preflop_delayed_fold_seats: tuple[int, ...] = ()
-
-
 def _canonical_card_string(cards) -> str:
     """Normalize a card representation (str 'AhKs' or tuple ('Ah','Ks')) to
     sorted concatenated form for canonical comparison."""
@@ -457,16 +418,8 @@ def _canonical_card_string(cards) -> str:
     return "".join(sorted(chunks))
 
 
-def check_mid_hand_invariant(frame, state_pack,
-                              reconciled_emission: "ReconciledEmission | None" = None,
-                              ) -> InvariantResult:
+def check_mid_hand_invariant(frame, state_pack) -> InvariantResult:
     """Strict invariant check for mid-hand hero-to-act state.
-
-    reconciled_emission (default None = byte-identical pre-CR behavior):
-    exact emission knowledge from the anchored commit-reconciliation
-    rebuild, replacing the gate's frame-side ante-bookkeeping heuristics
-    — see ReconciledEmission. Every load-bearing equality check below is
-    unchanged either way.
 
     Real-ante convention: chip ints flow scraper → OpenSpiel → scraper with
     no translation. Bit-exact per-seat stack + bet + pot equality is the
@@ -530,14 +483,6 @@ def check_mid_hand_invariant(frame, state_pack,
         pre_hand=state_pack.pre_hand_stacks,
         ante=ante,
     )
-    if reconciled_emission is not None:
-        # CR exact knowledge: a preflop limp/call/raise-then-fold seat
-        # absorbed its ante at the voluntary action (the default preflop
-        # mask only inspects still-in-hand seats). See ReconciledEmission.
-        absorbed = tuple(
-            absorbed[i] or i in reconciled_emission.preflop_delayed_fold_seats
-            for i in range(NUM_SEATS)
-        )
 
     # Class A-deeper / Option A gated: when ANY seat is all-in via the
     # chip_int=pre_hand convention (replay_to_decision's Class B
@@ -556,24 +501,17 @@ def check_mid_hand_invariant(frame, state_pack,
     # Strictly additive: when no all-in seat exists, preflop_max_chip_int
     # stays 0; no seat's contrib satisfies the matched_all_in check;
     # standard branch for every seat (= live_1500 100% preserved).
-    if reconciled_emission is not None:
-        # CR exact knowledge: only pre-hand-convention RAISES actually
-        # present in the replayed state can be "matched" by other seats
-        # (a call-for-less never moves maxSpent). See ReconciledEmission.
-        all_in_seats_chip_ints = list(
-            reconciled_emission.all_in_raise_chip_ints)
-    else:
-        all_in_seats_chip_ints = []
-        for i in range(NUM_SEATS):
-            pre_i = int(state_pack.pre_hand_stacks[i])
-            if pre_i <= 0:
-                continue
-            if not frame.alive[i]:
-                # Busted-mid-hand
-                all_in_seats_chip_ints.append(pre_i)
-            elif int(frame.stack[i]) == 0 and int(frame.bet[i]) > 0:
-                # Voluntarily all-in (Class B fallback territory)
-                all_in_seats_chip_ints.append(pre_i)
+    all_in_seats_chip_ints = []
+    for i in range(NUM_SEATS):
+        pre_i = int(state_pack.pre_hand_stacks[i])
+        if pre_i <= 0:
+            continue
+        if not frame.alive[i]:
+            # Busted-mid-hand
+            all_in_seats_chip_ints.append(pre_i)
+        elif int(frame.stack[i]) == 0 and int(frame.bet[i]) > 0:
+            # Voluntarily all-in (Class B fallback territory)
+            all_in_seats_chip_ints.append(pre_i)
     busted_mid_hand_exists = len(all_in_seats_chip_ints) > 0
     preflop_max_chip_int = (
         max(all_in_seats_chip_ints) if all_in_seats_chip_ints else 0
@@ -591,20 +529,6 @@ def check_mid_hand_invariant(frame, state_pack,
         busted_mid_hand_exists=busted_mid_hand_exists,
         preflop_max_chip_int=preflop_max_chip_int,
     )
-    if reconciled_emission is not None:
-        # CR exact knowledge: a preflop limp-then-fold seat's bet display
-        # is swept to 0 by the scraper on fold; the absorbed-branch view
-        # (bet = contrib) has no preflop fold case. Their chips stay in
-        # the view's pot via the absorbed mask above — only the bet
-        # display is zeroed, mirroring the view's own folded branch.
-        recon_handlevel = {
-            **recon_handlevel,
-            "bet": tuple(
-                0 if i in reconciled_emission.preflop_delayed_fold_seats
-                else recon_handlevel["bet"][i]
-                for i in range(NUM_SEATS)
-            ),
-        }
 
     deltas = []
 

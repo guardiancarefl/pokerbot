@@ -1,0 +1,36 @@
+DeepCFR6MaxSolver  device=cpu  feature_dim=236  payout_mode=double_up  payouts=[2.0, 2.0, 2.0]
+=== QdKc (seq 908-914, dealer DEAD on empty seat2, 75/150/25) ===
+  seq=905 status=skip_not_hero_to_act reason=controls.present=False (not a hero-to-act decision: hand-start, muck-o
+  seq=906 status=skip_not_hero_to_act reason=controls.present=False (not a hero-to-act decision: hand-start, muck-o
+  seq=907 status=skip_not_hero_to_act reason=controls.present=False (not a hero-to-act decision: hand-start, muck-o
+  seq=908 status=skip_not_hero_to_act reason=controls.present=False (not a hero-to-act decision: hand-start, muck-o
+  seq=909 status=skip_not_hero_to_act reason=controls.present=False (not a hero-to-act decision: hand-start, muck-o
+  seq=910 status=skip_not_hero_to_act reason=controls.present=False (not a hero-to-act decision: hand-start, muck-o
+  seq=911 status=skip_data_quality reason=ScraperSuspect: frame marked suspect by scraper; dropping. captured_at
+  seq=912 status=decision action={'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0} chip_int=0 override=True
+  >> sb_seat=3 bb_seat=4 sb_post_observed=75 bb_post_observed=150 blinds=(75,150,25) invariant_ok=True deltas=[] current_player=0 hero=0 pre_hand=(2807, 0, 0, 1640, 3558, 995) (sum=9000)
+  seq=913 status=skip_not_hero_to_act reason=controls.present=False (not a hero-to-act decision: hand-start, muck-o
+  seq=914 status=skip_not_hero_to_act reason=controls.present=False (not a hero-to-act decision: hand-start, muck-o
+
+=== TsAc (seq 1360-1372, dealer DEAD on busted seat5, 50/100/15) ===
+  seq=1357 status=skip_not_hero_to_act reason=controls.present=False (not a hero-to-act decision: hand-start, muck-o
+  seq=1358 status=skip_not_hero_to_act reason=controls.present=False (not a hero-to-act decision: hand-start, muck-o
+  seq=1359 status=skip_not_hero_to_act reason=controls.present=False (not a hero-to-act decision: hand-start, muck-o
+  seq=1360 status=skip_not_hero_to_act reason=controls.present=False (not a hero-to-act decision: hand-start, muck-o
+  seq=1361 status=skip_not_hero_to_act reason=controls.present=False (not a hero-to-act decision: hand-start, muck-o
+  seq=1362 status=skip_not_hero_to_act reason=controls.present=False (not a hero-to-act decision: hand-start, muck-o
+  seq=1363 status=skip_not_hero_to_act reason=controls.present=False (not a hero-to-act decision: hand-start, muck-o
+  seq=1364 status=skip_not_hero_to_act reason=controls.present=False (not a hero-to-act decision: hand-start, muck-o
+  seq=1365 status=skip_not_hero_to_act reason=controls.present=False (not a hero-to-act decision: hand-start, muck-o
+  seq=1366 status=decision action={'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0} chip_int=0 override=True
+  >> sb_seat=0 bb_seat=1 sb_post_observed=50 bb_post_observed=100 blinds=(50,100,15) invariant_ok=True deltas=[] current_player=0 hero=0 pre_hand=(3590, 1023, 2042, 2345, 0, 0) (sum=9000)
+  seq=1367 status=decision_cached action={'kind': 'fold', 'chip_amount': None, 'raw_openspiel_chip_int': 0} chip_int=0 override=True
+  >> sb_seat=0 bb_seat=1 sb_post_observed=50 bb_post_observed=100 blinds=(50,100,15) invariant_ok=True deltas=[] current_player=0 hero=0 pre_hand=(3590, 1023, 2042, 2345, 0, 0) (sum=9000)
+  seq=1368 status=skip_not_hero_to_act reason=controls.present=False (not a hero-to-act decision: hand-start, muck-o
+  seq=1369 status=skip_not_hero_to_act reason=controls.present=False (not a hero-to-act decision: hand-start, muck-o
+  seq=1370 status=decision action={'kind': 'raise_to', 'chip_amount': 3575, 'raw_openspiel_chip_int': 3590} chip_int=3590 override=True
+  >> sb_seat=None bb_seat=0 sb_post_observed=None bb_post_observed=100 blinds=(50,100,15) invariant_ok=True deltas=[] current_player=0 hero=0 pre_hand=(3590, 1023, 2042, 2345, 0, 0) (sum=9000)
+  seq=1371 status=skip_not_hero_to_act reason=controls.present=False (not a hero-to-act decision: hand-start, muck-o
+  seq=1372 status=skip_data_quality reason=ScraperDataQuality: n_alive=3 < 4; below the trained model's sample_st
+
+GATE 3 PASS: both exhibit hands decidable end-to-end; invariant PASS; blind placement matches observed posts exactly.

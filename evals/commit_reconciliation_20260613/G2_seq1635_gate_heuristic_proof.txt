@@ -1,0 +1,59 @@
+Why seq 1635 cannot pass the literal pre-CR invariant gate — proof
+===================================================================
+(Supports SUMMARY.txt "REGISTRATION DEVIATIONS" item 1: the flag-gated
+ReconciledEmission input to check_mid_hand_invariant.)
+
+Frame (scraper, proven correct by the seq 1646-47 ground truth chain):
+  blinds 75/150/25, dealer seat3, 4 alive (anchor (3792,59,3464,1685,0,0))
+  stacks (3617, 0, 3289, 1585, -, -)   bets (150, 34, 150, 0, -, -)
+  pot 509, hero seat1 = BB with free CHECK.
+
+Empirical replay (this build's probe; identical under the pre-CR
+derivation, action_seq [(1,1),(2,1),(3,0)] + empty folds):
+  OpenSpiel money   = [3617, 0, 3314, 1585, 1, 1]
+  OpenSpiel contrib = [ 175, 59,  150,  100, 0, 0]
+The replayed chips are EXACT: seat3's lifetime = 3464 - 3314 + 25(ante
+credited back on absorption) = 175 = ante + the 150 call. The correct
+view of seat3 is the STANDARD absorbed branch: stack = money - ante =
+3289, bet = contrib = 150, pot = sum(contrib) + 1 absorbed-unmatched
+ante = 484 + 25 = 509 — all three equal the scraper frame.
+
+The pre-CR gate however computes (invariant.py, frame-side heuristic):
+  all_in_seats_chip_ints = [pre_hand of every all-in seat] = [59]
+    (seat2: frame.stack 0, bet 34 > 0 -> its pre-hand 59 is listed)
+  matched_all_in[i] = contrib[i] >= max(59)
+seat3's contrib 150 >= 59 -> seat3 is routed through the
+no-ante-subtract ("matched the all-in convention") branch:
+  stack = money = 3314   bet = contrib - ante = 125   pot = 484
+-> 3 deltas vs the correct frame. (These are exactly the live deltas.)
+
+Why no rebuild can avoid it: the heuristic's inputs are the frame
+(fixed — CR never patches it), state_pack.pre_hand_stacks (the anchor,
+fixed) and the replayed contrib. Any LEGAL sequence reproducing the true
+commits gives seat3 lifetime 175 / displayed contrib 150 (a caller
+cannot commit 175 except via chip_int=1 at maxSpent=175; no raise to
+150 or 175 is legal above the 150 max with min-raise 300). contrib 150
+>= 59 always -> the mis-render is unconditional.
+
+Why the heuristic is wrong here: its design assumption ("subsequent
+callers reach spent = pre_hand", openspiel_to_scraper_view comment)
+holds when the all-in is a RAISE that moves maxSpent. seat2's all-in is
+a CALL-for-less (34 = 59 - 25 < the 150 to call): it never moves
+maxSpent, so no seat can "match" it. The exact-knowledge replacement
+(ReconciledEmission.all_in_raise_chip_ints = pre-hand-convention RAISES
+actually present in the replayed state: emitted raise + post-replay
+money == 0) is empty for this hand -> seat3 takes the standard branch
+-> the gate's unchanged equality checks pass against the true frame.
+
+Sanity for the heuristic's designed case (live 1086 in the same build):
+seat6's 1613 shove IS a raise; replay's Class B fallback applies
+chip_int = pre_hand = 1618; post-replay money[seat6] == 0 -> the exact
+list is [1618], reproducing the pre-CR matched logic for the seats that
+genuinely use the pre-hand convention.
+
+Flag-OFF consequence (why this is NOT an unconditional bug fix): fixing
+the heuristic for default callers would flip seq-1635-class frames from
+invariant_fail to clean decisions with the flag OFF, violating G1's
+byte-identity. The replacement is therefore only reachable through the
+CR path (reconciled_emission != None); every default call is
+bit-identical (G1: 9750/9750).

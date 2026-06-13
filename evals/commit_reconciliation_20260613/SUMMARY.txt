@@ -1,0 +1,156 @@
+CR — anchored commit reconciliation (session-5 build, 2026-06-13)
+==================================================================
+Pre-registration: evals/p2_session5_validation_20260613/REPORT.txt (G1-G5
+binding); per-pin ground truth in PER_PIN_ANALYSIS.txt (same dir).
+Flag: --commit-reconciliation (OFF by default, requires --anchor-sum-floor,
+mirrors P1/P2 plumbing in run_live_dryrun.py + replay_make_decision_diff.py
++ make_decision(commit_reconciliation=...)).
+
+THE CLASS (proven live 2026-06-12, log live_dryrun_20260612_230149.jsonl):
+the scraper frame is RIGHT (anchor-conserving; outcome ground truth sided
+with it 3/3) and the bridge's reconstructed action sequence UNDER-COUNTS
+non-hero commits — swept folded blinds (seq 780 8c8d), limp-then-fold
+(seq 1086 AcAh), ante-bookkeeping on an all-in-for-less hand (seq 1635
+5hTs). P2 correctly refuses all three (its patch direction is backwards
+for this class); the fix is REPLAY-SIDE.
+
+MECHANISM (new code only; no shared-line edits — D2 coordination):
+  1. classify_commit_reconciliation_deltas (scraper_schema.py): candidate
+     iff EVERY invariant delta is a pot/stack[N]/bet[N] field; anything
+     else (current_player, cards, scraper_self_consistency, ...) drops
+     byte-identically with no annotation (the seq-271 family).
+  2. Gates: P1 armed; a clean REGULAR hand-start anchor for this hand-key
+     (anchor_for; the regular anchor doubles as the positive
+     blind-structure evidence — is_hand_start fires only when BOTH blinds
+     were seen posted, so dead-SB hands can never serve one: this is what
+     keeps seq-276 refusing, G3); strict chip conservation
+     (Σ stack[at-start] + pot == Σ anchor); per-seat implied commits
+     (anchor[i] − stack[i] − ante) all >= 0 and >= visible bet; hero and
+     every live non-folded seat's implied commit EQUAL to its visible
+     bet; preflop frames only (postflop derivation already implies folded
+     commits from stack arithmetic — not this class).
+  3. build_commit_reconciliation_shadow: a DERIVATION-ONLY copy of the
+     frame with folded seats' swept bets restored to their anchor-implied
+     commits. Restoring a folded blind re-enters Predicate 1's
+     posted-blind detection (seq 780: the recon had mis-assigned BB=hero
+     because the folded SB/BB rendered bet=null); restoring a swept limp
+     re-enters the existing delayed-fold emission (seq 1086). The shadow
+     feeds ONLY derive_action_sequence/replay_to_decision — never the
+     invariant, the tracker, or the model.
+  4. Re-validation: the UNCHANGED scraper frame goes through the same
+     replay_to_decision (anchor override, no simple-model fallback) +
+     check_mid_hand_invariant bar as every clean frame. The gate's two
+     ante-bookkeeping HEURISTICS are replaced by the rebuild's exact
+     emission knowledge (invariant.py ReconciledEmission, default-None =
+     byte-identical): (a) pre-hand-convention all-in RAISES actually in
+     the replayed state instead of the frame-side "any all-in seat" list
+     — which over-triggers on an all-in CALL-for-less (seq 1635: seat2's
+     59-chip call mis-rendered seat3's correct 175-chip lifetime as
+     stack 3314/bet 125/pot 484 vs true 3289/150/509; empirically
+     verified money[seat3]=3314, contrib=150 — the replayed chips were
+     RIGHT and the view branch was wrong); (b) preflop
+     limp-then-fold seats' ante absorption + swept bet display (never
+     reachable pre-CR: the old derivation read folded preflop commits
+     off the swept bet field, the exact under-count CR fixes). Every
+     equality check in the gate is untouched.
+  5. On success the pipeline continues on the ORIGINAL frame + rebuilt
+     pack: status decision_recovered, recovered_fields labels
+     "(commit_reconciliation)". The frame is never patched.
+
+GATE RESULTS (evidence files in this directory)
+  G1  PASS — flag-OFF byte-identity: 9750/9750 frames identical across
+      all 17 raw-record logs (the registered 15 + 2 surplus), --strict.
+      G1_flag_off_byte_identity.txt. (pre = pre-build tree snapshot incl.
+      concurrent D2 working-tree state; CR-only diff hunks verified.)
+  G2  PASS — armed counterfactual (armA = P1+P2, armB = P1+P2+CR, seed
+      42) over all 17 logs, BOTH modes (sample = live shape; argmax =
+      D2's structural-isolation mode). All three pins recover with the
+      registered believed states, identically in both modes:
+        seq 780  8c8d: pot 1017, hero 2408, facing 692 (stacks
+                 1630/2685 enforced by the gate's per-seat equality);
+        seq 1086 AcAh: pot 2693, stack3 1677, decision CALL 613 (the
+                 registered decision, both modes);
+        seq 1635 5hTs: pot 509, bet3 150, stack3 3289, CHECK available
+                 — but the POLICY chose ALLIN (deviation 2 below).
+      Confinement (argmax, strict): 14 changed frames / 9750, ALL
+      invariant_fail — 4 recoveries + 10 annotated refusals; zero
+      changes elsewhere (G2_armA_vs_armB_argmax.txt). Sample mode adds
+      only status-preserving rng-cascade action drift
+      (G2_armA_vs_armB_sample.txt; deviation 3). One UNREGISTERED
+      recovery: 183701 seq 697 KhQc — individually ground-truth-verified
+      as the seq-1635 sub-class on two callers, zero restorations
+      (G2_seq697_bonus_recovery_verdict.txt). Evidence: G2_pins.txt,
+      G2_seq1635_gate_heuristic_proof.txt.
+  G3  PASS — seq 276 (161347, dead-SB misrender) STILL REFUSES in armB,
+      both modes: "no clean REGULAR hand-start anchor" (a dead-SB hand
+      has no SB poster, so is_hand_start can never anchor it — the
+      positive-blind-structure-evidence requirement, structurally
+      satisfied; bb_only hands refuse by the same gate). Unit fixtures
+      pin both the CR-only and P1+P2+CR shapes.
+      Evidence: G3_seq276.txt.
+  G4  PASS — all 9 P2 gate-2 displacement-family frames re-checked
+      frame-by-frame in armB, both modes: ZERO recoveries. The 53-chip
+      class (201230 seqs 13/14) refuses at the live-seat
+      commit-consistency gate ("live seat5 implied commit 53 != visible
+      bet 0"); the multi-seat closures (429/1891/2097/153) refuse at the
+      hero-commit gate; 2679/2681 and 276 refuse at the regular-anchor
+      gate. Evidence: G4_displacement_family.txt.
+  G5  PASS — full suite: 1111 passed, 5 skipped, 33 failed + 27 errors,
+      ALL 60 failure ids proven pre-existing at committed HEAD 9a2bf5d
+      via a clean-worktree two-sided diff (identical failure sets; none
+      touch the bridge). All 27 new CR tests pass; P1/P2/bridge suites
+      pass. The registered "1054 pass" count predates tests added since
+      (D2 fixtures, CR's 27); the binding "same pre-existing failures"
+      clause holds exactly. Evidence: G5_test_suite_parity.txt,
+      g5_failed_ids_main.txt.
+
+REGISTRATION DEVIATIONS (explicit)
+  1. "re-validate through the UNCHANGED replay+invariant gate": the gate's
+     equality checks are unchanged and the bar is not loosened anywhere,
+     but recovering seq 1635 is IMPOSSIBLE through the literal pre-CR
+     gate: with frame, anchor and state all fixed, the view's
+     matched_all_in heuristic (contrib >= 59) deterministically
+     mis-renders seat3 for ANY legal action sequence reproducing the true
+     commits (proof: the replayed chips are exact — money 3314 = 3464 −
+     175 + 25 ante credit — and no legal emission can avoid contrib 150
+     >= 59). The fix is the flag-gated ReconciledEmission input above:
+     exact emission knowledge replaces the heuristic ONLY on the CR
+     re-validation path; every default caller is bit-identical (G1).
+  2. "seq 1635 ... decision CHECK": the believed state recovers exactly
+     as registered (pot 509, bet3 150, stack3 3289, CHECK available,
+     facing_bet False) — but the POLICY, not CR, chooses the action, and
+     the policy's post-floor distribution at this state is ALLIN 0.63 /
+     CHECK 0.19 / raises 0.18 (sample seed 42 drew ALLIN; argmax is also
+     ALLIN). The registered "CHECK" is the ground-truth/fallback action
+     the operator's hand realized, not the model's choice. The unit
+     fixture asserts the registered believed state + CHECK availability;
+     the policy's 5hTs jam preference at 24bb is the RT-1/H1 tail-class
+     concern, out of CR's scope — flagged for the arming decision.
+  3. G2's "changes ONLY at recon-side invariant_fail frames" holds
+     strictly in argmax mode. In sample mode the three new recoveries
+     consume rng draws, so later unrelated frames' SAMPLED actions can
+     shift (the known shared-rng-stream cascade D2's --mode argmax was
+     added to isolate). Both modes are evidenced.
+
+WHAT DID NOT CHANGE
+  - SessionTracker: untouched (CR uses the existing anchor_for accessor;
+    no new tracker state, no observe() changes — regular anchors only).
+  - P2 path, Layer-1 suspect recovery, DecisionCache, click plans, all
+    flag-OFF behavior.
+  - The frame fed to the model/cache/READ panel on CR recoveries is the
+    raw scraper frame, verbatim.
+
+FILES
+  src/nlhe/integration/scraper_schema.py  — new CR section appended
+    (classify_commit_reconciliation_deltas, implied_commits_from_anchor,
+    build_commit_reconciliation_shadow)
+  src/nlhe/integration/invariant.py       — ReconciledEmission dataclass;
+    check_mid_hand_invariant(..., reconciled_emission=None) keyword
+  src/nlhe/integration/live_loop.py       — _attempt_commit_reconciliation
+    + step-6c hook + commit_reconciliation kwarg
+  scripts/run_live_dryrun.py              — --commit-reconciliation flag
+    (requires --anchor-sum-floor), header field, ARMED banner
+  scripts/replay_make_decision_diff.py    — --commit-reconciliation flag
+  tests/test_commit_reconciliation.py     — 27 tests (3 pin fixtures with
+    ground-truth chains, G3 dead-SB fixture, refusal classes, classifier
+    + shadow-builder units, default-kwarg identity regression)

@@ -514,20 +514,6 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                           "re-validating through the unchanged replay+"
                           "invariant gate. Requires --anchor-sum-floor "
                           "(gated on P1). OFF by default.")
-    ap.add_argument("--commit-reconciliation", action="store_true",
-                     help="CR anchored commit reconciliation (pre-registered "
-                          "2026-06-13, evals/p2_session5_validation_20260613/"
-                          "REPORT.txt): on invariant-failed frames whose "
-                          "deltas are all pot/stack/bet fields, trust the "
-                          "SCRAPER frame when it conserves chips against the "
-                          "clean P1 hand-start anchor, rebuild the believed "
-                          "action sequence from anchor-implied per-seat "
-                          "commits (swept folded blinds, limp-then-fold — "
-                          "the 2026-06-12 seq 780/1086/1635 casualty class), "
-                          "and re-validate the UNCHANGED frame through the "
-                          "replay+invariant gate. The mirror family of P2: "
-                          "the frame is never patched. Requires "
-                          "--anchor-sum-floor (gated on P1). OFF by default.")
     ap.add_argument("--dead-button-handling", action="store_true",
                      help="D2 dead-button position handling (operator "
                           "directive 2026-06-12): accept frames whose "
@@ -590,13 +576,6 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
             "start anchor, so the anchor must be sum-floor guarded "
             "(seq-1363 poisoned-anchor postmortem).")
 
-    if args.commit_reconciliation and not args.anchor_sum_floor:
-        ap.error(
-            "--commit-reconciliation requires --anchor-sum-floor: CR is "
-            "gated on P1 — the rebuild derives per-seat commits from the "
-            "hand-start anchor, so the anchor must be sum-floor guarded "
-            "(seq-1363 poisoned-anchor postmortem).")
-
     return args
 
 
@@ -635,13 +614,6 @@ def main() -> int:
         print(_color("[run_live_dryrun] P2 bet-closure recovery ARMED "
                       "(displacement-signature invariant_fail frames may "
                       "recover via anchor-derived bet/stack split)",
-                      YELLOW), flush=True)
-    if args.commit_reconciliation:
-        header["commit_reconciliation"] = True
-        print(_color("[run_live_dryrun] CR commit reconciliation ARMED "
-                      "(pot/stack/bet invariant_fail frames that conserve "
-                      "chips against the anchor may recover via a replay "
-                      "rebuilt from anchor-implied per-seat commits)",
                       YELLOW), flush=True)
     if args.dead_button_handling:
         header["dead_button_handling"] = True
@@ -790,8 +762,7 @@ def main() -> int:
                                extended_click_plans=args.extended_click_plans,
                                tail_floor_tau=args.tail_floor_tau,
                                bet_closure_recovery=args.bet_closure_recovery,
-                               dead_button_handling=args.dead_button_handling,
-                               commit_reconciliation=args.commit_reconciliation)
+                               dead_button_handling=args.dead_button_handling)
 
             # Enforced session abort: decisions still computed + logged,
             # but the EXECUTION surface (click plan) is suppressed until

@@ -45,7 +45,6 @@ def process(log_path: str, out_path: str, checkpoint: str,
             anchor_sum_floor: bool = False,
             bet_closure_recovery: bool = False,
             dead_button_handling: bool = False,
-            commit_reconciliation: bool = False,
             mode: str = "sample"):
     from src.nlhe.abstraction import Abstraction
     from src.nlhe.game_strings import TournamentStructure
@@ -77,8 +76,7 @@ def process(log_path: str, out_path: str, checkpoint: str,
                               mode=mode, seq=seq,
                               decision_cache=cache,
                               bet_closure_recovery=bet_closure_recovery,
-                              dead_button_handling=dead_button_handling,
-                              commit_reconciliation=commit_reconciliation)
+                              dead_button_handling=dead_button_handling)
             row = {"seq": seq, "captured_at": d.captured_at}
             row["status"] = d.status
             row["skip_reason"] = d.skip_reason
@@ -191,9 +189,6 @@ def main():
                     help="arm D2 dead-button position handling "
                          "(dealer-on-eliminated-seat frames parse; "
                          "counterfactual runs)")
-    p1.add_argument("--commit-reconciliation", action="store_true",
-                    help="arm CR anchored commit reconciliation (requires "
-                         "--anchor-sum-floor; counterfactual runs)")
     p1.add_argument("--mode", default="sample",
                     choices=("sample", "argmax"),
                     help="policy mode for the replayed make_decision. "
@@ -213,7 +208,6 @@ def main():
                 args.seed, anchor_sum_floor=args.anchor_sum_floor,
                 bet_closure_recovery=args.bet_closure_recovery,
                 dead_button_handling=args.dead_button_handling,
-                commit_reconciliation=args.commit_reconciliation,
                 mode=args.mode)
     elif args.cmd == "diff":
         n = diff(args.pre, args.post,

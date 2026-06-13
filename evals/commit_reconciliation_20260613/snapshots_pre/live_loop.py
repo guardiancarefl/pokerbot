@@ -67,11 +67,6 @@ class LiveDecision:
     #                              an invariant-failed displacement-signature
     #                              frame (2026-06-11 postmortem; field labels
     #                              "(bet_closure...)" in recovered_fields)
-    #                              or a flag-gated CR commit reconciliation:
-    #                              the UNCHANGED frame decided on a replay
-    #                              rebuilt from anchor-implied commits
-    #                              (2026-06-13; labels
-    #                              "(commit_reconciliation...)")
     #   "decision_recovered_cached" — ditto, action came from DecisionCache
     #   "safe_fold"              — invariant fail / replay error → no plan
     #   "skip_not_hero_to_act"   — frame parsed, hero not to act
@@ -864,148 +859,6 @@ def _attempt_bet_closure_recovery(frame, inv, structure, tracker):
     return eff, pack, recovered, "ok"
 
 
-def _attempt_commit_reconciliation(frame, inv, structure, tracker):
-    """Anchored commit reconciliation for invariant-failed frames whose
-    deltas are confined to pot/stack/bet fields (CR — 2026-06-13 session-5
-    build; pre-registered in evals/p2_session5_validation_20260613/
-    REPORT.txt). The MIRROR family of P2: the SCRAPER frame is correct
-    (anchor-conserving; outcome ground truth sided with it 3/3 on
-    2026-06-12) and the RECONSTRUCTION under-counts non-hero commits —
-    swept folded blinds (live seq 780), limp-then-fold (seq 1086),
-    ante-bookkeeping on an all-in-for-less hand (seq 1635).
-
-    Returns (pack, recovered_fields, why):
-      pack None, why None  -> NOT the commit-family signature; the caller
-                              must drop the frame byte-identically to the
-                              pre-CR path (no annotation).
-      pack None, why set   -> family, reconciliation REFUSED; caller
-                              drops exactly as before plus the audit
-                              annotation.
-      pack set             -> re-validated replay pack for the UNCHANGED
-                              scraper frame; recovered_fields like
-                              ["commit.seat4=50 (commit_reconciliation)",
-                               ...]. The caller continues the pipeline on
-                              the ORIGINAL frame + this pack — CR never
-                              patches the frame (that is P2's direction,
-                              proven backwards for this class).
-
-    Gates — ALL must hold, else refuse:
-      1. inv.deltas are all pot/stack[K]/bet[K] fields (any other delta
-         type is not the signature — byte-identical drop)
-      2. P1's anchor sum-floor guard is armed (CR derives per-seat
-         commits from the anchor; seq-1363 poisoned-anchor lesson)
-      3. a clean REGULAR hand-start anchor exists for this hand-key.
-         The regular anchor doubles as the positive blind-structure
-         evidence the rebuild's blind assignment needs: is_hand_start
-         fires only when BOTH blinds were seen posted (live-SB hand), so
-         a dead-SB hand (the seq-276 fixture family, bb_only posting)
-         can never serve one and always refuses here. Pre-blind anchors
-         are NOT used: they carry no blind evidence.
-      4. the frame passes strict chip conservation against the anchor
-         and every per-seat implied commit is consistent (inside
-         build_commit_reconciliation_shadow; see its gate list)
-      5. the rebuilt action sequence replays (replay_to_decision WITH
-         the anchor — no simple-model fallback; the rebuild's trust
-         argument rests on the anchor) AND the UNCHANGED scraper frame
-         passes check_mid_hand_invariant against the rebuilt state, with
-         the gate's ante-bookkeeping HEURISTICS replaced by the
-         rebuild's exact emission knowledge (ReconciledEmission — every
-         equality check is untouched)
-
-    Determinism note: derive_action_sequence is deterministic given
-    (shadow, anchor), and the invariant's exact per-seat equalities pin
-    every externally observable chip of the resulting state to the
-    scraper frame — the "multiple legal sequences with different hero
-    game states" ambiguity class is excluded by construction: any
-    sequence the gate would accept reproduces the same stacks, bets,
-    pot, street, board and current_player the model decides on."""
-    from src.nlhe.integration.scraper_schema import (
-        classify_commit_reconciliation_deltas,
-        build_commit_reconciliation_shadow,
-        derive_action_sequence, ActionDerivationError,
-    )
-    from src.nlhe.integration.replay import replay_to_decision, ReplayError
-    from src.nlhe.integration.invariant import (
-        check_mid_hand_invariant, ReconciledEmission,
-    )
-    from src.nlhe.infoset6 import parse_state_6max
-
-    if classify_commit_reconciliation_deltas(inv.deltas) != "candidate":
-        return None, None, None
-
-    if not getattr(tracker, "anchor_sum_floor_armed", False):
-        return None, None, ("anchor sum-floor guard not armed "
-                            "(commit reconciliation is gated on P1)")
-    anchor = tracker.anchor_for(frame)
-    if anchor is None:
-        return None, None, (
-            "no clean REGULAR hand-start anchor for this hand-key — the "
-            "regular anchor is also the positive blind-structure evidence "
-            "(both blinds seen posted at hand start); refused/absent "
-            "anchors and dead-SB-family hands stop here")
-
-    shadow, restored, why = build_commit_reconciliation_shadow(
-        frame, anchor)
-    if shadow is None:
-        return None, None, why
-
-    # Rebuild + replay. derive_action_sequence runs on the SHADOW (the
-    # restored folded bets re-enter the blind-detection and delayed-fold
-    # emission paths); the emitted sequence is recomputed here only to
-    # extract exact emission knowledge — replay_to_decision re-derives
-    # the identical sequence internally (deterministic, same inputs).
-    try:
-        action_seq = derive_action_sequence(
-            shadow, pre_hand_override=anchor)
-    except ActionDerivationError as e:
-        return None, None, (f"rebuilt action derivation failed: "
-                            f"{str(e)[:120]}")
-    try:
-        pack = replay_to_decision(
-            shadow, structure, pre_hand_override=anchor)
-    except ReplayError as e:
-        return None, None, f"rebuilt replay failed: {str(e)[:120]}"
-
-    # Exact emission knowledge for the gate's ante bookkeeping
-    # (ReconciledEmission): pre-hand-convention all-in RAISES present in
-    # the replayed state (emitted raise whose post-replay money == 0 —
-    # catches replay.py's Class B chip-int replacement too, since the
-    # convention is read off the STATE), and preflop limp/raise-then-fold
-    # seats (a voluntary action AND a fold emitted for the same seat).
-    parsed = parse_state_6max(pack.state, observer=frame.hero_seat)
-    money = parsed["money"]
-    contrib = parsed["contribution"]
-    raise_ints = tuple(sorted(
-        int(contrib[s]) for (s, ci) in action_seq
-        if ci not in (0, 1) and int(money[s]) == 0
-    ))
-    voluntary_seats = {s for (s, ci) in action_seq if ci != 0}
-    fold_seats = {s for (s, ci) in action_seq if ci == 0}
-    delayed = tuple(sorted(
-        s for s in (voluntary_seats & fold_seats) if frame.alive[s]
-    ))
-
-    inv2 = check_mid_hand_invariant(
-        frame, pack,
-        reconciled_emission=ReconciledEmission(
-            all_in_raise_chip_ints=raise_ints,
-            preflop_delayed_fold_seats=delayed,
-        ))
-    if not inv2.ok:
-        return None, None, (
-            f"rebuilt replay still fails the invariant "
-            f"({len(inv2.deltas)} deltas)")
-
-    recovered = [
-        f"commit.seat{s + 1}={int(c)} (commit_reconciliation)"
-        for s, c in sorted(restored.items())
-    ]
-    recovered.append(
-        f"replay=rebuilt_from_anchor_commits "
-        f"(commit_reconciliation:{len(restored)} seats restored)")
-    return pack, recovered, "ok"
-
-
 def make_decision(
     record: dict,
     structure,
@@ -1020,7 +873,6 @@ def make_decision(
     tail_floor_tau: "float | None" = None,
     bet_closure_recovery: bool = False,
     dead_button_handling: bool = False,
-    commit_reconciliation: bool = False,
 ) -> LiveDecision:
     """Process one scraper record. Returns a LiveDecision.
 
@@ -1056,15 +908,6 @@ def make_decision(
             When True, dead-button frames parse with dealer_dead=True and
             flow through the unchanged SB/BB post-validation + replay +
             invariant chain.
-        commit_reconciliation: CR anchored commit reconciliation on
-            invariant-failed frames (see _attempt_commit_reconciliation)
-            — the MIRROR family of P2: scraper right, reconstruction
-            under-counts non-hero commits. Default False = OFF
-            (invariant_fail drops byte-identical to pre-CR). Requires a
-            tracker built with SessionTracker(anchor_sum_floor=True) —
-            gated on P1. Runs AFTER bet_closure_recovery when both are
-            armed (disjoint classes; P2's re-validation refuses
-            mirror-class frames, proven live 2026-06-12).
 
     Returns:
         A LiveDecision. Never raises; internal errors surface as a
@@ -1222,50 +1065,26 @@ def make_decision(
             bc_frame, bc_pack, bc_recovered, bc_why = (
                 _attempt_bet_closure_recovery(frame, inv, structure,
                                               tracker))
-        # 6c. CR anchored commit reconciliation (flag-gated; the MIRROR
-        # family of P2 — scraper right, recon under-counts non-hero
-        # commits). Consulted only when P2 did not recover. The frame is
-        # NEVER patched: on success the pipeline continues on the
-        # ORIGINAL frame with the rebuilt replay pack. Refusals annotate;
-        # non-signature frames drop with no annotation at all.
-        cr_pack = cr_recovered = cr_why = None
-        if commit_reconciliation and bc_frame is None:
-            cr_pack, cr_recovered, cr_why = (
-                _attempt_commit_reconciliation(frame, inv, structure,
-                                               tracker))
-        if bc_frame is None and cr_pack is None:
+        if bc_frame is None:
             out.status = "safe_fold"
             out.skip_reason = f"invariant_fail ({len(inv.deltas)} deltas)"
             if bc_why is not None:
                 out.skip_reason += (f" (bet-closure recovery declined: "
                                      f"{bc_why})")
-            if cr_why is not None:
-                out.skip_reason += (f" (commit reconciliation declined: "
-                                     f"{cr_why})")
             out.invariant_deltas = [list(d) for d in inv.deltas]
             out.click_plan = click_plan_for_safe_fold(out.skip_reason)
             return out
-        if bc_frame is not None:
-            # Recovered (P2): continue the pipeline on the corrected
-            # frame + pack, refreshing every READ-summary field the
-            # correction can touch.
-            frame = bc_frame
-            pack = bc_pack
-            out.recovered_fields = (out.recovered_fields or []) + bc_recovered
-            out.pot_total = int(frame.pot_total)
-            out.hero_stack = int(frame.stack[frame.hero_seat]) \
-                if frame.alive[frame.hero_seat] else 0
-            out.n_alive = int(sum(frame.alive))
-            out.facing_bet = bool(frame.hero_facing_bet)
-            out.street_idx = int(pack.street_idx)
-        else:
-            # Recovered (CR): the SCRAPER frame is trusted unchanged —
-            # only the believed replay was rebuilt. READ-summary fields
-            # already reflect the (correct) frame; refresh the
-            # pack-derived street only.
-            pack = cr_pack
-            out.recovered_fields = (out.recovered_fields or []) + cr_recovered
-            out.street_idx = int(pack.street_idx)
+        # Recovered: continue the pipeline on the corrected frame + pack,
+        # refreshing every READ-summary field the correction can touch.
+        frame = bc_frame
+        pack = bc_pack
+        out.recovered_fields = (out.recovered_fields or []) + bc_recovered
+        out.pot_total = int(frame.pot_total)
+        out.hero_stack = int(frame.stack[frame.hero_seat]) \
+            if frame.alive[frame.hero_seat] else 0
+        out.n_alive = int(sum(frame.alive))
+        out.facing_bet = bool(frame.hero_facing_bet)
+        out.street_idx = int(pack.street_idx)
 
     # 7. Decide-once gate. Compute the decision-identity from the frame;
     # if the cache holds an action for that identity (same actual decision,

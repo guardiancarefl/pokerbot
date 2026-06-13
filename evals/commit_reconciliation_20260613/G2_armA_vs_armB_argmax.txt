@@ -1,0 +1,229 @@
+G2 confinement proof — armA (P1+P2) vs armB (P1+P2+CR), ARGMAX mode, --strict
+==============================================================================
+argmax draws no rng, isolating structural changes from the shared-rng-stream
+cascade (sample mode consumes extra draws at each new recovery). Result: 14
+changed frames across 17 logs / 9750 frames, ALL of them invariant_fail
+frames — the 4 recoveries (pins 780/1086/1635 + verified bonus 697:
+safe_fold -> decision_recovered) and 10 annotated refusals (the 9 P2
+displacement-family frames + 183701 seq 331; status safe_fold unchanged,
+skip_reason gains the CR decline note). Zero changes anywhere else: the
+registration's "changes ONLY at recon-side invariant_fail frames" holds
+exactly.
+
+=== live_dryrun_20260608_152756 ===
+Total frames:                200
+Identical:                   200
+Suspect-annotation-only:     0
+BEHAVIORAL CHANGES:          0
+=== live_dryrun_20260609_154557 ===
+Total frames:                571
+Identical:                   571
+Suspect-annotation-only:     0
+BEHAVIORAL CHANGES:          0
+=== live_dryrun_20260609_192543 ===
+Total frames:                402
+Identical:                   402
+Suspect-annotation-only:     0
+BEHAVIORAL CHANGES:          0
+=== live_dryrun_20260611_163815 ===
+Total frames:                486
+Identical:                   485
+Suspect-annotation-only:     0
+BEHAVIORAL CHANGES:          1
+
+[BEHAV] seq=20260611_130121_831
+  skip_reason            "invariant_fail (4 deltas) (bet-closure recovery declined: closure would touch 2 seats' bet/stack pairs (only s"
+                         -> "invariant_fail (4 deltas) (bet-closure recovery declined: closure would touch 2 seats' bet/stack pairs (only s"
+  click_plan             '{\'action_kind\': \'no_plan\', \'chip_amount\': None, \'reason\': "invariant_fail (4 deltas) (bet-closure recovery dec'
+                         -> '{\'action_kind\': \'no_plan\', \'chip_amount\': None, \'reason\': "invariant_fail (4 deltas) (bet-closure recovery dec'
+=== live_dryrun_20260611_181249 ===
+Total frames:                54
+Identical:                   54
+Suspect-annotation-only:     0
+BEHAVIORAL CHANGES:          0
+=== live_dryrun_20260611_201230 ===
+Total frames:                733
+Identical:                   731
+Suspect-annotation-only:     0
+BEHAVIORAL CHANGES:          2
+
+[BEHAV] seq=20260611_161937_746
+  skip_reason            'invariant_fail (2 deltas) (bet-closure recovery declined: deltas do not close under a single bet/stack transfe'
+                         -> 'invariant_fail (2 deltas) (bet-closure recovery declined: deltas do not close under a single bet/stack transfe'
+  click_plan             "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'invariant_fail (2 deltas) (bet-closure recovery dec"
+                         -> "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'invariant_fail (2 deltas) (bet-closure recovery dec"
+
+[BEHAV] seq=20260611_161939_102
+  skip_reason            'invariant_fail (2 deltas) (bet-closure recovery declined: deltas do not close under a single bet/stack transfe'
+                         -> 'invariant_fail (2 deltas) (bet-closure recovery declined: deltas do not close under a single bet/stack transfe'
+  click_plan             "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'invariant_fail (2 deltas) (bet-closure recovery dec"
+                         -> "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'invariant_fail (2 deltas) (bet-closure recovery dec"
+=== live_dryrun_20260611_204751 ===
+Total frames:                973
+Identical:                   973
+Suspect-annotation-only:     0
+BEHAVIORAL CHANGES:          0
+=== live_dryrun_20260611_222532 ===
+Total frames:                1326
+Identical:                   1322
+Suspect-annotation-only:     0
+BEHAVIORAL CHANGES:          4
+
+[BEHAV] seq=20260611_183517_645
+  skip_reason            "invariant_fail (4 deltas) (bet-closure recovery declined: closure would touch 2 seats' bet/stack pairs (only s"
+                         -> "invariant_fail (4 deltas) (bet-closure recovery declined: closure would touch 2 seats' bet/stack pairs (only s"
+  click_plan             '{\'action_kind\': \'no_plan\', \'chip_amount\': None, \'reason\': "invariant_fail (4 deltas) (bet-closure recovery dec'
+                         -> '{\'action_kind\': \'no_plan\', \'chip_amount\': None, \'reason\': "invariant_fail (4 deltas) (bet-closure recovery dec'
+
+[BEHAV] seq=20260611_184658_780
+  skip_reason            "invariant_fail (6 deltas) (bet-closure recovery declined: closure would touch 4 seats' bet/stack pairs (only s"
+                         -> "invariant_fail (6 deltas) (bet-closure recovery declined: closure would touch 4 seats' bet/stack pairs (only s"
+  click_plan             '{\'action_kind\': \'no_plan\', \'chip_amount\': None, \'reason\': "invariant_fail (6 deltas) (bet-closure recovery dec'
+                         -> '{\'action_kind\': \'no_plan\', \'chip_amount\': None, \'reason\': "invariant_fail (6 deltas) (bet-closure recovery dec'
+
+[BEHAV] seq=20260611_204408_252
+  skip_reason            "invariant_fail (5 deltas) (bet-closure recovery declined: closure would touch 2 seats' bet/stack pairs (only s"
+                         -> "invariant_fail (5 deltas) (bet-closure recovery declined: closure would touch 2 seats' bet/stack pairs (only s"
+  click_plan             '{\'action_kind\': \'no_plan\', \'chip_amount\': None, \'reason\': "invariant_fail (5 deltas) (bet-closure recovery dec'
+                         -> '{\'action_kind\': \'no_plan\', \'chip_amount\': None, \'reason\': "invariant_fail (5 deltas) (bet-closure recovery dec'
+
+[BEHAV] seq=20260611_204412_697
+  skip_reason            "invariant_fail (5 deltas) (bet-closure recovery declined: closure would touch 2 seats' bet/stack pairs (only s"
+                         -> "invariant_fail (5 deltas) (bet-closure recovery declined: closure would touch 2 seats' bet/stack pairs (only s"
+  click_plan             '{\'action_kind\': \'no_plan\', \'chip_amount\': None, \'reason\': "invariant_fail (5 deltas) (bet-closure recovery dec'
+                         -> '{\'action_kind\': \'no_plan\', \'chip_amount\': None, \'reason\': "invariant_fail (5 deltas) (bet-closure recovery dec'
+=== live_dryrun_20260612_035454 ===
+Total frames:                218
+Identical:                   217
+Suspect-annotation-only:     0
+BEHAVIORAL CHANGES:          1
+
+[BEHAV] seq=20260612_000213_894
+  skip_reason            "invariant_fail (5 deltas) (bet-closure recovery declined: closure would touch 3 seats' bet/stack pairs (only s"
+                         -> "invariant_fail (5 deltas) (bet-closure recovery declined: closure would touch 3 seats' bet/stack pairs (only s"
+  click_plan             '{\'action_kind\': \'no_plan\', \'chip_amount\': None, \'reason\': "invariant_fail (5 deltas) (bet-closure recovery dec'
+                         -> '{\'action_kind\': \'no_plan\', \'chip_amount\': None, \'reason\': "invariant_fail (5 deltas) (bet-closure recovery dec'
+=== live_dryrun_20260612_042058 ===
+Total frames:                316
+Identical:                   316
+Suspect-annotation-only:     0
+BEHAVIORAL CHANGES:          0
+=== live_dryrun_20260612_125441 ===
+Total frames:                84
+Identical:                   84
+Suspect-annotation-only:     0
+BEHAVIORAL CHANGES:          0
+=== live_dryrun_20260612_130846 ===
+Total frames:                233
+Identical:                   233
+Suspect-annotation-only:     0
+BEHAVIORAL CHANGES:          0
+=== live_dryrun_20260612_161347 ===
+Total frames:                391
+Identical:                   390
+Suspect-annotation-only:     0
+BEHAVIORAL CHANGES:          1
+
+[BEHAV] seq=20260612_122700_038
+  skip_reason            'invariant_fail (3 deltas) (bet-closure recovery declined: hand shows BB-only posting (dead-SB hand or displace'
+                         -> 'invariant_fail (3 deltas) (bet-closure recovery declined: hand shows BB-only posting (dead-SB hand or displace'
+  click_plan             '{\'action_kind\': \'no_plan\', \'chip_amount\': None, \'reason\': "invariant_fail (3 deltas) (bet-closure recovery dec'
+                         -> '{\'action_kind\': \'no_plan\', \'chip_amount\': None, \'reason\': "invariant_fail (3 deltas) (bet-closure recovery dec'
+=== live_dryrun_20260612_183701 ===
+Total frames:                1519
+Identical:                   1517
+Suspect-annotation-only:     0
+BEHAVIORAL CHANGES:          2
+
+[BEHAV] seq=20260612_145608_827
+  skip_reason            "invariant_fail (4 deltas) (bet-closure recovery declined: closure would touch 2 seats' bet/stack pairs (only s"
+                         -> "invariant_fail (4 deltas) (bet-closure recovery declined: closure would touch 2 seats' bet/stack pairs (only s"
+  click_plan             '{\'action_kind\': \'no_plan\', \'chip_amount\': None, \'reason\': "invariant_fail (4 deltas) (bet-closure recovery dec'
+                         -> '{\'action_kind\': \'no_plan\', \'chip_amount\': None, \'reason\': "invariant_fail (4 deltas) (bet-closure recovery dec'
+
+[BEHAV] seq=20260612_151624_215
+  status                 'safe_fold'
+                         -> 'decision_recovered'
+  skip_reason            "invariant_fail (5 deltas) (bet-closure recovery declined: closure would touch 2 seats' bet/stack pairs (only s"
+                         -> 'None'
+  client_action          'None'
+                         -> "{'kind': 'call', 'chip_amount': None, 'raw_openspiel_chip_int': 1}"
+  chip_int               'None'
+                         -> '1'
+  decision_identity      'None'
+                         -> "(3, (50, 100, 15), (True, True, True, True, True, False), ('Kh', 'Qc'), (), 0, 200)"
+  invariant_deltas       "[['pot', 664, 634], ['stack[seat3]', 1454, 1469], ['bet[seat3]', 200, 185], ['stack[seat5]', 3094, 3109], ['be"
+                         -> 'None'
+  click_plan             '{\'action_kind\': \'no_plan\', \'chip_amount\': None, \'reason\': "invariant_fail (5 deltas) (bet-closure recovery dec'
+                         -> "{'action_kind': 'call', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'CALL', 'bo"
+  recovered_fields       'None'
+                         -> "['replay=rebuilt_from_anchor_commits (commit_reconciliation:0 seats restored)']"
+=== live_dryrun_20260612_220101 ===
+Total frames:                505
+Identical:                   505
+Suspect-annotation-only:     0
+BEHAVIORAL CHANGES:          0
+=== live_dryrun_20260612_230149 ===
+Total frames:                1649
+Identical:                   1646
+Suspect-annotation-only:     0
+BEHAVIORAL CHANGES:          3
+
+[BEHAV] seq=20260612_193706_536
+  status                 'safe_fold'
+                         -> 'decision_recovered'
+  skip_reason            "invariant_fail (3 deltas) (bet-closure recovery declined: closure would touch 2 seats' bet/stack pairs (only s"
+                         -> 'None'
+  client_action          'None'
+                         -> "{'kind': 'raise_to', 'chip_amount': 2508, 'raw_openspiel_chip_int': 2523}"
+  chip_int               'None'
+                         -> '2523'
+  decision_identity      'None'
+                         -> "(1, (50, 100, 15), (True, True, False, True, True, True), ('8c', '8d'), (), 0, 692)"
+  invariant_deltas       "[['pot', 1017, 867], ['stack[seat4]', 1630, 1680], ['stack[seat5]', 2685, 2785]]"
+                         -> 'None'
+  click_plan             '{\'action_kind\': \'no_plan\', \'chip_amount\': None, \'reason\': "invariant_fail (3 deltas) (bet-closure recovery dec'
+                         -> "{'action_kind': 'raise_to', 'chip_amount': 2508, 'reason': 'neither RAISE nor BET button found in scraper cont"
+  recovered_fields       'None'
+                         -> "['commit.seat4=50 (commit_reconciliation)', 'commit.seat5=100 (commit_reconciliation)', 'replay=rebuilt_from_a"
+
+[BEHAV] seq=20260612_194941_036
+  status                 'safe_fold'
+                         -> 'decision_recovered'
+  skip_reason            'invariant_fail (2 deltas) (bet-closure recovery declined: deltas do not close under a single bet/stack transfe'
+                         -> 'None'
+  client_action          'None'
+                         -> "{'kind': 'call', 'chip_amount': None, 'raw_openspiel_chip_int': 1}"
+  chip_int               'None'
+                         -> '1'
+  decision_identity      'None'
+                         -> "(5, (15, 25, 5), (True, True, True, True, True, True), ('Ac', 'Ah'), (), 0, 1613)"
+  invariant_deltas       "[['pot', 2693, 2668], ['stack[seat3]', 1677, 1702]]"
+                         -> 'None'
+  click_plan             "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'invariant_fail (2 deltas) (bet-closure recovery dec"
+                         -> "{'action_kind': 'call', 'chip_amount': None, 'reason': None, 'steps': [{'kind': 'click', 'target': 'CALL', 'bo"
+  recovered_fields       'None'
+                         -> "['commit.seat2=25 (commit_reconciliation)', 'commit.seat3=25 (commit_reconciliation)', 'replay=rebuilt_from_an"
+
+[BEHAV] seq=20260612_200631_846
+  status                 'safe_fold'
+                         -> 'decision_recovered'
+  skip_reason            'invariant_fail (3 deltas) (bet-closure recovery declined: no candidate passed replay+invariant re-validation ('
+                         -> 'None'
+  client_action          'None'
+                         -> "{'kind': 'raise_to', 'chip_amount': 3767, 'raw_openspiel_chip_int': 3792}"
+  chip_int               'None'
+                         -> '3792'
+  decision_identity      'None'
+                         -> "(2, (75, 150, 25), (True, True, True, True, False, False), ('5h', 'Ts'), (), 0, 150)"
+  invariant_deltas       "[['pot', 509, 484], ['stack[seat3]', 3289, 3314], ['bet[seat3]', 150, 125]]"
+                         -> 'None'
+  click_plan             "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'invariant_fail (3 deltas) (bet-closure recovery dec"
+                         -> "{'action_kind': 'raise_to', 'chip_amount': 3767, 'reason': None, 'steps': [{'kind': 'click', 'target': 'bet_in"
+  recovered_fields       'None'
+                         -> "['commit.seat4=75 (commit_reconciliation)', 'replay=rebuilt_from_anchor_commits (commit_reconciliation:1 seats"
+=== live_dryrun_verify1_20260609_202137 ===
+Total frames:                90
+Identical:                   90
+Suspect-annotation-only:     0
+BEHAVIORAL CHANGES:          0

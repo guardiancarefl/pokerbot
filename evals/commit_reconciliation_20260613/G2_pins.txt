@@ -1,0 +1,22 @@
+G2 — pinned-casualty recoveries (armB = P1+P2+CR)
+================================================================
+
+--- mode=sample ---
+seq  780 8c8d  armA=safe_fold  armB=decision_recovered  pot=1017 hero=2408 facing=True  action={"kind": "raise_to", "chip_amount": 2508, "raw_openspiel_chip_int": 2523}  [OK]
+      recovered_fields=['commit.seat4=50 (commit_reconciliation)', 'commit.seat5=100 (commit_reconciliation)', 'replay=rebuilt_from_anchor_commits (commit_reconciliation:2 seats restored)']
+seq 1086 AcAh  armA=safe_fold  armB=decision_recovered  pot=2693 hero=637 facing=True  action={"kind": "call", "chip_amount": null, "raw_openspiel_chip_int": 1}  [OK]
+      recovered_fields=['commit.seat2=25 (commit_reconciliation)', 'commit.seat3=25 (commit_reconciliation)', 'replay=rebuilt_from_anchor_commits (commit_reconciliation:2 seats restored)']
+seq 1635 5hTs  armA=safe_fold  armB=decision_recovered  pot=509 hero=3617 facing=False  action={"kind": "raise_to", "chip_amount": 3767, "raw_openspiel_chip_int": 3792}  [OK]
+      recovered_fields=['commit.seat4=75 (commit_reconciliation)', 'replay=rebuilt_from_anchor_commits (commit_reconciliation:1 seats restored)']
+
+--- mode=argmax ---
+seq  780 8c8d  armA=safe_fold  armB=decision_recovered  pot=1017 hero=2408 facing=True  action={"kind": "raise_to", "chip_amount": 2508, "raw_openspiel_chip_int": 2523}  [OK]
+      recovered_fields=['commit.seat4=50 (commit_reconciliation)', 'commit.seat5=100 (commit_reconciliation)', 'replay=rebuilt_from_anchor_commits (commit_reconciliation:2 seats restored)']
+seq 1086 AcAh  armA=safe_fold  armB=decision_recovered  pot=2693 hero=637 facing=True  action={"kind": "call", "chip_amount": null, "raw_openspiel_chip_int": 1}  [OK]
+      recovered_fields=['commit.seat2=25 (commit_reconciliation)', 'commit.seat3=25 (commit_reconciliation)', 'replay=rebuilt_from_anchor_commits (commit_reconciliation:2 seats restored)']
+seq 1635 5hTs  armA=safe_fold  armB=decision_recovered  pot=509 hero=3617 facing=False  action={"kind": "raise_to", "chip_amount": 3767, "raw_openspiel_chip_int": 3792}  [OK]
+      recovered_fields=['commit.seat4=75 (commit_reconciliation)', 'replay=rebuilt_from_anchor_commits (commit_reconciliation:1 seats restored)']
+
+CR recoveries beyond the 3 pins: 2 verified-in-class (seq-697 1635-family bonus; verdict in SUMMARY.txt), 0 UNVERIFIED
+  verified bonus: ('sample', 'live_dryrun_20260612_183701.jsonl', 697, '20260612_151624_215')
+  verified bonus: ('argmax', 'live_dryrun_20260612_183701.jsonl', 697, '20260612_151624_215')

@@ -1,0 +1,54 @@
+GATE 5 — recovered dead-button hands: chip arithmetic closes against the
+next anchored hand-starts (all values verbatim from
+logs/live_dryrun_20260612_230149.jsonl raw_records).
+
+Chips-in-play invariant: 9000 (1500 x 6, single table, no rake transfers).
+
+── QdKc hand (seq 908-914; blinds 75/150/25; dealer DEAD on empty seat2) ──
+Anchored pre-hand (from seq 912, stack+bet+ante per alive seat):
+  seat1 2782+0+25   = 2807   (hero)
+  seat4 1540+75+25  = 1640   (SB poster)
+  seat5 3383+150+25 = 3558   (BB poster)
+  seat6 970+0+25    =  995   (folded)
+  sum                = 9000  ✓
+Hand result: seat6/hero/seat4 fold (seq 913-914), seat5 wins pot 325.
+Next hand-start (seq 920; dealer=seat4, posts SB seat5=75, BB seat6=150):
+  seat1 2757+0+25   = 2782 = 2807 - 25 (ante only; folded)          ✓
+  seat4 1515+0+25   = 1540 = 1640 - 25 - 75 (ante + folded SB)      ✓
+  seat5 3608+75+25  = 3708 = 3558 - 25 - 150 + 325 (won the pot)    ✓
+  seat6 795+150+25  =  970 = 995 - 25 (ante only; folded)           ✓
+  sum                = 9000  ✓  EXACT CLOSURE
+Rotation continuity (BB advances exactly one active player):
+  dead-button hand: button seat2 (vacated), SB seat4, BB seat5.
+  next hand: button seat4 (= previous SB seat), SB seat5 (= previous BB
+  player), BB seat6 (= one active past seat5).                       ✓
+
+── TsAc hand (seq 1360-1372; blinds 50/100/15; dealer DEAD on seat5,
+   which busted in the immediately prior dealer=seat4 hand) ──
+Anchored pre-hand (from seq 1363 hand-start):
+  seat1 3525+50+15  = 3590   (hero, SB poster)
+  seat2  908+100+15 = 1023   (BB poster)
+  seat3 2027+0+15   = 2042
+  seat4 2330+0+15   = 2345
+  sum                = 9000  ✓
+Hand result: seats 3/4 fold; hero calls seat2's 1008 all-in
+(seq 1370-1371: hero 3590-15-1008 = 2567); seat2 wins pot
+2076 = 60 antes + 2x1008 (seq 1372/1378: seat2 stack 2076).
+Next anchored hand-start (seq 1385; dealer=seat1, posts SB seat2=50,
+BB seat3=100; pot 210 = 60 antes + 50 + 100):
+  seat1 2552+0+15   = 2567 = 3590 - 15 - 1008 (lost the all-in call) ✓
+  seat2 2011+50+15  = 2076 = 1023 - 15 - 1008 + 2076 (won the pot)   ✓
+  seat3 1912+100+15 = 2027 = 2042 - 15                               ✓
+  seat4 2315+0+15   = 2330 = 2345 - 15                               ✓
+  sum                = 9000  ✓  EXACT CLOSURE
+Rotation continuity:
+  dead-button hand: button seat5 (busted; it had posted SB in the prior
+  dealer=seat4 hand), SB seat1 (= previous BB player), BB seat2.
+  next hand: button seat1 (= previous SB seat), SB seat2 (= previous BB
+  player), BB seat3 (= one active past seat2).                       ✓
+
+VERDICT: both recovered hands' chip arithmetic closes EXACTLY (sum 9000,
+per-seat deltas explained by antes/blinds/pot transfers), and the
+button/SB/BB rotation across the surrounding hands satisfies the
+governing dead-button invariant (BB advances exactly one ACTIVE player
+per hand; SB and button derive from it).

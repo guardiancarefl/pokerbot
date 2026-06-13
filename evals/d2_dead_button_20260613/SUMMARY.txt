@@ -1,0 +1,125 @@
+D2 — DEAD-BUTTON POSITION HANDLING (operator directive 2026-06-12;
+built 2026-06-13). Flag-gated --dead-button-handling, OFF by default,
+bridge-side only. NO COMMITS — manager gates.
+
+PROBLEM (session-5 #1 hand-killer): parse_frame rejected every frame of
+hands whose scraped dealer button sat on an eliminated/empty seat
+("dealer points to non-alive/empty seat" ScraperDataQuality class,
+~230 frames across the 17-raw-log corpus). Windows attribution proved
+these are CORRECTLY scraped DEAD BUTTONS — standard short-handed turbo
+rotation. Both exhibit hands (QdKc seq~912, TsAc seq~1366 in
+logs/live_dryrun_20260612_230149.jsonl) were killed whole.
+
+THE RULE IMPLEMENTED (poker-rules bar): the governing invariant is that
+the BIG BLIND advances exactly one ACTIVE player per hand; the small
+blind and the button DERIVE from it. Consequences handled:
+  - dead button: previous SB player busted -> button on the vacated
+    seat; SB posted by the previous BB player; BB one active onward.
+  - dead SB: previous BB player busted -> live button, SB seat empty,
+    NO SB posted (covered by the pre-existing Predicate 1 bb_only
+    detection; sb_seat=None plumbing already existed end-to-end).
+  - double elimination: dead button AND dead SB; only the BB posts.
+The derivation is NOT "SB/BB = next actives clockwise of the button" as
+a rule; the scraped frames' POSTED BLINDS are ground truth. Predicate 1
+(_detect_blinds_from_bb_post) walks absolute seats from dealer+1 and
+validates SB/BB against the observed posts; the H1 fallback was
+generalized to the same absolute-seat walk (arithmetically identical
+for alive dealers); the unchanged replay + strict invariant gate is the
+final correctness bar (OCR-drift dealer-on-empty frames still drop
+there).
+
+CODE (all flag-gated, mirrors the P1/P2 plumbing):
+  src/nlhe/integration/scraper_schema.py
+    - ScraperFrame.dealer_dead: bool = False (additive field)
+    - parse_frame(..., dead_button_handling=False): flag OFF ->
+      byte-identical drop. Flag ON -> dealer-on-empty parses with
+      dealer_dead=True. The additive Windows `dealer_dead` schema key is
+      PREFERRED when present (True -> trust; False against an
+      empty-reading dealer seat -> contradiction, keep the drop;
+      absent -> derive from seat emptiness/stack). Flag OFF ignores the
+      key entirely.
+    - _derive_blinds_and_action_order: H1 default generalized to an
+      absolute clockwise walk from dealer+1 (dead-button tolerant;
+      identical output for alive dealers).
+  src/nlhe/game_strings.py
+    - to_inner_game_string_for_state: dealer-alive check moved inside
+      the AUTO-blinds branch (explicit sb/bb callers — the bridge — may
+      thread a vacated dealer seat; dealer is unused there).
+  src/nlhe/integration/live_loop.py
+    - make_decision(..., dead_button_handling=False) threaded into
+      parse_frame and the suspect-recovery parse.
+  scripts/run_live_dryrun.py — --dead-button-handling flag + session
+    header field.
+  scripts/replay_make_decision_diff.py — --dead-button-handling and
+    --mode {sample,argmax} on the run subcommand (argmax draws no rng;
+    used to isolate structural diffs from sample-stream cascade).
+
+GATES (evidence files in this directory):
+  (1) gate1_flag_off_byte_identity.txt — flag-OFF replay over ALL 17
+      raw-record logs, pre-code vs post-code, STRICT diff: see file.
+  (2) gate2_flag_on_changes.txt + gate2_classification.txt — flag-ON vs
+      flag-OFF on post code; every changed frame listed and classified.
+  (3) gate3_counterfactual_exhibits.txt — both exhibit hands decidable
+      end-to-end; invariant PASS; blind placement == observed posts.
+  (4) gate4_tests.txt — 24 new tests (exhibit fixtures at
+      tests/fixtures/dead_button_exhibits.json + synthetic
+      dead-button / dead-SB / double-elimination rotation + the
+      BB-advances-one-active invariant) + 239 bridge-suite tests.
+  (5) gate5_chip_crosscheck.txt — recovered hands' chip arithmetic
+      closes EXACTLY (sum 9000) against the next anchored hand-starts;
+      rotation continuity across surrounding hands verified.
+
+KNOWN RESIDUAL (pre-existing, documented): at re-raise frames where the
+SB has already completed (e.g. TsAc seq 1370, hero bet 50 -> 100), the
+per-frame Predicate-1 evidence degrades and the reconstruction labels
+the spot as a chip-equivalent dead-SB (hero as BB-100 instead of
+SB-50+call-50). Chips, pot, legality, current_player and the invariant
+are exact; only the position labeling differs. This is the SAME
+limitation P2 documented for alive-dealer dead-SB hands; the registered
+root-cause follow-up (carry hand-level blind-structure evidence in
+SessionTracker into replay) fixes the labeling and is out of D2 scope.
+
+ARMING: operator call. Stack with the deployed chain:
+  --anchor-sum-floor --dead-button-handling [--bet-closure-recovery]
+
+────────────────────────────── GATE RESULTS ──────────────────────────────
+(1) FLAG-OFF BYTE-IDENTITY: PASS. 9750/9750 frames identical over ALL 17
+    raw-record logs (STRICT diff, pre = tree minus the D2 hunks, post =
+    tree with them; sample mode, seed 42). 0 changes of any kind.
+(2) FLAG-ON REPLAY: PASS.
+    2b (argmax — rng-free structural isolation): changed frames = 223,
+        ALL in the dead-button class: 216 previously dealer-dead-skipped
+        frames + 7 suspect-AND-dead-button frames whose decline
+        annotation moved one gate later (drop unchanged). class_other=0.
+    2a (sample — live-mirroring): the same 223 class frames, plus 282
+        rng-cascade frames: decision frames with UNCHANGED status and
+        decision identity whose sampled action drifted because the
+        newly-decidable dead-button decisions consume extra draws from
+        the shared rng stream. A replay-comparison artifact of sample
+        mode, not a behavioral change (argmax run proves 0 non-class
+        structural diffs). Every changed frame listed in
+        gate2_full_diff_listing.txt / gate2_classification.txt.
+    Flag-ON outcome of the 216 class frames (sample): 175 ->
+    skip_not_hero_to_act (correctly classified non-decisions), 15 ->
+    decision/decision_cached (recovered hero decisions incl. both
+    exhibits + 13 more across 7 sessions), 23 -> still
+    skip_data_quality on OTHER guards (n_alive<4 etc.), 3 -> safe_fold
+    (invariant rejected — the OCR-drift protection holding).
+(3) COUNTERFACTUAL: PASS. QdKc seq 912: status=decision,
+    invariant_ok=True (0 deltas), sb_seat=3/bb_seat=4 == observed posts
+    75/150, pre-hand sum 9000, anchored override used. TsAc seq 1366:
+    status=decision, invariant_ok=True, sb_seat=0(hero)/bb_seat=1 ==
+    observed posts 50/100, pre-hand (3590,1023,2042,2345,0,0) sum 9000;
+    seq 1367 decision_cached (decide-once holds); seq 1370 re-raise
+    decides as a NEW identity (chip-exact; see KNOWN RESIDUAL for its
+    dead-SB labeling).
+(4) TESTS: PASS. 24/24 new (tests/test_dead_button.py), 239/239
+    pre-existing bridge suites.
+(5) CHIP CROSS-CHECK: PASS. Both recovered hands close EXACTLY (9000)
+    against the next anchored hand-starts, per-seat deltas fully
+    explained; button/SB/BB rotation continuity across the surrounding
+    hands satisfies the BB-advances-one-active invariant.
+
+Replay arms preserved at /tmp/d2_gate1, /tmp/d2_gate2 (frozen code
+snapshots /tmp/d2_pre, /tmp/d2_post; driver /tmp/d2_gate_driver.sh,
+diffs /tmp/d2_diffs_full.txt, classifier /tmp/d2_gate2_classify.py).
