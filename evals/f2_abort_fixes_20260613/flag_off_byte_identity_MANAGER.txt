@@ -1,0 +1,19 @@
+=== FLAG-OFF BYTE-IDENTITY: HEAD 4c4e4f9 vs F2/abort WIP, all new flags OFF, STRICT, seed 42 ===
+  live_dryrun_20260608_152756      frames=200   behavioral=0
+  live_dryrun_20260609_154557      frames=571   behavioral=0
+  live_dryrun_20260609_192543      frames=402   behavioral=0
+  live_dryrun_20260611_163815      frames=486   behavioral=0
+  live_dryrun_20260611_181249      frames=54    behavioral=0
+  live_dryrun_20260611_201230      frames=733   behavioral=0
+  live_dryrun_20260611_204751      frames=973   behavioral=0
+  live_dryrun_20260611_222532      frames=1326  behavioral=0
+  live_dryrun_20260612_035454      frames=218   behavioral=0
+  live_dryrun_20260612_042058      frames=316   behavioral=0
+  live_dryrun_20260612_125441      frames=84    behavioral=0
+  live_dryrun_20260612_130846      frames=233   behavioral=0
+  live_dryrun_20260612_161347      frames=391   behavioral=0
+  live_dryrun_20260612_183701      frames=1519  behavioral=0
+  live_dryrun_20260612_220101      frames=505   behavioral=0
+  live_dryrun_20260612_230149      frames=1649  behavioral=0
+  live_dryrun_verify1_20260609_202137 frames=90    behavioral=0
+--- TOTALS: logs=17 frames=9750 behavioral_changes=0 ---
