@@ -34,7 +34,22 @@ decision point: H2b registration or ensemble-probe results.
 
 ## Open
 
-(none)
+### OQ-3 (2026-06-13) — Windows scraper: pointed-seat stack OCR (dealer-burst recurrence) — MUST-LAND
+- Session-5 postmortem: the dealer-burst hand-killer RECURRED with a
+  NEW mechanism — the dealer-pointed seat's stack OCR reads None/0 on
+  ALIVE seats (seats 2/3/5; 54 frames, 4 hands killed incl. KQo/ATo
+  fallbacks). The 2026-06-09 hero-button fix still holds; this is a
+  different field. Re-prioritized MUST-LAND alongside the P1/P2
+  SanityChecker work and OQ-1 Part-B routing.
+- D2 dead-button handling (bridge-side, building) covers the
+  legitimately-dead-button subset; this OQ covers the OCR-false-dead
+  subset — both needed.
+
+### Operator confirmations requested (non-blocking)
+- Stage-2 gate N=5 (ledger pre-registration) — confirm or set N.
+- Tonight's game count: detector finds 4 games (L,L,L,W incl. a
+  ~13-min first bust, seqs 1-172); you reported 3. Confirm whether the
+  first segment was a counted game.
 
 ## Resolved
 
