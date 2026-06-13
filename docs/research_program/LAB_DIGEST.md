@@ -39,10 +39,19 @@ The wrong-window capture (session-6) IS the dominant skip cause (suspect frames)
 Next free-bench step: read the OQ-4 brief + session-6 audit, sharpen the Windows
 brief with the triage frame-evidence so the Windows session has exact targets.
 
-### #3 Stage-2 autoclicker readiness — mapping next
-N=5 clean-sessions gate reportedly CONFIRMED (OPERATOR_QUEUE). Next: read
-STAGE2_LEDGER + DEPLOYMENT_PACKAGE to map what's gated-in vs blocking, and confirm
-the SanityChecker (binding Stage-2 constraint) status against the live evidence.
+### ✅ #3 Stage-2 autoclicker readiness — MAPPED: 0/5, blocked by same root cause
+N=5 gate THRESHOLD confirmed by operator, but **0 of 22 sessions are gate-clean**
+(`STAGE2_LEDGER.md`) — every session has never-decided hands (whole hands lost to
+scraper skips) and/or no interventions record. So autoclicker readiness is **0/5,
+not near** — blocked by scraper data quality. (Note: OPERATOR_QUEUE "CONFIRMED at
+N=5" = the threshold was confirmed, NOT that 5 clean sessions exist; verify-don't-
+assume — the ledger shows none.)
+
+### → CONSOLIDATED FINDING: all 3 operational items = ONE root cause
+The live-vs-sim gap (#1), capture reliability (#2), and the Stage-2 gate (#3) are
+**the same problem: scraper data quality.** Fixing the Windows scraper (OQ-4 capture
++ OQ-1 folded-flag) unblocks all three at once — it's the single highest-EV lever in
+the project. **It needs operator routing to a Windows CC session** (flagged up top).
 
 _Live deploy / arm / autoclicker-go = your button. I do free analysis + scoping._
 
