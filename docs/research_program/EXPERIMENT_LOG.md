@@ -650,3 +650,15 @@ Stage-2 gate CONFIRMED N=5 (ledger updated — streak 0/5). Game-count
 detector CONFIRMED correct (4 games L,L,L,W; operator had forgotten the
 13-min first bust — detector calibration validated against operator
 memory and won). OQ-3 routed to Windows CC by operator alongside D3.
+
+## 2026-06-13 ~03:05 — SLATE-2A COMPLETE: shove-defense floor passes everything
+
+M-A F1 PASS · M-B F2 PASS · M-C holds-improves (extraction halved) ·
+shoviest panel ALL ROWS POSITIVE, pooled +0.0108 ± 0.0023 (z=+4.7).
+Cycle-2's #1 EVoI item delivered: zero training, all frozen
+instruments, gray-zone never needed. DEPLOYMENT PACKAGE now assembles
+for the operator: shove floor arming + P2 arming + click-plan fix
+(committed) + D2 + commit-reconciliation + abort-counter fix — the
+session-5 set. Caveat carried: oracle is killphil-range-specific and
+MH-based at 6-alive equal-stack cells (ICM Tier-2 will bound it);
+self-play and panel evidence is the load-bearing EV case.
