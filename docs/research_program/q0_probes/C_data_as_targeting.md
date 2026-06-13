@@ -60,6 +60,30 @@ map shows the headroom is UNreachable without self-anchor cost (high-headroom
 spots coincide with high champion-deviation that only over-aggression captures),
 that itself bounds what A/B can achieve.
 
+## C RESULT (2026-06-13 — `evals/c_leak_map_20260613.json`, `scripts/c_leak_map.py`)
+mean_loss 0.0866 reproduces R6 exactly (sanity OK). The 0.087/spot concentrates
+SHARPLY and is DIRECTIONALLY OPPOSITE to what H4 learned:
+- **Position:** BB = **59%** of all loss (mean 0.137/spot), SB 18%, BTN 16%, CO 6%.
+- **Depth:** grows with depth — 15bb **36%**, 11bb 30%, 8bb 21%, 5bb 13%.
+- **Direction (the headline):** **96% of the loss is on oracle=FOLD spots where the
+  champion OVER-CALLS** the field's shoves (mean p_call 0.298 — calls ~30% of hands
+  it should fold). Only 4% is under-defense on call-oracle spots.
+  *(The script's hardcoded "reading" string guessed under-folding — WRONG; the
+  numbers overruled it. The leak is over-CALLING, i.e. the champion defends the BB
+  TOO WIDE vs the pool's tighter-than-assumed shove ranges.)*
+
+**The exploit is DEFENSIVE TIGHTENING: fold MORE in the BB vs the field's shoves at
+11–15bb.** This explains H4's failure exactly — global-RNR learned OFFENSIVE
+over-aggression (Δaggr inflated), the *opposite* of the real headroom, and bought a
+fake field-EV from over-attacking pool passivity while collapsing the self-anchor.
+
+**Implication for A/B (sharpened target):** the headroom is a CONTEXT-SPECIFIC
+defensive adjustment (fold-more-vs-THESE-shoves), which MUST NOT leak to self-play
+(vs the champion's own wider shove range, folding more loses). That is precisely
+what B's zero-leakage context-gated head is built to capture, and why global,
+un-gated RNR cannot. Top target clusters for A/B: **BB facing shoves, 11–15bb,
+fold-oracle spots.**
+
 ## Why first
 Free, safe, and it tells A and B WHERE to focus (or that there's nothing to
 focus on). It cannot degrade the champion (no gradient).

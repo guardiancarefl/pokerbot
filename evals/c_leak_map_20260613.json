@@ -1,0 +1,78 @@
+{
+  "champion": "runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt",
+  "n_spots": 16224,
+  "ev_loss_mean": 0.08662668040486032,
+  "ev_loss_total": 1405.4312628884538,
+  "by_position": [
+    {
+      "pos": "BB",
+      "mean_loss": 0.13742093889541235,
+      "n": 6084,
+      "loss_share": 0.5948842994437117
+    },
+    {
+      "pos": "SB",
+      "mean_loss": 0.06315605490265509,
+      "n": 4056,
+      "loss_share": 0.1822650210289936
+    },
+    {
+      "pos": "BTN",
+      "mean_loss": 0.05587952998480657,
+      "n": 4056,
+      "loss_share": 0.16126535648037876
+    },
+    {
+      "pos": "CO",
+      "mean_loss": 0.042679456777723994,
+      "n": 2028,
+      "loss_share": 0.06158532304691863
+    }
+  ],
+  "by_depth": [
+    {
+      "depth": 15,
+      "mean_loss": 0.12456297934185147,
+      "n": 4056,
+      "loss_share": 0.35948214441466314
+    },
+    {
+      "depth": 11,
+      "mean_loss": 0.10347128979580107,
+      "n": 4056,
+      "loss_share": 0.2986126482978899
+    },
+    {
+      "depth": 8,
+      "mean_loss": 0.07331385666749712,
+      "n": 4056,
+      "loss_share": 0.21157989756982465
+    },
+    {
+      "depth": 5,
+      "mean_loss": 0.04515859581429315,
+      "n": 4056,
+      "loss_share": 0.13032530971762674
+    }
+  ],
+  "by_oracle": [
+    {
+      "oracle": "fold",
+      "mean_loss": 0.09111984953403418,
+      "n": 14808,
+      "loss_share": 0.9600631261943613
+    },
+    {
+      "oracle": "call",
+      "mean_loss": 0.03963879307095612,
+      "n": 1416,
+      "loss_share": 0.039936873805637464
+    }
+  ],
+  "nature": {
+    "oracle_call_share_of_loss": 0.039936873805637464,
+    "mean_underdefense_on_call_oracle": 0.34761555726902693,
+    "mean_overcall_on_fold_oracle": 0.29771001701877675,
+    "reading": "DEFENSIVE leak = champion over-folds vs shoves where the oracle says call (under-defense); capturing it is a call/fold threshold fix, NOT offensive aggression."
+  }
+}
