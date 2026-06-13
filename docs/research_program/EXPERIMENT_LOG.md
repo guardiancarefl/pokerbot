@@ -643,3 +643,10 @@ Session 220101→230149 audit directives in flight, four agents:
    counter** (calibration: operator played 3, won the last).
 Session-5 tail floor: 78 firings, 0 argmax changes — in-band ×5.
 Panel: 5/8 shards survived the live window; 3 relaunched.
+
+## 2026-06-13 ~02:50 — Operator answers logged
+
+Stage-2 gate CONFIRMED N=5 (ledger updated — streak 0/5). Game-count
+detector CONFIRMED correct (4 games L,L,L,W; operator had forgotten the
+13-min first bust — detector calibration validated against operator
+memory and won). OQ-3 routed to Windows CC by operator alongside D3.

@@ -45,11 +45,11 @@ decision point: H2b registration or ensemble-probe results.
   legitimately-dead-button subset; this OQ covers the OCR-false-dead
   subset — both needed.
 
-### Operator confirmations requested (non-blocking)
-- Stage-2 gate N=5 (ledger pre-registration) — confirm or set N.
-- Tonight's game count: detector finds 4 games (L,L,L,W incl. a
-  ~13-min first bust, seqs 1-172); you reported 3. Confirm whether the
-  first segment was a counted game.
+### Operator confirmations (RESOLVED 2026-06-13)
+- Stage-2 gate **CONFIRMED at N=5** (zero never-decided + zero required
+  interventions, consecutive). Ledger header updated.
+- Game count: **detector confirmed right — 4 games (L,L,L,W)**; the
+  all-time table (26 played, 9W/13L/4U) stands as computed.
 
 ## Resolved
 
