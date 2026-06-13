@@ -1,0 +1,43 @@
+{
+  "champion_baseline": 0.746,
+  "delta": 0.5,
+  "games": 800,
+  "tilts": [
+    {
+      "direction": "aggro_more",
+      "net": 0.75,
+      "delta_vs_champ": 0.0040000000000000036,
+      "fires": 349,
+      "beats_champ_by_0.05": false
+    },
+    {
+      "direction": "call_more",
+      "net": 0.725,
+      "delta_vs_champ": -0.02100000000000002,
+      "fires": 30,
+      "beats_champ_by_0.05": false
+    },
+    {
+      "direction": "fold_more",
+      "net": 0.7375,
+      "delta_vs_champ": -0.008499999999999952,
+      "fires": 13,
+      "beats_champ_by_0.05": false
+    },
+    {
+      "direction": "aggro_less",
+      "net": 0.72,
+      "delta_vs_champ": -0.026000000000000023,
+      "fires": 569,
+      "beats_champ_by_0.05": false
+    },
+    {
+      "direction": "tight_pre",
+      "net": 0.735,
+      "delta_vs_champ": -0.01100000000000001,
+      "fires": 0,
+      "beats_champ_by_0.05": false
+    }
+  ],
+  "verdict": "NO crude tilt beats champion -> locally robust vs this field (suggestive of near-optimal on tested directions)"
+}

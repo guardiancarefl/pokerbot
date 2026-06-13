@@ -6,31 +6,49 @@ never weakened, negatives fully reported, verify-don't-assume._
 
 ---
 
-## ⚠️ NEEDS NICK
-**Nothing BLOCKING right now** — lab running clean on the free bench, no pod, no arm/deploy.
+## ⚠️ NEEDS NICK — PROGRAM PIVOT (model bench PAUSED, awaiting your fork)
 
-**Standing strategic option (non-urgent, your call when you want it):** the evidence
-is trending toward a PROGRAM PIVOT to operational EV (you've seen the roadmap). Not
-flagged as blocking — I'm keeping the free model queue producing (postflop is the
-biggest untested dimension, no data gate) while you hold the fork. I'll escalate this
-to a hard flag IF the postflop probe also comes up empty (that would make
-"model-vs-this-field is diminishing-returns" decisive).
+**Three independent "no live edge" signals are now in. I've paused the model-
+exploitation queue and the fork is yours:**
+1. Jam-wall: 4 methods ≤0 (battery headroom = artifact).
+2. Global tilt sweep: no crude direction beats champion.
+3. Postflop tilt sweep: no crude postflop direction beats champion.
 
-_Buttons that will PAUSE the lab and flag here: (1) pod-spend when ≥3 pod-needing
-methods are training-ready; (2) any arm/deploy to live; (3) a forced program pivot;
-(4) genuine gate-can't-decide ambiguity._
+→ The champion is near-optimal vs THIS WEAK FIELD on every dimension we can
+faithfully test. No live model edge found. (Caveat held: this is "testable
+dimensions" — a subtle state-conditioned edge or the data-gated SIZING dimension
+remain genuinely untested.)
+
+**THE FORK (your call — I won't pick it):**
+- **Option 1 — PIVOT TO OPERATIONAL** (my rec by EV). Stop model-vs-this-field
+  exploitation; actualize the proven +0.746 edge — autoclicker/capture reliability
+  (the session-6 wrong-window failure is a direct EV leak), volume, live-vs-sim gap.
+  Free code/analysis is within my autonomy; live deploy/arm is your button.
+- **Option 2 — BUILD A SIZING-FAITHFUL POOL** (the one untested model dimension).
+  Real data effort to replicate the field's limp/min-raise (T4/T6) → unlocks sizing,
+  where the field actually reveals itself. Bigger build, likely pod-scale eventually.
+- **Option 3 — BANK "champion near-optimal vs this field" as the Q0 verdict** (a
+  successful outcome: "don't retrain vs this field"), decide operational vs sizing later.
+
+My honest recommendation: **Option 1 now (highest realized-EV), Option 2 as the
+parallel model track if you want a model iron in the fire.** But it's your strategic call.
+
+_Other buttons that pause+flag: pod-spend (≥3 pod-ready methods); any arm/deploy;
+gate-can't-decide ambiguity._
 
 ---
 
 ## RUNNING NOW
-- **Postflop tilt sweep** (`probe_tilt_sweep.py --streets postflop`, 5 dirs × 800
-  games) — isolates postflop-specific crude edge (the global sweep mixed streets).
+- **PAUSED** — model-exploitation queue stopped pending the program-pivot fork above.
+  No probe running; no pod; no live anything.
 
-## NEXT IN QUEUE (autonomous, free, cheapest-first)
-1. Strong-opponent robustness check (only beat a weak scripted field so far).
-3. Frontier tier (bbnorm organ / novel objective / MoE) — only after a target is located.
-4. Sizing (Q0b) — **data-gated**; needs a sizing-faithful pool = a real data build =
-   PROGRAM PIVOT → will flag, not start unilaterally.
+## QUEUE (resumes per your fork)
+- Option 1 (operational): free analysis tracks (capture-failure root-cause, live-vs-sim
+  gap) are within my autonomy; live deploy/arm is your button.
+- Option 2 (sizing pool): a real data build — I'd scope it, you approve.
+- Strong-opponent robustness: a free probe, but needs a strong opponent set we don't
+  have (would build one first).
+- Frontier tier (bbnorm/novel-obj/MoE): premature until a target is located.
 
 ---
 
@@ -46,7 +64,13 @@ methods are training-ready; (2) any arm/deploy to live; (3) a forced program piv
 
 | tilt | crude global directions | NO edge | all ≤0 | aggro_more −0.004, call_more −0.16, fold_more −0.04, aggro_less −0.21, tight_pre −0.06 |
 
-**Tilt sweep (global): champion locally ROBUST** — no crude direction beats it; deviating either way costs (calibration is good). Suggestive of near-optimal vs this field on crude directions (not proof — a subtle state-conditioned edge would need a learned BR / A to find). Postflop isolation running.
+| tilt (postflop) | crude postflop directions | NO edge | all ≤0 | aggro_more +0.004, rest ≤0 |
+
+**Tilt sweeps (global + postflop): champion locally ROBUST on both** — no crude
+direction beats it on any street; deviating either way costs (calibration good).
+Suggestive of near-optimal vs this field (not proof — a subtle state-conditioned edge
+would need a learned BR / A; sizing is data-gated). THREE dry signals → program-pivot
+flag raised above.
 
 **JAM-WALL EXHAUSTED** (4 methods ≤0). The battery's "headroom" was an enumerated/
 heads-up/ICM artifact that doesn't realize as a live per-game edge. Champion proven
