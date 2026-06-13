@@ -1,0 +1,90 @@
+P2 bet-closure recovery — session-5 validation vs tonight's casualties
+======================================================================
+Date: 2026-06-13. Log: logs/live_dryrun_20260612_230149.jsonl (session of
+2026-06-12 23:01 UTC, git_head 3f7c887, P1 armed live). Validation ran
+the P2 build's own harness (scripts/replay_make_decision_diff.py) over
+this log, armA (--anchor-sum-floor) vs armB (--anchor-sum-floor
+--bet-closure-recovery), seed 42, same checkpoint/abstraction as the
+live session (sha-verified). No production code touched; no commits.
+
+Artifacts in this directory:
+  armA_live_dryrun_20260612_230149.jsonl / armB_... (+ .stdout)
+  armA_vs_armB_diff.txt        (--strict diff: 1646/1649 identical)
+  PER_PIN_ANALYSIS.txt         (full per-pin walkthroughs + ground truth)
+  probe_pins.py / probe_pins.out (step-6b introspection at each pin)
+
+HEADLINE RESULT
+  P2 recovers NONE of the three pinned casualties. All three are refused
+  with annotated reasons; statuses and click plans are unchanged
+  (annotation-only diffs). No other frame in the log recovers or refuses;
+  not_signature frames (incl. seq 271's scraper_self_consistency family)
+  are byte-identical across arms.
+
+PER-PIN VERDICTS (details in PER_PIN_ANALYSIS.txt)
+  seq 780  8c8d  -> (a) classifier REFUSES: multi-seat (2 folded blind
+           posters, seats 4+5). Ground truth from seq 781-786 proves the
+           SCRAPER frame was correct and the recon had failed to deduct
+           the folded SB/BB (the known carry-blind-structure replay gap).
+  seq 1086 AcAh  -> (a) classifier REFUSES: "deltas do not close"
+           (stack -25 / bet +0 / pot +25 — the folded UTG's swept 25-chip
+           limp has no bet-field delta). Ground truth from seq 1087-1094
+           (operator called 613, turned the As, won 3306, next-hand
+           stacks confirm) proves the SCRAPER was correct and the recon
+           missed the limp-then-fold.
+  seq 1635 5hTs  -> (a) classifies as closure (seat3, x=-25), (b) builds
+           a conserving candidate from the clean anchor with sb_only
+           evidence, (c) FAILS replay+invariant re-validation (recon
+           re-derives under the patched frame and moves: residual 3
+           deltas), (d) refused. Ground truth from seq 1646-47 (seat3
+           collects exactly the scraper's 509 pot) proves the scraper
+           was correct; recon under-counted seat3's commit by the 25
+           ante.
+
+CENTRAL FINDING — tonight's class is NOT P2's class
+  P2 models the seq-276-style displacement: the SCRAPER misrenders a
+  bet/stack split and the recon is truth, so recovery patches the frame
+  toward the recon. Tonight's three casualties are the MIRROR family:
+  the scraper frame is correct (anchor-conserving, confirmed by hand
+  outcomes in all three cases) and the RECON mis-derives committed chips
+  of a non-hero seat (folded SB+BB at 780; limp-then-fold at 1086;
+  ante-credit on a live caller at 1635). Every P2 refusal tonight was
+  therefore CORRECT — including 1635's re-validation refusal, which is
+  the guard catching a would-be wrong-state recovery. Both invariant
+  sides chip-conserve (displacement is sum-invariant), so no
+  conservation check can arbitrate; only outcome ground truth can, and
+  it sides with the scraper 3/3.
+
+ARMING RECOMMENDATION
+  Arm --anchor-sum-floor --bet-closure-recovery: it is safe on this
+  session (zero decision changes, zero false recoveries, 3 useful audit
+  annotations) and it remains the only defense for the proven seq-276
+  misrender family. But be explicit that P2 would NOT have saved any of
+  tonight's three casualties: 8c8d refuses on the multi-seat rule (and
+  would refuse single-seat too — folded-sweep deltas carry no bet
+  field), AcAh refuses on non-closure, 5hTs refuses at re-validation;
+  all three refusals are correct because P2's patch direction
+  (frame -> recon) is backwards for this class — "fixing" AcAh to the
+  recon would have decided on pot 2668 / stack3 1702 when reality was
+  2693 / 1677. Do NOT relax the classifier (multi-seat or no-bet-delta
+  variants) to chase these: that codifies the wrong trust direction.
+  The evidence-backed extension is the replay-side follow-up already
+  flagged in the P2 build summary, now with 3 live exhibits: anchored
+  commit reconciliation — when an invariant_fail frame independently
+  passes chip conservation against the clean P1 anchor and each
+  non-hero seat's implied commit (pre_hand - ante - stack) is
+  non-negative and >= its visible bet, trust the SCRAPER frame and
+  rebuild the replay with those per-seat commits (folded blinds and
+  swept calls included), instead of patching the frame toward the
+  recon. Pre-registered gates for that build: (G1) flag-OFF
+  byte-identity across all 15 raw-record logs incl. this one; (G2)
+  armed counterfactual vs P1+P2 with changes ONLY at recon-side
+  invariant_fail frames — required recoveries: seq 780 (pot 1017,
+  stacks 1630/2685), seq 1086 (pot 2693, stack3 1677, decision CALL
+  613), seq 1635 (bet3 150, pot 509, decision CHECK), each asserted
+  against the seq 781-786 / 1087-1094 / 1646-47 ground-truth chains as
+  regression fixtures; (G3) seq-276 dead-SB fixture must STILL refuse
+  (positive blind-structure evidence required before trusting any
+  derived blind assignment — bb_only still refuses); (G4) the build's 9
+  gate-2 displacement-family frames re-checked frame-by-frame, no
+  silent recovery of the non-closing 53-chip class; (G5) full test
+  suite parity (1054 pass + same pre-existing failures).

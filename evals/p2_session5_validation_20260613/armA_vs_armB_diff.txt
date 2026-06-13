@@ -1,0 +1,22 @@
+Total frames:                1649
+Identical:                   1646
+Suspect-annotation-only:     0
+BEHAVIORAL CHANGES:          3
+
+[BEHAV] seq=20260612_193706_536
+  skip_reason            'invariant_fail (3 deltas)'
+                         -> "invariant_fail (3 deltas) (bet-closure recovery declined: closure would touch 2 seats' bet/stack pairs (only s"
+  click_plan             "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'invariant_fail (3 deltas)', 'steps': []}"
+                         -> '{\'action_kind\': \'no_plan\', \'chip_amount\': None, \'reason\': "invariant_fail (3 deltas) (bet-closure recovery dec'
+
+[BEHAV] seq=20260612_194941_036
+  skip_reason            'invariant_fail (2 deltas)'
+                         -> 'invariant_fail (2 deltas) (bet-closure recovery declined: deltas do not close under a single bet/stack transfe'
+  click_plan             "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'invariant_fail (2 deltas)', 'steps': []}"
+                         -> "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'invariant_fail (2 deltas) (bet-closure recovery dec"
+
+[BEHAV] seq=20260612_200631_846
+  skip_reason            'invariant_fail (3 deltas)'
+                         -> 'invariant_fail (3 deltas) (bet-closure recovery declined: no candidate passed replay+invariant re-validation ('
+  click_plan             "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'invariant_fail (3 deltas)', 'steps': []}"
+                         -> "{'action_kind': 'no_plan', 'chip_amount': None, 'reason': 'invariant_fail (3 deltas) (bet-closure recovery dec"

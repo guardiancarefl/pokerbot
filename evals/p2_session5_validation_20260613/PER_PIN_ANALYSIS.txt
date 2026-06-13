@@ -1,0 +1,137 @@
+P2 session-5 validation — per-pin analysis (2026-06-13)
+========================================================
+Log: logs/live_dryrun_20260612_230149.jsonl (1658 lines; 1649 frames with
+raw_record replayed). Code: track-policy HEAD 3f7c887 (contains P2 3bf5d3f).
+Harness: scripts/replay_make_decision_diff.py, seed 42,
+ckpt runs/k200_real_ante_20260605_225847_PRESERVED/ckpt_iter_1500.pt,
+abstraction runs/abstraction_20260521_223018_retrofit/abstraction.pkl
+(sha256 matches the session header). armA = --anchor-sum-floor,
+armB = --anchor-sum-floor --bet-closure-recovery.
+Introspection: probe_pins.py / probe_pins.out (replays the same harness
+path and dissects step-6b internals at each pin with identical tracker
+state).
+
+----------------------------------------------------------------------
+PIN 1 — seq 780, captured_at 20260612_193706_536, 8c8d, fallback FOLD
+----------------------------------------------------------------------
+Frame: blinds 50/100/15, dealer seat2, hero seat1 facing CALL (hero bet
+100, seat2 raise to 692), seats 4/5 = folded SB/BB, seat3 empty.
+invariant deltas (scraper, recon):
+  pot          1017  867    (+150)
+  stack[seat4] 1630  1680   (-50)
+  stack[seat5] 2685  2785   (-100)
+
+P2 walkthrough:
+ (a) classify: REFUSED — "closure would touch 2 seats' bet/stack pairs
+     (only single-seat displacement is recoverable)". Never reaches the
+     anchor/candidate stages. (Clean regular anchor existed:
+     (2523,707,0,1695,2800,1275), sum 9000; blind evidence None.)
+ (b)-(d): n/a — refusal at the classifier. Live outcome unchanged:
+     safe_fold + audit annotation.
+
+Ground truth (adjacent frames): scraper was RIGHT, recon was WRONG.
+seat4 1630 = 1695-15(ante)-50(SB); seat5 2685 = 2800-15-100(BB). The
+uncalled-raise return sequence (seq 781: seat2 0->592, pot 425; seq 784:
+seat2 1017 = 592+425) and the next hand-start (seq 786: every stack
+exactly -15 ante from seq-784 values, incl. seat4 1615, seat5 2670)
+confirm seats 4/5 really posted and lost their blinds. The recon failed
+to deduct SB/BB from the two FOLDED posters (their bets render as null
+once folded; per-frame blind detection lost its evidence — the exact
+"carry blind structure forward" replay gap flagged as NOT-DONE in
+evals/p2_build_20260612/SUMMARY.txt). Scraper frame is anchor-conserving
+(7983 stacks + 1017 pot = 9000).
+
+Even single-seat, this shape would still refuse: the displaced chips
+appear ONLY in stack+pot (folded seats show no bet), so the stack/bet/pot
+triple cannot close. More important: P2's candidate patches the frame
+TOWARD the recon — here that would have decided on a pot understated by
+150 with two phantom-unposted blinds. Multi-seat refusal was the right
+answer twice over.
+
+----------------------------------------------------------------------
+PIN 2 — seq 1086, captured_at 20260612_194941_036, AcAh, operator rescue
+----------------------------------------------------------------------
+Frame: dealer seat6, hero seat1 (bet 1000) facing CALL 613 vs seat6
+(bet 1613, all-in), seats 2-5 folded.
+invariant deltas (scraper, recon):
+  pot          2693  2668   (+25)
+  stack[seat3] 1677  1702   (-25)
+
+P2 walkthrough:
+ (a) classify: REFUSED — "deltas do not close under a single bet/stack
+     transfer (stack -25, bet +0, pot +25)". Single seat, but there is
+     NO bet[seat3] delta (seat3 folded; its swept limp is invisible in
+     the bets row), so the required stack/bet/pot closure triple is
+     absent.
+ (b)-(d): n/a. Clean regular anchor existed ((1642,1163,1707,1435,1435,
+     1618), sum 9000); the pre-blind anchor slot was guard-refused but
+     unused; blind evidence None. Live outcome unchanged: safe_fold.
+
+Ground truth (operator played it and won — fully reconstructed):
+ seq 1087: hero 637-613=24, pot 2693+613=3306 (CALL executed)
+ seq 1089: turn As (hero makes the set/trips of aces)
+ seq 1091: hero 24+3306=3330 (WON); seat3 stays 1677 through the hand
+ seq 1094 next hand-start: (3325,1128,1672,1425,1425) = exactly -5 ante
+ from (3330,1133,1677,1430,1430).
+So the SCRAPER frame was correct: seat3 limped 25 then folded (1707-5-25
+=1677), and its 25 is genuinely in the 2693 pot. The recon's
+action-derivation missed the limp-before-fold and under-counted the pot
+by 25. A recovery that "fixed" the frame to recon values (stack3 1702 /
+pot 2668) would have been a wrong-state decision — conservation passes
+on BOTH sides (displacement is sum-invariant), so only the refusal
+protected correctness. The refusal is right in principle; the cost is
+that P2 has no path to the (correct) CALL the operator made manually.
+
+----------------------------------------------------------------------
+PIN 3 — seq 1635, captured_at 20260612_200631_846, 5hTs, fallback CHECK
+----------------------------------------------------------------------
+(Operator pin "~1635/1639": 1639 is the same hand's later suspect/board
+frames; the decision frame is 1635.)
+Frame: blinds 75/150/25, dealer seat3, hero seat1 = BB (bet 150, CHECK
+available), seat2 all-in 34, seat3 called 150, seat4 folded SB.
+invariant deltas (scraper, recon):
+  pot          509   484    (+25)
+  stack[seat3] 3289  3314   (-25)
+  bet[seat3]   150   125    (+25)
+
+P2 walkthrough (got the furthest of the three):
+ (a) classify: PASSED — closure (seat idx2, x=-25); the full
+     stack/bet/pot triple closes.
+ (b) candidate: BUILT from the clean regular anchor (3792,59,3464,1685,
+     0,0): stack[2]=3314, bet[2]=125, pot=484; bounds + chip
+     conservation passed; blind evidence 'sb_only' (dead-SB guard
+     satisfied).
+ (c) re-validation: FAILED — "corrected frame still fails the invariant
+     (3 deltas)". Replaying the patched frame re-derives the action
+     sequence and the recon target MOVES: residual deltas
+     (pot 484 vs 384), (stack3 3314 vs 3414), (bet3 125 vs 25).
+ (d) REFUSED: "no candidate passed replay+invariant re-validation
+     (corrected frame still fails the invariant (3 deltas))".
+     Live outcome unchanged: safe_fold (free CHECK).
+
+Ground truth: scraper RIGHT again. seat3 3464-25(ante)-150(call)=3289;
+hand checks down, seat3 collects the 509 pot (seq 1646-47: 3289->3798 =
+3289+509); hero ends 3617 unchanged. The recon under-counted seat3's
+commit by exactly the 25 ante (expected bet 125 = 150-25), i.e. a
+recon-side ante-credit/commit mis-derivation, not a scraper misrender.
+The re-validation refusal is CORRECT behavior: the candidate was a patch
+toward a wrong recon, and the invariant's moving-target response exposed
+exactly that. Had re-validation "passed", P2 would have shipped a
+wrong-state decision.
+
+----------------------------------------------------------------------
+OTHER FRAMES
+----------------------------------------------------------------------
+- P2 recoveries in this log: NONE. P2 refusals: exactly the 3 pins.
+- seq 271 (Qh9h, 4-delta invariant_fail incl. a
+  scraper_self_consistency:pot delta) = not_signature -> byte-identical
+  across arms, as designed (no annotation).
+- Layer-1 suspect recoveries at seq 751/752 (stack.seat5=120 strict) and
+  seq 1299 (stack.seat5=74 strict) appear IDENTICALLY in both arms (P1
+  path, not P2).
+- Arm diff (armA_vs_armB_diff.txt, --strict): 1649 frames, 1646
+  identical, 3 changed = the pins; each changed ONLY in skip_reason and
+  click_plan.reason (status safe_fold->safe_fold, action_kind
+  no_plan->no_plan, client_action None->None, all other fields equal).
+  Zero decision changes; zero recoveries; non-signature frames
+  byte-identical.

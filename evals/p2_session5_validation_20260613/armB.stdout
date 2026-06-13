@@ -1,0 +1,25 @@
+DeepCFR6MaxSolver  device=cpu  feature_dim=236  payout_mode=double_up  payouts=[2.0, 2.0, 2.0]
+[ANCHOR-REFUSED] pre-blind hand-start anchor fails sum-floor guard: sum(pre_hand)=8920 != chips-in-play 9000 with all 6 seats alive (no mis-alive seat to hide chips) captured_at=20260612_190540_391
+[OOD-WARN] live out-of-training-support: level=1 hero_stack=5 (0.2 BB) captured_at=20260612_190540_391
+[FLOOR] fired=[short-stack]  eff_bb=2.80  cp=0  street=0  pre_argmax=CALL  post_argmax=CALL
+[FLOOR] fired=[short-stack]  eff_bb=2.60  cp=0  street=0  pre_argmax=ALLIN  post_argmax=ALLIN
+[OOD-WARN] live out-of-training-support: level=2 hero_stack=65 (1.3 BB) captured_at=20260612_190722_597
+[OOD-WARN] live out-of-training-support: level=2 hero_stack=55 (1.1 BB) captured_at=20260612_190724_210
+[OOD-WARN] live out-of-training-support: level=2 hero_stack=55 (1.1 BB) captured_at=20260612_190725_681
+[OOD-WARN] live out-of-training-support: level=2 hero_stack=55 (1.1 BB) captured_at=20260612_190726_743
+[OOD-WARN] live out-of-training-support: level=2 hero_stack=55 (1.1 BB) captured_at=20260612_190733_638
+[FLOOR] fired=[short-stack]  eff_bb=1.10  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD
+[OOD-WARN] live out-of-training-support: level=2 hero_stack=55 (1.1 BB) captured_at=20260612_190734_296
+[OOD-WARN] live out-of-training-support: level=2 hero_stack=55 (1.1 BB) captured_at=20260612_190741_078
+[FLOOR] fired=[check-free]  eff_bb=30.40  cp=0  street=0  pre_argmax=FOLD  post_argmax=CALL
+[FLOOR] fired=[short-stack]  eff_bb=5.77  cp=0  street=1  pre_argmax=ALLIN  post_argmax=ALLIN
+[FLOOR] fired=[short-stack]  eff_bb=5.77  cp=0  street=1  pre_argmax=ALLIN  post_argmax=ALLIN
+[FLOOR] fired=[AA/KK]  eff_bb=64.88  cp=0  street=0  pre_argmax=ALLIN  post_argmax=ALLIN
+Replayed 1649 frames -> evals/p2_session5_validation_20260613/armB_live_dryrun_20260612_230149.jsonl
+  skip_not_hero_to_act          1195
+  skip_data_quality              225
+  decision                       114
+  decision_cached                 98
+  safe_fold                       14
+  decision_recovered               2
+  decision_recovered_cached        1

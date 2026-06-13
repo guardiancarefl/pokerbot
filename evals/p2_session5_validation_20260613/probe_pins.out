@@ -1,0 +1,56 @@
+DeepCFR6MaxSolver  device=cpu  feature_dim=236  payout_mode=double_up  payouts=[2.0, 2.0, 2.0]
+[ANCHOR-REFUSED] pre-blind hand-start anchor fails sum-floor guard: sum(pre_hand)=8920 != chips-in-play 9000 with all 6 seats alive (no mis-alive seat to hide chips) captured_at=20260612_190540_391
+[OOD-WARN] live out-of-training-support: level=1 hero_stack=5 (0.2 BB) captured_at=20260612_190540_391
+[FLOOR] fired=[short-stack]  eff_bb=2.80  cp=0  street=0  pre_argmax=CALL  post_argmax=CALL
+[FLOOR] fired=[short-stack]  eff_bb=2.60  cp=0  street=0  pre_argmax=ALLIN  post_argmax=ALLIN
+[OOD-WARN] live out-of-training-support: level=2 hero_stack=65 (1.3 BB) captured_at=20260612_190722_597
+[OOD-WARN] live out-of-training-support: level=2 hero_stack=55 (1.1 BB) captured_at=20260612_190724_210
+[OOD-WARN] live out-of-training-support: level=2 hero_stack=55 (1.1 BB) captured_at=20260612_190725_681
+[OOD-WARN] live out-of-training-support: level=2 hero_stack=55 (1.1 BB) captured_at=20260612_190726_743
+[OOD-WARN] live out-of-training-support: level=2 hero_stack=55 (1.1 BB) captured_at=20260612_190733_638
+[FLOOR] fired=[short-stack]  eff_bb=1.10  cp=0  street=0  pre_argmax=FOLD  post_argmax=FOLD
+[OOD-WARN] live out-of-training-support: level=2 hero_stack=55 (1.1 BB) captured_at=20260612_190734_296
+[OOD-WARN] live out-of-training-support: level=2 hero_stack=55 (1.1 BB) captured_at=20260612_190741_078
+[FLOOR] fired=[check-free]  eff_bb=30.40  cp=0  street=0  pre_argmax=FOLD  post_argmax=CALL
+============================================================================
+PIN seq=780 captured_at=20260612_193706_536 hero_cards=['8c', '8d']
+make_decision: status=safe_fold
+  skip_reason=invariant_fail (3 deltas) (bet-closure recovery declined: closure would touch 2 seats' bet/stack pairs (only single-seat displacement is recoverable))
+  recovered_fields=None
+  pre_hand_for (regular override): (2523, 707, 0, 1695, 2800, 1275)
+  invariant ok=False deltas=[('pot', 1017, 867), ('stack[seat4]', 1630, 1680), ('stack[seat5]', 2685, 2785)]
+  classify_displacement_deltas -> 'refused', "closure would touch 2 seats' bet/stack pairs (only single-seat displacement is recoverable)"
+  bet_closure_anchors_for: anchors=[((2523, 707, 0, 1695, 2800, 1275), 'anchor')] refused_why=None
+  blind_posting_evidence_for: None
+  frame: dealer_seat=1 hero_seat=0 blinds=(50,100,15)
+  frame stacks=(2408, 0, 0, 1630, 2685, 1260) bets=(100, 692, 0, 0, 0, 0) pot=1017 alive=(True, True, False, True, True, True) empty=(False, False, True, False, False, False) folded=(False, False, False, True, True, True)
+[FLOOR] fired=[short-stack]  eff_bb=5.77  cp=0  street=1  pre_argmax=ALLIN  post_argmax=ALLIN
+[FLOOR] fired=[short-stack]  eff_bb=5.77  cp=0  street=1  pre_argmax=ALLIN  post_argmax=ALLIN
+[FLOOR] fired=[AA/KK]  eff_bb=64.88  cp=0  street=0  pre_argmax=ALLIN  post_argmax=ALLIN
+============================================================================
+PIN seq=1086 captured_at=20260612_194941_036 hero_cards=['Ac', 'Ah']
+make_decision: status=safe_fold
+  skip_reason=invariant_fail (2 deltas) (bet-closure recovery declined: deltas do not close under a single bet/stack transfer (stack -25, bet +0, pot +25))
+  recovered_fields=None
+  pre_hand_for (regular override): (1642, 1163, 1707, 1435, 1435, 1618)
+  invariant ok=False deltas=[('pot', 2693, 2668), ('stack[seat3]', 1677, 1702)]
+  classify_displacement_deltas -> 'refused', 'deltas do not close under a single bet/stack transfer (stack -25, bet +0, pot +25)'
+  bet_closure_anchors_for: anchors=[((1642, 1163, 1707, 1435, 1435, 1618), 'anchor')] refused_why='pre-blind hand-start anchor was refused by the anchor guard (ceiling/sum-floor)'
+  blind_posting_evidence_for: None
+  frame: dealer_seat=5 hero_seat=0 blinds=(15,25,5)
+  frame stacks=(637, 1133, 1677, 1430, 1430, 0) bets=(1000, 0, 0, 0, 0, 1613) pot=2693 alive=(True, True, True, True, True, True) empty=(False, False, False, False, False, False) folded=(False, True, True, True, True, False)
+============================================================================
+PIN seq=1635 captured_at=20260612_200631_846 hero_cards=['5h', 'Ts']
+make_decision: status=safe_fold
+  skip_reason=invariant_fail (3 deltas) (bet-closure recovery declined: no candidate passed replay+invariant re-validation (corrected frame still fails the invariant (3 deltas)))
+  recovered_fields=None
+  pre_hand_for (regular override): (3792, 59, 3464, 1685, 0, 0)
+  invariant ok=False deltas=[('pot', 509, 484), ('stack[seat3]', 3289, 3314), ('bet[seat3]', 150, 125)]
+  classify_displacement_deltas -> 'closure', (2, -25)
+  bet_closure_anchors_for: anchors=[((3792, 59, 3464, 1685, 0, 0), 'anchor')] refused_why=None
+  blind_posting_evidence_for: 'sb_only'
+  frame: dealer_seat=2 hero_seat=0 blinds=(75,150,25)
+  frame stacks=(3617, 0, 3289, 1585, 0, 0) bets=(150, 34, 150, 0, 0, 0) pot=509 alive=(True, True, True, True, False, False) empty=(False, False, False, False, True, True) folded=(False, False, False, True, False, False)
+  -- anchor source=anchor pre_hand=(3792, 59, 3464, 1685, 0, 0)
+     candidate: stack[2]=3314 bet[2]=125 pot=484
+     re-validation ok=False residual deltas=[('pot', 484, 384), ('stack[seat3]', 3314, 3414), ('bet[seat3]', 125, 25)]
