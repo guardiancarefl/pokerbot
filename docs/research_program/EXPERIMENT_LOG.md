@@ -624,3 +624,22 @@ Session 220101: 36 hands / 53 decisions / 0 lost / tail floor 25
 firings 0 argmax changes (4th consecutive in-band armed session).
 Ingested +27 opp-observed → H4 410/500. RT-1 exhibit from this session
 registered separately (RED_TEAM_LOG). Panel relaunched post-window.
+
+## 2026-06-13 ~01:30 — SESSION-5 BUILD SET launched (operator directives)
+
+Session 220101→230149 audit directives in flight, four agents:
+1. **P2 validation vs tonight's casualties** (P2 already BUILT 3bf5d3f
+   — directive executes as targeted counterfactual: 8c8d/AcAh/5hTs
+   recover-or-refuse + arming recommendation; AcAh has operator-played
+   ground truth).
+2. **Click-plan RAISE→CHECK root-cause** (Stage-2 blocker; 2 exhibits:
+   seq194 RAISE_TO 610 tonight + prior 716-raise).
+3. **D2 dead-button position handling** (operator: Windows attribution
+   proved tonight's dealer-bursts were CORRECT dead-button scrapes —
+   bridge gap, #1 hand-killer; BB-advances-one-active invariant +
+   posts-as-ground-truth derivation; flag-gated, full chain; QdKc/TsAc
+   counterfactual targets; Windows adding additive dealer_dead flag).
+4. **Postmortem + Stage-2 ledger (N=5 gate proposed) + games-played
+   counter** (calibration: operator played 3, won the last).
+Session-5 tail floor: 78 firings, 0 argmax changes — in-band ×5.
+Panel: 5/8 shards survived the live window; 3 relaunched.
