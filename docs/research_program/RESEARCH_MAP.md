@@ -25,6 +25,34 @@ Cost: ~3–5 h pod burst (5 parallel probes, ~$2–4). EVoI: HIGHEST — decides
 entire field-exploitation program direction. Most die cheap; the survivor earns
 the full battery.
 
+## ★ Q0b — FINE-SIZING EXPLOITATION (future dimension, 2026-06-13) ★
+**Can we turn fine bet-SIZING tells (limp 64% / min-raise 57.8% at ≤2x) into
+strategy?** Status of the dimensions (verified against the 236-d encoder +
+the action abstraction):
+- **Depth: first-class** (per-player normalized stacks ×6, hero-villain effective
+  stack ×1, optional eff_bb channel). Depth-specific play (11-15bb) fully supported.
+- **Shove sizing: captured** (shove=stack in our format; eff_stack + to_call/ss
+  encode it). This is why C's jam-wall analysis is clean — and why B is clean.
+- **Faced bet size: SEEN but coarsely ANSWERED.** The encoder carries the
+  opponent's size as a CONTINUOUS feature (`last_bet_frac`, to_call/ss + the
+  action sequence), so limp-vs-raise is cleanly distinguished (call vs bet are
+  different branches). BUT fine raise-size (2.0x vs 2.5x) is coarsened by (a) our
+  ACTION abstraction (9 sizes: 0.33/0.5/0.66/1/1.5/2pot+allin — we can't respond
+  AT 2.5x) and (b) the pseudo-harmonic translation collapsing adjacent off-tree
+  sizes. **k=200 is NOT the constraint here — k is the CARD abstraction; sizing
+  resolution is the ACTION abstraction.** (Refines the H4 "k=200 bottleneck",
+  which was hand/target resolution, not sizing.)
+- **The compound gap:** unlocking limp/min-raise reads needs BOTH (1) a finer
+  ACTION abstraction (more bet sizes / a sizing-response head) AND (2) a
+  sizing-FAITHFUL target — the current pool's entry-style dimension is the
+  registered limitation (T4 min-raise 35% vs 57.8, T6 limp 29% vs 63.7, both OUT).
+  A finer abstraction alone can't learn tells a pool doesn't contain.
+Decisive first step (cheap, read-only): a c_leak_map-style decomposition of the
+champion's field-EV loss on NON-jam-wall (open/limp/min-raise) spots — does
+material EV live there, and is it sizing-conditioned? Cost: ~3–5 h. EVoI: MEDIUM-
+HIGH — scopes whether sizing exploitation is a whole future track (action-
+abstraction + sizing-faithful pool v2) or a minor residual. B/D/A do NOT touch it.
+
 ## (a) Representation
 
 **a1. Where is the k=200 abstraction ceiling?**
