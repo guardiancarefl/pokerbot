@@ -434,3 +434,28 @@ NOT part of the gate.)
 2. field-mix probe: `train_6max --config configs/h4_probe.yaml --resume <full ckpt>`.
 3. monitor + dashboard (RUNPOD §8 pattern) on the pod run dir.
 Contabo fallback generate-only rebuild stays ALIVE until the pod is proven.
+
+## 12. Snapshot + restore (skip the OpenSpiel build on re-rent) — 2026-06-13
+
+The proven-faithful H4 env is captured so a re-rent skips the ~5-min OpenSpiel
+build + pip (NOT the ~2-min bit-identity smoke — that stays, every re-rent).
+
+**Captured (verified restorable, pyspiel.so sha `acae193b…`):**
+- Contabo (guaranteed): `~/pokerbot/pod_snapshot/venv_h4faithful.tgz` (305 MB) +
+  `POD_SNAPSHOT_MANIFEST.txt`.
+- Pod `/workspace/pod_snapshot/` (persistent network volume, eu-cz-1; fast
+  same-region re-rent).
+
+**Restore on a fresh pod (after §1–§3 system + uv + clone):**
+```bash
+cd ~/pokerbot
+# from Contabo (always works):
+scp -P <port> -i ~/.ssh/id_ed25519 quant@<contabo>:~/pokerbot/pod_snapshot/venv_h4faithful.tgz /tmp/
+#   OR from /workspace if same region:  cp /workspace/pod_snapshot/venv_h4faithful.tgz /tmp/
+tar xzf /tmp/venv_h4faithful.tgz -C ~/pokerbot            # restores .venv incl. patched pyspiel.so
+source .venv/bin/activate
+sha256sum .venv/lib/python3.10/site-packages/pyspiel.so   # MUST be acae193b1e7715fc6282daebcc5fc0be6e97437ac2ffbe82a46d3412d7002a2a
+# THEN re-run the §5/§11 bit-identity smoke (non-negotiable) before any training.
+```
+Restore to the IDENTICAL path (`~/pokerbot/.venv`) — the venv has absolute paths.
+The smoke is the gate: snapshot skips the BUILD, never the faithfulness check.

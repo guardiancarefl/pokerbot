@@ -26,3 +26,4 @@ logs/
 !runs/README.md
 !runs/archetype_design/
 !runs/archetype_design/*.json
+pod_snapshot/
