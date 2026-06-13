@@ -21,15 +21,17 @@ already approved the floor itself. (2) Windows: P1/P2 SanityChecker is
 now top-priority (it's THE Stage-2 blocker); OQ-1 Part-B, OQ-3 F1,
 D3 also queued your side. (3) F2 stays held until Windows F1.
 
-## POD_CASE (standing one-liner — Addendum 5.5, update on every state change)
+## POD_CASE (standing — Addendum 5.5, updated 2026-06-13 ~03:35)
 
-RIGHT NOW: **no active pod case — H2 FAILED at probe** (all bars,
-report: reports/EXP_H2_killphil_league.md; collapse predates the
-interruption, relaunch clause rejected on evidence). The
-bbnorm-transplant pod case is SUSPENDED pending the refill-pass verdict
-on H2b (slim-ckpt fine-tuning fragility is the live suspect — any
-successor must solve buffer continuity first). Next pod-relevant
-decision point: H2b registration or ensemble-probe results.
+**H4 JUST UNLOCKED (517/500).** Once its registration freezes (cheap
+checklist running now), the H4 field-RNR retrain is a TRAINING-SCALE
+experiment — the first true pod case since H2 failed. Estimate (per
+H4_RNR_FIELD_SPEC cost table): ~6-8 pod-hours vs ~23-31 Contabo-hours,
+and it MUST be H2-fragility-safe (full-buffer or league-from-iter-0, no
+slim-ckpt fine-tune — that's what collapsed H2). NOT yet a launch ask:
+freeze + your go first. The bbnorm-transplant variant (BBNORM_TRANSPLANT
+_SPEC) could ride the same pod run. Lower-tier pod candidate: ICM
+Tier-2 (battery-oracle re-label support, ~3-10 core-h, Contabo-fine).
 
 ## Open
 
